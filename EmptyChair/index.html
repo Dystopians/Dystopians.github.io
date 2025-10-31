@@ -1,0 +1,246 @@
+---
+layout: emptychair
+title: "Empty Chair"
+permalink: /EmptyChair/
+classes: "empty-chair-page"
+---
+
+{% capture chao_raw %}{% include poems/ChaoCuoYao.md %}{% endcapture %}
+{% capture mao_raw %}{% include poems/MaoRenShuKu.md %}{% endcapture %}
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600&display=swap"
+/>
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-webfont@1.7.0/style.css"
+/>
+
+<style>
+  :root {
+    color-scheme: light dark;
+  }
+
+  @font-face {
+    font-family: 'IowanOldStyle';
+    src: url('https://fonts.cdnfonts.com/s/17851/IowanOldStyleBT-Roman.woff') format('woff');
+    font-display: swap;
+  }
+  @font-face {
+  font-family: 'WenYueGutiFangSong';
+  src: url('/assets/fonts/WenYue_GuTiFangSong_F.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  }
+
+  html.empty-chair-root,
+  html.empty-chair-root body {
+    margin: 0;
+    padding: 0;
+    background: #fefbf6;
+    color: #1f1b18;
+    font-family:
+      'WenYueGutiFangSong',
+      'IowanOldStyle',          /* 你原来的英文字体 */
+      'Iowan Old Style',
+      'Hoefler Text',
+      'Noto Serif SC',          /* 正式、端庄的中文 serif */
+      'LXGW WenKai Screen',     /* 更手写、更亲密的诗歌感 */
+      'Georgia',
+      serif;
+    letter-spacing: 0.02em;
+    line-height: 1.8;
+  }
+
+  .empty-chair-shell {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: clamp(3rem, 6vw, 5rem) clamp(1.5rem, 5vw, 3rem) 4rem;
+  }
+
+  .portal {
+    text-align: center;
+    margin-bottom: clamp(2.5rem, 5vw, 4rem);
+  }
+
+  .portal h1 {
+    font-size: clamp(2.4rem, 5vw, 3.5rem);
+    margin-bottom: 1rem;
+  }
+
+  .portal p {
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    margin: 0 auto;
+    max-width: 40ch;
+    color: rgba(31, 27, 24, 0.7);
+  }
+
+  .poem-gallery {
+    display: grid;
+    gap: clamp(2.5rem, 4vw, 3.5rem);
+  }
+
+  .poem-card {
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(31, 27, 24, 0.08);
+    border-radius: 20px;
+    padding: clamp(2rem, 4vw, 3rem);
+    box-shadow: 0 18px 40px -32px rgba(17, 14, 12, 0.35);
+  }
+
+  .poem-card.has-image {
+    position: relative;
+    overflow: hidden;
+    --poem-image: none;
+    --poem-image-coverage: 65%;
+  }
+
+  .poem-card.has-image::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--poem-image) top center / contain no-repeat;
+    opacity: 1;
+    pointer-events: none;
+    z-index: 0;
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 38%, rgba(0, 0, 0, 0.35) 62%, rgba(0, 0, 0, 0) 100%);
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 38%, rgba(0, 0, 0, 0.35) 62%, rgba(0, 0, 0, 0) 100%);
+    -webkit-mask-size: 100% var(--poem-image-coverage, 65%);
+    mask-size: 100% var(--poem-image-coverage, 65%);
+    -webkit-mask-position: top center;
+    mask-position: top center;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+  }
+
+  .poem-card.has-image::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(254, 251, 246, 0.3) 0%,
+      rgba(254, 251, 246, 0.5) 30%,
+      rgba(254, 251, 246, 0.7) 65%,
+      rgba(254, 251, 246, 0.9) 85%,
+      rgba(254, 251, 246, 1) 100%
+    );
+    mix-blend-mode: normal;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .poem-card.has-image > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  .poem-card.has-image h2,
+  .poem-card.has-image .poem-body {
+    font-weight: 600;
+    color: #211a15;
+    text-shadow: 0 6px 12px rgba(254, 251, 246, 0.75);
+  }
+
+  .poem-card.card-chao {
+    --poem-image: url("{{ '/EmptyChair/ChaoCuoYao.png' | relative_url }}");
+    --poem-image-coverage: 40%;
+  }
+
+  .poem-card.card-mao {
+    --poem-image: url("{{ '/EmptyChair/MaoRenShuiKu.png' | relative_url }}");
+    --poem-image-coverage: 14%;
+  }
+
+  .poem-card h2 {
+    font-size: clamp(1.8rem, 3vw, 2.4rem);
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.16em;
+    text-indent: 0.16em;
+    color: #1a1410;
+  }
+
+  .spectral-bar {
+    height: 1px;
+    background: linear-gradient(90deg, rgba(26, 20, 16, 0.55), rgba(26, 20, 16, 0.1), rgba(26, 20, 16, 0.55));
+    margin: 1.25rem 0 1.5rem;
+    opacity: 0.5;
+  }
+
+  .poem-body {
+    white-space: pre-wrap;
+    font-size: clamp(1.05rem, 2vw, 1.2rem);
+    color: #332b25;
+  }
+
+  @media (max-width: 600px) {
+    .poem-card {
+      padding: 1.85rem;
+    }
+  }
+  .portal h1,
+  .poem-card h2 {
+    font-family:
+      'WenYueGutiFangSong',
+      'Noto Serif SC',
+      'LXGW WenKai Screen',
+      'IowanOldStyle',
+      'Georgia',
+      serif;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-indent: 0.2em;
+    color: #1a1410;
+  }
+
+  .poem-body {
+  white-space: pre-wrap;
+  font-family:
+    'WenYueGutiFangSong',     /* 文悦古体仿宋优先使用 */
+    'LXGW WenKai Screen',     /* 手写 fallback */
+    'Noto Serif SC',          /* 稳定宋体/明朝 fallback */
+    'IowanOldStyle',
+    'Georgia',
+    serif;
+  font-weight: 400;
+  font-size: clamp(1.05rem, 2vw, 1.2rem);
+  line-height: 1.9;
+  letter-spacing: 0.1em;
+  color: #332b25;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  }
+
+
+</style>
+
+<section class="empty-chair-shell">
+  <div class="page__inner-wrap">
+    <header class="portal">
+      <h1>空  椅</h1>
+      <p>空的椅子，惊天北方椅，被称为韩非、李斯或者晁错的家伙来到，使用那人之备；门环的金属声在空中回荡，很多很多块，落在她客人的空盘子</p>
+    </header>
+
+    <div class="poem-gallery">
+      <article class="poem-card has-image card-chao">
+        <h2>晁错谣</h2>
+        <div class="spectral-bar" aria-hidden="true"></div>
+        <div class="poem-body">
+          {{- chao_raw | strip -}}
+        </div>
+      </article>
+
+      <article class="poem-card has-image card-mao">
+        <h2>毛人水库</h2>
+        <div class="spectral-bar" aria-hidden="true"></div>
+        <div class="poem-body">
+          {{- mao_raw | strip -}}
+        </div>
+      </article>
+    </div>
+
+    <p class="glitch-caption">NEBULA  EMPTY  CHAIR  TRANSMISSION</p>
+  </div>
+</section>
+
