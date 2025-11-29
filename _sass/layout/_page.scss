@@ -240,6 +240,17 @@
   }
 }
 
+.page__meta--venue {
+  margin-top: 0.75em;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.page__venue-inline {
+  white-space: nowrap;
+  display: inline-block;
+}
+
 .page__meta-title {
   margin-bottom: 10px;
   font-size: $type-size-6;
