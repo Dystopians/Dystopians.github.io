@@ -13,7 +13,7 @@ title                    : "Peilin Cai"
 title_separator          : "-"
 name                     : &name "Peilin Cai"
 description              : &description "Peilin Cai's academic portfolio"   # Update this with a general description of your site, this is the default if not overridden by a page
-url                      : "https://dystopians.github.io" # https://academicpages.github.io # The base hostname & protocol for your site e.g. "https://[your GitHub username].github.io",
+url                      : "https://caipeilin.com" # https://academicpages.github.io # The base hostname & protocol for your site e.g. "https://[your GitHub username].github.io",
                                                            # or if you already have some other page hosted on Github then use "https://[your GitHub username].github.io/[Your Repo Name]"
 baseurl                  : "" # the subpath of your site, e.g. "/blog"
 repository               : "dystopians/dystopians.github.io" # "academicpages/academicpages.github.io"
@@ -29,7 +29,7 @@ author:
   bio              : "Master student in Computer Science at University of Southern California"
   location         : "Los Angeles, California"
   employer         : "University of Southern California"
-  uri              : "https://dystopians.github.io"
+  uri              : "https://caipeilin.com"
   email            : "peilinca@usc.edu" 
 
   # Academic websites
