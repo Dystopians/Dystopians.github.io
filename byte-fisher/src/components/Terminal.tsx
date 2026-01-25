@@ -183,8 +183,20 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
   }, []);
 
   useEffect(() => {
-    if (!turnstileSiteKey || !turnstileWidgetRef.current) return;
+    if (!turnstileSiteKey) return;
+
+    if (activeTab !== 'COMPOSE') {
+      if (turnstileIdRef.current) {
+        window.turnstile?.reset(turnstileIdRef.current);
+        turnstileIdRef.current = null;
+      }
+      setTurnstileToken('');
+      return;
+    }
+
+    if (!turnstileWidgetRef.current) return;
     if (turnstileIdRef.current) return;
+
     const render = () => {
       if (!window.turnstile) return;
       const size = window.innerWidth < 420 ? 'compact' : 'normal';
@@ -203,15 +215,8 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
       if (turnstileIdRef.current) window.clearInterval(timer);
     }, 200);
 
-    return () => {
-      window.clearInterval(timer);
-      if (turnstileIdRef.current) {
-        window.turnstile?.reset(turnstileIdRef.current);
-        turnstileIdRef.current = null;
-      }
-      setTurnstileToken('');
-    };
-  }, [turnstileSiteKey]);
+    return () => window.clearInterval(timer);
+  }, [turnstileSiteKey, activeTab]);
 
   const addToCompose = (charItem: LootItem) => {
     if (composedMsg.length >= 20) return; // limit length
