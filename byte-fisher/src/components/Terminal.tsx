@@ -186,10 +186,8 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
     if (!turnstileSiteKey || !turnstileWidgetRef.current) return;
     if (turnstileIdRef.current) return;
     const render = () => {
-      // @ts-expect-error Turnstile is injected globally
       if (!window.turnstile) return;
-      // @ts-expect-error Turnstile is injected globally
-      turnstileIdRef.current = window.turnstile.render(turnstileWidgetRef.current, {
+      turnstileIdRef.current = window.turnstile.render(turnstileWidgetRef.current as HTMLElement, {
         sitekey: turnstileSiteKey,
         callback: (token: string) => setTurnstileToken(token),
         'expired-callback': () => setTurnstileToken(''),
@@ -221,11 +219,9 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
   const handlePublishClick = () => {
      if (!canUpload) {
        if (requiresTurnstile && turnstileIdRef.current) {
-         // @ts-expect-error Turnstile is injected globally
          const response = window.turnstile?.getResponse(turnstileIdRef.current);
          if (!response) {
            setUploadStatus('ERROR: VERIFY BEFORE UPLOAD');
-           // @ts-expect-error Turnstile is injected globally
            window.turnstile?.reset(turnstileIdRef.current);
          }
        }
@@ -292,14 +288,20 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
     }
     
     // 3. Construct Message
-    const text = composedMsg.map(c => c.char).join('');
+    const text = composedMsg.map(c => c.char).filter(Boolean).join('');
     const sanitizedName = playerName.replace(/[^a-zA-Z0-9_]/g, '').substring(0, 12);
+
+    if (!sanitizedName || !text) {
+      setUploadStatus('ERROR: MISSING NAME OR MESSAGE');
+      return;
+    }
 
     if (isSupabaseConfigured) {
       let tokenToUse = turnstileToken;
-      if (turnstileSiteKey && turnstileIdRef.current) {
-        // @ts-expect-error Turnstile is injected globally
-        const response = window.turnstile?.getResponse(turnstileIdRef.current);
+      if (turnstileSiteKey) {
+        const response =
+          (turnstileIdRef.current ? window.turnstile?.getResponse(turnstileIdRef.current) : null) ||
+          window.turnstile?.getResponse();
         if (response) tokenToUse = response;
       }
 
@@ -330,7 +332,6 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
       setServerLog(prev => [toEntry(data.message), ...prev].slice(0, 50));
       setTurnstileToken('');
       if (turnstileIdRef.current) {
-        // @ts-expect-error Turnstile is injected globally
         window.turnstile?.reset(turnstileIdRef.current);
       }
     } else {
