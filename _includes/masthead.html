@@ -14,10 +14,7 @@
               {% assign domain = base_path %}
             {% endif %}
             <li class="masthead__menu-item">
-              <a
-                href="{{ domain }}{{ link.url }}"
-                {% if link.title == "Fish" %}class="masthead__menu-button"{% endif %}
-              >{{ link.title }}</a>
+              <a href="{{ domain }}{{ link.url }}">{{ link.title }}</a>
             </li>
           {% endfor %}
           <li id="theme-toggle" class="masthead__menu-item persist tail">

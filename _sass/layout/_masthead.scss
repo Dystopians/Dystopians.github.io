@@ -65,16 +65,3 @@
     font-weight: 700;
   }
 }
-
-.masthead__menu-button {
-  display: inline-block;
-  padding: 0.2em 0.7em;
-  border: 1px solid var(--global-border-color);
-  border-radius: 999px;
-  color: var(--global-text-color);
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-
-  &:hover {
-    background-color: var(--global-border-color);
-  }
-}
