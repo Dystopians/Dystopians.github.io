@@ -60,6 +60,22 @@
   }
 }
 
+.clustrmaps-embed {
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  position: relative;
+}
+
+.clustrmaps-embed canvas,
+.clustrmaps-embed iframe,
+.clustrmaps-embed svg,
+.clustrmaps-embed object {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
 .sidebar__right {
   margin-bottom: 1em;
 
