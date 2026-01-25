@@ -187,8 +187,11 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
     if (turnstileIdRef.current) return;
     const render = () => {
       if (!window.turnstile) return;
+      const size = window.innerWidth < 420 ? 'compact' : 'normal';
       turnstileIdRef.current = window.turnstile.render(turnstileWidgetRef.current as HTMLElement, {
         sitekey: turnstileSiteKey,
+        size,
+        appearance: 'always',
         callback: (token: string) => setTurnstileToken(token),
         'expired-callback': () => setTurnstileToken(''),
         'error-callback': () => setTurnstileToken(''),
@@ -200,7 +203,14 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
       if (turnstileIdRef.current) window.clearInterval(timer);
     }, 200);
 
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearInterval(timer);
+      if (turnstileIdRef.current) {
+        window.turnstile?.reset(turnstileIdRef.current);
+        turnstileIdRef.current = null;
+      }
+      setTurnstileToken('');
+    };
   }, [turnstileSiteKey]);
 
   const addToCompose = (charItem: LootItem) => {
@@ -364,6 +374,7 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
 
   // Filter items
   const allChars = inventory.filter(i => i.type === LootType.CHAR).sort((a,b) => (a.char || '').localeCompare(b.char || ''));
+  const displayChar = (item: LootItem) => (item.char === ' ' ? '␠' : item.char);
   
   // Exclude characters that are currently in the composer to prevent reusing the same item instance
   const availableChars = allChars.filter(c => !composedMsg.find(m => m.id === c.id));
@@ -439,7 +450,7 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
                      onClick={() => addToCompose(item)}
                      className="w-10 h-10 border border-cyber-gray flex items-center justify-center text-xl hover:bg-cyber-green hover:text-black font-bold"
                    >
-                     {item.char}
+                     {displayChar(item)}
                    </button>
                  ))}
                  {availableChars.length === 0 && <div className="text-gray-500 italic">{t.noBytes}</div>}
@@ -465,14 +476,14 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
                       onClick={() => !isValidating && removeFromCompose(idx)}
                       className="cursor-pointer hover:text-red-500 select-none"
                    >
-                     {item.char}
+                     {displayChar(item)}
                    </span>
                  ))}
                  {composedMsg.length === 0 && <span className="text-gray-600 animate-pulse">{t.waitingInput}</span>}
               </div>
               {isSupabaseConfigured && turnstileSiteKey && (
                 <div className="mb-3 flex justify-center">
-                  <div ref={turnstileWidgetRef} />
+                  <div ref={turnstileWidgetRef} className="w-full max-w-[320px] min-h-[65px]" />
                 </div>
               )}
               <div className="flex flex-col sm:flex-row gap-2">

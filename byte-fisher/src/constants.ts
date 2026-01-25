@@ -10,6 +10,7 @@ export const COLORS = {
 };
 
 export const INITIAL_CREDITS = 0;
+export const SPACE_BYTE_COST = 150;
 
 export const UPGRADE_CONFIGS: UpgradeConfig[] = [
   {
@@ -105,6 +106,16 @@ export const generateCharLoot = (luckLevel: number): LootItem => {
     char
   };
 };
+
+export const createSpaceCharLoot = (): LootItem => ({
+  id: createId(),
+  itemId: 'char_byte',
+  name: "Byte: ' '",
+  type: LootType.CHAR,
+  value: 0,
+  rarity: 'common',
+  char: ' '
+});
 
 export const MOCK_LEADERBOARD = [
   { id: '1', name: 'Neo', message: 'Wake up...', timestamp: Date.now() - 100000 },

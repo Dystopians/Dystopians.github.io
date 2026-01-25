@@ -7,11 +7,13 @@ interface ShopProps {
   credits: number;
   upgrades: Upgrades;
   onBuy: (upgradeId: keyof Upgrades, cost: number) => void;
+  onBuySpace: (cost: number) => void;
+  spaceCost: number;
   onClose: () => void;
   lang: 'en' | 'zh';
 }
 
-const Shop: React.FC<ShopProps> = ({ credits, upgrades, onBuy, onClose, lang }) => {
+const Shop: React.FC<ShopProps> = ({ credits, upgrades, onBuy, onBuySpace, spaceCost, onClose, lang }) => {
   const t = TEXT[lang];
 
   return (
@@ -69,6 +71,25 @@ const Shop: React.FC<ShopProps> = ({ credits, upgrades, onBuy, onClose, lang }) 
               </div>
             );
           })}
+        </div>
+
+        <div className="mt-6 border-t border-cyber-gray pt-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h3 className="text-lg sm:text-xl text-cyber-cyan">{t.buySpace}</h3>
+              <p className="text-sm text-gray-400">{t.spaceDesc}</p>
+            </div>
+            <button
+              onClick={() => onBuySpace(spaceCost)}
+              disabled={credits < spaceCost}
+              className={`px-4 py-2 border font-bold w-full sm:w-auto min-w-[120px]
+                ${credits >= spaceCost
+                  ? 'border-cyber-yellow text-cyber-yellow hover:bg-cyber-yellow hover:text-black'
+                  : 'border-red-900 text-red-900 cursor-not-allowed'}`}
+            >
+              {t.buy} ${spaceCost}
+            </button>
+          </div>
         </div>
       </div>
     </div>

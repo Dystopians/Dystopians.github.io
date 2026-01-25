@@ -15,5 +15,6 @@ interface Window {
     render: (element: HTMLElement, options: Record<string, unknown>) => string;
     reset: (widgetId?: string) => void;
     getResponse: (widgetId?: string) => string;
+    remove: (widgetId?: string) => void;
   };
 }

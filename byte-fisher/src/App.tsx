@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { GameState, LootItem, PlayerStats, Upgrades, LootType } from './types';
-import { INITIAL_CREDITS, TRASH_LOOT, FISH_LOOT, SPECIAL_LOOT, generateCharLoot } from './constants';
+import { INITIAL_CREDITS, TRASH_LOOT, FISH_LOOT, SPECIAL_LOOT, generateCharLoot, createSpaceCharLoot, SPACE_BYTE_COST } from './constants';
 import { TEXT } from './locales';
 import { createId } from './utils/id';
 import VoidCanvas from './components/VoidCanvas';
@@ -179,6 +179,16 @@ const App: React.FC = () => {
     }
   };
 
+  const handleBuySpace = (cost: number) => {
+    if (stats.credits < cost) return;
+    const spaceItem = createSpaceCharLoot();
+    setStats(prev => ({
+      ...prev,
+      credits: prev.credits - cost,
+      inventory: [...prev.inventory, spaceItem],
+    }));
+  };
+
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-transparent text-cyber-green font-mono select-none">
       
@@ -280,6 +290,8 @@ const App: React.FC = () => {
           credits={stats.credits} 
           upgrades={upgrades} 
           onBuy={handleBuyUpgrade} 
+          onBuySpace={handleBuySpace}
+          spaceCost={SPACE_BYTE_COST}
           onClose={() => setGameState(GameState.IDLE)} 
           lang={lang}
         />
