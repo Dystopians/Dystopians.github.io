@@ -1,8 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { LootItem, LootType, LeaderboardEntry } from '../types';
 import { MOCK_LEADERBOARD } from '../constants';
 import { TEXT } from '../locales';
 import { createId } from '../utils/id';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+
+type MessageRow = {
+  id: string;
+  name: string;
+  message: string;
+  created_at: string;
+  session_id?: string | null;
+};
+
+const getSessionId = (): string => {
+  const stored = localStorage.getItem('bytefisher_session_id');
+  if (stored) return stored;
+  const next = createId();
+  localStorage.setItem('bytefisher_session_id', next);
+  return next;
+};
 
 interface TerminalProps {
   inventory: LootItem[];
@@ -20,6 +37,11 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
   const [serverLog, setServerLog] = useState<LeaderboardEntry[]>([]);
   const [uploadStatus, setUploadStatus] = useState<string>('');
   const [isValidating, setIsValidating] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileWidgetRef = useRef<HTMLDivElement | null>(null);
+  const turnstileIdRef = useRef<string | null>(null);
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
+  const sessionIdRef = useRef<string>(getSessionId());
   
   const t = TEXT[lang];
 
@@ -117,15 +139,69 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
     return true;
   };
 
-  // Load leaderboard from storage or mock
-  useEffect(() => {
-    const saved = localStorage.getItem('bytefisher_logs');
-    if (saved) {
-      setServerLog(JSON.parse(saved));
-    } else {
-      setServerLog(MOCK_LEADERBOARD);
+  const toEntry = (row: MessageRow): LeaderboardEntry => ({
+    id: row.id,
+    name: row.name,
+    message: row.message,
+    timestamp: new Date(row.created_at).getTime(),
+  });
+
+  const loadMessages = async () => {
+    if (!isSupabaseConfigured) {
+      const saved = localStorage.getItem('bytefisher_logs');
+      if (saved) {
+        setServerLog(JSON.parse(saved));
+      } else {
+        setServerLog(MOCK_LEADERBOARD);
+      }
+      return;
     }
+
+    if (!supabase) {
+      setServerLog(MOCK_LEADERBOARD);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('bytefisher_messages')
+      .select('id, name, message, created_at')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error || !data) {
+      setServerLog(MOCK_LEADERBOARD);
+      return;
+    }
+
+    setServerLog(data.map(toEntry));
+  };
+
+  useEffect(() => {
+    void loadMessages();
   }, []);
+
+  useEffect(() => {
+    if (!turnstileSiteKey || !turnstileWidgetRef.current) return;
+    if (turnstileIdRef.current) return;
+    const render = () => {
+      // @ts-expect-error Turnstile is injected globally
+      if (!window.turnstile) return;
+      // @ts-expect-error Turnstile is injected globally
+      turnstileIdRef.current = window.turnstile.render(turnstileWidgetRef.current, {
+        sitekey: turnstileSiteKey,
+        callback: (token: string) => setTurnstileToken(token),
+        'expired-callback': () => setTurnstileToken(''),
+        'error-callback': () => setTurnstileToken(''),
+      });
+    };
+
+    const timer = window.setInterval(() => {
+      render();
+      if (turnstileIdRef.current) window.clearInterval(timer);
+    }, 200);
+
+    return () => window.clearInterval(timer);
+  }, [turnstileSiteKey]);
 
   const addToCompose = (charItem: LootItem) => {
     if (composedMsg.length >= 20) return; // limit length
@@ -147,12 +223,46 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
 
      // Artificial delay for "processing" feel
      setTimeout(() => {
-         publishMessage();
-         setIsValidating(false);
+         void publishMessage().finally(() => setIsValidating(false));
      }, 1000);
   };
 
-  const publishMessage = () => {
+  const checkRateLimitRemote = async (sessionId: string): Promise<{ allowed: boolean; reason?: 'cooldown' | 'limit' }> => {
+    if (!supabase) {
+      return { allowed: false, reason: 'cooldown' };
+    }
+
+    const { data: lastData, error: lastError } = await supabase
+      .from('bytefisher_messages')
+      .select('created_at')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (!lastError && lastData && lastData[0]) {
+      const lastAt = new Date(lastData[0].created_at).getTime();
+      if (Date.now() - lastAt < 300000) {
+        return { allowed: false, reason: 'cooldown' };
+      }
+    }
+
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const { count, error: countError } = await supabase
+      .from('bytefisher_messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('session_id', sessionId)
+      .gte('created_at', startOfDay.toISOString());
+
+    if (!countError && (count ?? 0) >= 5) {
+      return { allowed: false, reason: 'limit' };
+    }
+
+    return { allowed: true };
+  };
+
+  const publishMessage = async () => {
     // 1. Run Anti-Cheat Validation
     if (!validateIntegrity()) {
         setUploadStatus(t.tamperDetected);
@@ -160,8 +270,8 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
     }
 
     // 2. Rate Limit Check
-    const ip = getSimulatedIP();
-    const check = checkRateLimit(ip);
+    const sessionId = sessionIdRef.current;
+    const check = isSupabaseConfigured ? await checkRateLimitRemote(sessionId) : checkRateLimit(getSimulatedIP());
     
     if (!check.allowed) {
       setUploadStatus(check.reason === 'cooldown' ? t.uploadCooldown : t.uploadLimit);
@@ -170,19 +280,56 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
     
     // 3. Construct Message
     const text = composedMsg.map(c => c.char).join('');
-    const newEntry: LeaderboardEntry = {
-      id: createId(),
-      name: playerName.replace(/[^a-zA-Z0-9_]/g, '').substring(0, 12), // Sanitize name
-      message: text,
-      timestamp: Date.now()
-    };
+    const sanitizedName = playerName.replace(/[^a-zA-Z0-9_]/g, '').substring(0, 12);
 
-    const newLog = [newEntry, ...serverLog].slice(0, 50); // Keep last 50
-    setServerLog(newLog);
-    localStorage.setItem('bytefisher_logs', JSON.stringify(newLog));
-    
+    if (isSupabaseConfigured) {
+      if (turnstileSiteKey && !turnstileToken) {
+        setUploadStatus('ERROR: VERIFY BEFORE UPLOAD');
+        return;
+      }
+
+      if (!supabase) {
+        setUploadStatus('ERROR: SERVER UNAVAILABLE');
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('bytefisher-submit', {
+        body: {
+          name: sanitizedName,
+          message: text,
+          sessionId,
+          token: turnstileToken,
+        },
+      });
+
+      if (error || !data?.message) {
+        setUploadStatus('ERROR: SERVER UNAVAILABLE');
+        return;
+      }
+
+      setServerLog(prev => [toEntry(data.message), ...prev].slice(0, 50));
+      setTurnstileToken('');
+      if (turnstileIdRef.current) {
+        // @ts-expect-error Turnstile is injected globally
+        window.turnstile?.reset(turnstileIdRef.current);
+      }
+    } else {
+      const newEntry: LeaderboardEntry = {
+        id: createId(),
+        name: sanitizedName,
+        message: text,
+        timestamp: Date.now()
+      };
+
+      const newLog = [newEntry, ...serverLog].slice(0, 50); // Keep last 50
+      setServerLog(newLog);
+      localStorage.setItem('bytefisher_logs', JSON.stringify(newLog));
+      
+      const ip = getSimulatedIP();
+      recordUpload(ip);
+    }
+
     // 4. Success Actions
-    recordUpload(ip);
     onConsume(composedMsg); // Permanently remove items
     setComposedMsg([]);
     setUploadStatus(t.bytesConsumed);
@@ -294,6 +441,11 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
                    ))}
                    {composedMsg.length === 0 && <span className="text-gray-600 animate-pulse">{t.waitingInput}</span>}
                 </div>
+                {isSupabaseConfigured && turnstileSiteKey && (
+                  <div className="mb-3 flex justify-center">
+                    <div ref={turnstileWidgetRef} />
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <input 
                     type="text" 
