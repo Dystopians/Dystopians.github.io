@@ -42,6 +42,8 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
   const turnstileIdRef = useRef<string | null>(null);
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
   const sessionIdRef = useRef<string>(getSessionId());
+  const requiresTurnstile = Boolean(isSupabaseConfigured && turnstileSiteKey);
+  const canUpload = !isValidating && composedMsg.length > 0 && !!playerName && (!requiresTurnstile || !!turnstileToken);
   
   const t = TEXT[lang];
 
@@ -217,7 +219,7 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
   };
 
   const handlePublishClick = () => {
-     if (composedMsg.length === 0 || !playerName) return;
+     if (!canUpload) return;
      setIsValidating(true);
      setUploadStatus(t.integrityCheck);
 
@@ -458,12 +460,17 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
                   />
                   <button 
                     onClick={handlePublishClick}
-                    disabled={composedMsg.length === 0 || !playerName || isValidating}
+                    disabled={!canUpload}
                     className="bg-cyber-pink text-black px-4 py-1 font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white transition-colors"
                   >
                     {isValidating ? '...' : t.upload}
                   </button>
                 </div>
+                {requiresTurnstile && !turnstileToken && (
+                  <div className="mt-2 text-xs text-cyber-pink">
+                    VERIFY REQUIRED
+                  </div>
+                )}
               </div>
             </div>
           </>
