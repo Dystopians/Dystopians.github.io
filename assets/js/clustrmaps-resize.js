@@ -5,7 +5,6 @@
   const originalParent = container.parentElement;
   const originalNextSibling = container.nextElementSibling;
   const main = document.querySelector('#main');
-  const article = main ? main.querySelector('article.page') : null;
 
   const scriptSrc = container.getAttribute('data-clustrmaps-src');
   const widgetSelector = 'canvas, iframe, svg, object';
@@ -43,13 +42,6 @@
     }
   };
 
-  const moveToBottom = () => {
-    if (!main) return;
-    if (container.dataset.clustrmapsMoved === 'true') return;
-    main.appendChild(container);
-    container.dataset.clustrmapsMoved = 'true';
-  };
-
   const restorePosition = () => {
     if (!originalParent) return;
     if (container.dataset.clustrmapsMoved !== 'true') return;
@@ -62,12 +54,11 @@
   };
 
   const handlePlacement = () => {
-    if (window.matchMedia('(max-width: 1023px)').matches) {
-      moveToBottom();
-    } else {
-      restorePosition();
-    }
+    const isMobile = window.matchMedia('(max-width: 1023px)').matches;
+    restorePosition();
+    if (isMobile) return;
     resizeWidget();
+    ensureWidget();
   };
 
   const ensureWidget = () => {
@@ -81,15 +72,15 @@
     }
   };
 
-  injectScript();
+  if (!window.matchMedia('(max-width: 1023px)').matches) {
+    injectScript();
+  }
   handlePlacement();
-  ensureWidget();
 
   let attempts = 0;
   const timer = setInterval(() => {
     attempts += 1;
     handlePlacement();
-    ensureWidget();
     if (container.querySelector(widgetSelector) || attempts > 24) {
       clearInterval(timer);
     }
@@ -105,8 +96,9 @@
 
   window.addEventListener('resize', handlePlacement);
   window.addEventListener('load', () => {
-    injectScript();
+    if (!window.matchMedia('(max-width: 1023px)').matches) {
+      injectScript();
+    }
     handlePlacement();
-    ensureWidget();
   });
 })();

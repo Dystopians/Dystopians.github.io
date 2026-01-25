@@ -129,10 +129,10 @@ export const TEXT = {
       legendary: "传说"
     },
     upgrades: {
-      barSize: { name: "信号放大器", desc: "增加捕获条大小。解锁高级背包外观。" },
-      stability: { name: "噪音过滤器", desc: "稳定捕获条。解锁高级鞋履外观。" },
-      luck: { name: "加密密钥", desc: "增加稀有掉落。解锁高级头部外观。" },
-      netStrength: { name: "下载加速器", desc: "提高捕获速度。解锁高级钓竿外观。" }
+      barSize: { name: "传感鱼钩", desc: "增加捕获条大小。解锁高级背包外观。" },
+      stability: { name: "噪点滤网", desc: "稳定捕获条。解锁高级鞋履外观。" },
+      luck: { name: "臭鱼密钥", desc: "增加稀有掉落。解锁高级头部外观。" },
+      netStrength: { name: "总加速器", desc: "提高捕获速度。解锁高级钓竿外观。" }
     },
     items: {
       trash_corrupted: { name: "损坏的文件", desc: "碎片化的数据包。没用。" },
@@ -141,9 +141,9 @@ export const TEXT = {
       trash_deprecated: { name: "过时 API", desc: "没人维护的旧代码。" },
       trash_spaghetti: { name: "面条代码", desc: "纠缠不清的逻辑混乱。" },
       fish_neon_guppy: { name: "霓虹孔雀鱼", desc: "一种发着微光的常见数据鱼。" },
-      fish_binary_bass: { name: "二进制鲈鱼", desc: "完全由 0 和 1 组成。" },
-      fish_glitch_trout: { name: "故障鳟鱼", desc: "它在存在与不存在之间闪烁。" },
-      fish_cyber_koi: { name: "赛博锦鲤", desc: "一种优雅的装饰性程序。" },
+      fish_binary_bass: { name: "二进制鲈鱼", desc: "外观完全由 0 和 1 组成。" },
+      fish_glitch_trout: { name: "故障鳟鱼", desc: "在存在与不存在之间闪烁的鱼，有研究价值。" },
+      fish_cyber_koi: { name: "数据锦鲤", desc: "一种优雅的装饰性程序，受中产阶级喜爱。" },
       fish_mainframe_shark: { name: "主机鲨鱼", desc: "数字虚空中的顶级掠食者。" },
       char_byte: { name: "ASCII 字节", desc: "原始字符数据。" },
       special_treasure_chest: { name: "加密缓存", desc: "一个包含大量积分的锁定文件。" }

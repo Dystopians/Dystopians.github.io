@@ -61,6 +61,7 @@
 }
 
 .clustrmaps-embed {
+  display: none;
   width: 100%;
   max-width: 260px;
   aspect-ratio: 1 / 1;
@@ -68,6 +69,7 @@
   margin: 1rem auto 0;
 
   @include breakpoint($large) {
+    display: block;
     max-width: 100%;
     margin: 0;
   }

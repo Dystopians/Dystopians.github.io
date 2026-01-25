@@ -12,9 +12,18 @@ Gemfile.lock
 node_modules
 package-lock.json
 
+# Ignore local env files
+.env
+.env.*
+
+# Ignore local design notes
+byte-fisher/DESIGN.md
+byte-fisher/DESIGN.zh.md
+
 # Ignore the vendor file at root level and bundle for alternative installation
 /vendor/
 .bundle/
 
 # Ignore folders related to IDEs
 .vscode/
+.DS_Store

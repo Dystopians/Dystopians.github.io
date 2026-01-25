@@ -15,6 +15,7 @@ dist-ssr
 .env.*
 DESIGN.md
 DESIGN.zh.md
+supabase/.temp/
 
 # Editor directories and files
 .vscode/*

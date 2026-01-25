@@ -303,7 +303,7 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
       });
 
       if (error || !data?.message) {
-        setUploadStatus('ERROR: SERVER UNAVAILABLE');
+        setUploadStatus(data?.error || error?.message || 'ERROR: SERVER UNAVAILABLE');
         return;
       }
 
