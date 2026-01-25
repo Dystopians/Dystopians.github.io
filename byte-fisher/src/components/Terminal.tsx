@@ -219,7 +219,18 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
   };
 
   const handlePublishClick = () => {
-     if (!canUpload) return;
+     if (!canUpload) {
+       if (requiresTurnstile && turnstileIdRef.current) {
+         // @ts-expect-error Turnstile is injected globally
+         const response = window.turnstile?.getResponse(turnstileIdRef.current);
+         if (!response) {
+           setUploadStatus('ERROR: VERIFY BEFORE UPLOAD');
+           // @ts-expect-error Turnstile is injected globally
+           window.turnstile?.reset(turnstileIdRef.current);
+         }
+       }
+       return;
+     }
      setIsValidating(true);
      setUploadStatus(t.integrityCheck);
 
@@ -285,7 +296,14 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
     const sanitizedName = playerName.replace(/[^a-zA-Z0-9_]/g, '').substring(0, 12);
 
     if (isSupabaseConfigured) {
-      if (turnstileSiteKey && !turnstileToken) {
+      let tokenToUse = turnstileToken;
+      if (turnstileSiteKey && turnstileIdRef.current) {
+        // @ts-expect-error Turnstile is injected globally
+        const response = window.turnstile?.getResponse(turnstileIdRef.current);
+        if (response) tokenToUse = response;
+      }
+
+      if (turnstileSiteKey && !tokenToUse) {
         setUploadStatus('ERROR: VERIFY BEFORE UPLOAD');
         return;
       }
@@ -300,7 +318,7 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
           name: sanitizedName,
           message: text,
           sessionId,
-          token: turnstileToken,
+          token: tokenToUse,
         },
       });
 
