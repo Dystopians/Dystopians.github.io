@@ -154,14 +154,14 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
   }, [BAR_SIZE_PERCENT, PROGRESS_SPEED, DECAY_SPEED, onFail, onSuccess, handleInteractStart, handleInteractEnd, onProgress, GRAVITY, THRUST, DRAG, BOUNCE_DAMPING]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm select-none">
-      <div className="relative flex flex-row h-[400px] w-[120px] bg-cyber-dark border-2 border-cyber-green rounded p-2 gap-2 shadow-[0_0_20px_rgba(57,255,20,0.5)]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm select-none p-4">
+      <div className="relative flex flex-row h-[320px] w-[96px] sm:h-[400px] sm:w-[120px] bg-cyber-dark border-2 border-cyber-green rounded p-2 gap-2 shadow-[0_0_20px_rgba(57,255,20,0.5)]">
         
         {/* Main Bar Area */}
         <div className="relative flex-1 bg-cyber-black border border-cyber-gray overflow-hidden h-full">
             {/* Target Fish */}
             <div 
-              className="absolute left-1/2 -translate-x-1/2 w-8 h-8 text-2xl transition-none flex items-center justify-center"
+              className="absolute left-1/2 -translate-x-1/2 w-6 h-6 text-xl sm:w-8 sm:h-8 sm:text-2xl transition-none flex items-center justify-center"
               style={fishStyle}
             >
               🐟
@@ -185,7 +185,7 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
         </div>
       </div>
 
-      <div className="absolute bottom-20 text-cyber-green animate-bounce">
+      <div className="absolute bottom-10 sm:bottom-20 text-sm sm:text-base text-cyber-green animate-bounce">
         {t.holdToRaise}
       </div>
     </div>

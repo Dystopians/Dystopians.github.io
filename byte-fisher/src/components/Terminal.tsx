@@ -32,7 +32,7 @@ interface TerminalProps {
 }
 
 const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerName, onClose, onSell, onConsume, lang }) => {
-  const [activeTab, setActiveTab] = useState<'INVENTORY' | 'NETWORK'>('INVENTORY');
+  const [activeTab, setActiveTab] = useState<'INVENTORY' | 'COMPOSE' | 'NETWORK'>('INVENTORY');
   const [composedMsg, setComposedMsg] = useState<LootItem[]>([]);
   const [serverLog, setServerLog] = useState<LeaderboardEntry[]>([]);
   const [uploadStatus, setUploadStatus] = useState<string>('');
@@ -371,39 +371,45 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
   const junk = inventory.filter(i => i.type !== LootType.CHAR);
 
   return (
-    <div className="fixed inset-0 z-40 bg-cyber-black/95 flex flex-col p-4 md:p-10 font-mono text-cyber-green crt">
+    <div className="fixed inset-0 z-40 bg-cyber-black/95 flex flex-col p-3 sm:p-4 md:p-10 font-mono text-cyber-green crt">
       {/* Header */}
-      <div className="flex justify-between items-center border-b-2 border-cyber-green pb-4 mb-4">
-        <h1 className="text-3xl font-bold glitch-text">TERMINAL_ACCESS</h1>
-        <button onClick={onClose} className="text-cyber-pink hover:bg-cyber-pink hover:text-black px-4 py-1 border border-cyber-pink">
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center border-b-2 border-cyber-green pb-4 mb-4">
+        <h1 className="text-2xl sm:text-3xl font-bold glitch-text">TERMINAL_ACCESS</h1>
+        <button onClick={onClose} className="self-start sm:self-auto text-cyber-pink hover:bg-cyber-pink hover:text-black px-4 py-1 border border-cyber-pink">
           [X] {t.disconnect}
         </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-4 mb-6">
+      <div className="flex flex-wrap gap-3 mb-4 sm:mb-6">
         <button 
           onClick={() => setActiveTab('INVENTORY')}
-          className={`px-6 py-2 border ${activeTab === 'INVENTORY' ? 'bg-cyber-green text-black' : 'border-cyber-green text-cyber-green hover:bg-cyber-green/20'}`}
+          className={`px-4 py-2 text-sm sm:text-base border ${activeTab === 'INVENTORY' ? 'bg-cyber-green text-black' : 'border-cyber-green text-cyber-green hover:bg-cyber-green/20'}`}
         >
           {t.inventory}
         </button>
         <button 
+          onClick={() => setActiveTab('COMPOSE')}
+          className={`px-4 py-2 text-sm sm:text-base border ${activeTab === 'COMPOSE' ? 'bg-cyber-green text-black' : 'border-cyber-green text-cyber-green hover:bg-cyber-green/20'}`}
+        >
+          {t.composer}
+        </button>
+        <button 
           onClick={() => setActiveTab('NETWORK')}
-          className={`px-6 py-2 border ${activeTab === 'NETWORK' ? 'bg-cyber-green text-black' : 'border-cyber-green text-cyber-green hover:bg-cyber-green/20'}`}
+          className={`px-4 py-2 text-sm sm:text-base border ${activeTab === 'NETWORK' ? 'bg-cyber-green text-black' : 'border-cyber-green text-cyber-green hover:bg-cyber-green/20'}`}
         >
           {t.network}
         </button>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden flex flex-col md:flex-row gap-6">
+      <div className="flex-1 min-h-0 overflow-hidden flex flex-col md:flex-row gap-4 sm:gap-6">
         
         {activeTab === 'INVENTORY' && (
           <>
             {/* Loot List */}
             <div className="flex-1 border border-cyber-gray p-4 overflow-y-auto">
-              <h3 className="text-xl mb-4 text-cyber-cyan">{'>'} TRASH_AND_DATA</h3>
+              <h3 className="text-lg sm:text-xl mb-4 text-cyber-cyan">{'>'} TRASH_AND_DATA</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                 {junk.map(item => (
                   <div key={item.id} className="flex justify-between items-center bg-cyber-dark p-2 border border-cyber-gray hover:border-cyber-green group">
@@ -419,91 +425,100 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
                 {junk.length === 0 && <div className="text-gray-500 italic">{t.noData}</div>}
               </div>
             </div>
-
-            {/* Letter Grid & Composer */}
-            <div className="flex-1 flex flex-col gap-4">
-              <div className="border border-cyber-gray p-4 flex-1 overflow-y-auto">
-                 <h3 className="text-xl mb-4 text-cyber-cyan">{'>'} ASCII_CACHE</h3>
-                 <div className="flex flex-wrap gap-2">
-                   {availableChars.map(item => (
-                     <button 
-                       key={item.id}
-                       onClick={() => addToCompose(item)}
-                       className="w-10 h-10 border border-cyber-gray flex items-center justify-center text-xl hover:bg-cyber-green hover:text-black font-bold"
-                     >
-                       {item.char}
-                     </button>
-                   ))}
-                   {availableChars.length === 0 && <div className="text-gray-500 italic">{t.noBytes}</div>}
-                 </div>
-              </div>
-
-              {/* Composer */}
-              <div className={`border p-4 min-h-[150px] flex flex-col transition-colors ${uploadStatus.includes('ERROR') ? 'border-red-600 bg-red-900/10' : 'border-cyber-pink'}`}>
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className={`${uploadStatus.includes('ERROR') ? 'text-red-500' : 'text-cyber-pink'}`}>{uploadStatus.includes('ERROR') ? t.securityAlert : t.composer}</h3>
-                  {uploadStatus && (
-                    <span className={`text-xs px-2 py-1 font-bold animate-pulse ${uploadStatus.includes('FAILED') || uploadStatus.includes('ERROR') ? 'bg-red-900 text-white' : 'bg-cyber-green text-black'}`}>
-                      {uploadStatus}
-                    </span>
-                  )}
-                </div>
-                
-                <div className="flex-1 bg-cyber-dark p-2 mb-2 flex flex-wrap gap-1 items-start content-start border border-dashed border-cyber-gray relative">
-                   {isValidating && <div className="absolute inset-0 bg-black/50 z-10 flex items-center justify-center text-cyber-green animate-pulse">{t.integrityCheck}</div>}
-                   {composedMsg.map((item, idx) => (
-                     <span 
-                        key={idx} 
-                        onClick={() => !isValidating && removeFromCompose(idx)}
-                        className="cursor-pointer hover:text-red-500 select-none"
-                     >
-                       {item.char}
-                     </span>
-                   ))}
-                   {composedMsg.length === 0 && <span className="text-gray-600 animate-pulse">{t.waitingInput}</span>}
-                </div>
-                {isSupabaseConfigured && turnstileSiteKey && (
-                  <div className="mb-3 flex justify-center">
-                    <div ref={turnstileWidgetRef} />
-                  </div>
-                )}
-                <div className="flex gap-2">
-                  <input 
-                    type="text" 
-                    placeholder={t.enterId}
-                    maxLength={12}
-                    value={playerName}
-                    onChange={(e) => setPlayerName(e.target.value)}
-                    disabled={isValidating}
-                    className="bg-transparent border border-cyber-green text-cyber-green px-2 py-1 flex-1 focus:outline-none focus:bg-cyber-green/10 disabled:opacity-50"
-                  />
-                  <button 
-                    onClick={handlePublishClick}
-                    disabled={!canUpload}
-                    className="bg-cyber-pink text-black px-4 py-1 font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white transition-colors"
-                  >
-                    {isValidating ? '...' : t.upload}
-                  </button>
-                </div>
-                {requiresTurnstile && !turnstileToken && (
-                  <div className="mt-2 text-xs text-cyber-pink">
-                    VERIFY REQUIRED
-                  </div>
-                )}
-              </div>
-            </div>
           </>
+        )}
+
+        {activeTab === 'COMPOSE' && (
+          <div className="flex-1 flex flex-col gap-4 min-h-0">
+            <div className="border border-cyber-gray p-4 flex-1 overflow-y-auto">
+               <h3 className="text-lg sm:text-xl mb-4 text-cyber-cyan">{'>'} ASCII_CACHE</h3>
+               <div className="flex flex-wrap gap-2">
+                 {availableChars.map(item => (
+                   <button 
+                     key={item.id}
+                     onClick={() => addToCompose(item)}
+                     className="w-10 h-10 border border-cyber-gray flex items-center justify-center text-xl hover:bg-cyber-green hover:text-black font-bold"
+                   >
+                     {item.char}
+                   </button>
+                 ))}
+                 {availableChars.length === 0 && <div className="text-gray-500 italic">{t.noBytes}</div>}
+               </div>
+            </div>
+
+            {/* Composer */}
+            <div className={`border p-4 min-h-[160px] flex flex-col transition-colors ${uploadStatus.includes('ERROR') ? 'border-red-600 bg-red-900/10' : 'border-cyber-pink'}`}>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className={`${uploadStatus.includes('ERROR') ? 'text-red-500' : 'text-cyber-pink'}`}>{uploadStatus.includes('ERROR') ? t.securityAlert : t.composer}</h3>
+                {uploadStatus && (
+                  <span className={`text-xs px-2 py-1 font-bold animate-pulse ${uploadStatus.includes('FAILED') || uploadStatus.includes('ERROR') ? 'bg-red-900 text-white' : 'bg-cyber-green text-black'}`}>
+                    {uploadStatus}
+                  </span>
+                )}
+              </div>
+              
+              <div className="flex-1 bg-cyber-dark p-2 mb-2 flex flex-wrap gap-1 items-start content-start border border-dashed border-cyber-gray relative">
+                 {isValidating && <div className="absolute inset-0 bg-black/50 z-10 flex items-center justify-center text-cyber-green animate-pulse">{t.integrityCheck}</div>}
+                 {composedMsg.map((item, idx) => (
+                   <span 
+                      key={idx} 
+                      onClick={() => !isValidating && removeFromCompose(idx)}
+                      className="cursor-pointer hover:text-red-500 select-none"
+                   >
+                     {item.char}
+                   </span>
+                 ))}
+                 {composedMsg.length === 0 && <span className="text-gray-600 animate-pulse">{t.waitingInput}</span>}
+              </div>
+              {isSupabaseConfigured && turnstileSiteKey && (
+                <div className="mb-3 flex justify-center">
+                  <div ref={turnstileWidgetRef} />
+                </div>
+              )}
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input 
+                  type="text" 
+                  placeholder={t.enterId}
+                  maxLength={12}
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  disabled={isValidating}
+                  className="bg-transparent border border-cyber-green text-cyber-green px-2 py-1 flex-1 focus:outline-none focus:bg-cyber-green/10 disabled:opacity-50"
+                />
+                <button 
+                  onClick={handlePublishClick}
+                  disabled={!canUpload}
+                  className="bg-cyber-pink text-black px-4 py-1 font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white transition-colors"
+                >
+                  {isValidating ? '...' : t.upload}
+                </button>
+              </div>
+              {requiresTurnstile && !turnstileToken && (
+                <div className="mt-2 text-xs text-cyber-pink">
+                  VERIFY REQUIRED
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {activeTab === 'NETWORK' && (
           <div className="w-full h-full border border-cyber-green p-4 overflow-y-auto font-mono">
              {serverLog.map(entry => (
                <div key={entry.id} className="mb-4 border-b border-cyber-gray pb-2">
-                 <div className="flex justify-between text-xs text-cyber-gray mb-1">
-                   <span>ID: {entry.name}</span>
+                <div className="flex justify-between text-xs text-cyber-gray mb-1">
+                  <span
+                    className={
+                      entry.name === '许昊龙'
+                        ? 'text-transparent bg-clip-text bg-gradient-to-r from-cyber-cyan via-cyber-pink to-cyber-green'
+                        : 'text-gray-400'
+                    }
+                  >
+                    ID: {entry.name}
+                  </span>
                    <span>{new Date(entry.timestamp).toLocaleTimeString()}</span>
                  </div>
-                 <div className="text-lg text-white">
+                <div className="text-base sm:text-lg text-white">
                    "{entry.message}"
                  </div>
                </div>

@@ -28,22 +28,22 @@ const Encyclopedia: React.FC<EncyclopediaProps> = ({ unlockedItems, catchStats, 
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md">
-      <div className="bg-cyber-dark border-2 border-cyber-cyan w-full max-w-4xl p-6 shadow-[0_0_30px_rgba(0,243,255,0.3)] flex flex-col h-[80vh] crt">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-3 sm:p-6">
+      <div className="bg-cyber-dark border-2 border-cyber-cyan w-full max-w-4xl p-4 sm:p-6 shadow-[0_0_30px_rgba(0,243,255,0.3)] flex flex-col h-[85vh] sm:h-[80vh] crt">
         
         {/* Header */}
-        <div className="flex justify-between items-center mb-6 border-b border-cyber-cyan pb-2">
-          <h2 className="text-3xl font-bold text-cyber-cyan glitch-text">{t.codex}</h2>
-          <button onClick={onClose} className="text-cyber-cyan hover:text-white font-bold text-xl">[{t.close}]</button>
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 border-b border-cyber-cyan pb-2">
+          <h2 className="text-2xl sm:text-3xl font-bold text-cyber-cyan glitch-text">{t.codex}</h2>
+          <button onClick={onClose} className="self-start sm:self-auto text-cyber-cyan hover:text-white font-bold text-lg sm:text-xl">[{t.close}]</button>
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex gap-4 mb-6">
+        <div className="flex flex-wrap gap-2 sm:gap-4 mb-4 sm:mb-6">
           {(['ALL', LootType.FISH, LootType.TRASH, LootType.SPECIAL] as const).map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-1 border ${filter === f ? 'bg-cyber-cyan text-black border-cyber-cyan' : 'border-gray-600 text-gray-500 hover:text-cyber-cyan'}`}
+              className={`px-3 py-1 text-sm sm:text-base border ${filter === f ? 'bg-cyber-cyan text-black border-cyber-cyan' : 'border-gray-600 text-gray-500 hover:text-cyber-cyan'}`}
             >
               {f === 'ALL' ? 'ALL' : f}
             </button>
@@ -51,7 +51,7 @@ const Encyclopedia: React.FC<EncyclopediaProps> = ({ unlockedItems, catchStats, 
         </div>
 
         {/* Grid */}
-        <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-2">
+        <div className="flex-1 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 p-2">
           {filteredItems.map((item) => {
             const isUnlocked = unlockedItems.includes(item.itemId!);
             const info = getItemInfo(item.itemId!, item.name!);
@@ -66,7 +66,7 @@ const Encyclopedia: React.FC<EncyclopediaProps> = ({ unlockedItems, catchStats, 
                     : 'border-gray-800 bg-gray-900/50 grayscale opacity-70'}`}
               >
                 <div className="flex justify-between items-start">
-                  <span className={`font-bold text-lg ${isUnlocked ? 'text-cyber-yellow' : 'text-gray-600'}`}>
+                  <span className={`font-bold text-base sm:text-lg ${isUnlocked ? 'text-cyber-yellow' : 'text-gray-600'}`}>
                     {isUnlocked ? info.name : '???'}
                   </span>
                   {isUnlocked && (
@@ -88,7 +88,7 @@ const Encyclopedia: React.FC<EncyclopediaProps> = ({ unlockedItems, catchStats, 
                         item.rarity === 'rare' ? 'bg-cyber-pink' :
                         item.rarity === 'uncommon' ? 'bg-cyber-cyan' : 'bg-gray-500'}`} 
                     />
-                    <span className="text-xs uppercase text-gray-500">{t.rarity[item.rarity]}</span>
+                    <span className="text-xs uppercase text-gray-500">{t.rarity[item.rarity as keyof typeof t.rarity]}</span>
                   </div>
                   
                   {isUnlocked && (

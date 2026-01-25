@@ -17,9 +17,6 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
   const upgradesRef = useRef(upgrades);
   const progressRef = useRef<React.MutableRefObject<number> | undefined>(minigameProgressRef);
 
-  const BASE_WIDTH = 1200;
-  const BASE_HEIGHT = 800;
-  
   // Animation state
   const timeRef = useRef<number>(0);
   const debrisRef = useRef<{x: number, y: number, type: string, speed: number, offset: number, scale: number}[]>([]);
@@ -106,7 +103,8 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       charPos.current = { x: canvas.width * 0.5, y: canvas.height * 0.20 };
-      scaleRef.current = Math.min(1, canvas.width / BASE_WIDTH, canvas.height / BASE_HEIGHT);
+      const minDim = Math.min(canvas.width, canvas.height);
+      scaleRef.current = Math.min(1, Math.max(0.55, minDim / 700));
       buildEntities();
     };
     window.addEventListener('resize', resize);
@@ -390,7 +388,7 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
       }
 
       // 3. Dense Seaweed
-      seaweedRef.current.forEach((weed, i) => {
+      seaweedRef.current.forEach((weed) => {
         const grad = ctx.createLinearGradient(0, canvas.height, 0, canvas.height - weed.height);
         grad.addColorStop(0, '#0f3a1a'); 
         grad.addColorStop(1, '#39ff14'); 

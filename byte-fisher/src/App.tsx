@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { GameState, LootItem, PlayerStats, Upgrades, LootType } from './types';
-import { INITIAL_CREDITS, TRASH_LOOT, FISH_LOOT, SPECIAL_LOOT, generateCharLoot, COLORS } from './constants';
+import { INITIAL_CREDITS, TRASH_LOOT, FISH_LOOT, SPECIAL_LOOT, generateCharLoot } from './constants';
 import { TEXT } from './locales';
 import { createId } from './utils/id';
 import VoidCanvas from './components/VoidCanvas';
@@ -191,7 +191,7 @@ const App: React.FC = () => {
       />
 
       {/* HUD */}
-      <div className="relative z-10 w-full p-4 flex justify-between items-start pointer-events-none">
+      <div className="relative z-10 w-full p-4 flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start pointer-events-none">
         <div>
            <h1 className="text-2xl font-bold bg-black/50 px-2 glitch-text border-l-4 border-cyber-pink">BYTE_FISHER_V.1</h1>
            <div className="mt-2 text-sm bg-black/50 inline-block px-2">
@@ -206,11 +206,11 @@ const App: React.FC = () => {
              </button>
            </div>
         </div>
-        <div className="flex flex-col items-end gap-2 pointer-events-auto">
-          <div className="bg-cyber-dark border border-cyber-green px-4 py-2 text-xl font-bold shadow-[0_0_10px_#39ff14]">
+        <div className="flex flex-col items-start sm:items-end gap-2 pointer-events-auto">
+          <div className="bg-cyber-dark border border-cyber-green px-4 py-2 text-lg sm:text-xl font-bold shadow-[0_0_10px_#39ff14]">
              ${stats.credits}
           </div>
-          <div className="grid grid-cols-2 gap-2 w-64">
+          <div className="grid grid-cols-3 sm:grid-cols-2 gap-2 w-full max-w-[18rem] sm:w-64">
              <button 
                onClick={() => setGameState(GameState.SHOP)}
                className="bg-cyber-yellow text-black px-2 py-1 hover:bg-white font-bold"
@@ -235,10 +235,10 @@ const App: React.FC = () => {
 
       {/* Main Action Area */}
       {gameState === GameState.IDLE && (
-         <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20">
+         <div className="absolute bottom-28 sm:bottom-20 left-1/2 -translate-x-1/2 z-20">
             <button 
               onClick={handleCast}
-              className="bg-cyber-green text-black text-2xl px-12 py-4 font-bold rounded-sm hover:scale-105 active:scale-95 transition-transform shadow-[0_0_20px_#39ff14]"
+              className="bg-cyber-green text-black text-xl sm:text-2xl px-8 sm:px-12 py-3 sm:py-4 font-bold rounded-sm hover:scale-105 active:scale-95 transition-transform shadow-[0_0_20px_#39ff14]"
             >
               {t.castLine}
             </button>
