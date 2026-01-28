@@ -1,13 +1,19 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { GameState, LootItem, PlayerStats, Upgrades, LootType } from './types';
-import { INITIAL_CREDITS, TRASH_LOOT, FISH_LOOT, SPECIAL_LOOT, generateCharLoot, createSpaceCharLoot, SPACE_BYTE_COST } from './constants';
+import { GameState, LootItem, PlayerStats, Upgrades, LootType, HistoryEvent } from './types';
+import { BYTE_FISH_COST, INITIAL_CREDITS, TRASH_LOOT, FISH_LOOT, SPECIAL_LOOT, generateCharLoot, createSpaceCharLoot, createByteFishLoot, SPACE_BYTE_COST } from './constants';
 import { TEXT } from './locales';
 import { createId } from './utils/id';
+import { NumberCounter } from './utils/animations';
+import fishmartAudio from './assets/sfx/74817__sugu14__carrefours-fish-market.wav';
+import reelAudio from './assets/sfx/507099__paulprit__fly-fishing-reel-running_5.wav';
+import swimAudio from './assets/sfx/768868__rayo75__fish_swim2.mp3';
+import bgmAudio from './assets/music/Waterboot-speder2.mp3';
 import VoidCanvas from './components/VoidCanvas';
 import Minigame from './components/Minigame';
 import Terminal from './components/Terminal';
 import Shop from './components/Shop';
 import Encyclopedia from './components/Encyclopedia';
+import Guidebook from './components/Guidebook';
 
 const App: React.FC = () => {
   // --- STATE ---
@@ -17,8 +23,7 @@ const App: React.FC = () => {
   // Shared ref for minigame progress to sync Canvas visuals
   const minigameProgressRef = useRef(0);
 
-  // Persistence
-  const [stats, setStats] = useState<PlayerStats>(() => {
+  const getInitialStats = () => {
     const saved = localStorage.getItem('bytefisher_stats');
     const parsed = saved ? JSON.parse(saved) : {};
     return { 
@@ -29,9 +34,9 @@ const App: React.FC = () => {
       catchStats: {}, // Default empty
       ...parsed // Overwrite with saved
     };
-  });
+  };
 
-  const [upgrades, setUpgrades] = useState<Upgrades>(() => {
+  const getInitialUpgrades = () => {
     const saved = localStorage.getItem('bytefisher_upgrades');
     const parsed = saved ? JSON.parse(saved) : {};
     return { 
@@ -41,17 +46,60 @@ const App: React.FC = () => {
       netStrength: 1,
       ...parsed 
     };
-  });
+  };
+
+  // Persistence
+  const [stats, setStats] = useState<PlayerStats>(getInitialStats);
+
+  const [upgrades, setUpgrades] = useState<Upgrades>(getInitialUpgrades);
 
   const [playerName, setPlayerName] = useState(() => localStorage.getItem('bytefisher_name') || '');
+  const [difficulty, setDifficulty] = useState<'simple' | 'hard'>(() => {
+    const saved = localStorage.getItem('bytefisher_difficulty');
+    return saved === 'hard' ? 'hard' : 'simple';
+  });
+  const [audioMuted, setAudioMuted] = useState(() => localStorage.getItem('bytefisher_mute') === '1');
+  const [resetNonce, setResetNonce] = useState(0);
+  const [history, setHistory] = useState<HistoryEvent[]>(() => {
+    const saved = localStorage.getItem('bytefisher_history');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   // Notifications
   const [lastCaught, setLastCaught] = useState<LootItem | null>(null);
+
+  const fishmartAudioRef = useRef<HTMLAudioElement | null>(null);
+  const reelAudioRef = useRef<HTMLAudioElement | null>(null);
+  const swimAudioRef = useRef<HTMLAudioElement | null>(null);
+  const bgmAudioRef = useRef<HTMLAudioElement | null>(null);
+  const bgmFadeOutRef = useRef(false);
+  const fadeTimersRef = useRef(new Map<HTMLAudioElement, number>());
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
+
+  // UI Animation
+  const creditsCounterRef = useRef(new NumberCounter(stats.credits, 0.15));
+  const [displayCredits, setDisplayCredits] = useState(stats.credits);
 
   // --- EFFECTS ---
   useEffect(() => {
     localStorage.setItem('bytefisher_stats', JSON.stringify(stats));
   }, [stats]);
+
+  useEffect(() => {
+    creditsCounterRef.current.setTarget(stats.credits);
+  }, [stats.credits]);
+
+  useEffect(() => {
+    let animationFrame: number;
+    const animate = () => {
+      if (creditsCounterRef.current.update()) {
+        setDisplayCredits(creditsCounterRef.current.getValue());
+      }
+      animationFrame = requestAnimationFrame(animate);
+    };
+    animate();
+    return () => cancelAnimationFrame(animationFrame);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('bytefisher_upgrades', JSON.stringify(upgrades));
@@ -61,16 +109,105 @@ const App: React.FC = () => {
     localStorage.setItem('bytefisher_name', playerName);
   }, [playerName]);
 
+  useEffect(() => {
+    localStorage.setItem('bytefisher_difficulty', difficulty);
+  }, [difficulty]);
+
+  useEffect(() => {
+    localStorage.setItem('bytefisher_mute', audioMuted ? '1' : '0');
+  }, [audioMuted]);
+
+  useEffect(() => {
+    localStorage.setItem('bytefisher_history', JSON.stringify(history));
+  }, [history]);
+
+  useEffect(() => {
+    const fishmart = new Audio(fishmartAudio);
+    fishmart.loop = true;
+    fishmart.preload = 'auto';
+    fishmart.volume = 0;
+    fishmartAudioRef.current = fishmart;
+
+    const reel = new Audio(reelAudio);
+    reel.loop = true;
+    reel.preload = 'auto';
+    reel.volume = 0;
+    reelAudioRef.current = reel;
+
+    const swim = new Audio(swimAudio);
+    swim.loop = true;
+    swim.preload = 'auto';
+    swim.volume = 0;
+    swimAudioRef.current = swim;
+
+    const bgm = new Audio(bgmAudio);
+    bgm.loop = false;
+    bgm.preload = 'auto';
+    bgm.volume = 0;
+    bgmAudioRef.current = bgm;
+
+    return () => {
+      [fishmart, reel, swim, bgm].forEach(audio => {
+        audio.pause();
+        audio.src = '';
+      });
+    };
+  }, []);
+
+  useEffect(() => {
+    if (audioUnlocked) return;
+    const unlock = () => {
+      setAudioUnlocked(true);
+    };
+    window.addEventListener('pointerdown', unlock, { once: true });
+    window.addEventListener('touchstart', unlock, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('touchstart', unlock);
+    };
+  }, [audioUnlocked]);
+
   const t = TEXT[lang];
 
   // Helper to get item name
   const getItemName = (item: LootItem) => {
+    if (item.itemId === 'char_byte') return item.name;
     if (item.itemId) {
       // @ts-ignore
       const translation = t.items[item.itemId];
       if (translation) return translation.name;
     }
     return item.name;
+  };
+
+  const pushHistory = (event: Omit<HistoryEvent, 'id' | 'at'>) => {
+    setHistory(prev => {
+      const next = [{ id: createId(), at: Date.now(), ...event }, ...prev];
+      return next.slice(0, 200);
+    });
+  };
+
+  const resetSave = () => {
+    localStorage.removeItem('bytefisher_stats');
+    localStorage.removeItem('bytefisher_upgrades');
+    localStorage.removeItem('bytefisher_name');
+    localStorage.removeItem('bytefisher_history');
+    localStorage.removeItem('bytefisher_logs');
+    localStorage.removeItem('bytefisher_difficulty');
+    localStorage.removeItem('bytefisher_mute');
+    localStorage.removeItem('bytefisher_session_id');
+    localStorage.removeItem('bytefisher_upload_history');
+    localStorage.removeItem('bytefisher_ip');
+
+    setStats(getInitialStats());
+    setUpgrades(getInitialUpgrades());
+    setPlayerName('');
+    setHistory([]);
+    setDifficulty('simple');
+    setAudioMuted(false);
+    setGameState(GameState.IDLE);
+    setLastCaught(null);
+    setResetNonce(prev => prev + 1);
   };
 
   // --- GAMEPLAY LOGIC ---
@@ -95,7 +232,7 @@ const App: React.FC = () => {
     }, waitTime);
   };
 
-  const handleMinigameSuccess = () => {
+  const handleMinigameSuccess = (perfect: boolean) => {
     const roll = Math.random();
     let item: LootItem;
     const luckMod = upgrades.luck * 0.05;
@@ -118,26 +255,46 @@ const App: React.FC = () => {
       }
     }
 
+    const baseSellValue = difficulty === 'simple' ? Math.max(0, Math.floor(item.value * 0.5)) : item.value;
+    const isPerfectCatch = perfect && item.type === LootType.FISH;
+    const sellValue = isPerfectCatch ? Math.ceil(baseSellValue * 1.25) : baseSellValue;
+    const itemWithPrice = { ...item, sellValue, perfect: isPerfectCatch };
+
     setStats(prev => {
       // Add item ID to unlock list if new
       const newUnlocked = new Set(prev.unlockedItems || []);
       if (item.itemId) newUnlocked.add(item.itemId);
+      if (item.type === LootType.CHAR) newUnlocked.add('byte_fish');
 
       // Update Catch Stats
       const currentCatchStats = prev.catchStats || {};
-      const newCount = (currentCatchStats[item.itemId] || 0) + 1;
-      const newCatchStats = { ...currentCatchStats, [item.itemId]: newCount };
+      const newCatchStats = { ...currentCatchStats };
+      if (item.itemId) {
+        newCatchStats[item.itemId] = (currentCatchStats[item.itemId] || 0) + 1;
+      }
+      if (item.type === LootType.CHAR) {
+        newCatchStats['byte_fish'] = (currentCatchStats['byte_fish'] || 0) + 1;
+      }
 
       return {
         ...prev,
-        inventory: [...prev.inventory, item],
+        inventory: [...prev.inventory, itemWithPrice],
         caughtCount: prev.caughtCount + 1,
         unlockedItems: Array.from(newUnlocked),
         catchStats: newCatchStats
       };
     });
+
+    pushHistory({
+      type: 'catch',
+      data: {
+        itemId: item.itemId,
+        itemName: item.name,
+        value: sellValue,
+      }
+    });
     
-    setLastCaught(item);
+    setLastCaught(itemWithPrice);
     setGameState(GameState.CAUGHT);
   };
 
@@ -157,11 +314,16 @@ const App: React.FC = () => {
 
   // --- ECONOMY ---
   const handleSell = (item: LootItem) => {
+    const sellValue = item.sellValue ?? item.value;
     setStats(prev => ({
       ...prev,
-      credits: prev.credits + item.value,
+      credits: prev.credits + sellValue,
       inventory: prev.inventory.filter(i => i.id !== item.id),
     }));
+    pushHistory({
+      type: 'sell',
+      data: { itemId: item.itemId, itemName: item.name, value: sellValue }
+    });
   };
 
   const handleConsume = (items: LootItem[]) => {
@@ -176,6 +338,10 @@ const App: React.FC = () => {
     if (stats.credits >= cost) {
       setStats(prev => ({ ...prev, credits: prev.credits - cost }));
       setUpgrades(prev => ({ ...prev, [id]: prev[id] + 1 }));
+      pushHistory({
+        type: 'buy_upgrade',
+        data: { upgradeId: id, value: cost, level: upgrades[id] + 1 }
+      });
     }
   };
 
@@ -186,8 +352,152 @@ const App: React.FC = () => {
       ...prev,
       credits: prev.credits - cost,
       inventory: [...prev.inventory, spaceItem],
+      unlockedItems: Array.from(new Set([...(prev.unlockedItems || []), 'fish_space']))
     }));
+    pushHistory({
+      type: 'buy_space',
+      data: { char: ' ', value: cost }
+    });
   };
+
+  const handleBuyByteFish = (char: string, cost: number) => {
+    if (stats.credits < cost) return;
+    const byteItem = createByteFishLoot(char);
+    setStats(prev => ({
+      ...prev,
+      credits: prev.credits - cost,
+      inventory: [...prev.inventory, byteItem],
+      unlockedItems: Array.from(new Set([...(prev.unlockedItems || []), 'byte_fish'])),
+      catchStats: {
+        ...(prev.catchStats || {}),
+        byte_fish: ((prev.catchStats || {}).byte_fish || 0) + 1
+      }
+    }));
+    pushHistory({
+      type: 'buy_byte',
+      data: { char, value: cost }
+    });
+  };
+
+  const handlePublishLog = (message: string) => {
+    pushHistory({
+      type: 'publish',
+      data: { message }
+    });
+  };
+
+  const fadeTo = useCallback((audio: HTMLAudioElement | null, target: number, duration = 600, pauseOnEnd = false) => {
+    if (!audio) return;
+    const existing = fadeTimersRef.current.get(audio);
+    if (existing) window.clearInterval(existing);
+    const start = audio.volume;
+    const steps = Math.max(1, Math.floor(duration / 40));
+    const delta = (target - start) / steps;
+    let step = 0;
+    const id = window.setInterval(() => {
+      step += 1;
+      audio.volume = Math.max(0, Math.min(1, start + delta * step));
+      if (step >= steps) {
+        window.clearInterval(id);
+        fadeTimersRef.current.delete(audio);
+        audio.volume = Math.max(0, Math.min(1, target));
+        if (pauseOnEnd && audio.volume === 0) {
+          audio.pause();
+        }
+      }
+    }, 40);
+    fadeTimersRef.current.set(audio, id);
+  }, []);
+
+  useEffect(() => {
+    if (!audioUnlocked || audioMuted) return;
+    const audio = bgmAudioRef.current;
+    if (!audio) return;
+
+    const targetVolume = 0.25;
+    const fadeInMs = 1400;
+    const fadeOutMs = 1400;
+
+    const startLoop = () => {
+      bgmFadeOutRef.current = false;
+      audio.currentTime = 0;
+      void audio.play().catch(() => {});
+      fadeTo(audio, targetVolume, fadeInMs);
+    };
+
+    const handleTimeUpdate = () => {
+      if (!Number.isFinite(audio.duration) || audio.duration === 0) return;
+      const remaining = audio.duration - audio.currentTime;
+      if (!bgmFadeOutRef.current && remaining <= fadeOutMs / 1000) {
+        bgmFadeOutRef.current = true;
+        fadeTo(audio, 0, fadeOutMs);
+      }
+    };
+
+    const handleEnded = () => {
+      startLoop();
+    };
+
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('ended', handleEnded);
+
+    if (audio.paused) {
+      startLoop();
+    }
+
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('ended', handleEnded);
+    };
+  }, [audioUnlocked, audioMuted, fadeTo]);
+
+  useEffect(() => {
+    if (!audioUnlocked || audioMuted) return;
+
+    const inFishmart = gameState === GameState.SHOP;
+    const inMinigame = gameState === GameState.MINIGAME;
+    const inGameplay = [GameState.IDLE, GameState.CASTING, GameState.WAITING, GameState.CAUGHT].includes(gameState);
+
+    if (fishmartAudioRef.current) {
+      if (inFishmart) {
+        fishmartAudioRef.current.currentTime = 0;
+        void fishmartAudioRef.current.play().catch(() => {});
+        fadeTo(fishmartAudioRef.current, 0.4, 500);
+      } else {
+        fadeTo(fishmartAudioRef.current, 0, 500, true);
+      }
+    }
+
+    if (reelAudioRef.current) {
+      if (inMinigame) {
+        reelAudioRef.current.currentTime = 0;
+        void reelAudioRef.current.play().catch(() => {});
+        fadeTo(reelAudioRef.current, 0.55, 400);
+      } else {
+        fadeTo(reelAudioRef.current, 0, 400, true);
+      }
+    }
+
+    if (swimAudioRef.current) {
+      if (inGameplay) {
+        void swimAudioRef.current.play().catch(() => {});
+        fadeTo(swimAudioRef.current, 0.35, 800);
+      } else {
+        fadeTo(swimAudioRef.current, 0, 600, true);
+      }
+    }
+  }, [gameState, audioUnlocked, audioMuted, fadeTo]);
+
+  useEffect(() => {
+    if (!audioMuted) return;
+    const all = [
+      fishmartAudioRef.current,
+      reelAudioRef.current,
+      swimAudioRef.current,
+      bgmAudioRef.current
+    ];
+    all.forEach(audio => fadeTo(audio, 0, 300, true));
+  }, [audioMuted, fadeTo]);
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-transparent text-cyber-green font-mono select-none">
@@ -203,41 +513,53 @@ const App: React.FC = () => {
       {/* HUD */}
       <div className="relative z-10 w-full p-4 flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start pointer-events-none">
         <div>
-           <h1 className="text-2xl font-bold bg-black/50 px-2 glitch-text border-l-4 border-cyber-pink">BYTE_FISHER_V.1</h1>
+           <h1 className="text-2xl font-bold bg-black/50 px-2 glitch-text border-l-4 border-cyber-pink">BYTE_FISHER_beta0.9.2</h1>
            <div className="mt-2 text-sm bg-black/50 inline-block px-2">
              {t.status}: <span className="text-cyber-cyan">{gameState}</span>
            </div>
-           <div className="mt-1 pointer-events-auto">
+           <div className="mt-1 pointer-events-auto flex flex-wrap gap-2">
              <button 
                onClick={() => setLang(prev => prev === 'en' ? 'zh' : 'en')}
                className="bg-black/50 border border-cyber-gray text-xs px-2 py-1 hover:border-cyber-green text-gray-400 hover:text-cyber-green transition-colors"
              >
                [{lang === 'en' ? 'EN' : '中文'}] SWITCH LANG
              </button>
+             <button
+               onClick={() => setAudioMuted(prev => !prev)}
+               className="bg-black/50 border border-cyber-gray text-xs px-2 py-1 hover:border-cyber-green text-gray-400 hover:text-cyber-green transition-colors"
+             >
+               {audioMuted ? t.audioMuted : t.audioOn}
+             </button>
            </div>
         </div>
         <div className="flex flex-col items-start sm:items-end gap-2 pointer-events-auto">
-          <div className="bg-cyber-dark border border-cyber-green px-4 py-2 text-lg sm:text-xl font-bold shadow-[0_0_10px_#39ff14]">
-             ${stats.credits}
+          <div className="bg-cyber-dark border border-cyber-green px-4 py-2 text-lg sm:text-xl font-bold shadow-[0_0_10px_#39ff14] transition-all duration-300">
+             ${displayCredits}
           </div>
-          <div className="grid grid-cols-3 sm:grid-cols-2 gap-2 w-full max-w-[18rem] sm:w-64">
-             <button 
+          <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 w-full max-w-[18rem] sm:w-64">
+             <button
                onClick={() => setGameState(GameState.SHOP)}
-               className="bg-cyber-yellow text-black px-2 py-1 hover:bg-white font-bold"
+               className="bg-cyber-yellow text-black px-2 py-1 hover:bg-white hover:scale-105 font-bold transition-all duration-200 hover:shadow-[0_0_15px_#fdfd00] active:scale-95"
              >
                {t.market}
              </button>
-             <button 
+             <button
                onClick={() => setGameState(GameState.TERMINAL)}
-               className="bg-cyber-pink text-black px-2 py-1 hover:bg-white font-bold"
+               className="bg-cyber-pink text-black px-2 py-1 hover:bg-white hover:scale-105 font-bold transition-all duration-200 hover:shadow-[0_0_15px_#ff00ff] active:scale-95"
              >
                {t.terminal}
              </button>
-             <button 
+             <button
                onClick={() => setGameState(GameState.CODEX)}
-               className="bg-cyber-green text-black px-2 py-1 hover:bg-white font-bold"
+               className="bg-cyber-green text-black px-2 py-1 hover:bg-white hover:scale-105 font-bold transition-all duration-200 hover:shadow-[0_0_15px_#39ff14] active:scale-95"
              >
                {t.codex}
+             </button>
+             <button
+               onClick={() => setGameState(GameState.GUIDEBOOK)}
+               className="bg-cyber-cyan text-black px-2 py-1 hover:bg-white hover:scale-105 font-bold transition-all duration-200 hover:shadow-[0_0_15px_#00f3ff] active:scale-95"
+             >
+               {t.guidebook}
              </button>
           </div>
         </div>
@@ -245,12 +567,12 @@ const App: React.FC = () => {
 
       {/* Main Action Area */}
       {gameState === GameState.IDLE && (
-         <div className="absolute bottom-28 sm:bottom-20 left-1/2 -translate-x-1/2 z-20">
-            <button 
+         <div className="absolute bottom-28 sm:bottom-20 left-1/2 -translate-x-1/2 z-20 animate-pulse">
+            <button
               onClick={handleCast}
-              className="bg-cyber-green text-black text-xl sm:text-2xl px-8 sm:px-12 py-3 sm:py-4 font-bold rounded-sm hover:scale-105 active:scale-95 transition-transform shadow-[0_0_20px_#39ff14]"
+              className="relative bg-cyber-green text-black text-xl sm:text-2xl px-8 sm:px-12 py-3 sm:py-4 font-bold rounded-sm hover:scale-110 active:scale-90 transition-all duration-300 shadow-[0_0_30px_#39ff14] hover:shadow-[0_0_50px_#39ff14] before:absolute before:inset-0 before:bg-cyber-green before:animate-ping before:opacity-75 before:rounded-sm"
             >
-              {t.castLine}
+              <span className="relative z-10">{t.castLine}</span>
             </button>
          </div>
       )}
@@ -269,17 +591,35 @@ const App: React.FC = () => {
           onFail={handleMinigameFail} 
           lang={lang}
           onProgress={handleMinigameProgress}
+          difficulty={difficulty}
         />
       )}
 
       {/* Catch Success Modal */}
       {gameState === GameState.CAUGHT && lastCaught && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={claimCatch}>
-           <div className="bg-cyber-dark border-2 border-cyber-cyan p-8 text-center animate-bounce-in shadow-[0_0_50px_#00f3ff]">
-              <h2 className="text-2xl text-white mb-2">{t.signalAcquired}</h2>
-              <div className="text-4xl my-4 text-cyber-yellow font-bold">{getItemName(lastCaught)}</div>
-              <div className="text-gray-400 mb-6">{t.rarity[lastCaught.rarity]} | {t.value}: ${lastCaught.value}</div>
-              <div className="text-sm animate-pulse text-cyber-green">{t.clickContinue}</div>
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in" onClick={claimCatch}>
+           <div className={`bg-cyber-dark border-4 p-8 text-center animate-bounce-in relative overflow-hidden
+             ${lastCaught.rarity === 'legendary' || lastCaught.type === LootType.SPECIAL
+               ? 'border-cyber-yellow shadow-[0_0_80px_#ffd700] animate-pulse'
+               : lastCaught.rarity === 'rare'
+               ? 'border-cyber-pink shadow-[0_0_60px_#ff00ff]'
+               : lastCaught.rarity === 'uncommon'
+               ? 'border-cyber-cyan shadow-[0_0_50px_#00f3ff]'
+               : 'border-cyber-green shadow-[0_0_40px_#39ff14]'
+             }`}>
+              <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent animate-shimmer"></div>
+              <h2 className="text-2xl text-white mb-2 relative z-10">{t.signalAcquired}</h2>
+              <div className={`text-4xl my-4 font-bold relative z-10 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] ${
+                lastCaught.rarity === 'legendary' || lastCaught.type === LootType.SPECIAL
+                  ? 'text-cyber-yellow animate-pulse'
+                  : lastCaught.rarity === 'rare'
+                  ? 'text-cyber-pink'
+                  : lastCaught.rarity === 'uncommon'
+                  ? 'text-cyber-cyan'
+                  : 'text-cyber-green'
+              }`}>{getItemName(lastCaught)}</div>
+              <div className="text-gray-400 mb-6 relative z-10">{t.rarity[lastCaught.rarity]} | {t.value}: ${lastCaught.value}</div>
+              <div className="text-sm animate-pulse text-cyber-green relative z-10">{t.clickContinue}</div>
            </div>
         </div>
       )}
@@ -289,7 +629,10 @@ const App: React.FC = () => {
         <Shop 
           credits={stats.credits} 
           upgrades={upgrades} 
+          inventory={stats.inventory}
           onBuy={handleBuyUpgrade} 
+          onSell={handleSell}
+          onBuyByteFish={handleBuyByteFish}
           onBuySpace={handleBuySpace}
           spaceCost={SPACE_BYTE_COST}
           onClose={() => setGameState(GameState.IDLE)} 
@@ -300,10 +643,14 @@ const App: React.FC = () => {
       {gameState === GameState.TERMINAL && (
         <Terminal 
            inventory={stats.inventory}
+           history={history}
            playerName={playerName}
            setPlayerName={setPlayerName}
-           onSell={handleSell}
            onConsume={handleConsume}
+           onPublishLog={handlePublishLog}
+           difficulty={difficulty}
+           setDifficulty={setDifficulty}
+           onReset={resetSave}
            onClose={() => setGameState(GameState.IDLE)}
            lang={lang}
         />
@@ -318,9 +665,16 @@ const App: React.FC = () => {
         />
       )}
 
+      {gameState === GameState.GUIDEBOOK && (
+        <Guidebook 
+           onClose={() => setGameState(GameState.IDLE)} 
+           lang={lang}
+        />
+      )}
+
       {/* Mobile Controls Hint */}
       <div className="fixed bottom-2 w-full text-center text-xs text-gray-600 pointer-events-none z-50">
-        V 1.1.1 // SECURITY_UPDATE // GLITCH_PATCHED
+        beta0.9.2 // SECURITY_UPDATE // GLITCH_PATCHED
       </div>
     </div>
   );

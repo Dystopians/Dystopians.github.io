@@ -8,6 +8,7 @@ export enum GameState {
   TERMINAL = 'TERMINAL', // Inventory & Leaderboard
   CODEX = 'CODEX', // Fish Encyclopedia
   IMAGE_EDITOR = 'IMAGE_EDITOR', // Image Editor
+  GUIDEBOOK = 'GUIDEBOOK', // Tutorial
 }
 
 export enum LootType {
@@ -23,6 +24,8 @@ export interface LootItem {
   name: string; // Fallback name
   type: LootType;
   value: number;
+  sellValue?: number;
+  perfect?: boolean;
   char?: string; // If it's a character
   rarity: 'common' | 'uncommon' | 'rare' | 'legendary';
 }
@@ -56,4 +59,28 @@ export interface LeaderboardEntry {
   name: string;
   message: string;
   timestamp: number;
+}
+
+export type HistoryEventType =
+  | 'catch'
+  | 'sell'
+  | 'buy_upgrade'
+  | 'buy_space'
+  | 'buy_byte'
+  | 'publish';
+
+export interface HistoryEvent {
+  id: string;
+  type: HistoryEventType;
+  at: number;
+  data: {
+    itemId?: string;
+    itemName?: string;
+    value?: number;
+    upgradeId?: keyof Upgrades;
+    level?: number;
+    char?: string;
+    message?: string;
+    credits?: number;
+  };
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LootItem, LootType, LeaderboardEntry } from '../types';
+import { HistoryEvent, LootItem, LootType, LeaderboardEntry } from '../types';
 import { MOCK_LEADERBOARD } from '../constants';
 import { TEXT } from '../locales';
 import { createId } from '../utils/id';
@@ -23,15 +23,20 @@ const getSessionId = (): string => {
 
 interface TerminalProps {
   inventory: LootItem[];
+  history: HistoryEvent[];
   playerName: string;
   setPlayerName: (name: string) => void;
   onClose: () => void;
-  onSell: (item: LootItem) => void;
   onConsume: (items: LootItem[]) => void;
+  onPublishLog: (message: string) => void;
+  difficulty: 'simple' | 'hard';
+  setDifficulty: (value: 'simple' | 'hard') => void;
+  onReset: () => void;
   lang: 'en' | 'zh';
 }
 
-const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerName, onClose, onSell, onConsume, lang }) => {
+const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, setPlayerName, onClose, onConsume, onPublishLog, difficulty, setDifficulty, onReset, lang }) => {
+  const [confirmReset, setConfirmReset] = useState(false);
   const [activeTab, setActiveTab] = useState<'INVENTORY' | 'COMPOSE' | 'NETWORK'>('INVENTORY');
   const [composedMsg, setComposedMsg] = useState<LootItem[]>([]);
   const [serverLog, setServerLog] = useState<LeaderboardEntry[]>([]);
@@ -218,6 +223,10 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
     return () => window.clearInterval(timer);
   }, [turnstileSiteKey, activeTab]);
 
+  useEffect(() => {
+    setConfirmReset(false);
+  }, [activeTab]);
+
   const addToCompose = (charItem: LootItem) => {
     if (composedMsg.length >= 20) return; // limit length
     setComposedMsg([...composedMsg, charItem]);
@@ -367,6 +376,7 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
 
     // 4. Success Actions
     onConsume(composedMsg); // Permanently remove items
+    onPublishLog(text);
     setComposedMsg([]);
     setUploadStatus(t.bytesConsumed);
     
@@ -384,16 +394,83 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
   // Exclude characters that are currently in the composer to prevent reusing the same item instance
   const availableChars = allChars.filter(c => !composedMsg.find(m => m.id === c.id));
   
-  const junk = inventory.filter(i => i.type !== LootType.CHAR);
+  const formatTemplate = (template: string, vars: Record<string, string | number>) =>
+    Object.entries(vars).reduce((acc, [key, value]) => acc.replace(`{${key}}`, String(value)), template);
+
+  const getEventItemName = (event: HistoryEvent) => {
+    if (event.data.itemId && event.data.itemId !== 'char_byte') {
+      // @ts-ignore
+      const translation = t.items[event.data.itemId];
+      if (translation) return translation.name;
+    }
+    return event.data.itemName || t.unknown;
+  };
+
+  const formatEvent = (event: HistoryEvent) => {
+    switch (event.type) {
+      case 'catch':
+        return formatTemplate(t.history.caught, {
+          item: getEventItemName(event),
+          value: event.data.value || 0
+        });
+      case 'sell':
+        return formatTemplate(t.history.sold, {
+          item: event.data.itemName || t.unknown,
+          value: event.data.value || 0
+        });
+      case 'buy_upgrade':
+        return formatTemplate(t.history.upgrade, {
+          upgrade: t.upgrades[event.data.upgradeId || 'barSize']?.name || t.unknown,
+          level: event.data.level || 1,
+          value: event.data.value || 0
+        });
+      case 'buy_space':
+        return formatTemplate(t.history.space, { value: event.data.value || 0 });
+      case 'buy_byte':
+        return formatTemplate(t.history.byte, {
+          char: event.data.char || '?',
+          value: event.data.value || 0
+        });
+      case 'publish':
+        return formatTemplate(t.history.publish, { message: event.data.message || '' });
+      default:
+        return t.unknown;
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-40 bg-cyber-black/95 flex flex-col p-3 sm:p-4 md:p-10 font-mono text-cyber-green crt">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center border-b-2 border-cyber-green pb-4 mb-4">
         <h1 className="text-2xl sm:text-3xl font-bold glitch-text">TERMINAL_ACCESS</h1>
-        <button onClick={onClose} className="self-start sm:self-auto text-cyber-pink hover:bg-cyber-pink hover:text-black px-4 py-1 border border-cyber-pink">
-          [X] {t.disconnect}
-        </button>
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <button
+            onClick={() => setDifficulty(difficulty === 'simple' ? 'hard' : 'simple')}
+            className="text-cyber-green border border-cyber-green px-3 py-1 text-xs sm:text-sm hover:bg-cyber-green hover:text-black"
+          >
+            {difficulty === 'simple' ? t.modeSimple : t.modeHard}
+          </button>
+          <button
+            onClick={() => {
+              if (!confirmReset) {
+                setConfirmReset(true);
+                return;
+              }
+              setConfirmReset(false);
+              onReset();
+            }}
+            className={`border px-3 py-1 text-xs sm:text-sm ${
+              confirmReset
+                ? 'border-red-500 text-red-500 hover:bg-red-500 hover:text-black'
+                : 'border-red-900 text-red-900 hover:bg-red-500 hover:text-black'
+            }`}
+          >
+            {confirmReset ? t.resetConfirm : t.reset}
+          </button>
+          <button onClick={onClose} className="self-start sm:self-auto text-cyber-pink hover:bg-cyber-pink hover:text-black px-4 py-1 border border-cyber-pink">
+            [X] {t.disconnect}
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -425,20 +502,20 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, playerName, setPlayerNam
           <>
             {/* Loot List */}
             <div className="flex-1 border border-cyber-gray p-4 overflow-y-auto">
-              <h3 className="text-lg sm:text-xl mb-4 text-cyber-cyan">{'>'} TRASH_AND_DATA</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                {junk.map(item => (
-                  <div key={item.id} className="flex justify-between items-center bg-cyber-dark p-2 border border-cyber-gray hover:border-cyber-green group">
-                    <span className={`${item.rarity === 'legendary' ? 'text-cyber-yellow' : 'text-white'}`}>{getItemName(item)}</span>
-                    <button 
-                      onClick={() => onSell(item)}
-                      className="text-xs bg-cyber-gray px-2 py-1 text-white group-hover:bg-cyber-green group-hover:text-black"
-                    >
-                      {t.sell} ${item.value}
-                    </button>
+              <h3 className="text-lg sm:text-xl mb-4 text-cyber-cyan">{'>'} {t.historyTitle}</h3>
+              <div className="flex flex-col gap-2">
+                {history.map(event => (
+                  <div key={event.id} className="border border-cyber-gray bg-cyber-dark p-2 sm:p-3">
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <span>{new Date(event.at).toLocaleString()}</span>
+                      <span>{t.history.tags[event.type]}</span>
+                    </div>
+                    <div className="text-sm sm:text-base text-white">
+                      {formatEvent(event)}
+                    </div>
                   </div>
                 ))}
-                {junk.length === 0 && <div className="text-gray-500 italic">{t.noData}</div>}
+                {history.length === 0 && <div className="text-gray-500 italic">{t.historyEmpty}</div>}
               </div>
             </div>
           </>

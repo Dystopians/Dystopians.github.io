@@ -27,3 +27,9 @@ byte-fisher/DESIGN.zh.md
 # Ignore folders related to IDEs
 .vscode/
 .DS_Store
+
+# Ignore large source video assets
+/byte-fisher/src/assets/music/*.mp4
+
+# Ignore local Byte-Fisher backups
+/.backup_Byte-Fisher/

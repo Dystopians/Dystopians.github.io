@@ -11,6 +11,7 @@ export const COLORS = {
 
 export const INITIAL_CREDITS = 0;
 export const SPACE_BYTE_COST = 150;
+export const BYTE_FISH_COST = 500;
 
 export const UPGRADE_CONFIGS: UpgradeConfig[] = [
   {
@@ -72,6 +73,10 @@ export const SPECIAL_LOOT_DEFINITIONS = [
   createLoot('special_treasure_chest', 'Encrypted Cache', 1000, 'legendary', LootType.SPECIAL),
 ];
 
+export const SPACE_FISH_DEFINITION = createLoot('fish_space', 'Spacefish', 0, 'common', LootType.FISH);
+export const BYTE_FISH_DEFINITION = createLoot('byte_fish', 'ASCII Byte Fish', 0, 'common', LootType.FISH);
+
+
 // Re-export as the arrays used by game logic
 export const TRASH_LOOT = TRASH_LOOT_DEFINITIONS;
 export const FISH_LOOT = FISH_LOOT_DEFINITIONS;
@@ -81,7 +86,9 @@ export const SPECIAL_LOOT = SPECIAL_LOOT_DEFINITIONS;
 export const ALL_LOOT_DEFINITIONS = [
   ...TRASH_LOOT_DEFINITIONS, 
   ...FISH_LOOT_DEFINITIONS,
-  ...SPECIAL_LOOT_DEFINITIONS
+  ...SPECIAL_LOOT_DEFINITIONS,
+  SPACE_FISH_DEFINITION,
+  BYTE_FISH_DEFINITION
 ];
 
 // Generates a random character loot
@@ -99,7 +106,7 @@ export const generateCharLoot = (luckLevel: number): LootItem => {
   return {
     id: createId(),
     itemId: 'char_byte', // Generic ID for chars
-    name: `Byte: '${char}'`,
+    name: `Byte Fish: '${char}'`,
     type: LootType.CHAR,
     value,
     rarity,
@@ -110,11 +117,21 @@ export const generateCharLoot = (luckLevel: number): LootItem => {
 export const createSpaceCharLoot = (): LootItem => ({
   id: createId(),
   itemId: 'char_byte',
-  name: "Byte: ' '",
+  name: "Byte Fish: ' '",
   type: LootType.CHAR,
   value: 0,
   rarity: 'common',
   char: ' '
+});
+
+export const createByteFishLoot = (char: string): LootItem => ({
+  id: createId(),
+  itemId: 'char_byte',
+  name: `Byte Fish: '${char}'`,
+  type: LootType.CHAR,
+  value: 0,
+  rarity: /[A-Z]/.test(char) ? 'uncommon' : 'common',
+  char
 });
 
 export const MOCK_LEADERBOARD = [

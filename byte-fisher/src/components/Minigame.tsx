@@ -4,15 +4,17 @@ import { TEXT } from '../locales';
 
 interface MinigameProps {
   upgrades: Upgrades;
-  onSuccess: () => void;
+  onSuccess: (perfect: boolean) => void;
   onFail: () => void;
   lang: 'en' | 'zh';
   onProgress?: (progress: number) => void;
+  difficulty: 'simple' | 'hard';
 }
 
-const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, onProgress }) => {
+const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, onProgress, difficulty }) => {
   // Game constants derived from upgrades
-  const BAR_SIZE_PERCENT = 25 + (upgrades.barSize * 5); 
+  const barSizeBase = 25 + (upgrades.barSize * 5);
+  const BAR_SIZE_PERCENT = difficulty === 'hard' ? barSizeBase * 0.75 : barSizeBase; 
   
   // Physics adjustments - Tuned for "Tapping" control
   const GRAVITY = 0.12; 
@@ -22,15 +24,17 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
   
   const BASE_FILL_RATE = 0.3; // Reduced from 0.4 to ensure smoother progression
   const BONUS_FILL_RATE = 0.1;
-  const PROGRESS_SPEED = (BASE_FILL_RATE + ((upgrades.netStrength || 1) - 1) * BONUS_FILL_RATE) * 1.5;
+  const progressBase = (BASE_FILL_RATE + ((upgrades.netStrength || 1) - 1) * BONUS_FILL_RATE) * 1.5;
+  const PROGRESS_SPEED = difficulty === 'hard' ? progressBase * 0.75 : progressBase;
   
   const DECAY_SPEED = 0.1; 
 
-  const startBarPos = 50 - (BAR_SIZE_PERCENT / 2); 
+  const startBarPos = 0; 
+  const startFishPos = startBarPos + (BAR_SIZE_PERCENT / 2) - 4;
   const barPos = useRef(startBarPos); 
   const barVel = useRef(0);
-  const fishPos = useRef(50);
-  const fishTarget = useRef(50);
+  const fishPos = useRef(startFishPos);
+  const fishTarget = useRef(startFishPos);
   const fishTimer = useRef(100); 
   
   const progress = useRef(15); 
@@ -38,9 +42,10 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
   const isMouseDown = useRef(false);
   const frameRef = useRef<number>(0);
   const isFinished = useRef(false);
+  const isPerfect = useRef(true);
 
   const [displayProgress, setDisplayProgress] = useState(15);
-  const [fishStyle, setFishStyle] = useState({ bottom: '50%' });
+  const [fishStyle, setFishStyle] = useState({ bottom: `${startFishPos}%` });
   const [barStyle, setBarStyle] = useState({ height: `${BAR_SIZE_PERCENT}%`, bottom: `${startBarPos}%` });
   
   const t = TEXT[lang];
@@ -57,8 +62,12 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
     // Reset state on mount to prevent stale values from previous games
     progress.current = 15;
     isFinished.current = false;
-    barPos.current = 50 - (BAR_SIZE_PERCENT / 2);
+    isPerfect.current = true;
+    barPos.current = startBarPos;
     barVel.current = 0;
+    fishPos.current = startFishPos;
+    fishTarget.current = startFishPos;
+    fishTimer.current = 120;
 
     const updatePhysics = () => {
       if (isFinished.current) return;
@@ -66,7 +75,8 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
       // 1. Move Fish
       fishTimer.current--;
       if (fishTimer.current <= 0) {
-        fishTimer.current = Math.random() * 200 + 120; 
+        const freqScale = difficulty === 'hard' ? 0.75 : 1;
+        fishTimer.current = (Math.random() * 200 + 120) * freqScale; 
         fishTarget.current = Math.random() * 90 + 5; 
       }
       
@@ -103,6 +113,9 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
       const fishCenter = fishPos.current + 4; 
       
       const isCatching = fishCenter >= barBottom && fishCenter <= barTop;
+      if (!isCatching) {
+        isPerfect.current = false;
+      }
       
       if (isCatching) {
         progress.current = Math.min(100, progress.current + PROGRESS_SPEED);
@@ -125,7 +138,7 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
         isFinished.current = true;
         setDisplayProgress(100); // Force visual full
         // Small delay so user sees the full bar
-        setTimeout(() => onSuccess(), 500);
+        setTimeout(() => onSuccess(isPerfect.current), 500);
         return; 
       } else if (progress.current <= 0) {
         isFinished.current = true;
