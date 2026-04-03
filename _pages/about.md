@@ -15,7 +15,7 @@ title_logos:
     alt: University of Southern California
     href: https://www.usc.edu/
     variant: seal
-  - src: /images/logos/tiktok-logo_1080029-103.avif
+  - src: /images/logos/tiktok.svg
     alt: TikTok
     href: https://www.tiktok.com/
     variant: default

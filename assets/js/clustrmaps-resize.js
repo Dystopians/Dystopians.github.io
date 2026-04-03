@@ -2,30 +2,24 @@
   const container = document.querySelector('[data-clustrmaps="globe"]');
   if (!container) return;
 
-  const originalParent = container.parentElement;
-  const originalNextSibling = container.nextElementSibling;
-  const main = document.querySelector('#main');
-
   const scriptSrc = container.getAttribute('data-clustrmaps-src');
   const widgetSelector = 'canvas, iframe, svg, object';
-  const maxReloads = 2;
-  let reloads = 0;
+  let scriptInjected = false;
 
-  const injectScript = (useCacheBuster = false) => {
-    if (!scriptSrc) return;
-    if (container.querySelector('#clstr_globe')) return;
+  const isDesktop = () => !window.matchMedia('(max-width: 1023px)').matches;
+  const hasWidget = () => Boolean(container.querySelector(widgetSelector));
+
+  const injectScript = () => {
+    if (!scriptSrc || scriptInjected || hasWidget()) return;
     const script = document.createElement('script');
     script.type = 'text/javascript';
     script.id = 'clstr_globe';
     script.async = true;
-    script.src = useCacheBuster ? `${scriptSrc}&t=${Date.now()}` : scriptSrc;
-    script.onerror = () => {
-      if (reloads >= maxReloads) return;
-      reloads += 1;
-      setTimeout(() => {
-        script.remove();
-        injectScript(true);
-      }, 800);
+    script.src = scriptSrc;
+    scriptInjected = true;
+    script.addEventListener('load', () => {
+      // ClustrMaps injects its widget asynchronously after the loader script runs.
+      requestAnimationFrame(resizeWidget);
     };
     container.appendChild(script);
   };
@@ -42,63 +36,31 @@
     }
   };
 
-  const restorePosition = () => {
-    if (!originalParent) return;
-    if (container.dataset.clustrmapsMoved !== 'true') return;
-    if (originalNextSibling && originalNextSibling.parentNode === originalParent) {
-      originalParent.insertBefore(container, originalNextSibling);
-    } else {
-      originalParent.appendChild(container);
-    }
-    delete container.dataset.clustrmapsMoved;
-  };
-
-  const handlePlacement = () => {
-    const isMobile = window.matchMedia('(max-width: 1023px)').matches;
-    restorePosition();
-    if (isMobile) return;
-    resizeWidget();
-    ensureWidget();
-  };
-
   const ensureWidget = () => {
-    const widget = container.querySelector(widgetSelector);
-    if (widget) return;
-    if (reloads < maxReloads) {
-      const oldScript = container.querySelector('#clstr_globe');
-      if (oldScript) oldScript.remove();
-      reloads += 1;
-      injectScript(true);
-    }
+    if (!isDesktop()) return;
+    resizeWidget();
+    injectScript();
   };
 
-  if (!window.matchMedia('(max-width: 1023px)').matches) {
-    injectScript();
-  }
-  handlePlacement();
-
-  let attempts = 0;
-  const timer = setInterval(() => {
-    attempts += 1;
-    handlePlacement();
-    if (container.querySelector(widgetSelector) || attempts > 24) {
-      clearInterval(timer);
-    }
-  }, 250);
+  ensureWidget();
 
   if (typeof ResizeObserver !== 'undefined') {
     const observer = new ResizeObserver(() => {
-      handlePlacement();
-      ensureWidget();
+      resizeWidget();
     });
     observer.observe(container);
   }
 
-  window.addEventListener('resize', handlePlacement);
+  if (typeof MutationObserver !== 'undefined') {
+    const observer = new MutationObserver(() => {
+      resizeWidget();
+    });
+    observer.observe(container, { childList: true, subtree: true });
+  }
+
+  window.addEventListener('resize', ensureWidget);
   window.addEventListener('load', () => {
-    if (!window.matchMedia('(max-width: 1023px)').matches) {
-      injectScript();
-    }
-    handlePlacement();
+    ensureWidget();
+    resizeWidget();
   });
 })();
