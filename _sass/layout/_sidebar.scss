@@ -11,21 +11,25 @@
           transform: translate3d(0, 0 , 0);
 
   @include clearfix();
-  margin-bottom: 1em;
+  margin-bottom: 1.25em;
 
   @media (orientation: portrait) {
     margin-top: 1em;
   }
 
   @media screen and (min-width: $sidebar-screen-min-width) {
-    height: 100vh;
-    overflow-y: auto;               // Add scrollbar if the sidebar is too long
-    position: fixed;
-    padding-top: $masthead-height;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    position: sticky;
+    top: calc(#{$masthead-height} + 0.75rem);
   }
 
   @include breakpoint($large) {
-    @include span(2 of 12);
+    float: none;
+    width: auto;
+    max-width: none;
+    margin: 0;
     opacity: 1;
     -webkit-transition: opacity 0.2s ease-in-out;
             transition: opacity 0.2s ease-in-out;
@@ -36,7 +40,7 @@
   }
 
   @include breakpoint($x-large) {
-    max-width: $sidebar-link-max-width;
+    max-width: none;
     padding-right: 0;
   }
 
@@ -60,8 +64,27 @@
   }
 }
 
+.sidebar > div[itemscope] {
+  @include breakpoint($large) {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 1rem 0.9rem;
+    border: 1px solid var(--global-border-color);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 20px 34px -34px rgba(15, 23, 42, 0.24);
+  }
+}
+
+html[data-theme="dark"] .sidebar > div[itemscope] {
+  @include breakpoint($large) {
+    background: rgba(15, 23, 42, 0.9);
+  }
+}
+
 .clustrmaps-embed {
   display: none;
+  box-sizing: border-box;
   width: 100%;
   max-width: 260px;
   aspect-ratio: 1 / 1;
@@ -70,8 +93,21 @@
 
   @include breakpoint($large) {
     display: block;
-    max-width: 100%;
-    margin: 0;
+    width: 50%;
+    min-width: 110px;
+    max-width: 130px;
+    margin: 0.85rem auto 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+html[data-theme="dark"] .clustrmaps-embed {
+  @include breakpoint($large) {
+    background: transparent;
   }
 }
 
@@ -115,15 +151,18 @@
     display: block;
     width: auto;
     height: auto;
+    text-align: center;
   }
 
   img {
-    max-width: 175px;
+    max-width: 176px;
     border-radius: 50%;
+    margin: 0 auto;
 
     @include breakpoint($large) {
       padding: 5px;
       border: 1px solid var(--global-border-color);
+      box-shadow: 0 18px 28px -28px rgba(15, 23, 42, 0.32);
     }
   }
 }
@@ -133,7 +172,7 @@
   vertical-align: top;
   padding-left: 15px;
   padding-right: 25px;
-  line-height: 1;
+  line-height: 1.25;
 
   @include breakpoint($large) {
     display: block;
@@ -147,13 +186,15 @@
   margin: 0;
 
   @include breakpoint($large) {
-    margin-top: 10px;
-    margin-bottom: 10px;
+    margin-top: 0.75rem;
+    margin-bottom: 0.45rem;
   }
 }
 .sidebar .author__name {
   font-family: $sans-serif;
   font-size: $type-size-5;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
 }
 
 .sidebar .author__desktop {
@@ -165,19 +206,22 @@
 
 .author__pronouns {
   margin: 0;
+  color: var(--global-text-color-light);
 
   @include breakpoint($large) {
-    margin-top: 10px;
-    margin-bottom: 10px;
+    margin-top: 0;
+    margin-bottom: 0.45rem;
   }
 }
 
 .author__bio {
   margin: 0;
+  color: var(--global-text-color);
+  line-height: 1.38;
 
   @include breakpoint($large) {
-    margin-top: 10px;
-    margin-bottom: 20px;
+    margin-top: 0;
+    margin-bottom: 0.9rem;
   }
 }
 
@@ -202,6 +246,7 @@
 
   button {
     margin-bottom: 0;
+    border-radius: 999px !important;
 
     @include breakpoint($large) {
       display: none;
@@ -268,21 +313,34 @@
   }
 
   li {
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    margin-bottom: 0.15rem;
   }
 
   a {
-    display: block;
-    margin-bottom: 5px;
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 0.2rem;
+    margin-bottom: 2px;
     padding-right: 5px;
-    padding-top: 2px;
-    padding-bottom: 2px;
+    padding-top: 1px;
+    padding-bottom: 1px;
     color: inherit;
-    font-size: $type-size-5;
+    font-size: $type-size-6;
+    line-height: 1.25;
     text-decoration: none;
+    transition: color .18s ease, transform .18s ease;
 
     &:hover {
-      text-decoration: underline;
+      color: var(--global-link-color);
+      text-decoration: none;
+      transform: translateX(2px);
     }
   }
+}
+
+.author__desktop {
+  line-height: 1.3;
+  overflow-wrap: anywhere;
 }
