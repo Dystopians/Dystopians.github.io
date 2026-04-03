@@ -94,24 +94,42 @@ classes: "empty-chair-page"
     overflow: hidden;
     --poem-image: none;
     --poem-image-coverage: 65%;
+    --poem-fade-soft-stop: 36%;
+    --poem-fade-mid-stop: 64%;
+    --poem-fade-strong-stop: 84%;
+    --poem-fade-solid-stop: 100%;
+    --poem-overlay-soft-stop: 28%;
+    --poem-overlay-mid-stop: 60%;
+    --poem-overlay-strong-stop: 84%;
+    --poem-overlay-solid-stop: 100%;
   }
 
   .poem-card.has-image::before {
     content: "";
     position: absolute;
     inset: 0;
-    background: var(--poem-image) top center / contain no-repeat;
+    background-image:
+      linear-gradient(
+        to bottom,
+        rgba(254, 251, 246, 0) 0%,
+        rgba(254, 251, 246, 0.08) var(--poem-fade-soft-stop),
+        rgba(254, 251, 246, 0.45) var(--poem-fade-mid-stop),
+        rgba(254, 251, 246, 0.82) var(--poem-fade-strong-stop),
+        rgba(254, 251, 246, 1) var(--poem-fade-solid-stop)
+      ),
+      var(--poem-image);
+    background-size:
+      100% var(--poem-image-coverage, 65%),
+      100% var(--poem-image-coverage, 65%);
+    background-position:
+      top center,
+      top center;
+    background-repeat:
+      no-repeat,
+      no-repeat;
     opacity: 1;
     pointer-events: none;
     z-index: 0;
-    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 38%, rgba(0, 0, 0, 0.35) 62%, rgba(0, 0, 0, 0) 100%);
-    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 38%, rgba(0, 0, 0, 0.35) 62%, rgba(0, 0, 0, 0) 100%);
-    -webkit-mask-size: 100% var(--poem-image-coverage, 65%);
-    mask-size: 100% var(--poem-image-coverage, 65%);
-    -webkit-mask-position: top center;
-    mask-position: top center;
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
   }
 
   .poem-card.has-image::after {
@@ -120,11 +138,11 @@ classes: "empty-chair-page"
     inset: 0;
     background: linear-gradient(
       to bottom,
-      rgba(254, 251, 246, 0.3) 0%,
-      rgba(254, 251, 246, 0.5) 30%,
-      rgba(254, 251, 246, 0.7) 65%,
-      rgba(254, 251, 246, 0.9) 85%,
-      rgba(254, 251, 246, 1) 100%
+      rgba(254, 251, 246, 0.18) 0%,
+      rgba(254, 251, 246, 0.36) var(--poem-overlay-soft-stop),
+      rgba(254, 251, 246, 0.62) var(--poem-overlay-mid-stop),
+      rgba(254, 251, 246, 0.88) var(--poem-overlay-strong-stop),
+      rgba(254, 251, 246, 1) var(--poem-overlay-solid-stop)
     );
     mix-blend-mode: normal;
     pointer-events: none;
@@ -151,13 +169,21 @@ classes: "empty-chair-page"
   .poem-card.card-mao {
     --poem-image: url("{{ '/EmptyChair/MaoRenShuiKu.png' | relative_url }}");
     --poem-image-coverage: 14%;
+    --poem-fade-soft-stop: 24%;
+    --poem-fade-mid-stop: 50%;
+    --poem-fade-strong-stop: 74%;
+    --poem-fade-solid-stop: 90%;
+    --poem-overlay-soft-stop: 20%;
+    --poem-overlay-mid-stop: 46%;
+    --poem-overlay-strong-stop: 72%;
+    --poem-overlay-solid-stop: 90%;
   }
 
   .poem-card h2 {
     font-size: clamp(1.8rem, 3vw, 2.4rem);
     margin-bottom: 1.5rem;
-    letter-spacing: 0.16em;
-    text-indent: 0.16em;
+    letter-spacing: 0.08em;
+    text-indent: 0.08em;
     color: #1a1410;
   }
 
@@ -169,7 +195,7 @@ classes: "empty-chair-page"
   }
 
   .poem-body {
-    white-space: pre-wrap;
+    white-space: normal;
     font-size: clamp(1.05rem, 2vw, 1.2rem);
     color: #332b25;
   }
@@ -189,13 +215,13 @@ classes: "empty-chair-page"
       'Georgia',
       serif;
     font-weight: 600;
-    letter-spacing: 0.2em;
-    text-indent: 0.2em;
+    letter-spacing: 0.08em;
+    text-indent: 0.08em;
     color: #1a1410;
   }
 
   .poem-body {
-  white-space: pre-wrap;
+  white-space: normal;
   font-family:
     'WenYueGutiFangSong',     /* 文悦古体仿宋优先使用 */
     'LXGW WenKai Screen',     /* 手写 fallback */
@@ -206,7 +232,8 @@ classes: "empty-chair-page"
   font-weight: 400;
   font-size: clamp(1.05rem, 2vw, 1.2rem);
   line-height: 1.9;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.03em;
+  word-spacing: normal;
   color: #332b25;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -227,7 +254,7 @@ classes: "empty-chair-page"
         <h2>晁错谣</h2>
         <div class="spectral-bar" aria-hidden="true"></div>
         <div class="poem-body">
-          {{- chao_raw | strip -}}
+          {{- chao_raw | strip | newline_to_br -}}
         </div>
       </article>
 
@@ -235,7 +262,7 @@ classes: "empty-chair-page"
         <h2>毛人水库</h2>
         <div class="spectral-bar" aria-hidden="true"></div>
         <div class="poem-body">
-          {{- mao_raw | strip -}}
+          {{- mao_raw | strip | newline_to_br -}}
         </div>
       </article>
     </div>
