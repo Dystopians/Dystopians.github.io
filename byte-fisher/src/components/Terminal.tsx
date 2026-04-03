@@ -4,6 +4,7 @@ import { MOCK_LEADERBOARD } from '../constants';
 import { TEXT } from '../locales';
 import { createId } from '../utils/id';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import CharacterEditor from './CharacterEditor';
 
 type MessageRow = {
   id: string;
@@ -29,15 +30,15 @@ interface TerminalProps {
   onClose: () => void;
   onConsume: (items: LootItem[]) => void;
   onPublishLog: (message: string) => void;
-  difficulty: 'simple' | 'hard';
-  setDifficulty: (value: 'simple' | 'hard') => void;
+  difficulty: 'simple' | 'hard' | 'hardcore';
+  setDifficulty: (value: 'simple' | 'hard' | 'hardcore') => void;
   onReset: () => void;
   lang: 'en' | 'zh';
 }
 
 const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, setPlayerName, onClose, onConsume, onPublishLog, difficulty, setDifficulty, onReset, lang }) => {
   const [confirmReset, setConfirmReset] = useState(false);
-  const [activeTab, setActiveTab] = useState<'INVENTORY' | 'COMPOSE' | 'NETWORK'>('INVENTORY');
+  const [activeTab, setActiveTab] = useState<'INVENTORY' | 'COMPOSE' | 'NETWORK' | 'CHAR_EDITOR'>('INVENTORY');
   const [composedMsg, setComposedMsg] = useState<LootItem[]>([]);
   const [serverLog, setServerLog] = useState<LeaderboardEntry[]>([]);
   const [uploadStatus, setUploadStatus] = useState<string>('');
@@ -445,10 +446,22 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
         <h1 className="text-2xl sm:text-3xl font-bold glitch-text">TERMINAL_ACCESS</h1>
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
           <button
-            onClick={() => setDifficulty(difficulty === 'simple' ? 'hard' : 'simple')}
-            className="text-cyber-green border border-cyber-green px-3 py-1 text-xs sm:text-sm hover:bg-cyber-green hover:text-black"
+            onClick={() =>
+              setDifficulty(
+                difficulty === 'simple'
+                  ? 'hard'
+                  : difficulty === 'hard'
+                    ? 'hardcore'
+                    : 'simple'
+              )
+            }
+            className={`border px-3 py-1 text-xs sm:text-sm ${
+              difficulty === 'hardcore'
+                ? 'border-cyber-pink text-transparent bg-clip-text bg-gradient-to-r from-cyber-cyan via-cyber-pink to-cyber-yellow'
+                : 'border-cyber-green text-cyber-green hover:bg-cyber-green hover:text-black'
+            }`}
           >
-            {difficulty === 'simple' ? t.modeSimple : t.modeHard}
+            {difficulty === 'simple' ? t.modeSimple : difficulty === 'hard' ? t.modeHard : t.modeHardcore}
           </button>
           <button
             onClick={() => {
@@ -475,23 +488,29 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
 
       {/* Tabs */}
       <div className="flex flex-wrap gap-3 mb-4 sm:mb-6">
-        <button 
+        <button
           onClick={() => setActiveTab('INVENTORY')}
           className={`px-4 py-2 text-sm sm:text-base border ${activeTab === 'INVENTORY' ? 'bg-cyber-green text-black' : 'border-cyber-green text-cyber-green hover:bg-cyber-green/20'}`}
         >
           {t.inventory}
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('COMPOSE')}
           className={`px-4 py-2 text-sm sm:text-base border ${activeTab === 'COMPOSE' ? 'bg-cyber-green text-black' : 'border-cyber-green text-cyber-green hover:bg-cyber-green/20'}`}
         >
           {t.composer}
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('NETWORK')}
           className={`px-4 py-2 text-sm sm:text-base border ${activeTab === 'NETWORK' ? 'bg-cyber-green text-black' : 'border-cyber-green text-cyber-green hover:bg-cyber-green/20'}`}
         >
           {t.network}
+        </button>
+        <button
+          onClick={() => setActiveTab('CHAR_EDITOR')}
+          className={`px-4 py-2 text-sm sm:text-base border ${activeTab === 'CHAR_EDITOR' ? 'bg-purple-600 text-white' : 'border-purple-600 text-purple-400 hover:bg-purple-600/20'}`}
+        >
+          {t.characterEditor}
         </button>
       </div>
 
@@ -616,6 +635,16 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
                  </div>
                </div>
              ))}
+          </div>
+        )}
+
+        {activeTab === 'CHAR_EDITOR' && (
+          <div className="w-full h-full relative">
+            <CharacterEditor
+              onClose={() => setActiveTab('INVENTORY')}
+              lang={lang}
+              embedded={true}
+            />
           </div>
         )}
 

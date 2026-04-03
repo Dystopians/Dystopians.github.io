@@ -27,6 +27,26 @@ layout: default
       {% unless page.header.overlay_color or page.header.overlay_image %}
         <header>
           {% if page.title %}<h1 class="page__title" itemprop="headline">{{ page.title | markdownify | remove: "<p>" | remove: "</p>" }}</h1>{% endif %}
+          {% if page.title_logos %}
+            <div class="page__title-logos" aria-label="Affiliations">
+              {% for logo in page.title_logos %}
+                <a class="page__title-logo-link" href="{{ logo.href }}" {% if logo.href contains 'http' %}target="_blank" rel="noopener"{% endif %} aria-label="{{ logo.label | default: logo.alt }}">
+                  {% if logo.icon %}
+                    <span class="page__title-logo-badge">
+                      <i class="fa-brands fa-{{ logo.icon }} page__title-logo-icon" aria-hidden="true"></i>
+                      <span class="page__title-logo-label">{{ logo.label }}</span>
+                    </span>
+                  {% else %}
+                    <img
+                      class="page__title-logo-image page__title-logo-image--{{ logo.variant | default: 'default' }}"
+                      src="{{ logo.src | relative_url }}"
+                      alt="{{ logo.alt }}"
+                    >
+                  {% endif %}
+                </a>
+              {% endfor %}
+            </div>
+          {% endif %}
           {% if page.url == "/" %}
             {% if page.last_updated %}
               <p class="page__meta"><i class="fa fa-refresh" aria-hidden="true"></i> Last updated: {{ page.last_updated }}</p>

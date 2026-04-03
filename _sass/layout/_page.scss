@@ -43,6 +43,56 @@
   }
 }
 
+.page__title-logos {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  margin: 1rem 0 0.65rem;
+}
+
+.page__title-logo-link {
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+}
+
+.page__title-logo-image {
+  display: block;
+  height: 2.8rem;
+  width: auto;
+}
+
+.page__title-logo-image--seal {
+  height: 3.4rem;
+}
+
+.page__title-logo-image--wide {
+  height: 2.4rem;
+}
+
+.page__title-logo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--global-border-color);
+  border-radius: 999px;
+  background: var(--global-bg-color);
+}
+
+.page__title-logo-icon {
+  font-size: 1.35rem;
+}
+
+.page__title-logo-label {
+  font-family: $sans-serif;
+  font-size: $type-size-6;
+  font-weight: 600;
+  line-height: 1;
+}
+
 .page__lead {
   font-family: $global-font-family;
   font-size: $type-size-4;

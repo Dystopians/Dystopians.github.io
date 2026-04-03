@@ -1,0 +1,1084 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Byte Fisher Sprite Module Editor</title>
+  <style>
+    :root { --bg:#0b0f14; --panel:#121824; --text:#d7e0ea; --muted:#7f93a6; --line:#223043; --accent:#39ff14; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "PingFang SC", "Noto Sans CJK SC", Arial;
+           background: var(--bg); color: var(--text); }
+    .app { display:grid; grid-template-columns: 320px 1fr 420px; height: 100vh; gap: 10px; padding: 10px; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; display:flex; flex-direction:column; }
+    .panel header { padding: 10px 12px; border-bottom: 1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:10px;}
+    .panel header .title { font-weight: 700; }
+    .panel header .sub { color: var(--muted); font-size: 12px; }
+    .panel .content { padding: 10px 12px; overflow:auto; }
+    button, input, select { font: inherit; }
+    button { background: #182234; color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; cursor:pointer; }
+    button:hover { border-color: #2d4463; }
+    button.primary { border-color: #2c9b35; box-shadow: 0 0 0 1px rgba(57,255,20,.2) inset; }
+    button.danger { border-color: #8b2d2d; }
+    .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .col { display:flex; flex-direction:column; gap:8px; }
+    .small { font-size: 12px; color: var(--muted); }
+    .hr { height:1px; background: var(--line); margin: 10px 0; }
+    .list { display:flex; flex-direction:column; gap:6px; }
+    .item { padding:8px 10px; border:1px solid var(--line); border-radius: 10px; cursor:pointer; }
+    .item:hover { border-color:#2d4463; }
+    .item.active { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(57,255,20,.25) inset; }
+    .tag { font-size: 11px; padding:2px 6px; border:1px solid var(--line); border-radius: 999px; color: var(--muted); }
+    .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    label { font-size: 12px; color: var(--muted); display:flex; flex-direction:column; gap:4px; }
+    input[type="number"], input[type="text"], select {
+      background:#0e1420; color: var(--text); border:1px solid var(--line); border-radius:10px; padding:8px 10px;
+    }
+    input[type="range"] { width: 100%; }
+    .canvasWrap {
+      display:flex; flex-direction:column; gap:10px;
+    }
+    canvas { background: #070a10; border:1px solid var(--line); border-radius: 12px; image-rendering: pixelated; } /* pixelated 建议 :contentReference[oaicite:7]{index=7} */
+    .palette { display:flex; gap:6px; flex-wrap:wrap; }
+    .swatch { width: 22px; height: 22px; border-radius: 8px; border: 1px solid var(--line); cursor:pointer; }
+    .swatch.active { outline: 2px solid var(--accent); }
+    .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+           font-size: 11px; color: var(--muted); border:1px solid var(--line); border-radius: 8px; padding: 2px 6px; }
+    .hint { color: var(--muted); font-size: 12px; line-height: 1.4; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- LEFT: Modules -->
+  <section class="panel" id="modulesPanel">
+    <header>
+      <div>
+        <div class="title">模块列表</div>
+        <div class="sub">逐模块编辑 / 导出 PNG</div>
+      </div>
+      <button id="addModuleBtn" title="新增一个自定义模块">+ 新增</button>
+    </header>
+    <div class="content">
+      <div class="row" style="justify-content:space-between;">
+        <span class="small">点击选择模块</span>
+        <span class="small">右键画布=橡皮</span>
+      </div>
+      <div class="hr"></div>
+      <div class="list" id="moduleList"></div>
+
+      <div class="hr"></div>
+      <div class="col">
+        <button class="primary" id="exportModuleBtn">导出当前模块 PNG</button>
+        <button id="exportAllBtn">导出所有模块 PNG</button>
+        <button id="exportManifestBtn">导出 manifest.json</button>
+        <div class="row">
+          <button id="saveProjectBtn">保存工程(.json)</button>
+          <label style="margin:0;">
+            <input id="loadProjectInput" type="file" accept="application/json" style="display:none" />
+            <button id="loadProjectBtn">加载工程</button>
+          </label>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+      <div class="hint">
+        <div>快捷键：</div>
+        <div>• <span class="kbd">G</span> 切换网格　• <span class="kbd">Z</span> 撤销</div>
+        <div>• <span class="kbd">Shift</span> + 点击 吸管取色</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MID: Editor -->
+  <section class="panel">
+    <header>
+      <div>
+        <div class="title">像素编辑器</div>
+        <div class="sub" id="editorSubtitle">—</div>
+      </div>
+      <div class="row">
+        <button id="clearBtn" class="danger">清空</button>
+        <label style="margin:0;">
+          <input id="importPngInput" type="file" accept="image/png" style="display:none" />
+          <button id="importBtn">导入 PNG</button>
+        </label>
+      </div>
+    </header>
+    <div class="content">
+      <div class="grid2">
+        <label>显示缩放（编辑视图）
+          <input id="zoomRange" type="range" min="6" max="30" step="1" value="16" />
+        </label>
+        <label>笔刷大小（游戏像素）
+          <input id="brushRange" type="range" min="1" max="4" step="1" value="1" />
+        </label>
+      </div>
+      <div class="grid2">
+        <label><span class="row" style="justify-content:space-between;"><span>显示网格</span><span class="kbd">G</span></span>
+          <select id="gridSelect">
+            <option value="on">开</option>
+            <option value="off">关</option>
+          </select>
+        </label>
+        <label>工具
+          <select id="toolSelect">
+            <option value="pencil">画笔</option>
+            <option value="eraser">橡皮</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="hr"></div>
+      <div class="row" style="justify-content:space-between;">
+        <div class="col" style="flex:1;">
+          <div class="small">调色板（可改：点击色块即可）</div>
+          <div class="palette" id="palette"></div>
+        </div>
+        <div class="col" style="min-width:150px;">
+          <div class="small">当前颜色</div>
+          <div class="row">
+            <div id="currentColorBox" style="width:22px;height:22px;border-radius:8px;border:1px solid var(--line);"></div>
+            <span class="mono" id="currentColorText">#000000</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+      <div class="canvasWrap">
+        <canvas id="editCanvas" width="640" height="640"></canvas>
+        <div class="hint">
+          说明：内部以“游戏像素”编辑，导出时自动按 <span class="mono">4x</span> 放大为“实际像素”，并保持 pixelated（对应文档“1 游戏像素 = 4 实际像素”）。:contentReference[oaicite:8]{index=8}
+        </div>
+      </div>
+
+      <div class="hr"></div>
+      <div class="col" id="moduleProps">
+        <div class="small">模块参数（可编辑；合成预览会使用这些坐标/锚点/图层）</div>
+        <div class="grid2">
+          <label>模块 ID
+            <input id="propId" type="text" />
+          </label>
+          <label>导出文件名
+            <input id="propFile" type="text" />
+          </label>
+        </div>
+        <div class="grid2">
+          <label>宽度 w（游戏像素）
+            <input id="propW" type="number" min="1" />
+          </label>
+          <label>高度 h（游戏像素）
+            <input id="propH" type="number" min="1" />
+          </label>
+        </div>
+        <div class="grid2">
+          <label>锚点 ax（0~1）
+            <input id="propAx" type="number" min="0" max="1" step="0.1" />
+          </label>
+          <label>锚点 ay（0~1）
+            <input id="propAy" type="number" min="0" max="1" step="0.1" />
+          </label>
+        </div>
+        <div class="grid2">
+          <label>相对坐标 x（游戏像素）
+            <input id="propX" type="number" step="1" />
+          </label>
+          <label>相对坐标 y（游戏像素）
+            <input id="propY" type="number" step="1" />
+          </label>
+        </div>
+        <div class="grid2">
+          <label>图层 layer（数值越大越靠上）
+            <input id="propLayer" type="number" step="1" />
+          </label>
+          <label>分组 category（用于预览选择）
+            <input id="propCat" type="text" />
+          </label>
+        </div>
+        <button id="applyPropsBtn" class="primary">应用参数</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIGHT: Preview -->
+  <section class="panel">
+    <header>
+      <div>
+        <div class="title">合成预览</div>
+        <div class="sub">按坐标/锚点/图层叠加</div>
+      </div>
+      <button class="primary" id="exportPreviewBtn">导出合成 PNG</button>
+    </header>
+    <div class="content">
+      <div class="col">
+        <div class="small">选择每个分组在预览中使用哪个模块（比如 headgear/boots/backpack 多级）。</div>
+        <div id="categorySelectors" class="col"></div>
+
+        <div class="hr"></div>
+        <canvas id="previewCanvas" width="384" height="512"></canvas>
+        <div class="hint">
+          预览中心点为角色锚点（胸部中心 (0,0)），并按文档坐标系绘制：头部 (0,-32)、靴子 (0,56) 等。:contentReference[oaicite:9]{index=9}
+        </div>
+
+        <div class="hr"></div>
+        <div class="hint">
+          你可以把导出的 PNG 放进推荐目录结构（base/headgear/boots/backpack/...）。:contentReference[oaicite:10]{index=10}
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(() => {
+  // ====== Constants ======
+  const EXPORT_SCALE = 4; // 1 游戏像素 = 4 实际像素 :contentReference[oaicite:11]{index=11}
+  const MAX_UNDO = 30;
+
+  // 默认调色板（来自模板指南的推荐色）:contentReference[oaicite:12]{index=12}
+  const PALETTE = [
+    "#050505", "#1a1a1a", "#333333",
+    "#f0d0b0", "#8b5a2b", "#8B4513",
+    "#39ff14", "#ff00ff", "#00f3ff",
+    "#fdfd00", "#ffd700", "#ffffff"
+  ];
+
+  // ====== Default modules (prefilled from your specs) ======
+  // 关键尺寸/坐标/锚点/图层来自“精确坐标参考表” :contentReference[oaicite:13]{index=13}
+  // 头部装备/靴子多级等来自规格说明 :contentReference[oaicite:14]{index=14} :contentReference[oaicite:15]{index=15}
+  const defaultModuleDefs = [
+    // base
+    { id:"head_base", category:"base", file:"head_base.png", w:24, h:24, ax:0.5, ay:0.5, x:0, y:-32, layer:5 },
+    { id:"torso_jacket", category:"base", file:"torso_jacket.png", w:32, h:40, ax:0.5, ay:0.5, x:0, y:6, layer:4 },
+    { id:"torso_shirt", category:"base", file:"torso_shirt.png", w:16, h:32, ax:0.5, ay:0.5, x:0, y:6, layer:5 },
+    { id:"backpack_lv2_basic", category:"backpack", file:"backpack_lv2_basic.png", w:8, h:24, ax:0.5, ay:0.5, x:-24, y:6, layer:3 },
+
+    { id:"leg_upper_left", category:"legs", file:"leg_upper_left.png", w:12, h:24, ax:0.5, ay:0.0, x:-8, y:32, layer:3 },
+    { id:"leg_upper_right", category:"legs", file:"leg_upper_right.png", w:12, h:24, ax:0.5, ay:0.0, x:4, y:32, layer:3 },
+    { id:"leg_lower_left", category:"legs", file:"leg_lower_left.png", w:12, h:24, ax:0.5, ay:0.0, x:-8, y:48, layer:3 },
+    { id:"leg_lower_right", category:"legs", file:"leg_lower_right.png", w:12, h:24, ax:0.5, ay:0.0, x:4, y:48, layer:3 },
+
+    // headgear levels
+    { id:"headgear_lv1_cap", category:"headgear", file:"headgear_lv1_cap.png", w:32, h:8, ax:0.5, ay:0.5, x:0, y:-40, layer:6 },
+    { id:"headgear_lv2_vr", category:"headgear", file:"headgear_lv2_vr.png", w:28, h:8, ax:0.5, ay:0.5, x:0, y:-24, layer:7 },
+    { id:"headgear_lv3_golden", category:"headgear", file:"headgear_lv3_golden.png", w:28, h:8, ax:0.5, ay:0.5, x:0, y:-24, layer:7 },
+    { id:"headgear_lv4_cyber", category:"headgear", file:"headgear_lv4_cyber.png", w:28, h:8, ax:0.5, ay:0.5, x:0, y:-24, layer:7 },
+    { id:"headgear_lv5_halo", category:"headgear", file:"headgear_lv5_halo.png", w:48, h:32, ax:0.5, ay:0.5, x:0, y:-40, layer:8 },
+    // optional sprite sheet (4 frames, each 32x32 => 128x32) :contentReference[oaicite:16]{index=16}
+    { id:"headgear_lv5_halo_sheet", category:"headgear_sheet", file:"headgear_lv5_halo_sheet.png", w:128, h:32, ax:0.5, ay:0.5, x:0, y:-40, layer:8, frames:{frames:4, frameWidth:32, frameHeight:32, fps:12} },
+
+    // boots levels (position at (0,56) from table) :contentReference[oaicite:17]{index=17}
+    { id:"boots_lv1_basic", category:"boots", file:"boots_lv1_basic.png", w:32, h:8, ax:0.5, ay:0.0, x:0, y:56, layer:3 },
+    { id:"boots_lv2_heavy", category:"boots", file:"boots_lv2_heavy.png", w:32, h:16, ax:0.5, ay:0.0, x:0, y:56, layer:3 },
+    { id:"boots_lv3_piston", category:"boots", file:"boots_lv3_piston.png", w:48, h:24, ax:0.5, ay:0.0, x:0, y:56, layer:3 },
+    { id:"boots_lv4_jet", category:"boots", file:"boots_lv4_jet.png", w:48, h:24, ax:0.5, ay:0.0, x:0, y:56, layer:3 },
+    // flame sheet: 3 frames, each 24x8 => 72x8 :contentReference[oaicite:18]{index=18}
+    { id:"boots_lv4_jet_flame_sheet", category:"boots_fx", file:"boots_lv4_jet_flame_sheet.png", w:72, h:8, ax:0.5, ay:0.0, x:0, y:72, layer:2,
+      frames:{frames:3, frameWidth:24, frameHeight:8, fps:12} },
+    { id:"boots_lv5_antigrav", category:"boots", file:"boots_lv5_antigrav.png", w:72, h:24, ax:0.5, ay:0.0, x:0, y:56, layer:3 },
+
+    // backpack more levels (sizes from specs; positions can be edited)
+    { id:"backpack_lv3_antenna", category:"backpack", file:"backpack_lv3_antenna.png", w:16, h:40, ax:0.5, ay:0.5, x:-24, y:6, layer:3 },
+    { id:"backpack_lv4_dish", category:"backpack", file:"backpack_lv4_dish.png", w:24, h:32, ax:0.5, ay:0.5, x:-24, y:6, layer:3 },
+    { id:"backpack_lv5_drone", category:"backpack", file:"backpack_lv5_drone.png", w:16, h:8, ax:0.5, ay:0.5, x:-20, y:-20, layer:10 },
+
+    // hands/rod optional :contentReference[oaicite:19]{index=19}
+    { id:"hand_holding", category:"hands", file:"hand_holding.png", w:12, h:12, ax:0.5, ay:0.5, x:12, y:6, layer:4 },
+    { id:"rod_reel", category:"rod", file:"rod_reel.png", w:20, h:20, ax:0.5, ay:0.5, x:22, y:6, layer:9 },
+    { id:"rod_lv5_quantum_tip", category:"rod", file:"rod_lv5_quantum_tip.png", w:8, h:8, ax:0.5, ay:0.5, x:64, y:-10, layer:9 },
+  ];
+
+  // ====== DOM ======
+  const $ = (id) => document.getElementById(id);
+  const moduleListEl = $("moduleList");
+  const editorSubtitleEl = $("editorSubtitle");
+  const editCanvas = $("editCanvas");
+  const ectx = editCanvas.getContext("2d");
+  const previewCanvas = $("previewCanvas");
+  const pctx = previewCanvas.getContext("2d");
+
+  // Controls
+  const zoomRange = $("zoomRange");
+  const brushRange = $("brushRange");
+  const gridSelect = $("gridSelect");
+  const toolSelect = $("toolSelect");
+
+  const exportModuleBtn = $("exportModuleBtn");
+  const exportAllBtn = $("exportAllBtn");
+  const exportManifestBtn = $("exportManifestBtn");
+  const exportPreviewBtn = $("exportPreviewBtn");
+  const clearBtn = $("clearBtn");
+  const importBtn = $("importBtn");
+  const importPngInput = $("importPngInput");
+
+  const saveProjectBtn = $("saveProjectBtn");
+  const loadProjectBtn = $("loadProjectBtn");
+  const loadProjectInput = $("loadProjectInput");
+
+  const addModuleBtn = $("addModuleBtn");
+
+  // Props
+  const propId = $("propId");
+  const propFile = $("propFile");
+  const propW = $("propW");
+  const propH = $("propH");
+  const propAx = $("propAx");
+  const propAy = $("propAy");
+  const propX = $("propX");
+  const propY = $("propY");
+  const propLayer = $("propLayer");
+  const propCat = $("propCat");
+  const applyPropsBtn = $("applyPropsBtn");
+
+  const paletteEl = $("palette");
+  const currentColorBox = $("currentColorBox");
+  const currentColorText = $("currentColorText");
+  const categorySelectors = $("categorySelectors");
+
+  // ====== State ======
+  const state = {
+    zoom: Number(zoomRange.value),
+    brush: Number(brushRange.value),
+    showGrid: gridSelect.value === "on",
+    tool: toolSelect.value,
+    color: PALETTE[0],
+    modules: new Map(), // id -> { def, pixels: Uint8ClampedArray, undo: [], redo: [] }
+    activeId: null,
+    // category -> chosen module id for preview
+    categoryChoice: new Map()
+  };
+
+  // ====== Helpers ======
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+  function hexToRgba(hex) {
+    const h = hex.replace("#","");
+    const bigint = parseInt(h.length === 3 ? h.split("").map(c=>c+c).join("") : h, 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return [r,g,b,255];
+  }
+
+  function makeBlankPixels(w, h) {
+    return new Uint8ClampedArray(w * h * 4); // init transparent
+  }
+
+  function getModule(id) {
+    return state.modules.get(id) || null;
+  }
+
+  function activeModule() {
+    return state.activeId ? getModule(state.activeId) : null;
+  }
+
+  function snapshotUndo(mod) {
+    mod.undo.push(mod.pixels.slice());
+    if (mod.undo.length > MAX_UNDO) mod.undo.shift();
+    mod.redo.length = 0;
+  }
+
+  function setCurrentColor(hex) {
+    state.color = hex;
+    currentColorBox.style.background = hex;
+    currentColorText.textContent = hex.toLowerCase();
+    [...paletteEl.children].forEach((c) => c.classList.toggle("active", c.dataset.hex === hex));
+  }
+
+  // ====== Rendering: editor ======
+  function renderEditor() {
+    const mod = activeModule();
+    if (!mod) return;
+
+    const { w, h } = mod.def;
+    const zoom = state.zoom;
+
+    // resize editCanvas to fit (keep within reasonable bounds)
+    editCanvas.width = w * zoom;
+    editCanvas.height = h * zoom;
+
+    // draw pixels via offscreen game-res canvas
+    const off = document.createElement("canvas");
+    off.width = w;
+    off.height = h;
+    const octx = off.getContext("2d");
+    const img = new ImageData(mod.pixels, w, h);
+    octx.putImageData(img, 0, 0);
+
+    ectx.clearRect(0,0,editCanvas.width, editCanvas.height);
+    ectx.imageSmoothingEnabled = false;
+    ectx.drawImage(off, 0, 0, editCanvas.width, editCanvas.height);
+
+    // grid
+    if (state.showGrid) {
+      ectx.save();
+      ectx.globalAlpha = 0.25;
+      ectx.strokeStyle = "#2a3a52";
+      ectx.lineWidth = 1;
+
+      for (let x = 0; x <= w; x++) {
+        ectx.beginPath();
+        ectx.moveTo(x * zoom + 0.5, 0);
+        ectx.lineTo(x * zoom + 0.5, h * zoom);
+        ectx.stroke();
+      }
+      for (let y = 0; y <= h; y++) {
+        ectx.beginPath();
+        ectx.moveTo(0, y * zoom + 0.5);
+        ectx.lineTo(w * zoom, y * zoom + 0.5);
+        ectx.stroke();
+      }
+
+      // frame guides (sprite sheet)
+      if (mod.def.frames && mod.def.frames.frameWidth) {
+        ectx.globalAlpha = 0.45;
+        ectx.strokeStyle = "#39ff14";
+        const fw = mod.def.frames.frameWidth;
+        for (let fx = fw; fx < w; fx += fw) {
+          ectx.beginPath();
+          ectx.moveTo(fx * zoom + 0.5, 0);
+          ectx.lineTo(fx * zoom + 0.5, h * zoom);
+          ectx.stroke();
+        }
+      }
+
+      ectx.restore();
+    }
+  }
+
+  // ====== Rendering: preview ======
+  function renderPreview() {
+    pctx.clearRect(0,0,previewCanvas.width, previewCanvas.height);
+    pctx.imageSmoothingEnabled = false;
+
+    // coordinate mapping: game px -> preview px (scaled by EXPORT_SCALE)
+    const scale = EXPORT_SCALE;
+    const centerX = Math.floor(previewCanvas.width / 2);
+    const centerY = Math.floor(previewCanvas.height / 2);
+
+    // gather modules to draw: selected per category, plus always-on categories
+    const chosenIds = new Set();
+    for (const [cat, id] of state.categoryChoice.entries()) chosenIds.add(id);
+
+    // Also draw any modules whose category isn't in choices (singletons), if user wants.
+    for (const [id, mod] of state.modules.entries()) {
+      const cat = mod.def.category;
+      const hasSelector = hasCategorySelector(cat);
+      if (!hasSelector) chosenIds.add(id);
+    }
+
+    // sort by layer ascending
+    const mods = [...chosenIds]
+      .map(id => getModule(id))
+      .filter(Boolean)
+      .sort((a,b)=> (a.def.layer ?? 0) - (b.def.layer ?? 0));
+
+    // draw crosshair at anchor (0,0)
+    pctx.save();
+    pctx.globalAlpha = 0.4;
+    pctx.strokeStyle = "#2a3a52";
+    pctx.beginPath();
+    pctx.moveTo(centerX - 10, centerY + 0.5);
+    pctx.lineTo(centerX + 10, centerY + 0.5);
+    pctx.moveTo(centerX + 0.5, centerY - 10);
+    pctx.lineTo(centerX + 0.5, centerY + 10);
+    pctx.stroke();
+    pctx.restore();
+
+    // draw each module
+    for (const mod of mods) {
+      const { w, h, ax, ay, x, y } = mod.def;
+
+      // build offscreen at game res
+      const off = document.createElement("canvas");
+      off.width = w;
+      off.height = h;
+      const octx = off.getContext("2d");
+      octx.putImageData(new ImageData(mod.pixels, w, h), 0, 0);
+
+      // compute top-left in preview pixels
+      const px = centerX + Math.round(x * scale) - Math.round(w * scale * ax);
+      const py = centerY + Math.round(y * scale) - Math.round(h * scale * ay);
+
+      pctx.drawImage(off, px, py, w * scale, h * scale);
+    }
+  }
+
+  function hasCategorySelector(cat) {
+    // categories that likely have multiple variants:
+    return ["headgear","boots","backpack"].includes(cat);
+  }
+
+  // ====== UI: module list + selectors ======
+  function renderModuleList() {
+    moduleListEl.innerHTML = "";
+    const grouped = new Map(); // category -> defs
+    for (const [id, mod] of state.modules.entries()) {
+      const cat = mod.def.category || "uncat";
+      if (!grouped.has(cat)) grouped.set(cat, []);
+      grouped.get(cat).push(mod);
+    }
+
+    const cats = [...grouped.keys()].sort();
+    for (const cat of cats) {
+      const header = document.createElement("div");
+      header.className = "small";
+      header.style.margin = "8px 0 4px";
+      header.textContent = `# ${cat}`;
+      moduleListEl.appendChild(header);
+
+      const mods = grouped.get(cat).sort((a,b)=> a.def.id.localeCompare(b.def.id));
+      for (const mod of mods) {
+        const el = document.createElement("div");
+        el.className = "item" + (state.activeId === mod.def.id ? " active" : "");
+        el.onclick = () => selectModule(mod.def.id);
+
+        const top = document.createElement("div");
+        top.className = "row";
+        top.style.justifyContent = "space-between";
+        const left = document.createElement("div");
+        left.textContent = mod.def.id;
+        const right = document.createElement("span");
+        right.className = "tag";
+        right.textContent = `${mod.def.w}x${mod.def.h} • L${mod.def.layer}`;
+        top.appendChild(left);
+        top.appendChild(right);
+
+        const sub = document.createElement("div");
+        sub.className = "small";
+        sub.textContent = mod.def.file;
+
+        el.appendChild(top);
+        el.appendChild(sub);
+        moduleListEl.appendChild(el);
+      }
+    }
+  }
+
+  function renderCategorySelectors() {
+    categorySelectors.innerHTML = "";
+    const categories = ["headgear","boots","backpack"];
+    for (const cat of categories) {
+      const mods = [...state.modules.values()].filter(m => m.def.category === cat);
+      if (mods.length === 0) continue;
+
+      const label = document.createElement("label");
+      label.textContent = `预览选择：${cat}`;
+      const sel = document.createElement("select");
+      for (const m of mods.sort((a,b)=>a.def.id.localeCompare(b.def.id))) {
+        const opt = document.createElement("option");
+        opt.value = m.def.id;
+        opt.textContent = m.def.id;
+        sel.appendChild(opt);
+      }
+      const chosen = state.categoryChoice.get(cat) || mods[0].def.id;
+      state.categoryChoice.set(cat, chosen);
+      sel.value = chosen;
+      sel.onchange = () => {
+        state.categoryChoice.set(cat, sel.value);
+        renderPreview();
+      };
+      label.appendChild(sel);
+      categorySelectors.appendChild(label);
+    }
+  }
+
+  // ====== Selection + props ======
+  function selectModule(id) {
+    state.activeId = id;
+    const mod = activeModule();
+    if (!mod) return;
+
+    editorSubtitleEl.textContent = `${mod.def.id}  (${mod.def.w}x${mod.def.h} 游戏像素 → 导出 ${mod.def.w*EXPORT_SCALE}x${mod.def.h*EXPORT_SCALE} 实际像素)`;
+
+    // fill props inputs
+    propId.value = mod.def.id;
+    propFile.value = mod.def.file;
+    propW.value = mod.def.w;
+    propH.value = mod.def.h;
+    propAx.value = mod.def.ax;
+    propAy.value = mod.def.ay;
+    propX.value = mod.def.x;
+    propY.value = mod.def.y;
+    propLayer.value = mod.def.layer;
+    propCat.value = mod.def.category;
+
+    renderModuleList();
+    renderEditor();
+    renderPreview();
+  }
+
+  function applyProps() {
+    const mod = activeModule();
+    if (!mod) return;
+
+    const newId = propId.value.trim();
+    if (!newId) return alert("模块 ID 不能为空");
+
+    // If ID changed, re-key the map
+    if (newId !== mod.def.id) {
+      if (state.modules.has(newId)) return alert("该模块 ID 已存在");
+      state.modules.delete(mod.def.id);
+      mod.def.id = newId;
+      state.modules.set(newId, mod);
+      state.activeId = newId;
+    }
+
+    // Resize if needed
+    const newW = Math.max(1, Number(propW.value));
+    const newH = Math.max(1, Number(propH.value));
+    if (newW !== mod.def.w || newH !== mod.def.h) {
+      // create new buffer and copy overlap
+      const old = mod.pixels;
+      const oldW = mod.def.w, oldH = mod.def.h;
+      const next = makeBlankPixels(newW, newH);
+      const copyW = Math.min(oldW, newW);
+      const copyH = Math.min(oldH, newH);
+      for (let y = 0; y < copyH; y++) {
+        for (let x = 0; x < copyW; x++) {
+          const si = (y * oldW + x) * 4;
+          const di = (y * newW + x) * 4;
+          next[di+0]=old[si+0]; next[di+1]=old[si+1]; next[di+2]=old[si+2]; next[di+3]=old[si+3];
+        }
+      }
+      mod.pixels = next;
+      mod.undo.length = 0;
+      mod.redo.length = 0;
+      mod.def.w = newW;
+      mod.def.h = newH;
+    }
+
+    mod.def.file = propFile.value.trim() || (mod.def.id + ".png");
+    mod.def.ax = clamp(Number(propAx.value), 0, 1);
+    mod.def.ay = clamp(Number(propAy.value), 0, 1);
+    mod.def.x = Number(propX.value);
+    mod.def.y = Number(propY.value);
+    mod.def.layer = Number(propLayer.value);
+    mod.def.category = propCat.value.trim() || "uncat";
+
+    renderModuleList();
+    renderCategorySelectors();
+    selectModule(mod.def.id);
+  }
+
+  // ====== Painting ======
+  function paintAt(canvasX, canvasY, isEraser, useEyedropper) {
+    const mod = activeModule();
+    if (!mod) return;
+
+    const zoom = state.zoom;
+    const x = Math.floor(canvasX / zoom);
+    const y = Math.floor(canvasY / zoom);
+    if (x < 0 || y < 0 || x >= mod.def.w || y >= mod.def.h) return;
+
+    if (useEyedropper) {
+      const i = (y * mod.def.w + x) * 4;
+      const a = mod.pixels[i+3];
+      if (a === 0) return; // transparent
+      const r = mod.pixels[i+0], g = mod.pixels[i+1], b = mod.pixels[i+2];
+      const hex = "#" + [r,g,b].map(v => v.toString(16).padStart(2,"0")).join("");
+      setCurrentColor(hex);
+      return;
+    }
+
+    const brush = state.brush;
+    const rgba = hexToRgba(state.color);
+
+    for (let dy = 0; dy < brush; dy++) {
+      for (let dx = 0; dx < brush; dx++) {
+        const px = x + dx;
+        const py = y + dy;
+        if (px < 0 || py < 0 || px >= mod.def.w || py >= mod.def.h) continue;
+        const i = (py * mod.def.w + px) * 4;
+        if (isEraser) {
+          mod.pixels[i+3] = 0;
+        } else {
+          mod.pixels[i+0]=rgba[0]; mod.pixels[i+1]=rgba[1]; mod.pixels[i+2]=rgba[2]; mod.pixels[i+3]=rgba[3];
+        }
+      }
+    }
+  }
+
+  let drawing = false;
+  let drewSinceDown = false;
+
+  editCanvas.addEventListener("contextmenu", (e) => e.preventDefault());
+
+  editCanvas.addEventListener("pointerdown", (e) => {
+    const mod = activeModule();
+    if (!mod) return;
+
+    drawing = true;
+    drewSinceDown = false;
+
+    const isRight = (e.button === 2);
+    const isEraser = (state.tool === "eraser") || isRight;
+    const eyedrop = e.shiftKey;
+
+    snapshotUndo(mod);
+    paintAt(e.offsetX, e.offsetY, isEraser, eyedrop);
+    drewSinceDown = true;
+    renderEditor();
+    renderPreview();
+  });
+
+  editCanvas.addEventListener("pointermove", (e) => {
+    if (!drawing) return;
+    const mod = activeModule();
+    if (!mod) return;
+
+    const isEraser = (state.tool === "eraser") || (e.buttons === 2);
+    const eyedrop = e.shiftKey;
+    if (eyedrop) return;
+
+    paintAt(e.offsetX, e.offsetY, isEraser, false);
+    drewSinceDown = true;
+    renderEditor();
+    renderPreview();
+  });
+
+  window.addEventListener("pointerup", () => { drawing = false; });
+
+  // ====== Undo/Redo ======
+  function undo() {
+    const mod = activeModule();
+    if (!mod || mod.undo.length === 0) return;
+    mod.redo.push(mod.pixels.slice());
+    mod.pixels = mod.undo.pop();
+    renderEditor(); renderPreview();
+  }
+
+  // ====== Import / Export ======
+  function moduleToCanvas(mod, scale=1) {
+    const c = document.createElement("canvas");
+    c.width = mod.def.w * scale;
+    c.height = mod.def.h * scale;
+
+    // draw at game res first
+    const game = document.createElement("canvas");
+    game.width = mod.def.w;
+    game.height = mod.def.h;
+    game.getContext("2d").putImageData(new ImageData(mod.pixels, mod.def.w, mod.def.h), 0, 0);
+
+    const ctx = c.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0,0,c.width,c.height);
+    ctx.drawImage(game, 0,0, c.width, c.height);
+    return c;
+  }
+
+  function downloadBlob(blob, filename) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(a.href);
+      a.remove();
+    }, 0);
+  }
+
+  async function exportModulePNG(mod) {
+    const out = moduleToCanvas(mod, EXPORT_SCALE);
+    const blob = await new Promise(res => out.toBlob(res, "image/png"));
+    downloadBlob(blob, mod.def.file || (mod.def.id + ".png"));
+  }
+
+  async function exportAllModules() {
+    for (const mod of state.modules.values()) {
+      await exportModulePNG(mod);
+    }
+  }
+
+  function exportManifest() {
+    const manifest = {
+      unit: {
+        gamePixelToActualPixel: EXPORT_SCALE,
+        note: "Coordinates are in game pixels relative to character anchor (0,0)."
+      },
+      anchor: { x:0, y:0, description:"chest center" },
+      modules: [...state.modules.values()].map(m => ({
+        id: m.def.id,
+        file: m.def.file,
+        category: m.def.category,
+        size_game: { w: m.def.w, h: m.def.h },
+        size_actual: { w: m.def.w * EXPORT_SCALE, h: m.def.h * EXPORT_SCALE },
+        anchor: { ax: m.def.ax, ay: m.def.ay },
+        pos: { x: m.def.x, y: m.def.y },
+        layer: m.def.layer,
+        frames: m.def.frames || null
+      })).sort((a,b)=>a.layer-b.layer)
+    };
+
+    const blob = new Blob([JSON.stringify(manifest, null, 2)], {type:"application/json"});
+    downloadBlob(blob, "manifest.json");
+  }
+
+  async function exportPreviewPNG() {
+    // Render preview to an offscreen at higher resolution for export
+    const scale = EXPORT_SCALE;
+    const W = 384, H = 512;
+    const out = document.createElement("canvas");
+    out.width = W;
+    out.height = H;
+    const ctx = out.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0,0,W,H);
+
+    // reuse preview rendering logic but onto ctx
+    const centerX = Math.floor(W/2), centerY = Math.floor(H/2);
+
+    const chosenIds = new Set();
+    for (const [cat, id] of state.categoryChoice.entries()) chosenIds.add(id);
+    for (const [id, mod] of state.modules.entries()) {
+      const cat = mod.def.category;
+      if (!hasCategorySelector(cat)) chosenIds.add(id);
+    }
+
+    const mods = [...chosenIds]
+      .map(id => getModule(id))
+      .filter(Boolean)
+      .sort((a,b)=> (a.def.layer ?? 0) - (b.def.layer ?? 0));
+
+    for (const mod of mods) {
+      const { w, h, ax, ay, x, y } = mod.def;
+      const game = document.createElement("canvas");
+      game.width = w;
+      game.height = h;
+      game.getContext("2d").putImageData(new ImageData(mod.pixels, w, h), 0, 0);
+      const px = centerX + Math.round(x * scale) - Math.round(w * scale * ax);
+      const py = centerY + Math.round(y * scale) - Math.round(h * scale * ay);
+      ctx.drawImage(game, px, py, w * scale, h * scale);
+    }
+
+    const blob = await new Promise(res => out.toBlob(res, "image/png"));
+    downloadBlob(blob, "character_composite.png");
+  }
+
+  async function importPNGToActive(file) {
+    const mod = activeModule();
+    if (!mod) return;
+
+    const imgUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      // draw into temp canvas
+      const tmp = document.createElement("canvas");
+      tmp.width = img.width;
+      tmp.height = img.height;
+      const tctx = tmp.getContext("2d");
+      tctx.drawImage(img, 0, 0);
+
+      const src = tctx.getImageData(0,0,img.width,img.height).data;
+      const dstW = mod.def.w, dstH = mod.def.h;
+      const next = makeBlankPixels(dstW, dstH);
+
+      // if imported image is actual size (w*4,h*4), downsample by picking top-left pixel of each 4x4 block
+      const isActual = (img.width === dstW * EXPORT_SCALE && img.height === dstH * EXPORT_SCALE);
+      const scale = isActual ? EXPORT_SCALE : (img.width === dstW && img.height === dstH ? 1 : null);
+
+      snapshotUndo(mod);
+
+      if (scale === 1) {
+        // 1:1 copy
+        for (let y=0;y<dstH;y++) for (let x=0;x<dstW;x++) {
+          const si = (y*dstW + x)*4;
+          next[si+0]=src[si+0]; next[si+1]=src[si+1]; next[si+2]=src[si+2]; next[si+3]=src[si+3];
+        }
+      } else if (scale === EXPORT_SCALE) {
+        for (let y=0;y<dstH;y++) for (let x=0;x<dstW;x++) {
+          const sx = x*EXPORT_SCALE;
+          const sy = y*EXPORT_SCALE;
+          const si = (sy*img.width + sx)*4;
+          const di = (y*dstW + x)*4;
+          next[di+0]=src[si+0]; next[di+1]=src[si+1]; next[di+2]=src[si+2]; next[di+3]=src[si+3];
+        }
+      } else {
+        // fallback: nearest fit
+        for (let y=0;y<dstH;y++) for (let x=0;x<dstW;x++) {
+          const sx = Math.floor(x * img.width / dstW);
+          const sy = Math.floor(y * img.height / dstH);
+          const si = (sy*img.width + sx)*4;
+          const di = (y*dstW + x)*4;
+          next[di+0]=src[si+0]; next[di+1]=src[si+1]; next[di+2]=src[si+2]; next[di+3]=src[si+3];
+        }
+      }
+
+      mod.pixels = next;
+      renderEditor();
+      renderPreview();
+      URL.revokeObjectURL(imgUrl);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(imgUrl);
+      alert("PNG 加载失败");
+    };
+    img.src = imgUrl;
+  }
+
+  // ====== Project save/load ======
+  function moduleToGameDataURL(mod) {
+    const c = moduleToCanvas(mod, 1);
+    return c.toDataURL("image/png");
+  }
+
+  function saveProject() {
+    const project = {
+      version: 1,
+      exportScale: EXPORT_SCALE,
+      modules: [...state.modules.values()].map(m => ({
+        def: m.def,
+        pngGame: moduleToGameDataURL(m)
+      }))
+    };
+    const blob = new Blob([JSON.stringify(project, null, 2)], {type:"application/json"});
+    downloadBlob(blob, "sprite_project.json");
+  }
+
+  async function loadProject(file) {
+    const text = await file.text();
+    const project = JSON.parse(text);
+    if (!project || !Array.isArray(project.modules)) return alert("工程文件格式不正确");
+
+    state.modules.clear();
+
+    for (const item of project.modules) {
+      const def = item.def;
+      const png = item.pngGame;
+
+      const mod = { def: {...def}, pixels: makeBlankPixels(def.w, def.h), undo:[], redo:[] };
+      // decode png to pixels
+      await new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const c = document.createElement("canvas");
+          c.width = def.w;
+          c.height = def.h;
+          const ctx = c.getContext("2d");
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(img, 0,0, def.w, def.h);
+          const data = ctx.getImageData(0,0,def.w,def.h).data;
+          mod.pixels = new Uint8ClampedArray(data);
+          resolve();
+        };
+        img.onerror = () => resolve();
+        img.src = png;
+      });
+
+      state.modules.set(def.id, mod);
+    }
+
+    // rebuild category choices
+    state.categoryChoice.clear();
+    renderModuleList();
+    renderCategorySelectors();
+
+    // select first module
+    const firstId = [...state.modules.keys()][0] || null;
+    if (firstId) selectModule(firstId);
+    else renderPreview();
+  }
+
+  // ====== Events ======
+  zoomRange.oninput = () => { state.zoom = Number(zoomRange.value); renderEditor(); };
+  brushRange.oninput = () => { state.brush = Number(brushRange.value); };
+  gridSelect.onchange = () => { state.showGrid = gridSelect.value === "on"; renderEditor(); };
+  toolSelect.onchange = () => { state.tool = toolSelect.value; };
+
+  exportModuleBtn.onclick = async () => {
+    const mod = activeModule();
+    if (!mod) return;
+    await exportModulePNG(mod);
+  };
+  exportAllBtn.onclick = exportAllModules;
+  exportManifestBtn.onclick = exportManifest;
+  exportPreviewBtn.onclick = exportPreviewPNG;
+
+  clearBtn.onclick = () => {
+    const mod = activeModule();
+    if (!mod) return;
+    snapshotUndo(mod);
+    mod.pixels = makeBlankPixels(mod.def.w, mod.def.h);
+    renderEditor(); renderPreview();
+  };
+
+  importBtn.onclick = () => importPngInput.click();
+  importPngInput.onchange = async () => {
+    const f = importPngInput.files && importPngInput.files[0];
+    if (!f) return;
+    await importPNGToActive(f);
+    importPngInput.value = "";
+  };
+
+  applyPropsBtn.onclick = applyProps;
+
+  saveProjectBtn.onclick = saveProject;
+  loadProjectBtn.onclick = () => loadProjectInput.click();
+  loadProjectInput.onchange = async () => {
+    const f = loadProjectInput.files && loadProjectInput.files[0];
+    if (!f) return;
+    await loadProject(f);
+    loadProjectInput.value = "";
+  };
+
+  addModuleBtn.onclick = () => {
+    const baseId = "custom_module";
+    let id = baseId;
+    let k = 1;
+    while (state.modules.has(id)) { id = `${baseId}_${k++}`; }
+    const def = { id, category:"custom", file:`${id}.png`, w:16, h:16, ax:0.5, ay:0.5, x:0, y:0, layer:5 };
+    const mod = { def, pixels: makeBlankPixels(def.w, def.h), undo:[], redo:[] };
+    state.modules.set(id, mod);
+    renderModuleList();
+    renderCategorySelectors();
+    selectModule(id);
+  };
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "g" || e.key === "G") {
+      state.showGrid = !state.showGrid;
+      gridSelect.value = state.showGrid ? "on" : "off";
+      renderEditor();
+    }
+    if ((e.key === "z" || e.key === "Z") && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      undo();
+    }
+  });
+
+  // ====== Palette init ======
+  function initPalette() {
+    paletteEl.innerHTML = "";
+    for (const hex of PALETTE) {
+      const s = document.createElement("div");
+      s.className = "swatch";
+      s.style.background = hex;
+      s.dataset.hex = hex.toLowerCase();
+      s.onclick = () => setCurrentColor(hex.toLowerCase());
+      paletteEl.appendChild(s);
+    }
+    setCurrentColor(PALETTE[0].toLowerCase());
+  }
+
+  // ====== Init ======
+  function initModules() {
+    for (const def of defaultModuleDefs) {
+      const mod = { def: {...def}, pixels: makeBlankPixels(def.w, def.h), undo:[], redo:[] };
+      state.modules.set(def.id, mod);
+    }
+    renderModuleList();
+    renderCategorySelectors();
+    const firstId = defaultModuleDefs[0].id;
+    selectModule(firstId);
+  }
+
+  initPalette();
+  initModules();
+
+})();
+</script>
+</body>
+</html>

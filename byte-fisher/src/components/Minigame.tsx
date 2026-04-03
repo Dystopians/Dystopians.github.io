@@ -8,13 +8,18 @@ interface MinigameProps {
   onFail: () => void;
   lang: 'en' | 'zh';
   onProgress?: (progress: number) => void;
-  difficulty: 'simple' | 'hard';
+  difficulty: 'simple' | 'hard' | 'hardcore';
 }
 
 const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, onProgress, difficulty }) => {
   // Game constants derived from upgrades
   const barSizeBase = 25 + (upgrades.barSize * 5);
-  const BAR_SIZE_PERCENT = difficulty === 'hard' ? barSizeBase * 0.75 : barSizeBase; 
+  const BAR_SIZE_PERCENT =
+    difficulty === 'hardcore'
+      ? barSizeBase * 0.67
+      : difficulty === 'hard'
+        ? barSizeBase * 0.75
+        : barSizeBase; 
   
   // Physics adjustments - Tuned for "Tapping" control
   const GRAVITY = 0.12; 
@@ -25,7 +30,12 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
   const BASE_FILL_RATE = 0.3; // Reduced from 0.4 to ensure smoother progression
   const BONUS_FILL_RATE = 0.1;
   const progressBase = (BASE_FILL_RATE + ((upgrades.netStrength || 1) - 1) * BONUS_FILL_RATE) * 1.5;
-  const PROGRESS_SPEED = difficulty === 'hard' ? progressBase * 0.75 : progressBase;
+  const PROGRESS_SPEED =
+    difficulty === 'hardcore'
+      ? progressBase * 0.5
+      : difficulty === 'hard'
+        ? progressBase * 0.75
+        : progressBase;
   
   const DECAY_SPEED = 0.1; 
 
@@ -67,7 +77,7 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
     barVel.current = 0;
     fishPos.current = startFishPos;
     fishTarget.current = startFishPos;
-    fishTimer.current = 120;
+    fishTimer.current = difficulty === 'hardcore' ? 80 : difficulty === 'hard' ? 90 : 120;
 
     const updatePhysics = () => {
       if (isFinished.current) return;
@@ -75,13 +85,21 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
       // 1. Move Fish
       fishTimer.current--;
       if (fishTimer.current <= 0) {
-        const freqScale = difficulty === 'hard' ? 0.75 : 1;
-        fishTimer.current = (Math.random() * 200 + 120) * freqScale; 
-        fishTarget.current = Math.random() * 90 + 5; 
+        const freqScale = difficulty === 'hardcore' ? 0.67 : difficulty === 'hard' ? 0.75 : 1;
+        fishTimer.current = (Math.random() * 200 + 120) * freqScale;
+        const baseMin = 5;
+        const baseMax = 95;
+        const range = baseMax - baseMin;
+        const ampScale = difficulty === 'hardcore' ? 1.2 : 1;
+        const pad = (range * (ampScale - 1)) / 2;
+        const min = Math.max(0, baseMin - pad);
+        const max = Math.min(100, baseMax + pad);
+        fishTarget.current = Math.random() * (max - min) + min;
       }
       
       const dist = fishTarget.current - fishPos.current;
-      const moveSpeed = 0.5 + (Math.random() * 0.5); 
+      const moveSpeedBase = 0.5 + (Math.random() * 0.5); 
+      const moveSpeed = difficulty === 'hard' ? moveSpeedBase * 1.25 : moveSpeedBase;
       
       if (Math.abs(dist) < moveSpeed) fishPos.current = fishTarget.current;
       else fishPos.current += Math.sign(dist) * moveSpeed;

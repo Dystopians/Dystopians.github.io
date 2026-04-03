@@ -54,9 +54,10 @@ const App: React.FC = () => {
   const [upgrades, setUpgrades] = useState<Upgrades>(getInitialUpgrades);
 
   const [playerName, setPlayerName] = useState(() => localStorage.getItem('bytefisher_name') || '');
-  const [difficulty, setDifficulty] = useState<'simple' | 'hard'>(() => {
+  const [difficulty, setDifficulty] = useState<'simple' | 'hard' | 'hardcore'>(() => {
     const saved = localStorage.getItem('bytefisher_difficulty');
-    return saved === 'hard' ? 'hard' : 'simple';
+    if (saved === 'simple' || saved === 'hard' || saved === 'hardcore') return saved;
+    return 'hard';
   });
   const [audioMuted, setAudioMuted] = useState(() => localStorage.getItem('bytefisher_mute') === '1');
   const [resetNonce, setResetNonce] = useState(0);
@@ -203,7 +204,7 @@ const App: React.FC = () => {
     setUpgrades(getInitialUpgrades());
     setPlayerName('');
     setHistory([]);
-    setDifficulty('simple');
+    setDifficulty('hard');
     setAudioMuted(false);
     setGameState(GameState.IDLE);
     setLastCaught(null);
@@ -256,8 +257,9 @@ const App: React.FC = () => {
     }
 
     const baseSellValue = difficulty === 'simple' ? Math.max(0, Math.floor(item.value * 0.5)) : item.value;
+    const hardcoreValue = difficulty === 'hardcore' ? baseSellValue * 2 : baseSellValue;
     const isPerfectCatch = perfect && item.type === LootType.FISH;
-    const sellValue = isPerfectCatch ? Math.ceil(baseSellValue * 1.25) : baseSellValue;
+    const sellValue = isPerfectCatch ? Math.ceil(hardcoreValue * 1.25) : Math.ceil(hardcoreValue);
     const itemWithPrice = { ...item, sellValue, perfect: isPerfectCatch };
 
     setStats(prev => {
@@ -666,8 +668,8 @@ const App: React.FC = () => {
       )}
 
       {gameState === GameState.GUIDEBOOK && (
-        <Guidebook 
-           onClose={() => setGameState(GameState.IDLE)} 
+        <Guidebook
+           onClose={() => setGameState(GameState.IDLE)}
            lang={lang}
         />
       )}
