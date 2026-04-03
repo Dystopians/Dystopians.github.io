@@ -98,6 +98,131 @@
   font-size: $type-size-4;
 }
 
+.about-card-grid {
+  display: grid;
+  gap: 1rem;
+  margin: 1.5rem 0 2rem;
+}
+
+.about-card {
+  border: 1px solid var(--global-border-color);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--global-bg-color) 94%, var(--global-border-color) 6%);
+  box-shadow: 0 16px 36px -32px rgba(15, 23, 42, 0.35);
+  overflow: hidden;
+
+  &[open] {
+    box-shadow: 0 24px 48px -34px rgba(15, 23, 42, 0.45);
+  }
+
+  summary {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 1rem 1.15rem;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  summary::after {
+    content: "+";
+    position: absolute;
+    right: 1.1rem;
+    top: 1.2rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 1px solid var(--global-border-color);
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: $sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1;
+    background: var(--global-bg-color);
+  }
+
+  &[open] summary::after {
+    content: "-";
+  }
+}
+
+.about-card__eyebrow {
+  font-family: $sans-serif;
+  font-size: $type-size-7;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--global-text-color-light);
+}
+
+.about-card__title {
+  display: block;
+  max-width: calc(100% - 3rem);
+  font-family: $sans-serif;
+  font-size: $type-size-5;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.about-card__body {
+  padding: 0 1.15rem 1.15rem;
+
+  p:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.cv-link-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0 2rem;
+}
+
+.cv-link-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--global-border-color);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--global-bg-color) 95%, var(--global-border-color) 5%);
+  box-shadow: 0 16px 36px -32px rgba(15, 23, 42, 0.35);
+  text-decoration: none !important;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: var(--global-link-color);
+    box-shadow: 0 24px 44px -34px rgba(15, 23, 42, 0.42);
+    text-decoration: none !important;
+  }
+}
+
+.cv-link-card__eyebrow {
+  font-family: $sans-serif;
+  font-size: $type-size-7;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--global-text-color-light);
+}
+
+.cv-link-card__title {
+  font-family: $sans-serif;
+  font-size: $type-size-5;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--global-text-color);
+}
+
 .page__content {
 
   h2 {
