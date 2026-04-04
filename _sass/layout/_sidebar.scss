@@ -64,6 +64,13 @@
   }
 }
 
+.sidebar.sticky {
+  @include breakpoint($large) {
+    position: sticky;
+    top: calc(#{$masthead-height} + 0.75rem);
+  }
+}
+
 .sidebar > div[itemscope] {
   @include breakpoint($large) {
     box-sizing: border-box;
