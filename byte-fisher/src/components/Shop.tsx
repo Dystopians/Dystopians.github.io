@@ -34,12 +34,13 @@ const Shop: React.FC<ShopProps> = ({ credits, upgrades, inventory, onBuy, onSell
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-6">
-      <div className="bg-cyber-dark border-2 border-cyber-yellow w-full max-w-2xl p-4 sm:p-6 shadow-[0_0_30px_rgba(253,253,0,0.3)] crt relative max-h-[90vh] overflow-y-auto">
-        <button onClick={onClose} className="absolute top-3 right-3 sm:top-4 sm:right-4 text-cyber-yellow hover:text-white">
-          [{t.close}]
-        </button>
-        
-        <h2 className="text-2xl sm:text-3xl font-bold text-cyber-yellow mb-4 sm:mb-6 text-center">{t.shopTitle}</h2>
+      <div className="bg-cyber-dark border-2 border-cyber-yellow w-full max-w-2xl p-4 sm:p-6 shadow-[0_0_30px_rgba(253,253,0,0.3)] crt relative max-h-[90dvh] overflow-y-auto">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4 sm:mb-6">
+          <h2 className="text-2xl sm:text-3xl font-bold text-cyber-yellow text-center sm:text-left">{t.shopTitle}</h2>
+          <button onClick={onClose} className="self-center sm:self-auto shrink-0 text-cyber-yellow hover:text-white border border-cyber-yellow px-3 py-1">
+            [{t.close}]
+          </button>
+        </div>
         
         <div className="text-center mb-6 sm:mb-8">
           <span className="text-gray-400">{t.availableCredits}:</span>

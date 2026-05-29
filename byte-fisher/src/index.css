@@ -2,11 +2,104 @@
 @tailwind components;
 @tailwind utilities;
 
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+}
+
 body {
   background-color: #050505;
   color: #39ff14;
   font-family: "Courier New", Courier, monospace;
   overflow: hidden;
+  overscroll-behavior: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.byte-character-editor__body {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.byte-character-editor__sidebar {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+}
+
+.byte-character-editor__parts {
+  height: min(18rem, 38dvh);
+  min-height: 220px;
+  overflow-y: auto;
+}
+
+.byte-character-editor__preview {
+  flex: 0 0 auto;
+}
+
+.byte-pixel-editor__body {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.byte-pixel-editor__panel,
+.byte-pixel-editor__canvas,
+.byte-pixel-editor__preview {
+  flex: 0 0 auto;
+}
+
+@media (min-width: 1024px) {
+  .byte-character-editor__body {
+    flex-direction: row;
+    overflow: hidden;
+  }
+
+  .byte-character-editor__sidebar {
+    flex: 0 0 20rem;
+    overflow-y: auto;
+  }
+
+  .byte-character-editor__parts {
+    flex: 1 1 0;
+    height: auto;
+    min-height: 0;
+  }
+
+  .byte-character-editor__preview {
+    flex: 1 1 0;
+  }
+
+  .byte-pixel-editor__body {
+    flex-direction: row;
+    overflow: hidden;
+  }
+
+  .byte-pixel-editor__panel,
+  .byte-pixel-editor__preview {
+    flex: 0 0 16rem;
+    overflow-y: auto;
+  }
+
+  .byte-pixel-editor__canvas {
+    flex: 1 1 0;
+    min-height: 0;
+  }
 }
 
 /* Custom scrollbar for terminal look */

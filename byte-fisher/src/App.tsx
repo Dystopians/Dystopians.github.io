@@ -388,6 +388,15 @@ const App: React.FC = () => {
     });
   };
 
+  const showHud = ![
+    GameState.SHOP,
+    GameState.TERMINAL,
+    GameState.CODEX,
+    GameState.GUIDEBOOK,
+    GameState.IMAGE_EDITOR,
+    GameState.CHARACTER_EDITOR,
+  ].includes(gameState);
+
   const fadeTo = useCallback((audio: HTMLAudioElement | null, target: number, duration = 600, pauseOnEnd = false) => {
     if (!audio) return;
     const existing = fadeTimersRef.current.get(audio);
@@ -502,7 +511,7 @@ const App: React.FC = () => {
   }, [audioMuted, fadeTo]);
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-transparent text-cyber-green font-mono select-none">
+    <div className="relative w-screen h-[100dvh] min-h-[100svh] overflow-hidden bg-transparent text-cyber-green font-mono select-none">
       
       {/* Background Canvas */}
       <VoidCanvas 
@@ -513,59 +522,64 @@ const App: React.FC = () => {
       />
 
       {/* HUD */}
-      <div className="relative z-10 w-full p-4 flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start pointer-events-none">
-        <div>
-           <h1 className="text-2xl font-bold bg-black/50 px-2 glitch-text border-l-4 border-cyber-pink">BYTE_FISHER_beta0.9.2</h1>
-           <div className="mt-2 text-sm bg-black/50 inline-block px-2">
+      {showHud && (
+      <div className="fixed inset-x-0 top-0 z-30 p-3 sm:p-4 pointer-events-none">
+        <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+           <h1 className="inline-block max-w-full truncate text-[clamp(1.05rem,5.8vw,1.5rem)] sm:text-2xl font-bold bg-black/60 px-2 glitch-text border-l-4 border-cyber-pink">BYTE_FISHER_beta0.9.2</h1>
+           <div className="mt-1 sm:mt-2 max-w-full w-fit truncate text-xs sm:text-sm bg-black/60 px-2">
              {t.status}: <span className="text-cyber-cyan">{gameState}</span>
            </div>
            <div className="mt-1 pointer-events-auto flex flex-wrap gap-2">
              <button 
                onClick={() => setLang(prev => prev === 'en' ? 'zh' : 'en')}
-               className="bg-black/50 border border-cyber-gray text-xs px-2 py-1 hover:border-cyber-green text-gray-400 hover:text-cyber-green transition-colors"
+               className="bg-black/60 border border-cyber-gray text-[0.65rem] sm:text-xs px-2 py-1 hover:border-cyber-green text-gray-400 hover:text-cyber-green transition-colors whitespace-nowrap"
              >
                [{lang === 'en' ? 'EN' : '中文'}] SWITCH LANG
              </button>
              <button
                onClick={() => setAudioMuted(prev => !prev)}
-               className="bg-black/50 border border-cyber-gray text-xs px-2 py-1 hover:border-cyber-green text-gray-400 hover:text-cyber-green transition-colors"
+               className="bg-black/60 border border-cyber-gray text-[0.65rem] sm:text-xs px-2 py-1 hover:border-cyber-green text-gray-400 hover:text-cyber-green transition-colors whitespace-nowrap"
              >
                {audioMuted ? t.audioMuted : t.audioOn}
              </button>
            </div>
         </div>
-        <div className="flex flex-col items-start sm:items-end gap-2 pointer-events-auto">
-          <div className="bg-cyber-dark border border-cyber-green px-4 py-2 text-lg sm:text-xl font-bold shadow-[0_0_10px_#39ff14] transition-all duration-300">
+        <div className="shrink-0 pointer-events-auto">
+          <div className="bg-cyber-dark/95 border border-cyber-green px-3 sm:px-4 py-2 text-base sm:text-xl font-bold shadow-[0_0_10px_#39ff14] transition-all duration-300">
              ${displayCredits}
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 w-full max-w-[18rem] sm:w-64">
+        </div>
+        </div>
+
+          <div className="mt-2 sm:ml-auto grid grid-cols-4 sm:grid-cols-2 gap-1.5 sm:gap-2 w-full sm:w-64 pointer-events-auto">
              <button
                onClick={() => setGameState(GameState.SHOP)}
-               className="bg-cyber-yellow text-black px-2 py-1 hover:bg-white hover:scale-105 font-bold transition-all duration-200 hover:shadow-[0_0_15px_#fdfd00] active:scale-95"
+               className="min-h-9 bg-cyber-yellow text-black px-1 sm:px-2 py-1 text-[0.66rem] sm:text-base leading-tight hover:bg-white hover:scale-105 font-bold transition-all duration-200 hover:shadow-[0_0_15px_#fdfd00] active:scale-95 whitespace-nowrap overflow-hidden text-ellipsis"
              >
                {t.market}
              </button>
              <button
                onClick={() => setGameState(GameState.TERMINAL)}
-               className="bg-cyber-pink text-black px-2 py-1 hover:bg-white hover:scale-105 font-bold transition-all duration-200 hover:shadow-[0_0_15px_#ff00ff] active:scale-95"
+               className="min-h-9 bg-cyber-pink text-black px-1 sm:px-2 py-1 text-[0.66rem] sm:text-base leading-tight hover:bg-white hover:scale-105 font-bold transition-all duration-200 hover:shadow-[0_0_15px_#ff00ff] active:scale-95 whitespace-nowrap overflow-hidden text-ellipsis"
              >
                {t.terminal}
              </button>
              <button
                onClick={() => setGameState(GameState.CODEX)}
-               className="bg-cyber-green text-black px-2 py-1 hover:bg-white hover:scale-105 font-bold transition-all duration-200 hover:shadow-[0_0_15px_#39ff14] active:scale-95"
+               className="min-h-9 bg-cyber-green text-black px-1 sm:px-2 py-1 text-[0.66rem] sm:text-base leading-tight hover:bg-white hover:scale-105 font-bold transition-all duration-200 hover:shadow-[0_0_15px_#39ff14] active:scale-95 whitespace-nowrap overflow-hidden text-ellipsis"
              >
                {t.codex}
              </button>
              <button
                onClick={() => setGameState(GameState.GUIDEBOOK)}
-               className="bg-cyber-cyan text-black px-2 py-1 hover:bg-white hover:scale-105 font-bold transition-all duration-200 hover:shadow-[0_0_15px_#00f3ff] active:scale-95"
+               className="min-h-9 bg-cyber-cyan text-black px-1 sm:px-2 py-1 text-[0.66rem] sm:text-base leading-tight hover:bg-white hover:scale-105 font-bold transition-all duration-200 hover:shadow-[0_0_15px_#00f3ff] active:scale-95 whitespace-nowrap overflow-hidden text-ellipsis"
              >
                {t.guidebook}
              </button>
           </div>
-        </div>
       </div>
+      )}
 
       {/* Main Action Area */}
       {gameState === GameState.IDLE && (
@@ -580,7 +594,7 @@ const App: React.FC = () => {
       )}
 
       {gameState === GameState.WAITING && (
-         <div className="absolute bottom-32 left-1/2 -translate-x-1/2 text-cyber-cyan animate-pulse z-20 font-bold bg-black/50 px-4 py-1">
+         <div className="absolute bottom-32 left-1/2 -translate-x-1/2 text-cyber-cyan animate-pulse z-20 font-bold bg-black/60 px-4 py-1 text-center whitespace-nowrap">
             {t.scanning}
          </div>
       )}
@@ -599,8 +613,8 @@ const App: React.FC = () => {
 
       {/* Catch Success Modal */}
       {gameState === GameState.CAUGHT && lastCaught && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in" onClick={claimCatch}>
-           <div className={`bg-cyber-dark border-4 p-8 text-center animate-bounce-in relative overflow-hidden
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-4" onClick={claimCatch}>
+           <div className={`w-full max-w-md bg-cyber-dark border-4 p-5 sm:p-8 text-center animate-bounce-in relative overflow-hidden
              ${lastCaught.rarity === 'legendary' || lastCaught.type === LootType.SPECIAL
                ? 'border-cyber-yellow shadow-[0_0_80px_#ffd700] animate-pulse'
                : lastCaught.rarity === 'rare'
@@ -611,7 +625,7 @@ const App: React.FC = () => {
              }`}>
               <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent animate-shimmer"></div>
               <h2 className="text-2xl text-white mb-2 relative z-10">{t.signalAcquired}</h2>
-              <div className={`text-4xl my-4 font-bold relative z-10 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] ${
+              <div className={`text-3xl sm:text-4xl my-4 font-bold relative z-10 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] break-words ${
                 lastCaught.rarity === 'legendary' || lastCaught.type === LootType.SPECIAL
                   ? 'text-cyber-yellow animate-pulse'
                   : lastCaught.rarity === 'rare'
@@ -675,9 +689,11 @@ const App: React.FC = () => {
       )}
 
       {/* Mobile Controls Hint */}
-      <div className="fixed bottom-2 w-full text-center text-xs text-gray-600 pointer-events-none z-50">
-        beta0.9.2 // SECURITY_UPDATE // GLITCH_PATCHED
-      </div>
+      {showHud && (
+        <div className="fixed bottom-2 w-full text-center text-xs text-gray-600 pointer-events-none z-20">
+          beta0.9.2 // SECURITY_UPDATE // GLITCH_PATCHED
+        </div>
+      )}
     </div>
   );
 };

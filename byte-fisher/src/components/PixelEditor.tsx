@@ -81,7 +81,7 @@ const PixelEditor: React.FC<PixelEditorProps> = ({ partName, width, height, onCl
     }
   };
 
-  const getPixelPos = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const getPixelPos = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
 
@@ -176,9 +176,11 @@ const PixelEditor: React.FC<PixelEditorProps> = ({ partName, width, height, onCl
     updatePreview();
   };
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const pos = getPixelPos(e);
     if (!pos) return;
+
+    e.currentTarget.setPointerCapture(e.pointerId);
 
     if (tool === 'fill') {
       floodFill(pos.x, pos.y, currentColor);
@@ -192,7 +194,7 @@ const PixelEditor: React.FC<PixelEditorProps> = ({ partName, width, height, onCl
     }
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
 
     const pos = getPixelPos(e);
@@ -203,7 +205,11 @@ const PixelEditor: React.FC<PixelEditorProps> = ({ partName, width, height, onCl
     updatePreview();
   };
 
-  const handleMouseUp = () => {
+  const handlePointerUp = (e?: React.PointerEvent<HTMLCanvasElement>) => {
+    if (e?.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+
     if (isDrawing) {
       const ctx = canvasRef.current?.getContext('2d');
       if (ctx) saveToHistory(ctx);
@@ -278,23 +284,23 @@ const PixelEditor: React.FC<PixelEditorProps> = ({ partName, width, height, onCl
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
-      <div className="bg-cyber-dark border-2 border-cyber-green w-full max-w-6xl h-[90vh] flex flex-col shadow-[0_0_30px_rgba(57,255,20,0.3)]">
+    <div className="fixed inset-0 z-50 bg-black flex items-center justify-center p-3 sm:p-4">
+      <div className="bg-cyber-dark border-2 border-cyber-green w-full max-w-6xl h-[min(90dvh,900px)] max-h-[calc(100dvh-1.5rem)] flex flex-col overflow-hidden shadow-[0_0_30px_rgba(57,255,20,0.3)]">
 
         {/* Header */}
-        <div className="flex justify-between items-center p-4 border-b border-cyber-green">
-          <h2 className="text-2xl font-bold text-cyber-green">
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center p-3 sm:p-4 border-b border-cyber-green shrink-0">
+          <h2 className="text-lg sm:text-2xl font-bold text-cyber-green leading-tight break-words">
             PIXEL EDITOR - {partName} ({width}×{height})
           </h2>
-          <button onClick={onClose} className="text-cyber-pink hover:text-white font-bold">
+          <button onClick={onClose} className="self-start sm:self-auto text-cyber-pink hover:text-white font-bold border border-cyber-pink px-3 py-1">
             [X] CLOSE
           </button>
         </div>
 
-        <div className="flex-1 flex gap-4 p-4 overflow-hidden">
+        <div className="byte-pixel-editor__body flex-1 min-h-0 gap-3 sm:gap-4 p-3 sm:p-4">
 
           {/* Left Panel - Tools */}
-          <div className="w-64 flex flex-col gap-4 overflow-y-auto">
+          <div className="byte-pixel-editor__panel w-full min-h-0 flex flex-col gap-3 sm:gap-4">
 
             {/* Tools */}
             <div className="border border-cyber-gray p-3">
@@ -302,19 +308,19 @@ const PixelEditor: React.FC<PixelEditorProps> = ({ partName, width, height, onCl
               <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => setTool('pen')}
-                  className={`px-3 py-2 border ${tool === 'pen' ? 'bg-cyber-green text-black' : 'border-cyber-gray text-gray-400'}`}
+                  className={`px-2 sm:px-3 py-2 border text-xs sm:text-sm leading-tight ${tool === 'pen' ? 'bg-cyber-green text-black' : 'border-cyber-gray text-gray-400'}`}
                 >
                   ✏️ PEN
                 </button>
                 <button
                   onClick={() => setTool('eraser')}
-                  className={`px-3 py-2 border ${tool === 'eraser' ? 'bg-cyber-green text-black' : 'border-cyber-gray text-gray-400'}`}
+                  className={`px-2 sm:px-3 py-2 border text-xs sm:text-sm leading-tight ${tool === 'eraser' ? 'bg-cyber-green text-black' : 'border-cyber-gray text-gray-400'}`}
                 >
                   🧹 ERASE
                 </button>
                 <button
                   onClick={() => setTool('fill')}
-                  className={`px-3 py-2 border ${tool === 'fill' ? 'bg-cyber-green text-black' : 'border-cyber-gray text-gray-400'}`}
+                  className={`px-2 sm:px-3 py-2 border text-xs sm:text-sm leading-tight ${tool === 'fill' ? 'bg-cyber-green text-black' : 'border-cyber-gray text-gray-400'}`}
                 >
                   🪣 FILL
                 </button>
@@ -324,7 +330,7 @@ const PixelEditor: React.FC<PixelEditorProps> = ({ partName, width, height, onCl
             {/* Palette */}
             <div className="border border-cyber-gray p-3">
               <h3 className="text-cyber-cyan mb-2">PALETTE</h3>
-              <div className="grid grid-cols-6 gap-1">
+              <div className="grid grid-cols-8 lg:grid-cols-6 gap-1">
                 {PALETTE.map(color => (
                   <button
                     key={color}
@@ -423,7 +429,7 @@ const PixelEditor: React.FC<PixelEditorProps> = ({ partName, width, height, onCl
           </div>
 
           {/* Center - Canvas */}
-          <div className="flex-1 flex flex-col gap-4 items-center justify-center overflow-auto bg-gray-900 relative">
+          <div className="byte-pixel-editor__canvas flex-1 min-w-0 min-h-[360px] lg:min-h-0 flex flex-col gap-4 items-center justify-center overflow-auto bg-gray-900 relative p-3 touch-none">
             <div
               className="relative"
               style={{
@@ -436,11 +442,12 @@ const PixelEditor: React.FC<PixelEditorProps> = ({ partName, width, height, onCl
                 ref={canvasRef}
                 width={canvasWidth}
                 height={canvasHeight}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-                className="absolute inset-0 cursor-crosshair"
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
+                onPointerLeave={handlePointerUp}
+                className="absolute inset-0 cursor-crosshair touch-none"
                 style={{
                   width: '100%',
                   height: '100%',
@@ -480,12 +487,12 @@ const PixelEditor: React.FC<PixelEditorProps> = ({ partName, width, height, onCl
           </div>
 
           {/* Right Panel - Preview */}
-          <div className="w-64 flex flex-col gap-4">
+          <div className="byte-pixel-editor__preview w-full min-h-0 flex flex-col gap-3 sm:gap-4">
 
             {/* Preview */}
             <div className="border border-cyber-cyan p-3">
               <h3 className="text-cyber-cyan mb-2">PREVIEW (1:1)</h3>
-              <div className="bg-gray-900 p-4 flex items-center justify-center">
+              <div className="bg-gray-900 p-4 flex items-center justify-center overflow-auto">
                 <canvas
                   ref={previewRef}
                   width={canvasWidth}

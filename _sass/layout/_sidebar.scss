@@ -265,13 +265,15 @@ html[data-theme="dark"] .clustrmaps-embed {
   display: none;
   position: absolute;
   right: 0;
+  width: min(18rem, calc(100vw - 2rem));
+  min-width: 15rem;
   margin-top: 15px;
   padding: 10px;
   list-style-type: none;
   border: 1px solid var(--global-border-color);
   border-radius: $border-radius;
   background: var(--global-bg-color);
-  z-index: -1;
+  z-index: 30;
   box-shadow: 0 0 10px rgba(#000, 0.25);
   cursor: default;
   font-family: $sans-serif;
@@ -280,6 +282,9 @@ html[data-theme="dark"] .clustrmaps-embed {
   @include breakpoint($large) {
     display: block;
     position: relative;
+    width: auto;
+    min-width: 0;
+    max-width: none;
     margin: 0;
     padding: 0;
     border: 0;
@@ -324,7 +329,7 @@ html[data-theme="dark"] .clustrmaps-embed {
   li {
     display: block;
     white-space: normal;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     margin-bottom: 0.15rem;
     line-height: inherit;
   }
@@ -384,14 +389,61 @@ html[data-theme="dark"] .clustrmaps-embed {
   }
 }
 
-.author__urls .author__meta-line i {
+.author__urls .author__meta-line i,
+.author__urls .author__meta-icon {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
   width: 1rem !important;
   min-width: 1rem !important;
+  height: 1rem !important;
   font-size: 0.95rem !important;
   line-height: 1.22 !important;
   text-align: center;
   margin-top: 0.04rem;
   color: var(--global-text-color-light) !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.author__urls .author__meta-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.author__urls .author__meta-icon--scholar {
+  color: #4285f4 !important;
+}
+
+.author__urls .author__meta-icon--orcid {
+  color: #a6ce39 !important;
+}
+
+.author__urls .author__meta-icon--github {
+  color: #181717 !important;
+}
+
+html[data-theme="dark"] .author__urls .author__meta-icon--github {
+  color: #e5e7eb !important;
+}
+
+.author__urls .author__meta-line i.fas,
+.author__urls .author__meta-line i.fa,
+.author__urls .author__meta-line i.fa-solid {
+  font-family: "Font Awesome 6 Free" !important;
+  font-weight: 900 !important;
+}
+
+.author__urls .author__meta-line i.fab,
+.author__urls .author__meta-line i.fa-brands {
+  font-family: "Font Awesome 6 Brands" !important;
+  font-weight: 400 !important;
+}
+
+.author__urls .author__meta-line i.ai {
+  font-family: "Academicons" !important;
+  font-weight: 400 !important;
 }
 
 .author__urls .author__meta-label {

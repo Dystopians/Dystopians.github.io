@@ -37,7 +37,7 @@ function updateNav() {
   } else {
 
     // There is space for another item in the nav
-    while (breaks.length > 0 && availableSpace > breaks[breaks.length - 1]) {
+    while (breaks.length > 0 && $hlinks.children().length > 0 && availableSpace > breaks[breaks.length - 1]) {
       // Move the item to the visible list
       if ($vlinks_persist_tail.children().length > 0) {
         $hlinks.children().first().insertBefore($vlinks_persist_tail);
@@ -48,7 +48,8 @@ function updateNav() {
     }
 
     // Hide the dropdown btn if hidden list is empty
-    if (breaks.length < 1) {
+    if (breaks.length < 1 || $hlinks.children().length < 1) {
+      breaks = [];
       $btn.addClass('hidden');
       $btn.removeClass('close');
       $hlinks.addClass('hidden');
@@ -74,9 +75,11 @@ function updateNav() {
 $(window).on('resize', function () {
   updateNav();
 });
-screen.orientation.addEventListener("change", function () {
-  updateNav();
-});
+if (screen.orientation && screen.orientation.addEventListener) {
+  screen.orientation.addEventListener("change", function () {
+    updateNav();
+  });
+}
 
 $btn.on('click', function () {
   $hlinks.toggleClass('hidden');

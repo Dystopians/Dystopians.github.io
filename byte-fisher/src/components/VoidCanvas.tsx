@@ -122,7 +122,7 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
     const buildEntities = () => {
       const H = canvas.height;
       const W = canvas.width;
-      const charY = H * 0.20;
+      const charY = charPos.current.y;
       const waterSurfaceY = charY + scalePx(96 + 20); // 24*4 (dock height) + 20 (padding)
       const mudY = H - scalePx(80);
       const waterHeight = Math.max(scalePx(100), mudY - waterSurfaceY); // Ensure strictly positive
@@ -168,9 +168,10 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
     const resize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      charPos.current = { x: canvas.width * 0.5, y: canvas.height * 0.20 };
       const minDim = Math.min(canvas.width, canvas.height);
       scaleRef.current = Math.min(1, Math.max(0.55, minDim / 700));
+      const mobileClearanceY = canvas.width < 430 ? 164 : 0;
+      charPos.current = { x: canvas.width * 0.5, y: Math.max(canvas.height * 0.20, mobileClearanceY) };
       buildEntities();
     };
     window.addEventListener('resize', resize);

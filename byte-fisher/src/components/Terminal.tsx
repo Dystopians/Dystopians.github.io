@@ -440,11 +440,11 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
   };
 
   return (
-    <div className="fixed inset-0 z-40 bg-cyber-black/95 flex flex-col p-3 sm:p-4 md:p-10 font-mono text-cyber-green crt">
+    <div className="fixed inset-0 z-40 h-[100dvh] bg-cyber-black/95 flex flex-col p-3 sm:p-4 md:p-10 font-mono text-cyber-green crt overflow-hidden">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center border-b-2 border-cyber-green pb-4 mb-4">
-        <h1 className="text-2xl sm:text-3xl font-bold glitch-text">TERMINAL_ACCESS</h1>
-        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center border-b-2 border-cyber-green pb-3 sm:pb-4 mb-3 sm:mb-4 shrink-0">
+        <h1 className="text-xl sm:text-3xl font-bold glitch-text break-words">TERMINAL_ACCESS</h1>
+        <div className="grid grid-cols-2 sm:flex gap-2 sm:items-center">
           <button
             onClick={() =>
               setDifficulty(
@@ -459,7 +459,7 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
               difficulty === 'hardcore'
                 ? 'border-cyber-pink text-transparent bg-clip-text bg-gradient-to-r from-cyber-cyan via-cyber-pink to-cyber-yellow'
                 : 'border-cyber-green text-cyber-green hover:bg-cyber-green hover:text-black'
-            }`}
+            } whitespace-nowrap overflow-hidden text-ellipsis`}
           >
             {difficulty === 'simple' ? t.modeSimple : difficulty === 'hard' ? t.modeHard : t.modeHardcore}
           </button>
@@ -476,39 +476,39 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
               confirmReset
                 ? 'border-red-500 text-red-500 hover:bg-red-500 hover:text-black'
                 : 'border-red-900 text-red-900 hover:bg-red-500 hover:text-black'
-            }`}
+            } whitespace-nowrap overflow-hidden text-ellipsis`}
           >
             {confirmReset ? t.resetConfirm : t.reset}
           </button>
-          <button onClick={onClose} className="self-start sm:self-auto text-cyber-pink hover:bg-cyber-pink hover:text-black px-4 py-1 border border-cyber-pink">
+          <button onClick={onClose} className="col-span-2 sm:col-span-1 text-cyber-pink hover:bg-cyber-pink hover:text-black px-4 py-1 border border-cyber-pink text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis">
             [X] {t.disconnect}
           </button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-3 mb-4 sm:mb-6">
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3 mb-3 sm:mb-6 shrink-0">
         <button
           onClick={() => setActiveTab('INVENTORY')}
-          className={`px-4 py-2 text-sm sm:text-base border ${activeTab === 'INVENTORY' ? 'bg-cyber-green text-black' : 'border-cyber-green text-cyber-green hover:bg-cyber-green/20'}`}
+          className={`px-3 sm:px-4 py-2 text-xs sm:text-base border whitespace-nowrap overflow-hidden text-ellipsis ${activeTab === 'INVENTORY' ? 'bg-cyber-green text-black' : 'border-cyber-green text-cyber-green hover:bg-cyber-green/20'}`}
         >
           {t.inventory}
         </button>
         <button
           onClick={() => setActiveTab('COMPOSE')}
-          className={`px-4 py-2 text-sm sm:text-base border ${activeTab === 'COMPOSE' ? 'bg-cyber-green text-black' : 'border-cyber-green text-cyber-green hover:bg-cyber-green/20'}`}
+          className={`px-3 sm:px-4 py-2 text-xs sm:text-base border whitespace-nowrap overflow-hidden text-ellipsis ${activeTab === 'COMPOSE' ? 'bg-cyber-green text-black' : 'border-cyber-green text-cyber-green hover:bg-cyber-green/20'}`}
         >
           {t.composer}
         </button>
         <button
           onClick={() => setActiveTab('NETWORK')}
-          className={`px-4 py-2 text-sm sm:text-base border ${activeTab === 'NETWORK' ? 'bg-cyber-green text-black' : 'border-cyber-green text-cyber-green hover:bg-cyber-green/20'}`}
+          className={`px-3 sm:px-4 py-2 text-xs sm:text-base border whitespace-nowrap overflow-hidden text-ellipsis ${activeTab === 'NETWORK' ? 'bg-cyber-green text-black' : 'border-cyber-green text-cyber-green hover:bg-cyber-green/20'}`}
         >
           {t.network}
         </button>
         <button
           onClick={() => setActiveTab('CHAR_EDITOR')}
-          className={`px-4 py-2 text-sm sm:text-base border ${activeTab === 'CHAR_EDITOR' ? 'bg-purple-600 text-white' : 'border-purple-600 text-purple-400 hover:bg-purple-600/20'}`}
+          className={`px-3 sm:px-4 py-2 text-xs sm:text-base border whitespace-nowrap overflow-hidden text-ellipsis ${activeTab === 'CHAR_EDITOR' ? 'bg-purple-600 text-white' : 'border-purple-600 text-purple-400 hover:bg-purple-600/20'}`}
         >
           {t.characterEditor}
         </button>
@@ -639,7 +639,7 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
         )}
 
         {activeTab === 'CHAR_EDITOR' && (
-          <div className="w-full h-full relative">
+          <div className="w-full h-full min-h-0 relative overflow-hidden">
             <CharacterEditor
               onClose={() => setActiveTab('INVENTORY')}
               lang={lang}

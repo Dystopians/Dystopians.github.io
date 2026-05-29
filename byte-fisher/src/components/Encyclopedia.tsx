@@ -51,8 +51,9 @@ const Encyclopedia: React.FC<EncyclopediaProps> = ({ unlockedItems, catchStats, 
         </div>
 
         {/* Grid */}
-        <div className="flex-1 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 p-2">
-          {filteredItems.map((item) => {
+        <div className="flex-1 min-h-0 overflow-y-auto p-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {filteredItems.map((item) => {
             const isUnlocked = unlockedItems.includes(item.itemId!);
             const info = getItemInfo(item.itemId!, item.name!);
             const count = catchStats[item.itemId!] || 0;
@@ -104,7 +105,8 @@ const Encyclopedia: React.FC<EncyclopediaProps> = ({ unlockedItems, catchStats, 
                 </div>
               </div>
             );
-          })}
+            })}
+          </div>
         </div>
         
         <div className="mt-4 text-xs text-center text-gray-600">

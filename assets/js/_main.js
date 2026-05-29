@@ -25,20 +25,36 @@ let determineComputedTheme = () => {
 // detect OS/browser preference
 const browserPref = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
+let updateThemeToggle = (computedTheme) => {
+  const toggle = $("#theme-toggle a");
+  const moonIcon = $(".theme-toggle__symbol--moon");
+  const sunIcon = $(".theme-toggle__symbol--sun");
+  const isDark = computedTheme === "dark";
+
+  toggle.attr({
+    "aria-label": isDark ? "Switch to light theme" : "Switch to dark theme",
+    "data-theme-state": isDark ? "dark" : "light",
+    "title": isDark ? "Switch to light theme" : "Switch to dark theme",
+  });
+  moonIcon.prop("hidden", isDark);
+  sunIcon.prop("hidden", !isDark);
+};
+
 // Set the theme on page load or when explicitly called
 let setTheme = (theme) => {
-  const use_theme =
+  const requested_theme =
     theme ||
     localStorage.getItem("theme") ||
     $("html").attr("data-theme") ||
     browserPref;
+  const use_theme = requested_theme === "system" ? determineComputedTheme() : requested_theme;
 
   if (use_theme === "dark") {
     $("html").attr("data-theme", "dark");
-    $("#theme-icon").removeClass("fa-sun").addClass("fa-moon");
+    updateThemeToggle("dark");
   } else if (use_theme === "light") {
     $("html").removeAttr("data-theme");
-    $("#theme-icon").removeClass("fa-moon").addClass("fa-sun");
+    updateThemeToggle("light");
   }
 };
 
@@ -49,6 +65,16 @@ var toggleTheme = () => {
   localStorage.setItem("theme", new_theme);
   setTheme(new_theme);
 };
+
+let bindThemeToggle = () => {
+  $('#theme-toggle a').off('click.theme-toggle').on('click.theme-toggle', function (event) {
+    event.preventDefault();
+    toggleTheme();
+  });
+};
+
+setTheme();
+bindThemeToggle();
 
 /* ==========================================================================
    Plotly integration script so that Markdown codeblocks will be rendered
@@ -97,13 +123,13 @@ $(document).ready(function () {
   setTheme();
   window.matchMedia('(prefers-color-scheme: dark)')
         .addEventListener("change", (e) => {
-          if (!localStorage.getItem("theme")) {
+          if (determineThemeSetting() === "system") {
             setTheme(e.matches ? "dark" : "light");
           }
         });
 
   // Enable the theme toggle
-  $('#theme-toggle').on('click', toggleTheme);
+  bindThemeToggle();
 
   // Enable the sticky footer
   var bumpIt = function () {

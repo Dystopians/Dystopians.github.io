@@ -193,7 +193,7 @@
   button {
     position: absolute;
     height: 2.5rem;
-    right: 0;
+    right: 3rem;
     padding: 0 0.7rem;
     border: 1px solid var(--global-border-color);
     border-radius: 999px;
@@ -203,6 +203,16 @@
     box-shadow: 0 12px 24px -20px rgba(15, 23, 42, 0.32);
     cursor: pointer;
     z-index: 100;
+  }
+
+  button .navicon,
+  button .navicon::before,
+  button .navicon::after {
+    background: var(--global-text-color);
+  }
+
+  button.close .navicon {
+    background: transparent;
   }
 
   .visible-links {
@@ -232,6 +242,8 @@
 
     #theme-toggle {
       margin-left: auto;
+      position: relative;
+      z-index: 110;
 
       a {
         width: 2.25rem;

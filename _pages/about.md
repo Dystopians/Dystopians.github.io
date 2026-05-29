@@ -27,7 +27,7 @@ title_logos:
 
 I am a master student researcher focused on computer vision (CV), large language models (LLMs), and multimodal generation. At USC’s [Graphics & Vision Lab](https://usc-gvl.github.io/) (advisor: [Prof. Yue Wang](https://yuewang.xyz/)), my work centers on 3D reconstruction under sparse observations, controllable generative rendering, and embodied navigation. 
 
-On June 8, 2026, I will join TikTok as a Machine Learning Engineer.
+On July 13, 2026, I will join TikTok as a Machine Learning Engineer.
 
 <div class="about-card-grid">
   <details class="about-card">

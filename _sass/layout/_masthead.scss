@@ -122,6 +122,9 @@
 }
 
 #theme-toggle a {
+  --theme-toggle-icon-color: #111827;
+  --theme-toggle-mask-color: #ffffff;
+  flex: 0 0 auto;
   width: 2.25rem;
   min-height: 2.25rem;
   justify-content: center;
@@ -129,6 +132,67 @@
   border: 1px solid var(--global-border-color);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.85);
+  color: var(--theme-toggle-icon-color) !important;
+  line-height: 1;
+  transition: color .18s ease, border-color .18s ease, background-color .18s ease, transform .18s ease;
+}
+
+#theme-toggle a:hover {
+  border-color: rgba(31, 111, 130, 0.32);
+  color: var(--global-link-color);
+  transform: translateY(-1px);
+}
+
+.theme-toggle__icons,
+.theme-toggle__symbol {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.theme-toggle__symbol {
+  position: relative;
+  flex: 0 0 1.15rem;
+  color: var(--theme-toggle-icon-color) !important;
+}
+
+.theme-toggle__symbol--moon {
+  border-radius: 999px;
+  background: #111827 !important;
+}
+
+.theme-toggle__symbol--moon::after {
+  content: "";
+  position: absolute;
+  top: -0.08rem;
+  left: 0.42rem;
+  width: 0.96rem;
+  height: 0.96rem;
+  border-radius: 999px;
+  background: var(--theme-toggle-mask-color);
+}
+
+.theme-toggle__symbol--sun {
+  width: 0.72rem;
+  height: 0.72rem;
+  flex-basis: 0.72rem;
+  border-radius: 999px;
+  background: #facc15 !important;
+  box-shadow:
+    0 -0.48rem 0 -0.26rem #facc15,
+    0 0.48rem 0 -0.26rem #facc15,
+    -0.48rem 0 0 -0.26rem #facc15,
+    0.48rem 0 0 -0.26rem #facc15,
+    -0.34rem -0.34rem 0 -0.27rem #facc15,
+    0.34rem -0.34rem 0 -0.27rem #facc15,
+    -0.34rem 0.34rem 0 -0.27rem #facc15,
+    0.34rem 0.34rem 0 -0.27rem #facc15;
+}
+
+.theme-toggle__symbol[hidden] {
+  display: none !important;
 }
 
 html[data-theme="dark"] .masthead {
@@ -140,7 +204,15 @@ html[data-theme="dark"] .masthead::after {
 }
 
 html[data-theme="dark"] #theme-toggle a {
+  --theme-toggle-icon-color: #e5e7eb;
+  --theme-toggle-mask-color: rgba(15, 23, 42, 0.75);
   background: rgba(15, 23, 42, 0.75);
+  color: var(--theme-toggle-icon-color) !important;
+}
+
+html[data-theme="dark"] #theme-toggle a:hover {
+  border-color: rgba(103, 198, 216, 0.42);
+  color: #bcecf5;
 }
 
 html[data-theme="dark"] .masthead__menu-item:not(.masthead__menu-item--lg):not(.tail) a:hover {

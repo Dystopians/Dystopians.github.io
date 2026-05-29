@@ -162,37 +162,37 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({ onClose, lang, embedd
     : EDITABLE_PARTS.filter(p => p.category === selectedCategory);
 
   const editorContent = (
-    <div className={embedded ? "w-full h-full flex flex-col" : "bg-cyber-dark border-2 border-cyber-cyan w-full max-w-7xl h-[90vh] flex flex-col shadow-[0_0_30px_rgba(0,243,255,0.3)]"}>
+    <div className={embedded ? "w-full h-full min-h-0 flex flex-col overflow-hidden" : "bg-cyber-dark border-2 border-cyber-cyan w-full max-w-7xl h-[min(90dvh,900px)] max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden shadow-[0_0_30px_rgba(0,243,255,0.3)]"}>
 
           {/* Header */}
-          <div className="flex justify-between items-center p-4 border-b border-cyber-cyan">
-            <div>
-              <h2 className="text-2xl font-bold text-cyber-cyan">CHARACTER EDITOR</h2>
-              <p className="text-xs text-gray-500">Create custom pixel art for your character</p>
+          <div className="flex flex-col gap-3 lg:flex-row lg:justify-between lg:items-center p-3 sm:p-4 border-b border-cyber-cyan shrink-0">
+            <div className="min-w-0">
+              <h2 className="text-xl sm:text-2xl font-bold text-cyber-cyan break-words">CHARACTER EDITOR</h2>
+              <p className="text-xs text-gray-500 leading-snug">Create custom pixel art for your character</p>
             </div>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 sm:flex gap-2 w-full lg:w-auto">
               <button
                 onClick={handleImportTemplate}
-                className="px-4 py-2 border border-cyber-green text-cyber-green hover:bg-cyber-green hover:text-black text-sm"
+                className="min-h-10 px-3 sm:px-4 py-2 border border-cyber-green text-cyber-green hover:bg-cyber-green hover:text-black text-xs sm:text-sm leading-tight"
               >
                 📂 IMPORT TEMPLATE
               </button>
               <button
                 onClick={handleExportAll}
-                className="px-4 py-2 border border-cyber-yellow text-cyber-yellow hover:bg-cyber-yellow hover:text-black text-sm"
+                className="min-h-10 px-3 sm:px-4 py-2 border border-cyber-yellow text-cyber-yellow hover:bg-cyber-yellow hover:text-black text-xs sm:text-sm leading-tight"
               >
                 💾 EXPORT ALL ({partImages.size})
               </button>
-              <button onClick={onClose} className="px-4 py-2 border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-black font-bold">
+              <button onClick={onClose} className="col-span-2 sm:col-span-1 min-h-10 px-3 sm:px-4 py-2 border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-black font-bold text-xs sm:text-sm leading-tight">
                 [X] CLOSE
               </button>
             </div>
           </div>
 
-          <div className="flex-1 flex gap-4 p-4 overflow-hidden">
+          <div className="byte-character-editor__body flex-1 min-h-0 gap-3 sm:gap-4 p-3 sm:p-4">
 
             {/* Left - Parts List */}
-            <div className="w-80 flex flex-col gap-4 overflow-y-auto">
+            <div className="byte-character-editor__sidebar w-full min-h-0 gap-3 sm:gap-4">
 
               {/* Category Filter */}
               <div className="border border-cyber-gray p-3">
@@ -215,7 +215,7 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({ onClose, lang, embedd
               </div>
 
               {/* Parts List */}
-              <div className="border border-cyber-gray p-3 flex-1">
+              <div className="byte-character-editor__parts border border-cyber-gray p-3">
                 <h3 className="text-cyber-cyan mb-2 text-sm">PARTS ({filteredParts.length})</h3>
                 <div className="space-y-1">
                   {filteredParts.map(part => {
@@ -223,18 +223,18 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({ onClose, lang, embedd
                     return (
                       <div
                         key={part.id}
-                        className="flex justify-between items-center p-2 bg-gray-900 border border-gray-700 hover:border-cyber-green group"
+                        className="flex justify-between items-center gap-3 p-2 bg-gray-900 border border-gray-700 hover:border-cyber-green group"
                       >
-                        <div className="flex-1">
-                          <div className="text-sm text-white flex items-center gap-2">
-                            {part.name}
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm text-white flex items-center gap-2 min-w-0">
+                            <span className="truncate">{part.name}</span>
                             {hasCustom && <span className="text-xs text-cyber-green">✓</span>}
                           </div>
                           <div className="text-xs text-gray-500">{part.width}×{part.height}px</div>
                         </div>
                         <button
                           onClick={() => handleEditPart(part)}
-                          className="px-3 py-1 text-xs border border-cyber-green text-cyber-green group-hover:bg-cyber-green group-hover:text-black transition-colors"
+                          className="shrink-0 px-3 py-1 text-xs border border-cyber-green text-cyber-green group-hover:bg-cyber-green group-hover:text-black transition-colors"
                         >
                           {hasCustom ? 'EDIT' : 'CREATE'}
                         </button>
@@ -245,7 +245,7 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({ onClose, lang, embedd
               </div>
 
               {/* Quick Guide */}
-              <div className="border border-cyber-gray p-3">
+              <div className="hidden sm:block border border-cyber-gray p-3">
                 <h3 className="text-cyber-cyan mb-2 text-sm">QUICK GUIDE</h3>
                 <div className="text-xs text-gray-400 space-y-1">
                   <div>1. Select a part to edit</div>
@@ -259,27 +259,27 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({ onClose, lang, embedd
             </div>
 
             {/* Right - Preview */}
-            <div className="flex-1 flex flex-col gap-4">
+            <div className="byte-character-editor__preview flex-1 min-w-0 min-h-[420px] lg:min-h-0 flex flex-col gap-3 sm:gap-4">
 
               {/* Preview Canvas */}
-              <div className="flex-1 border border-cyber-cyan p-4 flex flex-col">
-                <div className="flex justify-between items-center mb-2">
+              <div className="flex-1 border border-cyber-cyan p-3 sm:p-4 flex flex-col min-h-[320px]">
+                <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-center mb-2">
                   <h3 className="text-cyber-cyan text-sm">LIVE PREVIEW</h3>
                   <div className="text-xs text-gray-500">
                     Parts created: {partImages.size} / {EDITABLE_PARTS.length}
                   </div>
                 </div>
-                <div className="flex-1 flex items-center justify-center bg-gray-900 relative overflow-hidden">
+                <div className="flex-1 min-h-0 flex items-center justify-center bg-gray-900 relative overflow-hidden p-2">
                   <canvas
                     ref={previewCanvasRef}
                     width={400}
                     height={400}
-                    className="border border-gray-700"
+                    className="border border-gray-700 w-full max-w-[400px] aspect-square"
                     style={{ imageRendering: 'pixelated' }}
                   />
                   {partImages.size === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center text-gray-600">
+                    <div className="absolute inset-0 flex items-center justify-center p-4">
+                      <div className="text-center text-gray-600 text-sm sm:text-base">
                         <div className="text-4xl mb-2">🎨</div>
                         <div>Create your first part to see preview</div>
                       </div>
@@ -291,7 +291,7 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({ onClose, lang, embedd
               {/* Instructions */}
               <div className="border border-cyber-gray p-4">
                 <h3 className="text-cyber-yellow mb-2 text-sm">💡 TIPS</h3>
-                <div className="grid grid-cols-2 gap-4 text-xs text-gray-400">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs text-gray-400">
                   <div>
                     <strong className="text-cyber-green">Import Images:</strong>
                     <div>Drop PNG files in pixel editor to convert to pixel art automatically</div>
