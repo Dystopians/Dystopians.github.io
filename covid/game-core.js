@@ -623,7 +623,7 @@
       sourceNote: `受${item.source}启发。临江、机构与人员均为虚构，本事件仅用于模拟经营叙事，不构成现实治理建议。`,
       sourceTags: item.tags,
       imageKey: item.imageKey,
-      image: EVENT_IMAGE_BY_KEY[item.imageKey] || "news-supply.png",
+      image: `events/p${phase}_${item.id}.png`,
       choices: item.choices.map((choice, choiceIndex) => createCorpusChoice(item, choice, choiceIndex, index)),
     };
   }
@@ -1532,8 +1532,8 @@
   }
 
   function getEventImage(event) {
-    if (event && event.imageKey && EVENT_IMAGE_BY_KEY[event.imageKey]) return EVENT_IMAGE_BY_KEY[event.imageKey];
     if (event && event.image) return event.image;
+    if (event && event.imageKey && EVENT_IMAGE_BY_KEY[event.imageKey]) return EVENT_IMAGE_BY_KEY[event.imageKey];
     const tags = event && event.tags ? event.tags : [];
     if (tags.includes("medical")) return "news-hospital.png";
     if (tags.includes("supply")) return "news-supply.png";

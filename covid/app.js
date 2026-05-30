@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v16";
+  const ASSET_VERSION = "v17";
   const core = window.Linjiang72;
 
   let state = null;
@@ -602,7 +602,7 @@
       els.eventSource.open = false;
       els.eventSourceNote.textContent = "";
     }
-    els.eventImage.src = ASSET_PATH + event.image;
+    els.eventImage.src = `${ASSET_PATH + event.image}?${ASSET_VERSION}`;
     els.eventImage.alt = `${event.title} 配图`;
     els.eventVisual.dataset.motion = motionForEventImage(event.image, event.imageKey);
     els.eventVisual.dataset.key = event.imageKey || "default";
@@ -732,7 +732,7 @@
       const card = document.createElement("article");
       card.className = "news-card";
       card.innerHTML = `
-        <img src="${ASSET_PATH + item.image}" alt="${escapeHtml(item.title)} 配图">
+        <img src="${ASSET_PATH + item.image}?${ASSET_VERSION}" alt="${escapeHtml(item.title)} 配图">
         <div>
           <strong>${escapeHtml(item.title)}</strong>
           <p>${escapeHtml(item.body)}</p>
