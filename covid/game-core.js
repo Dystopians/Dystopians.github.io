@@ -192,9 +192,10 @@
       compute(state) {
         const m = state.metrics;
         const hidden = { detectedRate: m.trust < 35 ? 5 : 8 };
-        if (m.staffFatigue < 45) hidden.detectedRate += 1;
+        if (m.staffFatigue <= 35) hidden.detectedRate += 1;
+        if (m.trust >= 75) hidden.detectedRate += 1;
         return {
-          effects: { supplies: -4, staffFatigue: 4 },
+          effects: { supplies: -4, staffFatigue: m.trust >= 75 ? 3 : 4 },
           hidden,
           modifiers: { testingFocus: 1 },
           notes: [m.trust < 35 ? "低信任使检测配合下降" : "检测网络扩大"],
@@ -208,12 +209,13 @@
       summary: "降低感染，抬高管控强度，损伤活力与基层状态。",
       compute(state) {
         const m = state.metrics;
-        const highTrustBuffer = m.trust > 70;
+        const highTrustBuffer = m.trust >= 75;
+        const infectionRelief = (m.trust >= 65 ? -4 : -3) + (highTrustBuffer ? -1 : 0);
         return {
           effects: {
-            infection: m.trust >= 65 ? -4 : -3,
+            infection: infectionRelief,
             economy: highTrustBuffer ? -3 : -4,
-            staffFatigue: highTrustBuffer ? 4 : 5,
+            staffFatigue: highTrustBuffer ? 3 : 5,
           },
           hidden: { policyStrictness: 10 },
           modifiers: {},
@@ -256,7 +258,9 @@
         const m = state.metrics;
         let supplyGain = m.staffFatigue > 80 ? 6 : 10;
         if (m.economy > 65) supplyGain += 1;
-        if (m.staffFatigue < 45) supplyGain += 1;
+        if (m.staffFatigue <= 35) supplyGain += 1;
+        if (m.supplies <= 25) supplyGain -= 1;
+        if (m.economy <= 25) supplyGain -= 1;
         return {
           effects: {
             supplies: supplyGain,
@@ -279,7 +283,8 @@
         const m = state.metrics;
         let relief = m.economy < 30 ? -5 : -8;
         if (m.economy > 65) relief -= 1;
-        if (m.staffFatigue < 45) relief -= 1;
+        if (m.staffFatigue <= 35) relief -= 1;
+        if (m.economy <= 25) relief += 1;
         return {
           effects: {
             hospitalLoad: relief,
@@ -299,9 +304,10 @@
       summary: "提升信任和发现率，但坏消息会带来短期压力。",
       compute(state) {
         const m = state.metrics;
+        const trustGain = (m.hospitalLoad > 85 ? 5 : 7) + (state.hidden.publicMemory <= 15 ? 1 : 0);
         return {
           effects: {
-            trust: m.hospitalLoad > 85 ? 5 : 7,
+            trust: trustGain,
             infection: 1,
           },
           hidden: { detectedRate: 3 },
@@ -318,10 +324,15 @@
       compute(state) {
         const m = state.metrics;
         const h = state.hidden;
+        let infectionCost = h.detectedRate < 50 ? 5 : 3;
+        if (h.detectedRate >= 80) infectionCost -= 1;
+        if (h.detectedRate <= 35) infectionCost += 1;
+        if (m.infection <= 25) infectionCost -= 1;
+        infectionCost = Math.max(1, infectionCost);
         return {
           effects: {
             economy: 8,
-            infection: h.detectedRate < 50 ? 5 : 3,
+            infection: infectionCost,
             trust: 1,
           },
           hidden: { policyStrictness: -6 },
@@ -337,15 +348,99 @@
       summary: "显著降低基层疲劳，但短期增加医院与物资压力。",
       compute(state) {
         const m = state.metrics;
+        const highTrust = m.trust >= 75;
+        const lowHospital = m.hospitalLoad <= 35;
         return {
           effects: {
-            staffFatigue: m.trust >= 60 ? -12 : -10,
-            hospitalLoad: 2,
-            supplies: -2,
+            staffFatigue: (m.trust >= 60 ? -10 : -8) + (highTrust ? -1 : 0),
+            hospitalLoad: lowHospital ? 1 : 2,
+            supplies: highTrust ? -1 : -2,
           },
           hidden: {},
           modifiers: { restPolicyBonus: 2 },
           notes: [m.trust >= 60 ? "居民理解让轮休更顺利" : "轮休缓解透支，但接替成本较高"],
+        };
+      },
+    },
+    supportTeam: {
+      label: "调配支援队",
+      icon: "users",
+      intent: "用外部人手接住基层排班",
+      summary: "降低基层疲劳，但消耗资金、物资并牺牲部分信任。",
+      maxUses: 3,
+      compute(state) {
+        const fatigueRelief = state.metrics.trust < 35 ? -3 : -6;
+        return {
+          resources: { funds: -6 },
+          effects: { staffFatigue: fatigueRelief, trust: -3, supplies: -2 },
+          hidden: {},
+          modifiers: { restPolicyBonus: 1 },
+          notes: [state.metrics.trust < 35 ? "低信任让临时支援难以顺利接管" : "支援队分担了一线压力"],
+        };
+      },
+    },
+    compressAdmin: {
+      label: "压缩社区台账",
+      icon: "clipboard",
+      intent: "砍掉非必要填报，让人手回到现场",
+      summary: "降低疲劳，但发现率和信任都会受损。",
+      maxUses: 3,
+      compute() {
+        return {
+          effects: { staffFatigue: -4, trust: -2, infection: 1 },
+          hidden: { detectedRate: -4 },
+          modifiers: { restPolicyBonus: 1 },
+          notes: ["台账被压缩，基层喘了一口气，但信息颗粒度变粗"],
+        };
+      },
+    },
+    outsourceDelivery: {
+      label: "临时外包配送",
+      icon: "truck",
+      intent: "用外包队伍替换一部分社区配送",
+      summary: "降低疲劳并补充物资，但资金和信任都会承压。",
+      maxUses: 3,
+      compute() {
+        return {
+          resources: { funds: -8 },
+          effects: { staffFatigue: -3, supplies: 4, trust: -4 },
+          hidden: { publicMemory: 1 },
+          modifiers: { supplyRecovery: 1 },
+          notes: ["外包队伍接入配送，但居民对价格和公平性有疑虑"],
+        };
+      },
+      condition(state) {
+        return state.resources.funds >= 20;
+      },
+    },
+    forceSimplify: {
+      label: "强制简化流程",
+      icon: "scissors",
+      intent: "用行政命令砍掉流程层级",
+      summary: "快速降低疲劳，但显著损害信任、发现率和公共记忆。",
+      maxUses: 2,
+      compute() {
+        return {
+          effects: { staffFatigue: -7, trust: -6 },
+          hidden: { detectedRate: -6, publicMemory: 2 },
+          modifiers: { restPolicyBonus: 1 },
+          notes: ["流程被强行压扁，短期有效，长期会留下争议"],
+        };
+      },
+    },
+    fiscalDebt: {
+      label: "定向财政举债",
+      icon: "coin",
+      intent: "提前透支恢复期财政换取眼前资金",
+      summary: "补充资金，但损伤活力、信任并积累创伤。",
+      maxUses: 3,
+      compute(state) {
+        return {
+          resources: { funds: state.metrics.economy < 30 ? 9 : 14 },
+          effects: { economy: -4, trust: -3 },
+          hidden: { publicMemory: 1 },
+          modifiers: {},
+          notes: [state.metrics.economy < 30 ? "活力低迷限制了举债空间" : "财政额度被提前挪到应急账本"],
         };
       },
     },
@@ -358,7 +453,7 @@
       tags: ["infection", "medical", "trust"],
       title: "发热门诊外排起长队",
       body: "几家医院报告发热门诊等候时间明显拉长。公开数据仍不完整，市民已经开始在社交平台互相转发截图。",
-      actions: ["expandTesting", "medicalExpansion", "transparency"],
+      actions: ["expandTesting", "medicalExpansion", "compressAdmin"],
     },
     {
       id: "p1_school_absence",
@@ -366,7 +461,7 @@
       tags: ["infection", "trust", "economy"],
       title: "学校出现异常缺勤",
       body: "两个城区的学校报告流感样缺勤上升。教育部门希望尽快拿出统一口径，以免家长各自行动。",
-      actions: ["expandTesting", "zoningControl", "transparency"],
+      actions: ["expandTesting", "zoningControl", "forceSimplify"],
     },
     {
       id: "p1_market_rumor",
@@ -374,7 +469,7 @@
       tags: ["supply", "trust", "rumor"],
       title: "市场传出抢购消息",
       body: "批发市场有商户提前囤货，几家超市货架开始空缺。实际库存尚可，但恐慌比缺货跑得更快。",
-      actions: ["supplyPriority", "transparency", "zoningControl"],
+      actions: ["supplyPriority", "transparency", "outsourceDelivery"],
     },
     {
       id: "p1_ppe_warning",
@@ -382,7 +477,7 @@
       tags: ["medical", "supply", "fatigue"],
       title: "防护物资告急预警",
       body: "医院后勤部门提醒，防护服和口罩库存下降快于预期。是否优先给医疗机构集中配发成为争议。",
-      actions: ["supplyPriority", "medicalExpansion", "expandTesting"],
+      actions: ["supplyPriority", "medicalExpansion", "supportTeam"],
     },
     {
       id: "p1_first_notice",
@@ -390,7 +485,7 @@
       tags: ["trust", "infection", "rumor"],
       title: "是否发布第一号通告",
       body: "疾控简报认为存在社区传播风险。通告越早，越能争取配合；越具体，也越可能引发短期恐慌。",
-      actions: ["transparency", "expandTesting", "zoningControl"],
+      actions: ["transparency", "expandTesting", "forceSimplify"],
     },
     {
       id: "p2_testing_sites",
@@ -398,7 +493,7 @@
       tags: ["infection", "fatigue", "trust"],
       title: "核酸点开始拥堵",
       body: "临时采样点外出现长队，部分居民抱怨排队本身带来风险。检测速度与秩序都需要重新组织。",
-      actions: ["expandTesting", "restPolicy", "zoningControl"],
+      actions: ["expandTesting", "restPolicy", "compressAdmin"],
     },
     {
       id: "p2_transfer_dispute",
@@ -406,7 +501,7 @@
       tags: ["trust", "medical", "fatigue"],
       title: "密接转运引发争议",
       body: "一批密接人员转运时间过长，社区和转运组互相催促。家属要求解释标准，基层人员要求减压。",
-      actions: ["transparency", "medicalExpansion", "restPolicy"],
+      actions: ["transparency", "medicalExpansion", "supportTeam"],
     },
     {
       id: "p2_truck_delay",
@@ -414,7 +509,7 @@
       tags: ["supply", "economy", "trust"],
       title: "外地货车滞留高速口",
       body: "蔬菜和药品运输车因查验流程滞留，司机担心无法离城，商超担心次日配送断档。",
-      actions: ["supplyPriority", "reopenPilot", "transparency"],
+      actions: ["supplyPriority", "reopenPilot", "outsourceDelivery"],
     },
     {
       id: "p2_volunteers",
@@ -422,7 +517,7 @@
       tags: ["fatigue", "supply", "trust"],
       title: "社区志愿者报名上升",
       body: "一些居民主动报名配送和秩序维护，但社区担心组织能力跟不上，反而增加管理负担。",
-      actions: ["supplyPriority", "restPolicy", "transparency"],
+      actions: ["supplyPriority", "restPolicy", "supportTeam"],
     },
     {
       id: "p2_online_rumor",
@@ -430,7 +525,23 @@
       tags: ["rumor", "trust", "infection"],
       title: "网络谣言扩散",
       body: "多条未经证实的消息在群聊中流传，有人开始拒绝配合流调，也有人要求公布更完整数据。",
-      actions: ["transparency", "expandTesting", "zoningControl"],
+      actions: ["transparency", "expandTesting", "forceSimplify"],
+    },
+    {
+      id: "p2_roster_system_fail",
+      phase: [2, 3],
+      tags: ["fatigue", "trust", "funds"],
+      title: "排班系统失灵",
+      body: "街道排班表临时崩溃，重复派单和漏单同时出现。有人建议减少填报，有人要求外部支援立刻接管。",
+      actions: ["supportTeam", "compressAdmin", "restPolicy"],
+    },
+    {
+      id: "p2_special_funds",
+      phase: [2, 3],
+      tags: ["funds", "economy", "supply"],
+      title: "专项资金到账窗口",
+      body: "上级专项资金需要提交用途说明才能拨付。城市可以争取更多额度，也可能把恢复期预算提前用掉。",
+      actions: ["fiscalDebt", "supplyPriority", "transparency"],
     },
     {
       id: "p3_elder_medicine",
@@ -438,7 +549,7 @@
       tags: ["supply", "trust", "fatigue"],
       title: "独居老人断药",
       body: "几个封控小区反映慢病药物不足。药房能调到部分药品，但配送人手和登记流程都很紧。",
-      actions: ["supplyPriority", "restPolicy", "transparency"],
+      actions: ["supplyPriority", "outsourceDelivery", "transparency"],
     },
     {
       id: "p3_group_buy",
@@ -446,7 +557,7 @@
       tags: ["supply", "trust", "economy"],
       title: "团购物资腐坏",
       body: "一批蔬菜到达时已经腐坏，居民质疑采购渠道。供应链承压让每个环节都更容易出错。",
-      actions: ["supplyPriority", "transparency", "reopenPilot"],
+      actions: ["supplyPriority", "transparency", "outsourceDelivery"],
     },
     {
       id: "p3_building_conflict",
@@ -454,7 +565,7 @@
       tags: ["trust", "fatigue", "infection"],
       title: "封控小区发生冲突",
       body: "某小区因出入规则临时变化出现争执。网格员请求明确授权，也有人提醒不要进一步激化。",
-      actions: ["transparency", "zoningControl", "restPolicy"],
+      actions: ["transparency", "forceSimplify", "restPolicy"],
     },
     {
       id: "p3_doctor_shift",
@@ -462,7 +573,7 @@
       tags: ["medical", "fatigue", "supply"],
       title: "医护连续值守超时",
       body: "几名医护已连续多日无法回家。医院还能勉强维持排班，但差错风险正在上升。",
-      actions: ["restPolicy", "medicalExpansion", "supplyPriority"],
+      actions: ["restPolicy", "medicalExpansion", "supportTeam"],
     },
     {
       id: "p3_pregnancy_access",
@@ -470,7 +581,31 @@
       tags: ["medical", "trust", "public"],
       title: "孕妇就医通道被堵",
       body: "一名孕妇转诊等待时间过长，事件开始发酵。医院、社区和交通卡口都在等待统一协调。",
-      actions: ["medicalExpansion", "transparency", "supplyPriority"],
+      actions: ["medicalExpansion", "transparency", "supportTeam"],
+    },
+    {
+      id: "p3_cadre_leave",
+      phase: [3, 4],
+      tags: ["fatigue", "supply", "trust"],
+      title: "社区干部请假潮",
+      body: "几个社区同时出现病假和调休申请。继续硬撑能维持表面秩序，但误派、漏派和情绪冲突会越来越多。",
+      actions: ["supportTeam", "forceSimplify", "restPolicy"],
+    },
+    {
+      id: "p3_hotel_requisition",
+      phase: [3, 4],
+      tags: ["trust", "supply", "public"],
+      title: "征用酒店引发争议",
+      body: "隔离和转运需要更多房间。酒店业主要求补偿，居民担心临近小区风险上升。",
+      actions: ["outsourceDelivery", "zoningControl", "transparency"],
+    },
+    {
+      id: "p3_control_wording_conflict",
+      phase: [3],
+      tags: ["trust", "rumor", "fatigue"],
+      title: "封控口径前后冲突",
+      body: "同一小区收到两版不同通知。基层要求给出一句能执行的话，居民则要求解释为什么口径会变。",
+      actions: ["forceSimplify", "transparency", "restPolicy"],
     },
     {
       id: "p4_stadium_shelter",
@@ -486,7 +621,7 @@
       tags: ["medical", "trust", "public"],
       title: "ICU 床位排序",
       body: "重症床位接近满负荷。医院请求明确转诊与分级标准，否则一线只能在混乱中临场判断。",
-      actions: ["medicalExpansion", "transparency", "restPolicy"],
+      actions: ["medicalExpansion", "transparency", "forceSimplify"],
     },
     {
       id: "p4_non_covid_delay",
@@ -494,7 +629,7 @@
       tags: ["medical", "trust", "economy"],
       title: "非疫情患者延误",
       body: "透析、肿瘤和急诊患者的正常就医被挤压。城市不能只看一个数字，但资源确实不够。",
-      actions: ["medicalExpansion", "reopenPilot", "transparency"],
+      actions: ["medicalExpansion", "reopenPilot", "fiscalDebt"],
     },
     {
       id: "p4_nurse_infection",
@@ -502,7 +637,7 @@
       tags: ["medical", "fatigue", "infection"],
       title: "护士感染导致排班缺口",
       body: "一家定点医院出现医护感染，排班表被打乱。继续硬撑会维持容量，但风险会积累。",
-      actions: ["restPolicy", "medicalExpansion", "expandTesting"],
+      actions: ["restPolicy", "medicalExpansion", "supportTeam"],
     },
     {
       id: "p4_oxygen_shortage",
@@ -510,7 +645,23 @@
       tags: ["medical", "supply", "economy"],
       title: "氧气瓶供应吃紧",
       body: "供氧企业表示运输与人手都到达极限。医院要求优先保障，工业端则担心停产扩大影响。",
-      actions: ["supplyPriority", "medicalExpansion", "reopenPilot"],
+      actions: ["supplyPriority", "medicalExpansion", "outsourceDelivery"],
+    },
+    {
+      id: "p4_transfer_driver_gap",
+      phase: [4, 5],
+      tags: ["fatigue", "medical", "supply"],
+      title: "转运司机缺口扩大",
+      body: "转运车辆还在，但司机和调度员已经接近极限。外包车队可以补上空缺，也会带来问责和费用争议。",
+      actions: ["outsourceDelivery", "supportTeam", "medicalExpansion"],
+    },
+    {
+      id: "p4_procurement_audit",
+      phase: [4, 6],
+      tags: ["funds", "trust", "public"],
+      title: "采购审计提前介入",
+      body: "审计组要求保供和医疗采购留下完整链路。规范能减少争议，但也会拖慢一线处理速度。",
+      actions: ["compressAdmin", "transparency", "fiscalDebt"],
     },
     {
       id: "p5_wage_pressure",
@@ -518,7 +669,7 @@
       tags: ["economy", "trust", "supply"],
       title: "企业停薪压力上升",
       body: "多家小企业表示现金流只能再撑一周。居民收入的不确定性开始反过来影响配合意愿。",
-      actions: ["reopenPilot", "supplyPriority", "transparency"],
+      actions: ["reopenPilot", "fiscalDebt", "transparency"],
     },
     {
       id: "p5_refuse_test",
@@ -526,7 +677,7 @@
       tags: ["trust", "infection", "fatigue"],
       title: "部分居民拒绝检测",
       body: "反复检测让一些居民失去耐心，社区担心强制推进会让关系进一步恶化。",
-      actions: ["transparency", "expandTesting", "restPolicy"],
+      actions: ["transparency", "expandTesting", "forceSimplify"],
     },
     {
       id: "p5_staff_resign",
@@ -534,7 +685,7 @@
       tags: ["fatigue", "supply", "trust"],
       title: "基层人员提出请辞",
       body: "连续高压后，几名社区工作人员提出辞职。留下的人更少，任务却没有减少。",
-      actions: ["restPolicy", "supplyPriority", "transparency"],
+      actions: ["restPolicy", "supportTeam", "transparency"],
     },
     {
       id: "p5_false_negative",
@@ -542,7 +693,7 @@
       tags: ["infection", "trust", "medical"],
       title: "假阴性争议",
       body: "一名多次阴性的居民后续确诊，相关小区要求解释检测质量。系统需要承认不确定性。",
-      actions: ["expandTesting", "transparency", "zoningControl"],
+      actions: ["expandTesting", "transparency", "forceSimplify"],
     },
     {
       id: "p5_partial_open",
@@ -550,7 +701,31 @@
       tags: ["economy", "infection", "trust"],
       title: "是否开放部分区域",
       body: "低风险片区要求恢复通勤。继续收紧能减少反弹，过慢恢复则会拖垮城市活力。",
-      actions: ["reopenPilot", "zoningControl", "transparency"],
+      actions: ["reopenPilot", "zoningControl", "fiscalDebt"],
+    },
+    {
+      id: "p5_volunteer_subsidy",
+      phase: [5],
+      tags: ["fatigue", "trust", "funds"],
+      title: "志愿者补贴争议",
+      body: "志愿者和临聘人员要求明确补贴标准。财政口径、居民观感和执行稳定性被绑到一起。",
+      actions: ["fiscalDebt", "supportTeam", "transparency"],
+    },
+    {
+      id: "p5_data_delay",
+      phase: [5, 6],
+      tags: ["trust", "public", "infection"],
+      title: "数据延迟公布",
+      body: "一组复核数据与前日报告不一致。立刻公开会引起追问，暂缓解释能争取一点处置时间。",
+      actions: ["forceSimplify", "transparency", "expandTesting"],
+    },
+    {
+      id: "p5_exemption_leak",
+      phase: [5],
+      tags: ["trust", "economy", "infection"],
+      title: "企业豁免名单外泄",
+      body: "一份低风险复工白名单被转发。企业认为这是恢复机会，居民质疑标准是否公平。",
+      actions: ["reopenPilot", "fiscalDebt", "transparency"],
     },
     {
       id: "p6_school_return",
@@ -558,7 +733,7 @@
       tags: ["economy", "trust", "infection"],
       title: "复课安排被推到台前",
       body: "家长、学校和企业都在等待复课时间表。教育秩序恢复越快，防疫冗余越薄。",
-      actions: ["reopenPilot", "expandTesting", "transparency"],
+      actions: ["reopenPilot", "expandTesting", "fiscalDebt"],
     },
     {
       id: "p6_accountability",
@@ -566,7 +741,7 @@
       tags: ["trust", "public", "fatigue"],
       title: "追责呼声出现",
       body: "市民开始追问早期信息、转运流程和供应分配。复盘越具体，越可能牵动组织压力。",
-      actions: ["transparency", "restPolicy", "zoningControl"],
+      actions: ["transparency", "restPolicy", "forceSimplify"],
     },
     {
       id: "p6_memorial",
@@ -574,7 +749,7 @@
       tags: ["public", "trust", "medical"],
       title: "纪念名单",
       body: "媒体和家属希望为逝者、医护和志愿者留下公开记录。城市恢复不应只靠遗忘。",
-      actions: ["transparency", "restPolicy", "medicalExpansion"],
+      actions: ["transparency", "restPolicy", "forceSimplify"],
     },
     {
       id: "p6_budget_gap",
@@ -582,7 +757,15 @@
       tags: ["economy", "supply", "medical"],
       title: "财政缺口浮出水面",
       body: "临时医院、保供补贴和检测费用需要结算。账单不会马上压垮城市，但会影响恢复路径。",
-      actions: ["reopenPilot", "supplyPriority", "medicalExpansion"],
+      actions: ["reopenPilot", "supplyPriority", "fiscalDebt"],
+    },
+    {
+      id: "p6_budget_hearing",
+      phase: [6],
+      tags: ["funds", "economy", "trust"],
+      title: "财政缺口听证",
+      body: "恢复期预算需要重新排序。公开解释能保住信任，提前举债能让工程不断档。",
+      actions: ["fiscalDebt", "reopenPilot", "transparency"],
     },
     {
       id: "p6_full_review",
@@ -590,7 +773,7 @@
       tags: ["trust", "public", "economy"],
       title: "是否公开完整复盘报告",
       body: "内部复盘已经形成。公开能修复长期信任，也会让过去 72 天的伤痕重新被看见。",
-      actions: ["transparency", "reopenPilot", "restPolicy"],
+      actions: ["transparency", "reopenPilot", "fiscalDebt"],
     },
   ];
 
@@ -651,6 +834,27 @@
       image: "news-shelter.png",
       tags: ["medical", "fatigue", "public"],
     },
+    {
+      id: "news_budget_meeting",
+      title: "财政调度会持续到凌晨",
+      body: "保供、检测和临时收治都在等待下一笔应急额度确认。",
+      image: "news-factory.png",
+      tags: ["funds", "economy"],
+    },
+    {
+      id: "news_rotation_notice",
+      title: "社区轮休名单贴出后又被撤下",
+      body: "一线人员希望排班透明，居民担心熟悉的联系人突然换掉。",
+      image: "news-supply.png",
+      tags: ["fatigue", "trust"],
+    },
+    {
+      id: "news_requisition_debate",
+      title: "临时征用补偿标准引发讨论",
+      body: "仓储、酒店和车辆的征用标准越快落地，越需要解释公平性。",
+      image: "news-health-code.png",
+      tags: ["funds", "trust", "public"],
+    },
   ];
 
   const MAP_POINTS = [
@@ -662,7 +866,7 @@
       y: 43,
       description: "医疗负载的核心观察点。适合执行医疗扩容、分诊与重点人群救治相关行动。",
       operations: ["triageNetwork", "communityClinic"],
-      resolutions: ["shelterAdmissionStandard", "priorityMedicineRoute"],
+      resolutions: ["shelterAdmissionStandard", "priorityMedicineRoute", "delayBadNews"],
     },
     {
       id: "stadium",
@@ -682,7 +886,7 @@
       y: 81,
       description: "保供网络的关键节点。保障这里能明显改善物资，但会挤占财政和配送人手。",
       operations: ["supplyCorridor"],
-      resolutions: ["priorityMedicineRoute"],
+      resolutions: ["priorityMedicineRoute", "hardWarehouse", "emergencyLevy"],
     },
     {
       id: "road",
@@ -692,7 +896,7 @@
       y: 70,
       description: "道路通行决定物资和复工效率。健康码和货运白名单都会在这里体现代价。",
       operations: ["deployHealthCode", "supplyCorridor"],
-      resolutions: ["elasticTransit", "lowRiskWorkList"],
+      resolutions: ["elasticTransit", "lowRiskWorkList", "suppressRumorLine"],
     },
     {
       id: "school",
@@ -712,7 +916,7 @@
       y: 19,
       description: "城市活力和财政恢复来源。复工需要足够发现率和通行秩序支撑。",
       operations: ["factoryClosedLoop"],
-      resolutions: ["lowRiskWorkList", "elasticTransit"],
+      resolutions: ["lowRiskWorkList", "elasticTransit", "enterpriseExemption"],
     },
     {
       id: "residents",
@@ -722,7 +926,7 @@
       y: 24,
       description: "居民信任、药品配送和基层疲劳最容易在这里体现。",
       operations: ["medicineRoute", "mentalHealthLine"],
-      resolutions: ["priorityMedicineRoute", "publicReviewBrief"],
+      resolutions: ["priorityMedicineRoute", "publicReviewBrief", "communityAutonomy", "delayBadNews"],
     },
     {
       id: "volunteers",
@@ -732,7 +936,7 @@
       y: 66,
       description: "志愿者能托住保供和社区秩序，但持续高压会转化成执行风险。",
       operations: ["volunteerDispatch", "mentalHealthLine"],
-      resolutions: ["staffRotationOrder"],
+      resolutions: ["staffRotationOrder", "communityAutonomy"],
     },
   ];
 
@@ -761,8 +965,20 @@
       location: "road",
       description: "部署数字通行与申诉系统，3 天后提高发现率和分区治理能力。会带来短期信任争议和活力损耗。",
       resources: { funds: -12 },
-      effects: { trust: -2, economy: -3, staffFatigue: 3 },
-      hidden: { detectedRate: 4, policyStrictness: 4 },
+      effects(state) {
+        return {
+          trust: state.metrics.trust < 45 ? -5 : -2,
+          economy: -3,
+          staffFatigue: 3,
+        };
+      },
+      hidden(state) {
+        return {
+          detectedRate: 4,
+          policyStrictness: 4,
+          publicMemory: state.metrics.trust < 45 ? 2 : 0,
+        };
+      },
       delayed: {
         delay: 3,
         label: "健康码试运行",
@@ -826,8 +1042,8 @@
       label: "心理与轮休热线",
       location: "volunteers",
       description: "为基层、医护和居民开通减压热线与轮换支持。不能直接压感染，但能保住执行系统。",
-      resources: { funds: -8 },
-      effects: { staffFatigue: -9, trust: 3, hospitalLoad: 1 },
+      resources: { funds: -7 },
+      effects: { staffFatigue: -8, trust: 3, hospitalLoad: 1 },
       hidden: { publicMemory: -2 },
       delayed: {
         delay: 2,
@@ -835,7 +1051,7 @@
         effects: { staffFatigue: -4, trust: 1 },
         hidden: {},
       },
-      maxUses: 3,
+      maxUses: 2,
     },
     campusSentinel: {
       label: "校园哨点筛查",
@@ -880,12 +1096,12 @@
       location: "volunteers",
       description: "把志愿者纳入统一排班和物资登记。改善保供和信任，但需要资金和组织成本。",
       resources: { funds: -6 },
-      effects: { supplies: 6, trust: 4, staffFatigue: 2 },
+      effects: { supplies: 6, trust: 4, staffFatigue: 1 },
       hidden: { publicMemory: -1 },
       delayed: {
         delay: 2,
         label: "志愿者排班稳定",
-        effects: { staffFatigue: -3, supplies: 2 },
+        effects: { staffFatigue: -5, supplies: 2 },
         hidden: {},
       },
       maxUses: 3,
@@ -927,7 +1143,14 @@
       label: "低风险片区白名单复工",
       description: "在发现率足够时恢复低风险片区通勤。恢复活力，但承担小幅反弹风险。",
       resources: { funds: -4 },
-      effects: { economy: 12, infection: 2, trust: 3, staffFatigue: 2 },
+      effects(state) {
+        return {
+          economy: 12,
+          infection: state.hidden.detectedRate >= 75 ? 1 : 2,
+          trust: 3,
+          staffFatigue: 2,
+        };
+      },
       hidden: { policyStrictness: -6 },
       once: false,
       condition(state) {
@@ -938,7 +1161,7 @@
       label: "公开阶段复盘简报",
       description: "公开误差、延误与改进清单。修复长期信任，但短期会把压力重新带到台前。",
       resources: { funds: -3 },
-      effects: { trust: 8, economy: -2, staffFatigue: 2 },
+      effects: { trust: 7, economy: -2, staffFatigue: -1 },
       hidden: { publicMemory: -5, detectedRate: 2 },
       once: true,
       condition(state) {
@@ -949,9 +1172,9 @@
       label: "基层轮换令",
       description: "强制把一线排班从硬撑改成轮换。疲劳显著下降，但医疗和保供短期变紧。",
       resources: { funds: -8 },
-      effects: { staffFatigue: -14, hospitalLoad: 2, supplies: -3, trust: 2 },
+      effects: { staffFatigue: -14, hospitalLoad: 2, supplies: -3, trust: -4 },
       hidden: {},
-      once: false,
+      once: true,
       condition(state) {
         return state.metrics.staffFatigue >= 62;
       },
@@ -976,6 +1199,79 @@
       once: false,
       condition(state) {
         return state.metrics.economy < 55 && state.metrics.infection < 70;
+      },
+    },
+    hardWarehouse: {
+      label: "硬性征用仓储",
+      description: "临时征用仓储与冷链空间，快速补上库存。物资会稳定，但信任和公共创伤要付账。",
+      resources: { funds: -4 },
+      effects: { supplies: 14, trust: -8 },
+      hidden: { publicMemory: 3 },
+      once: false,
+      condition(state) {
+        return state.metrics.supplies < 35 || state.hidden.policyStrictness > 60;
+      },
+    },
+    suppressRumorLine: {
+      label: "统一口径压制谣言",
+      description: "用强口径压住扩散消息。能短期压低感染风险，但发现率和信任都会变差。",
+      resources: {},
+      effects: { trust: -6, infection: -2 },
+      hidden: { detectedRate: -3, policyStrictness: 5 },
+      once: false,
+      condition(state) {
+        return state.metrics.trust >= 45 && state.hidden.publicMemory <= 40;
+      },
+    },
+    delayBadNews: {
+      label: "延迟公布坏消息",
+      description: "暂缓公布复核中的坏消息，争取三天处置窗口。若医疗仍在高位，反噬会更重。",
+      resources: {},
+      effects: { trust: 4 },
+      hidden: { publicMemory: 4, detectedRate: -5 },
+      delayed: {
+        delay: 3,
+        label: "坏消息反噬",
+        effects: { trust: -8 },
+        hidden: { publicMemory: 2 },
+        condition: "hospitalAtLeast80",
+      },
+      once: true,
+      condition(state) {
+        return state.metrics.hospitalLoad >= 65 || state.hidden.publicMemory >= 25;
+      },
+    },
+    enterpriseExemption: {
+      label: "企业定向豁免",
+      description: "给关键企业定向通勤豁免，换取产能和税源恢复。名单公平性会损伤信任。",
+      resources: { funds: 8 },
+      effects: { economy: 12, infection: 3, trust: -5 },
+      hidden: {},
+      once: false,
+      condition(state) {
+        return state.hidden.detectedRate >= 55 && state.metrics.infection < 70;
+      },
+    },
+    communityAutonomy: {
+      label: "社区自治包干",
+      description: "把部分任务交给小区自组织承接。基层疲劳下降，但标准不一会损伤信任和库存。",
+      resources: {},
+      effects: { staffFatigue: -8, trust: -7, supplies: -3 },
+      hidden: { publicMemory: 2 },
+      once: false,
+      condition(state) {
+        return state.metrics.staffFatigue >= 70;
+      },
+    },
+    emergencyLevy: {
+      label: "财政紧急摊派",
+      description: "向恢复期预算和社会协作账户紧急摊派资金。能救资金红线，但社会代价很明显。",
+      resources: { funds: 18 },
+      effects: { trust: -10, economy: -3 },
+      hidden: { publicMemory: 3 },
+      once: true,
+      condition(state) {
+        return state.resources.funds <= 15;
       },
     },
   };
@@ -1028,6 +1324,15 @@
     },
   };
 
+  const TESTING_KEYS = ["expandTesting", "campusSentinel", "deployHealthCode", "triageNetwork", "communityClinic"];
+  const CONTROL_KEYS = ["zoningControl", "citywideSilence", "suppressRumorLine", "deployHealthCode"];
+  const SUPPLY_KEYS = ["supplyPriority", "supplyCorridor", "volunteerDispatch", "hardWarehouse", "elasticTransit", "outsourceDelivery"];
+  const MEDICAL_KEYS = ["medicalExpansion", "buildShelterHospital", "triageNetwork", "communityClinic", "shelterAdmissionStandard"];
+  const REST_KEYS = ["restPolicy", "mentalHealthLine", "staffRotationOrder", "communityAutonomy", "supportTeam", "compressAdmin", "forceSimplify"];
+  const REOPEN_KEYS = ["reopenPilot", "lowRiskWorkList", "factoryClosedLoop", "elasticTransit", "enterpriseExemption"];
+  const VOLUNTEER_KEYS = ["volunteerDispatch", "mentalHealthLine", "supportTeam", "communityAutonomy"];
+  const PUBLIC_REPAIR_KEYS = ["transparency", "publicReviewBrief"];
+
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
   }
@@ -1066,7 +1371,7 @@
       return clamp(Math.round(value), 0, 100);
     }
     if (RESOURCE_METRICS.includes(metric)) {
-      return clamp(Math.round(value), 0, 120);
+      return clamp(Math.round(value), 0, 100);
     }
     return Math.round(value);
   }
@@ -1092,10 +1397,12 @@
       history: [],
       alerts: [],
       news: [],
+      statusEffects: [],
       selectedMapPointId: "hospital",
       completedProjects: {},
       flags: {
         silenceUses: 0,
+        actionUses: {},
         lastEventIds: [],
         operationUses: {},
         resolutions: {},
@@ -1113,6 +1420,7 @@
     };
 
     state.news = generateNews(state);
+    refreshStatusEffects(state);
     chooseNextEvent(state);
     return state;
   }
@@ -1127,17 +1435,21 @@
     state.version = 2;
     state.resources = state.resources || { funds: INITIAL_VALUES.funds };
     state.news = state.news || generateNews(state);
+    state.statusEffects = state.statusEffects || [];
     state.selectedMapPointId = state.selectedMapPointId || "hospital";
     state.completedProjects = state.completedProjects || {};
+    state.flags.actionUses = state.flags.actionUses || {};
     state.flags.operationUses = state.flags.operationUses || {};
     state.flags.resolutions = state.flags.resolutions || {};
+    refreshStatusEffects(state);
     return state;
   }
 
   function getVisibleMetrics(state) {
     const accuracy = clamp(state.hidden.detectedRate, 20, 95) / 100;
     const hiddenGap = Math.round((100 - state.hidden.detectedRate) / 8);
-    const infectionOffset = Math.round(hiddenGap * (state.metrics.infection >= 50 ? 1 : 0.5));
+    const blindSpotPenalty = state.hidden.detectedRate <= 35 ? 2 : 0;
+    const infectionOffset = Math.round(hiddenGap * (state.metrics.infection >= 50 ? 1 : 0.5)) + blindSpotPenalty;
     return {
       ...state.metrics,
       reportedInfection: clamp(Math.round(state.metrics.infection * accuracy + infectionOffset), 0, 100),
@@ -1145,6 +1457,42 @@
       policyStrictness: state.hidden.policyStrictness,
       publicMemory: state.hidden.publicMemory,
     };
+  }
+
+  function refreshStatusEffects(state) {
+    state.statusEffects = getStatusEffects(state);
+    return state.statusEffects;
+  }
+
+  function getStatusEffects(state) {
+    const m = state.metrics;
+    const h = state.hidden;
+    const r = state.resources;
+    const effects = [];
+    const add = (id, label, tone, description) => effects.push({ id, label, tone, description });
+
+    if (m.infection >= 80) add("infectionHigh", "社区扩散", "danger", "医疗负载额外承压，检测和管控相关事件更容易出现。");
+    if (m.infection <= 25) add("infectionLow", "低传播窗口", "good", "复工类行动的感染反弹代价降低。");
+    if (m.hospitalLoad >= 85) add("hospitalHigh", "医疗红线", "danger", "信任与公共创伤持续恶化，医疗工程资金成本上升。");
+    if (m.hospitalLoad <= 35) add("hospitalLow", "医疗余裕", "good", "轮休类行动造成的短期医疗代价降低。");
+    if (m.supplies >= 75) add("suppliesHigh", "库存缓冲", "good", "高管控带来的信任损失降低，保供危机事件变少。");
+    if (m.supplies <= 25) add("suppliesLow", "供应低位", "danger", "信任和基层疲劳持续受损，保供行动效率降低。");
+    if (m.trust >= 75) add("trustHigh", "高配合", "good", "检测、管控和轮休类行动更顺。");
+    if (m.trust <= 30) add("trustLow", "低配合", "danger", "行动效率下降，谣言和拒检类事件更容易出现。");
+    if (m.economy >= 75) add("economyHigh", "财政余裕", "good", "每日资金和供应恢复更稳。");
+    if (m.economy <= 25) add("economyLow", "财政吃紧", "danger", "每日资金受损，医疗和保供工程效果下降。");
+    if (m.staffFatigue >= 80) add("fatigueHigh", "执行透支", "danger", "行动收益打折，发现率每天磨损。");
+    if (m.staffFatigue <= 35) add("fatigueLow", "执行余裕", "good", "检测、保供、医疗和志愿者类行动获得额外收益。");
+    if (r.funds <= 10) add("fundsLow", "财政透支", "danger", "高价工程和决议被锁定，资金事件权重上升。");
+    if (r.funds >= 80) add("fundsHigh", "储备充足", "good", "一次性大型工程资金成本降低。");
+    if (h.detectedRate >= 80) add("detectedHigh", "监测清晰", "good", "复工反弹更可控，但高疲劳下监测会自然衰减。");
+    if (h.detectedRate <= 35) add("detectedLow", "信息盲区", "danger", "报告感染误差增加，复工更容易低估风险。");
+    if (h.policyStrictness >= 80) add("policyHigh", "高压管控", "danger", "感染压制增强，但疲劳和活力代价上升。");
+    if (h.policyStrictness <= 15) add("policyLow", "流动恢复", "mixed", "活力自然恢复，但感染反弹压力增加。");
+    if (h.publicMemory >= 60) add("memoryHigh", "长期伤痕", "danger", "信任持续流失，结局更容易走向沉重代价。");
+    if (h.publicMemory <= 15) add("memoryLow", "叙事修复", "good", "公开类行动更容易获得信任收益。");
+
+    return effects;
   }
 
   function generateNews(state) {
@@ -1175,6 +1523,7 @@
     if (item.tags.includes("economy")) weight += m.economy < 45 ? 7 : 2;
     if (item.tags.includes("fatigue")) weight += m.staffFatigue > 70 ? 7 : 2;
     if (item.tags.includes("infection")) weight += m.infection > 60 ? 6 : 2;
+    if (item.tags.includes("funds")) weight += state.resources.funds <= 15 ? 10 : state.resources.funds < 35 ? 5 : 1;
     if (item.tags.includes("public")) weight += state.hidden.publicMemory > 35 ? 4 : 1;
     return weight;
   }
@@ -1184,6 +1533,7 @@
     if (tags.includes("medical")) return "news-hospital.png";
     if (tags.includes("supply")) return "news-supply.png";
     if (tags.includes("economy")) return "news-factory.png";
+    if (tags.includes("funds")) return "news-factory.png";
     if (tags.includes("infection") || tags.includes("rumor")) return "news-health-code.png";
     if (tags.includes("fatigue") || tags.includes("public")) return "news-shelter.png";
     return "news-supply.png";
@@ -1203,22 +1553,84 @@
     return getMapPoint(state, id);
   }
 
+  function resolveResources(state, item) {
+    return typeof item.resources === "function" ? item.resources(state) : item.resources || {};
+  }
+
+  function resolveEffects(state, item) {
+    return typeof item.effects === "function" ? item.effects(state) : item.effects || {};
+  }
+
+  function resolveHidden(state, item) {
+    return typeof item.hidden === "function" ? item.hidden(state) : item.hidden || {};
+  }
+
+  function isFiscalLock(state, resources = {}) {
+    return state.resources.funds <= 10 && (resources.funds || 0) <= -12;
+  }
+
+  function adjustedResourcesForItem(state, itemId, resources = {}) {
+    const adjusted = { ...resources };
+    if ((adjusted.funds || 0) <= -12 && state.resources.funds >= 80) adjusted.funds += 2;
+    if ((adjusted.funds || 0) < 0 && state.metrics.hospitalLoad >= 85 && MEDICAL_KEYS.includes(itemId)) adjusted.funds -= 2;
+    return removeZeroes(adjusted);
+  }
+
+  function adjustedEffectsForItem(state, itemId, effects = {}) {
+    const adjusted = { ...effects };
+    const lowEconomy = state.metrics.economy <= 25;
+    const lowSupplies = state.metrics.supplies <= 25;
+    const lowFatigue = state.metrics.staffFatigue <= 35;
+    const lowHospital = state.metrics.hospitalLoad <= 35;
+    const highDetected = state.hidden.detectedRate >= 80;
+    const lowDetected = state.hidden.detectedRate <= 35;
+    const lowInfection = state.metrics.infection <= 25;
+    const lowMemory = state.hidden.publicMemory <= 15;
+
+    if (lowEconomy && MEDICAL_KEYS.includes(itemId) && adjusted.hospitalLoad < 0) adjusted.hospitalLoad += 1;
+    if (lowEconomy && SUPPLY_KEYS.includes(itemId) && adjusted.supplies > 0) adjusted.supplies -= 1;
+    if (lowSupplies && SUPPLY_KEYS.includes(itemId) && adjusted.supplies > 0) adjusted.supplies -= 1;
+    if (lowFatigue && MEDICAL_KEYS.includes(itemId) && adjusted.hospitalLoad < 0) adjusted.hospitalLoad -= 1;
+    if (lowFatigue && SUPPLY_KEYS.includes(itemId) && adjusted.supplies > 0) adjusted.supplies += 1;
+    if (lowFatigue && VOLUNTEER_KEYS.includes(itemId) && adjusted.staffFatigue < 0) adjusted.staffFatigue -= 1;
+    if (lowHospital && REST_KEYS.includes(itemId) && adjusted.hospitalLoad > 0) adjusted.hospitalLoad -= 1;
+    if (REOPEN_KEYS.includes(itemId) && adjusted.infection > 0) {
+      if (highDetected || lowInfection) adjusted.infection -= 1;
+      if (lowDetected) adjusted.infection += 1;
+      adjusted.infection = Math.max(1, adjusted.infection);
+    }
+    if (lowMemory && PUBLIC_REPAIR_KEYS.includes(itemId) && adjusted.trust > 0) adjusted.trust += 1;
+    return removeZeroes(adjusted);
+  }
+
+  function adjustedHiddenForItem(state, itemId, hidden = {}) {
+    const adjusted = { ...hidden };
+    if (state.metrics.staffFatigue <= 35 && TESTING_KEYS.includes(itemId) && adjusted.detectedRate > 0) adjusted.detectedRate += 1;
+    return removeZeroes(adjusted);
+  }
+
   function getOperationStatus(state, operationId) {
     const operation = OPERATIONS[operationId];
     const uses = state.flags.operationUses[operationId] || 0;
     const maxed = operation.maxUses && uses >= operation.maxUses;
     const conditionOk = operation.condition ? operation.condition(state) : true;
-    const resources = typeof operation.resources === "function" ? operation.resources(state) : operation.resources;
+    const resources = adjustedResourcesForItem(state, operationId, resolveResources(state, operation));
     const affordable = canPay(state, resources);
+    const fiscalLocked = isFiscalLock(state, resources);
     let lockedReason = "";
     if (maxed) lockedReason = "次数已用完";
     else if (!conditionOk) lockedReason = "条件未满足";
+    else if (fiscalLocked) lockedReason = "财政透支";
     else if (!affordable) lockedReason = "资金不足";
+    const effects = adjustedEffectsForItem(state, operationId, resolveEffects(state, operation));
+    const hidden = adjustedHiddenForItem(state, operationId, resolveHidden(state, operation));
     return {
       id: operationId,
       ...operation,
       resources,
-      available: !maxed && conditionOk && affordable,
+      effects,
+      hidden,
+      available: !maxed && conditionOk && !fiscalLocked && affordable,
       lockedReason,
       uses,
     };
@@ -1228,15 +1640,23 @@
     const resolution = RESOLUTIONS[resolutionId];
     const used = Boolean(state.flags.resolutions[resolutionId]);
     const conditionOk = resolution.condition ? resolution.condition(state) : true;
-    const affordable = canPay(state, resolution.resources);
+    const resources = adjustedResourcesForItem(state, resolutionId, resolveResources(state, resolution));
+    const affordable = canPay(state, resources);
+    const fiscalLocked = isFiscalLock(state, resources);
     let lockedReason = "";
     if (resolution.once && used) lockedReason = "已通过";
     else if (!conditionOk) lockedReason = "条件未满足";
+    else if (fiscalLocked) lockedReason = "财政透支";
     else if (!affordable) lockedReason = "资金不足";
+    const effects = adjustedEffectsForItem(state, resolutionId, resolveEffects(state, resolution));
+    const hidden = adjustedHiddenForItem(state, resolutionId, resolveHidden(state, resolution));
     return {
       id: resolutionId,
       ...resolution,
-      available: !(resolution.once && used) && conditionOk && affordable,
+      resources,
+      effects,
+      hidden,
+      available: !(resolution.once && used) && conditionOk && !fiscalLocked && affordable,
       lockedReason,
       used,
     };
@@ -1297,7 +1717,10 @@
     }
     if (event.tags.includes("economy")) weight += m.economy < 20 ? 12 : m.economy < 30 ? 7 : m.economy > 65 ? 2 : 0;
     if (event.tags.includes("fatigue")) weight += m.staffFatigue > 85 ? 12 : m.staffFatigue > 70 ? 7 : m.staffFatigue < 45 ? -1 : 2;
+    if (event.tags.includes("funds")) weight += state.resources.funds <= 10 ? 14 : state.resources.funds < 25 ? 8 : 1;
     if (event.tags.includes("public")) weight += state.hidden.publicMemory > 55 ? 8 : state.hidden.publicMemory > 35 ? 4 : 1;
+    if (m.infection >= 80 && (event.actions || []).some((action) => TESTING_KEYS.includes(action) || CONTROL_KEYS.includes(action))) weight += 5;
+    if (m.trust <= 30 && (event.tags.includes("rumor") || event.id.includes("refuse"))) weight += 5;
 
     return Math.max(1, weight);
   }
@@ -1354,6 +1777,7 @@
 
   function buildChoiceForAction(event, actionKey, state) {
     const action = ACTIONS[actionKey];
+    const status = getActionStatus(state, actionKey);
     const eventMod = eventModifier(event, actionKey, state);
     const preview = previewActionEffects(state, actionKey, eventMod);
     return {
@@ -1366,6 +1790,8 @@
       eventHidden: eventMod.hidden,
       delayed: eventMod.delayed,
       eventNotes: eventMod.notes,
+      available: status.available,
+      lockedReason: status.lockedReason,
     };
   }
 
@@ -1374,10 +1800,17 @@
     const lines = [];
     const mergedCore = mergeEffects(actionResult.effects, eventMod.effects);
     const mergedHidden = mergeEffects(actionResult.hidden, eventMod.hidden);
+    const resources = actionResult.resources || {};
+
+    Object.entries(resources).forEach(([metric, delta]) => {
+      if (!delta) return;
+      lines.push(`${RESOURCE_META[metric].short} ${delta > 0 ? "+" : ""}${delta}`);
+    });
 
     Object.entries(mergedCore).forEach(([metric, delta]) => {
       if (!delta) return;
-      lines.push(`${METRIC_META[metric].short} ${delta > 0 ? "+" : ""}${delta}`);
+      const displayDelta = clamp(delta, -DAILY_CORE_CAP, DAILY_CORE_CAP);
+      lines.push(`${METRIC_META[metric].short} ${displayDelta > 0 ? "+" : ""}${displayDelta}`);
     });
     Object.entries(mergedHidden).forEach(([metric, delta]) => {
       if (!delta) return;
@@ -1385,6 +1818,26 @@
     });
     if (eventMod.delayed) lines.push(`${eventMod.delayed.delay}日后：${eventMod.delayed.label}`);
     return lines.slice(0, 5);
+  }
+
+  function getActionStatus(state, actionKey) {
+    const action = ACTIONS[actionKey];
+    if (!action) return { available: false, lockedReason: "行动不存在" };
+    const uses = state.flags.actionUses[actionKey] || 0;
+    const maxed = action.maxUses && uses >= action.maxUses;
+    const conditionOk = action.condition ? action.condition(state) : true;
+    const result = computeActionResult(state, actionKey);
+    const affordable = canPay(state, result.resources);
+    let lockedReason = "";
+    if (maxed) lockedReason = "次数已用完";
+    else if (!conditionOk) lockedReason = "条件未满足";
+    else if (!affordable) lockedReason = "资金不足";
+    return {
+      available: !maxed && conditionOk && affordable,
+      lockedReason,
+      uses,
+      resources: result.resources,
+    };
   }
 
   function mergeEffects(a = {}, b = {}) {
@@ -1423,6 +1876,10 @@
       } else if (actionKey === "reopenPilot") {
         add("infection", 1);
         text = "在传播风险事件中恢复流动会放大反弹。";
+      } else if (actionKey === "forceSimplify") {
+        add("infection", -1);
+        addHidden("detectedRate", -1);
+        text = "强行压缩流程能快一点，但会牺牲信息质量。";
       }
       delayed.effects.infection = (delayed.effects.infection || 0) + (actionKey === "reopenPilot" ? 2 : 0);
     }
@@ -1436,6 +1893,9 @@
         add("staffFatigue", -1);
         add("hospitalLoad", 1);
         text = "轮休能保人，但短期容量更紧。";
+      } else if (actionKey === "supportTeam") {
+        add("staffFatigue", -1);
+        text = "支援队能替一线挡住部分排班压力。";
       } else {
         delayed.effects.hospitalLoad = (delayed.effects.hospitalLoad || 0) + 1;
       }
@@ -1447,6 +1907,10 @@
         add("supplies", 2);
         add("trust", 1);
         text = "保供行动能快速稳定民生预期。";
+      } else if (actionKey === "outsourceDelivery") {
+        add("supplies", 2);
+        add("trust", -1);
+        text = "外包配送能补链条，但公平性质疑会上升。";
       } else if (["zoningControl", "citywideSilence"].includes(actionKey)) {
         add("supplies", -2);
         text = "更强管控会压住配送链条。";
@@ -1461,6 +1925,9 @@
         text = "公开解释能修复这次事件的信任缺口。";
       } else if (["citywideSilence", "zoningControl"].includes(actionKey)) {
         add("trust", -1);
+      } else if (["supportTeam", "compressAdmin", "outsourceDelivery", "forceSimplify", "fiscalDebt"].includes(actionKey)) {
+        add("trust", -1);
+        text = "这项处理能换取效率，但会消耗公众耐心。";
       }
       delayed.effects.trust = (delayed.effects.trust || 0) + (actionKey === "transparency" ? 1 : -1);
     }
@@ -1469,6 +1936,9 @@
       if (actionKey === "reopenPilot") {
         add("economy", 2);
         text = "试点恢复能对准当前经济压力。";
+      } else if (actionKey === "fiscalDebt") {
+        add("economy", -1);
+        text = "提前举债能缓解账面压力，但恢复期更沉。";
       } else if (["zoningControl", "citywideSilence"].includes(actionKey)) {
         add("economy", -2);
         text = "继续压低流动会加重收入压力。";
@@ -1480,10 +1950,27 @@
       if (actionKey === "restPolicy") {
         add("staffFatigue", -2);
         text = "这次事件的关键是保住执行队伍。";
+      } else if (["supportTeam", "compressAdmin", "forceSimplify"].includes(actionKey)) {
+        add("staffFatigue", -1);
+        text = "这次事件的关键是保住执行队伍。";
+      } else if (actionKey === "outsourceDelivery") {
+        add("staffFatigue", -1);
+        add("trust", -1);
+        text = "外包能减压，但也把争议带到居民面前。";
       } else {
         add("staffFatigue", 1);
       }
       delayed.effects.staffFatigue = (delayed.effects.staffFatigue || 0) + (actionKey === "restPolicy" ? -1 : 1);
+    }
+
+    if (tags.includes("funds")) {
+      if (actionKey === "fiscalDebt") {
+        text = "财政动作能补上资金缺口，但会透支恢复期。";
+      } else if (["compressAdmin", "forceSimplify"].includes(actionKey)) {
+        add("staffFatigue", -1);
+        add("trust", -1);
+        text = "压缩流程能省成本，也会降低可解释性。";
+      }
     }
 
     if (tags.includes("public")) {
@@ -1521,9 +2008,12 @@
     if (!action) return { effects: {}, hidden: {}, modifiers: {}, notes: [] };
     const raw = action.compute(state);
     const efficiency = actionEfficiency(state);
+    const scaledEffects = scaleBeneficialEffects(raw.effects || {}, efficiency);
+    const scaledHidden = scaleBeneficialEffects(raw.hidden || {}, efficiency);
     return {
-      effects: scaleBeneficialEffects(raw.effects || {}, efficiency),
-      hidden: scaleBeneficialEffects(raw.hidden || {}, efficiency),
+      resources: raw.resources || {},
+      effects: scaledEffects,
+      hidden: scaledHidden,
       modifiers: raw.modifiers || {},
       flags: raw.flags || {},
       notes: raw.notes || [],
@@ -1534,7 +2024,7 @@
   function actionEfficiency(state) {
     let efficiency = 1;
     if (state.metrics.staffFatigue > 80) efficiency -= 0.2;
-    if (state.metrics.trust < 35) efficiency -= 0.2;
+    if (state.metrics.trust <= 30) efficiency -= 0.2;
     return clamp(efficiency, 0.55, 1);
   }
 
@@ -1565,6 +2055,7 @@
     const event = getCurrentEvent(state);
     const choice = event.choices.find((item) => item.id === choiceId);
     if (!choice) throw new Error(`Unknown choice: ${choiceId}`);
+    if (choice.available === false) return state;
 
     const before = snapshotValues(state);
     const dailyDelta = Object.fromEntries(CORE_METRICS.map((metric) => [metric, 0]));
@@ -1589,10 +2080,12 @@
       applyBufferChoice(state, choice.id, dailyDelta, log);
     } else {
       const actionResult = computeActionResult(state, choice.actionKey);
+      applyResourceEffects(state, actionResult.resources, log, "行动");
       applyEffects(state, actionResult.effects, dailyDelta, log, "行动");
       applyHiddenEffects(state, actionResult.hidden, log, "行动");
       addModifiers(modifiers, actionResult.modifiers);
       applyFlags(state, actionResult.flags);
+      state.flags.actionUses[choice.actionKey] = (state.flags.actionUses[choice.actionKey] || 0) + 1;
       log.notes.push(...actionResult.notes);
 
       applyEffects(state, choice.eventEffects, dailyDelta, log, "事件");
@@ -1605,6 +2098,7 @@
     applyDailyResolution(state, dailyDelta, log, modifiers);
     applySoftDecay(state, log);
     clampAll(state);
+    refreshStatusEffects(state);
     updateFailureStreaks(state);
 
     log.changes = diffSnapshots(before, snapshotValues(state));
@@ -1642,8 +2136,8 @@
       restPolicyBonus: 0,
       testingFocus: 0,
     };
-    const effects = typeof status.effects === "function" ? status.effects(state) : status.effects;
-    const hidden = typeof status.hidden === "function" ? status.hidden(state) : status.hidden;
+    const effects = status.effects || {};
+    const hidden = status.hidden || {};
 
     applyResourceEffects(state, status.resources, log, "主动工程");
     applyEffects(state, effects, dailyDelta, log, "主动工程");
@@ -1655,6 +2149,7 @@
     applyDailyResolution(state, dailyDelta, log, modifiers);
     applySoftDecay(state, log);
     clampAll(state);
+    refreshStatusEffects(state);
     updateFailureStreaks(state);
     log.changes = diffSnapshots(before, snapshotValues(state));
     state.history.unshift(log);
@@ -1691,14 +2186,16 @@
     };
 
     applyResourceEffects(state, status.resources, log, "城市决议");
-    applyEffects(state, status.effects, dailyDelta, log, "城市决议");
-    applyHiddenEffects(state, status.hidden, log, "城市决议");
+    applyEffects(state, status.effects || {}, dailyDelta, log, "城市决议");
+    applyHiddenEffects(state, status.hidden || {}, log, "城市决议");
     state.flags.resolutions[resolutionId] = true;
+    if (status.delayed) scheduleDelayedEffect(state, status.delayed, "城市决议", status.label);
 
     applyDueDelayedEffects(state, dailyDelta, log);
     applyDailyResolution(state, dailyDelta, log, modifiers);
     applySoftDecay(state, log);
     clampAll(state);
+    refreshStatusEffects(state);
     updateFailureStreaks(state);
     log.changes = diffSnapshots(before, snapshotValues(state));
     state.history.unshift(log);
@@ -1757,10 +2254,14 @@
   }
 
   function applyDueDelayedEffects(state, dailyDelta, log) {
-    const due = state.pendingEffects.filter((item) => item.dueDay <= state.day && conditionMet(state, item.condition));
-    const remaining = state.pendingEffects.filter((item) => item.dueDay > state.day || !conditionMet(state, item.condition));
+    const due = state.pendingEffects.filter((item) => item.dueDay <= state.day);
+    const remaining = state.pendingEffects.filter((item) => item.dueDay > state.day);
     state.pendingEffects = remaining;
     due.forEach((item) => {
+      if (!conditionMet(state, item.condition)) {
+        log.notes.push(`“${item.eventTitle}”的后续风险未触发：${item.label}`);
+        return;
+      }
       applyEffects(state, item.effects, dailyDelta, log, `延迟：${item.label}`);
       applyHiddenEffects(state, item.hidden, log, `延迟：${item.label}`);
       applyResourceEffects(state, item.resources, log, `延迟：${item.label}`);
@@ -1776,6 +2277,7 @@
     if (!condition) return true;
     if (condition === "staffFatigueAbove80") return state.metrics.staffFatigue > 80;
     if (condition === "trustBelow40") return state.metrics.trust < 40;
+    if (condition === "hospitalAtLeast80") return state.metrics.hospitalLoad >= 80;
     if (condition === "hospitalAbove85") return state.metrics.hospitalLoad > 85;
     if (condition === "suppliesBelow25") return state.metrics.supplies < 25;
     return true;
@@ -1840,8 +2342,10 @@
     if (state.completedProjects.healthCode && h.detectedRate >= 55) detectionEffect += 1;
     const fatiguePenalty = m.staffFatigue >= 75 ? 2 : m.staffFatigue >= 60 ? 1 : 0;
     const trustPenalty = m.trust < 30 ? 2 : m.trust < 45 ? 1 : 0;
+    const strictControlEffect = h.policyStrictness >= 80 ? 1 : 0;
+    const openFlowPressure = h.policyStrictness <= 15 ? 1 : 0;
     const infectionDelta = clamp(
-      phasePressure + mobilityPressure - controlEffect - detectionEffect + fatiguePenalty + trustPenalty,
+      phasePressure + mobilityPressure - controlEffect - detectionEffect - strictControlEffect + openFlowPressure + fatiguePenalty + trustPenalty,
       -6,
       7,
     );
@@ -1852,12 +2356,13 @@
       - (state.completedProjects.triageNetwork ? 1 : 0)
       - (state.completedProjects.communityClinic ? 1 : 0)
       + (state.metrics.supplies < 30 ? 1 : 0)
-      + (state.metrics.staffFatigue > 75 ? 1 : 0);
+      + (state.metrics.staffFatigue > 75 ? 1 : 0)
+      + (state.metrics.infection >= 80 ? 1 : 0);
     applyEffects(state, { hospitalLoad: hospitalDelta }, dailyDelta, log, "医疗联动");
 
     let supplyRecovery = 1 + modifiers.supplyRecovery;
     if (state.metrics.economy < 30) supplyRecovery -= 1;
-    if (state.metrics.economy > 75) supplyRecovery += 1;
+    if (state.metrics.economy >= 75) supplyRecovery += 1;
     if (state.completedProjects.supplyCorridor) supplyRecovery += 1;
     const suppliesDelta = supplyRecovery
       + (state.metrics.economy >= 60 ? 1 : 0)
@@ -1867,7 +2372,7 @@
     applyEffects(state, { supplies: suppliesDelta }, dailyDelta, log, "供应联动");
 
     const strictTrustCost = state.hidden.policyStrictness >= 75
-      ? (state.metrics.supplies > 70 ? 0 : 1)
+      ? (state.metrics.supplies >= 75 ? 0 : 1)
       : 0;
     const trustDelta = modifiers.transparencyBonus
       + (state.metrics.supplies >= 70 ? 1 : 0)
@@ -1881,18 +2386,22 @@
       - Math.round(state.hidden.policyStrictness / 25)
       - (state.metrics.infection >= 55 ? 1 : 0)
       - (state.metrics.hospitalLoad >= 80 ? 1 : 0)
-      - (state.metrics.trust < 30 ? 1 : 0);
+      - (state.metrics.trust < 30 ? 1 : 0)
+      - (state.hidden.policyStrictness >= 80 ? 1 : 0)
+      + (state.hidden.policyStrictness <= 15 ? 1 : 0);
     applyEffects(state, { economy: economyDelta }, dailyDelta, log, "活力联动");
 
-    const fatigueDelta = 1
+    const fatigueDelta = 2
       + Math.round(state.hidden.policyStrictness / 25)
       + (state.metrics.hospitalLoad >= 75 ? 1 : 0)
       + (state.metrics.supplies < 30 ? 1 : 0)
+      + (state.hidden.policyStrictness >= 80 ? 1 : 0)
       - modifiers.restPolicyBonus
       - (state.metrics.trust >= 70 ? 1 : 0);
     applyEffects(state, { staffFatigue: fatigueDelta }, dailyDelta, log, "执行联动");
 
-    const fundsDelta = (state.metrics.economy >= 65 ? 2 : state.metrics.economy >= 40 ? 1 : 0)
+    const fundsDelta = (state.metrics.economy >= 75 ? 2 : state.metrics.economy >= 40 ? 1 : 0)
+      - (state.metrics.economy <= 25 ? 1 : 0)
       - (state.metrics.hospitalLoad >= 85 ? 1 : 0)
       - (state.hidden.policyStrictness >= 80 ? 1 : 0);
     applyResourceEffects(state, { funds: fundsDelta }, log, "财政联动");
@@ -1905,7 +2414,7 @@
       applyEffects(state, { trust: -2, staffFatigue: 1 }, dailyDelta, log, "供应低位");
     }
 
-    if (state.metrics.staffFatigue > 85 || state.metrics.supplies < 25) {
+    if (state.metrics.staffFatigue >= 80 || state.metrics.supplies < 25) {
       applyHiddenEffects(state, { detectedRate: -1 }, log, "系统磨损");
     }
 
@@ -1924,7 +2433,7 @@
     } else if (state.hidden.policyStrictness < 15) {
       state.hidden.policyStrictness = boundedMetricValue("policyStrictness", state.hidden.policyStrictness + 1);
     }
-    if (state.hidden.detectedRate > 70 && state.metrics.staffFatigue > 75) {
+    if (state.hidden.detectedRate >= 80 && state.metrics.staffFatigue >= 75 && state.metrics.staffFatigue < 80) {
       state.hidden.detectedRate = boundedMetricValue("detectedRate", state.hidden.detectedRate - 1);
       log.notes.push("检测网络在疲劳高位下轻微损耗");
     }
@@ -2016,6 +2525,11 @@
     if (state.metrics.supplies < 15) state.alerts.push(`供应断裂倒计时：${streaks.supply}/${limit}`);
     if (state.metrics.trust < 20) state.alerts.push(`信任崩塌倒计时：${streaks.trust}/${limit}`);
     if (state.metrics.staffFatigue > 90) state.alerts.push(`执行失灵倒计时：${streaks.staff}/${limit}`);
+    if (state.metrics.infection >= 80) state.alerts.push("社区扩散：医疗负载将额外承压");
+    if (state.resources.funds <= 10) state.alerts.push("财政透支：高价工程和决议被锁定");
+    if (state.hidden.detectedRate <= 35) state.alerts.push("信息盲区：报告感染压力误差扩大");
+    if (state.hidden.policyStrictness >= 80) state.alerts.push("高压管控：感染压制增强，但活力和疲劳代价上升");
+    if (state.hidden.publicMemory >= 60) state.alerts.push("长期伤痕：信任恢复会持续变慢");
   }
 
   function getFailureLimit(state) {
@@ -2033,8 +2547,8 @@
       const score = calculateScore(state);
       state.score = score;
       if (score >= 78) return endGame(state, "hardWon");
-      if (score >= 62 && state.metrics.trust >= 60) return endGame(state, "quietRecovery");
       if (score >= 62 && state.hidden.publicMemory >= 55) return endGame(state, "silentCost");
+      if (score >= 62 && state.metrics.trust >= 60) return endGame(state, "quietRecovery");
       if (score >= 45) return endGame(state, "winterScars");
       return endGame(state, "surfaceRecovery");
     }
@@ -2115,6 +2629,7 @@
     importState,
     exportState,
     getCurrentEvent,
+    getStatusEffects,
     getVisibleMetrics,
     getEventImage,
     getMapPoint,

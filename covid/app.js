@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v14";
+  const ASSET_VERSION = "v15";
   const core = window.Linjiang72;
 
   let state = null;
@@ -82,6 +82,7 @@
     detectedRate: document.getElementById("detectedRate"),
     policyStrictness: document.getElementById("policyStrictness"),
     publicMemory: document.getElementById("publicMemory"),
+    statusEffects: document.getElementById("statusEffects"),
     briefStrip: document.getElementById("briefStrip"),
     cityMapWrap: document.getElementById("cityMapWrap"),
     mapStage: document.getElementById("mapStage"),
@@ -322,6 +323,24 @@
     els.detectedRate.textContent = state.hidden.detectedRate;
     els.policyStrictness.textContent = state.hidden.policyStrictness;
     els.publicMemory.textContent = state.hidden.publicMemory;
+    renderStatusEffects();
+  }
+
+  function renderStatusEffects() {
+    if (!els.statusEffects) return;
+    const effects = state.statusEffects || (core.getStatusEffects ? core.getStatusEffects(state) : []);
+    if (!effects.length) {
+      els.statusEffects.innerHTML = "<p class=\"empty-state\">暂无高低位状态。</p>";
+      return;
+    }
+    els.statusEffects.innerHTML = effects
+      .map((effect) => `
+        <article class="status-effect ${escapeHtml(effect.tone)}">
+          <strong>${escapeHtml(effect.label)}</strong>
+          <p>${escapeHtml(effect.description)}</p>
+        </article>
+      `)
+      .join("");
   }
 
   function renderStageInfo() {
@@ -581,15 +600,17 @@
       const button = document.createElement("button");
       button.className = "choice-button";
       button.type = "button";
+      button.disabled = choice.available === false;
       const chips = choice.effectPreview
         .map((item) => `<span class="chip">${escapeHtml(item)}</span>`)
         .join("");
       button.innerHTML = `
         <strong>${escapeHtml(choice.label)}</strong>
-        <p>${escapeHtml(choice.description)}</p>
+        <p>${escapeHtml(choice.available === false ? choice.lockedReason : choice.description)}</p>
         <div class="chips">${chips}</div>
       `;
       button.addEventListener("click", () => {
+        if (choice.available === false) return;
         core.resolveChoice(state, choice.id);
         save();
         render();
