@@ -1553,6 +1553,7 @@
     if (m.economy >= 75) add("economyHigh", "财政余裕", "good", "每日资金和供应恢复更稳。");
     if (m.economy <= 25) add("economyLow", "财政吃紧", "danger", "每日资金受损，医疗和保供工程效果下降。");
     if (m.staffFatigue >= 80) add("fatigueHigh", "执行透支", "danger", "行动收益打折，发现率每天磨损。");
+    if (m.staffFatigue >= 88) add("fatigueFuse", "执行熔断", "danger", "基层系统会自动降速减压，疲劳不再直线上冲，但医疗、供应、活力和信任会承受转移代价。");
     if (m.staffFatigue <= 35) add("fatigueLow", "执行余裕", "good", "检测、保供、医疗和志愿者类行动获得额外收益；任务仍重时，余裕会被日常工作重新消耗。");
     if (r.funds <= 10) add("fundsLow", "财政透支", "danger", "高价工程和决议被锁定，资金事件权重上升。");
     if (r.funds >= 80) add("fundsHigh", "储备充足", "good", "一次性大型工程资金成本降低。");
@@ -2703,6 +2704,18 @@
       - modifiers.restPolicyBonus
       - (state.metrics.trust >= 70 ? 1 : 0);
     applyEffects(state, { staffFatigue: fatigueDelta }, dailyDelta, log, "执行联动");
+
+    if (state.metrics.staffFatigue >= 88) {
+      applyEffects(state, {
+        staffFatigue: -5,
+        hospitalLoad: 2,
+        supplies: -2,
+        trust: -2,
+        economy: -1,
+      }, dailyDelta, log, "执行熔断");
+      applyHiddenEffects(state, { publicMemory: 1 }, log, "执行熔断");
+      log.notes.push("执行熔断：基层系统自动降速，疲劳得到短暂缓冲，但服务能力和公众耐心被转移消耗");
+    }
 
     const fundsDelta = (state.metrics.economy >= 75 ? 2 : state.metrics.economy >= 40 ? 1 : 0)
       - (state.metrics.economy <= 25 ? 1 : 0)
