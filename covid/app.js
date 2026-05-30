@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v22";
+  const ASSET_VERSION = "v23";
   const core = window.Linjiang72;
 
   let state = null;
@@ -690,6 +690,12 @@
     items.forEach((item) => {
       const card = document.createElement("article");
       card.className = `action-card${item.available ? "" : " locked"}`;
+      const lockDetail = item.available ? "" : item.lockedDetail || item.lockedReason || "";
+      if (lockDetail) {
+        card.setAttribute("data-lock-detail", lockDetail);
+        card.setAttribute("title", lockDetail);
+        card.tabIndex = 0;
+      }
       const preview = renderEffectChips(item);
       card.innerHTML = `
         <div class="action-card-main">
@@ -697,7 +703,7 @@
           <p>${escapeHtml(item.description)}</p>
           <div class="chips">${preview}</div>
         </div>
-        <button class="small-action" type="button" ${item.available ? "" : "disabled"}>
+        <button class="small-action" type="button" ${item.available ? "" : "aria-disabled=\"true\""} ${lockDetail ? `title="${escapeHtml(lockDetail)}"` : ""}>
           ${item.available ? "执行" : escapeHtml(item.lockedReason)}
         </button>
       `;

@@ -612,7 +612,7 @@
 
   function createEventFromBlueprint(item, phase, index) {
     const phaseName = PHASE_EVENT_CONTEXT[phase - 1];
-    const description = `${item.scene} 指挥部桌上同时摆着医院、社区、宣传和财政口的几份记录，数字彼此咬合却不完全吻合。临江正处在“${phaseName}”阶段，任何选择都会把压力推向感染、医疗、供应、信任、活力或基层疲劳中的另一端；新闻原型只提供一种现实质感，具体城市和人物均为虚构。`;
+    const description = `${item.scene} 指挥部桌上同时摆着医院、社区、宣传和财政口的几份记录，数字彼此咬合却不完全吻合。临江正处在“${phaseName}”阶段，任何选择都会把压力推向感染、医疗、供应、信任、活力或基层疲劳中的另一端。`;
     return {
       id: `p${phase}_${item.id}`,
       phase: [phase],
@@ -620,7 +620,7 @@
       title: item.title,
       body: description,
       description,
-      sourceNote: `受${item.source}启发。临江、机构与人员均为虚构，本事件仅用于模拟经营叙事，不构成现实治理建议。`,
+      sourceNote: `受${item.source}启发。仅用于模拟经营叙事，不构成现实治理建议。`,
       sourceTags: item.tags,
       imageKey: item.imageKey,
       image: `events/p${phase}_${item.id}.png`,
@@ -996,6 +996,7 @@
         completeProject: "shelterHospital",
       },
       maxUses: 1,
+      conditionText: "需要方舱医院尚未完成。",
       condition(state) {
         return !state.completedProjects.shelterHospital;
       },
@@ -1027,6 +1028,7 @@
         completeProject: "healthCode",
       },
       maxUses: 1,
+      conditionText: "需要健康码系统尚未部署。",
       condition(state) {
         return !state.completedProjects.healthCode;
       },
@@ -1062,6 +1064,7 @@
         completeProject: "triageNetwork",
       },
       maxUses: 2,
+      conditionText: "需要医疗负载≥38，或感染压力≥45，或进入第25天后。",
       condition(state) {
         return state.metrics.hospitalLoad >= 38 || state.metrics.infection >= 45 || state.day >= 25;
       },
@@ -1095,6 +1098,7 @@
         hidden: {},
       },
       maxUses: 2,
+      conditionText: "需要基层疲劳≥42、医疗负载≥65、信任≤45，或公共创伤≥18。",
       condition(state) {
         return state.metrics.staffFatigue >= 42
           || state.metrics.hospitalLoad >= 65
@@ -1154,6 +1158,7 @@
         hidden: {},
       },
       maxUses: 3,
+      conditionText: "需要物资≤55、基层疲劳≥42、信任≤52、管控≥45，或进入第18天后。",
       condition(state) {
         return state.metrics.supplies <= 55
           || state.metrics.staffFatigue >= 42
@@ -1177,6 +1182,7 @@
         completeProject: "communityClinic",
       },
       maxUses: 1,
+      conditionText: "需要社区门诊尚未建成，且医疗负载≥50、感染压力≥65，或进入第37天后。",
       condition(state) {
         return !state.completedProjects.communityClinic
           && (state.metrics.hospitalLoad >= 50 || state.metrics.infection >= 65 || state.day >= 37);
@@ -1192,6 +1198,7 @@
       effects: { hospitalLoad: -10, trust: -2, staffFatigue: 3 },
       hidden: { publicMemory: 2 },
       once: true,
+      conditionText: "需要方舱已启用，或医疗负载≥78。",
       condition(state) {
         return state.completedProjects.shelterHospital || state.metrics.hospitalLoad >= 78;
       },
@@ -1210,6 +1217,7 @@
       },
       hidden: { policyStrictness: -6 },
       once: false,
+      conditionText: "需要发现率≥60，且感染压力<62。",
       condition(state) {
         return state.hidden.detectedRate >= 60 && state.metrics.infection < 62;
       },
@@ -1221,6 +1229,7 @@
       effects: { trust: 7, economy: -2, staffFatigue: -1 },
       hidden: { publicMemory: -5, detectedRate: 2 },
       once: true,
+      conditionText: "需要第18天后，或信任<40，或公共创伤>30。",
       condition(state) {
         return state.day >= 18 || state.metrics.trust < 40 || state.hidden.publicMemory > 30;
       },
@@ -1232,6 +1241,7 @@
       effects: { staffFatigue: -14, hospitalLoad: 2, supplies: -3, trust: -4 },
       hidden: {},
       once: true,
+      conditionText: "需要基层疲劳≥62。",
       condition(state) {
         return state.metrics.staffFatigue >= 62;
       },
@@ -1243,6 +1253,7 @@
       effects: { supplies: -8, trust: 8, staffFatigue: 3 },
       hidden: { publicMemory: -4 },
       once: false,
+      conditionText: "需要物资供应≥32。",
       condition(state) {
         return state.metrics.supplies >= 32;
       },
@@ -1254,6 +1265,7 @@
       effects: { economy: 9, supplies: 3, infection: 2, trust: 1 },
       hidden: { policyStrictness: -5 },
       once: false,
+      conditionText: "需要城市活力<55，且感染压力<70。",
       condition(state) {
         return state.metrics.economy < 55 && state.metrics.infection < 70;
       },
@@ -1265,6 +1277,7 @@
       effects: { supplies: 14, trust: -8 },
       hidden: { publicMemory: 3 },
       once: false,
+      conditionText: "需要物资供应<35，或管控强度>60。",
       condition(state) {
         return state.metrics.supplies < 35 || state.hidden.policyStrictness > 60;
       },
@@ -1276,6 +1289,7 @@
       effects: { trust: -6, infection: -2 },
       hidden: { detectedRate: -3, policyStrictness: 5 },
       once: false,
+      conditionText: "需要市民信任≥45，且公共创伤≤40。",
       condition(state) {
         return state.metrics.trust >= 45 && state.hidden.publicMemory <= 40;
       },
@@ -1294,6 +1308,7 @@
         condition: "hospitalAtLeast80",
       },
       once: true,
+      conditionText: "需要医疗负载≥65，或公共创伤≥25。",
       condition(state) {
         return state.metrics.hospitalLoad >= 65 || state.hidden.publicMemory >= 25;
       },
@@ -1305,6 +1320,7 @@
       effects: { economy: 12, infection: 3, trust: -5 },
       hidden: {},
       once: false,
+      conditionText: "需要发现率≥55、感染压力<70，且城市活力≤65或资金≤35。",
       condition(state) {
         return state.hidden.detectedRate >= 55
           && state.metrics.infection < 70
@@ -1318,6 +1334,7 @@
       effects: { staffFatigue: -8, trust: -7, supplies: -3 },
       hidden: { publicMemory: 2 },
       once: false,
+      conditionText: "需要基层疲劳≥70。",
       condition(state) {
         return state.metrics.staffFatigue >= 70;
       },
@@ -1329,6 +1346,7 @@
       effects: { trust: -10, economy: -3 },
       hidden: { publicMemory: 3 },
       once: true,
+      conditionText: "需要应急资金≤15。",
       condition(state) {
         return state.resources.funds <= 15;
       },
@@ -1696,6 +1714,9 @@
     else if (!conditionOk) lockedReason = "条件未满足";
     else if (fiscalLocked) lockedReason = "财政透支";
     else if (!affordable) lockedReason = "资金不足";
+    const lockedDetail = !conditionOk
+      ? resolveConditionText(state, operation.conditionText)
+      : lockedReason;
     const effects = adjustedEffectsForItem(state, operationId, resolveEffects(state, operation));
     const hidden = adjustedHiddenForItem(state, operationId, resolveHidden(state, operation));
     return {
@@ -1706,6 +1727,7 @@
       hidden,
       available: !maxed && conditionOk && !fiscalLocked && affordable,
       lockedReason,
+      lockedDetail,
       uses,
     };
   }
@@ -1722,6 +1744,9 @@
     else if (!conditionOk) lockedReason = "条件未满足";
     else if (fiscalLocked) lockedReason = "财政透支";
     else if (!affordable) lockedReason = "资金不足";
+    const lockedDetail = !conditionOk
+      ? resolveConditionText(state, resolution.conditionText)
+      : lockedReason;
     const effects = adjustedEffectsForItem(state, resolutionId, resolveEffects(state, resolution));
     const hidden = adjustedHiddenForItem(state, resolutionId, resolveHidden(state, resolution));
     return {
@@ -1732,8 +1757,14 @@
       hidden,
       available: !(resolution.once && used) && conditionOk && !fiscalLocked && affordable,
       lockedReason,
+      lockedDetail,
       used,
     };
+  }
+
+  function resolveConditionText(state, conditionText) {
+    if (typeof conditionText === "function") return conditionText(state);
+    return conditionText || "当前城市状态还没有达到这项行动的触发条件。";
   }
 
   function getAvailableOperations(state) {
