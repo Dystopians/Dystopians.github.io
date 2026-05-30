@@ -705,7 +705,7 @@
       e("mask_factory_return", "口罩厂复工谈判", ["supply", "economy", "fatigue"], "factory", "郊区口罩厂愿意复工，但员工返岗、原料运输和住宿闭环都没准备好。厂长要求政府给出订单和防护承诺。", "防护物资产能恢复和企业复工报道", [c("finance", "预付订单锁产能", "用应急资金换产能，恢复库存但透支财政。"), c("protectWorkers", "派防护员驻厂", "保障工人安全和排班，让供应恢复更稳。"), c("reopen", "允许分批返岗生产", "加快城市活力和物资恢复，但增加流动风险。")]),
       e("charity_warehouse_dispute", "红十字仓库争议", ["supply", "trust", "funds"], "market", "捐赠物资在仓库里堆着，医院说没拿到，志愿者说流程卡住。网上开始追问谁有权分配。", "捐赠物资分配和仓储争议报道", [c("audit", "公开入库出库流水", "把捐赠流向做成日清单，修复信任。"), c("supply", "直接转给定点医院", "先绕开慢流程，把物资送到最需要的地方。"), c("messageControl", "先压下仓库偷拍视频", "避免争议扩大，给内部整理留时间。")]),
       e("online_help_form", "网上求助表单", ["trust", "medical", "fatigue"], "community", "一份民间求助表单在网上流传，里面有床位、买药和独居老人需求。数据很乱，但比官方热线更快。", "线上求助表单和民间互助信息报道", [c("open", "把表单接入热线台账", "承认民间表单价值，让求助进入正式流程。"), c("community", "交给各街道认领", "让社区认领本辖区求助，降低市级处理压力。"), c("medical", "优先筛出危急就医", "先处理危急患者，压低医疗风险但增加人手消耗。")]),
-      e("li_wenliang_death", "李文亮医生去世", ["trust", "medical", "public"], "hospital", "临江中心医院眼科医生李文亮去世，医院群聊、居民群和指挥部值班室都安静了几分钟。他曾因早期提醒异常病例而被训诫，如今又在一线感染后离世。市民开始把第一号通告、医护预警和信息公开重新连成一条线：如果真实提醒被压低，临江还会错过什么。", "2020 年 2 月李文亮医生去世及后续调查、悼念报道", [
+      e("li_liang_death", "李亮医生去世", ["trust", "medical", "public"], "hospital", "临江中心医院眼科医生李亮去世，医院群聊、居民群和指挥部值班室都安静了几分钟。他曾因早期提醒异常病例而被训诫，如今又在一线感染后离世。市民开始把第一号通告、医护预警和信息公开重新连成一条线：如果真实提醒被压低，临江还会错过什么。", "2020 年 2 月一线医生去世及后续调查、悼念报道", [
         c("open", "公开哀悼并重启早期口径复盘", "承认早期沟通造成的伤口，公布医护预警的处理流程和复盘时限，让哀悼转化成可见的制度修补。", { resources: { funds: -2 }, effects: { trust: 2, hospitalLoad: -1, staffFatigue: 1 }, hidden: { detectedRate: 2, publicMemory: 3 }, delayed: { delay: 3, label: "复盘追问继续发酵", effects: { trust: -1 }, hidden: { detectedRate: 1 } } }),
         c("protectWorkers", "设立医护预警保护机制", "不把事件只停留在悼念上，给医护匿名上报、院感升级和轮换保护明确入口，优先保护仍在一线的人。", { effects: { hospitalLoad: -1, trust: 1, staffFatigue: 2 }, hidden: { publicMemory: 2 }, delayed: { delay: 2, label: "预警通道带来新线索", hidden: { detectedRate: 2 }, effects: { staffFatigue: 1 } } }),
         c("messageControl", "低调处理追悼和讨论", "限制相关讨论扩散，只发布简短慰问和工作伤害认定，避免悲伤迅速变成对早期处置的集中质疑。", { effects: { staffFatigue: 1, infection: -1 }, hidden: { publicMemory: 5, detectedRate: -1 }, delayed: { delay: 3, label: "压低哀悼后的反噬", effects: { trust: -3 }, hidden: { publicMemory: 1 }, condition: "trustBelow45" } }),
@@ -886,7 +886,7 @@
     { day: 16, eventId: "p2_multi_province_volunteer_team", condition: "always", priority: 45, reason: "封城急救阶段需要一次外部支援窗口。" },
     { day: 18, eventId: "p2_charity_warehouse_dispute", condition: "warehouseDisputePressure", priority: 40, reason: "供应或信任吃紧时，捐赠仓储争议会被放大。" },
     { day: 20, eventId: "p2_traceable_donation_account", condition: "always", priority: 45, reason: "捐赠和资金支持进入分配压力期。" },
-    { day: 21, eventId: "p2_li_wenliang_death", condition: "always", priority: 60, reason: "阶段 2 固定触发李文亮医生去世带来的公共哀悼和信息信任考验。" },
+    { day: 21, eventId: "p2_li_liang_death", condition: "always", priority: 60, reason: "阶段 2 固定触发李亮医生去世带来的公共哀悼和信息信任考验。" },
     { day: 22, eventId: "p2_medical_team_arrival", condition: "medicalTeamNeed", priority: 40, reason: "医疗或基层承压时，支援队抵达成为关键选择。" },
     { day: 25, eventId: "p3_stadium_shelter_conversion", condition: "shelterNeed", priority: 50, reason: "第三阶段开端固定检查方舱建设窗口。" },
     { day: 29, eventId: "p3_collect_all_transfer_night", condition: "transferNeed", priority: 40, reason: "感染或医院压力高位时，转运夜会提前成为核心冲突。" },
