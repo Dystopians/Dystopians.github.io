@@ -31,6 +31,9 @@ main:
 
   - title: "Fish 🐟"
     url: /byte-fisher/build/
+
+  - title: "Covid"
+    url: /covid/
     
   # - title: "CV"
   #   url: /cv-json/

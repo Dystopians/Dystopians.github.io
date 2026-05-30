@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>临江72日</title>
+    <link rel="stylesheet" href="./styles.css?v=13">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <section class="identity">
+          <p class="eyebrow">LJ-72 / 像素城市应急模拟</p>
+          <h1>临江72日</h1>
+        </section>
+        <section class="day-panel" aria-live="polite">
+          <span id="dayLabel">第 1 天</span>
+          <strong id="phaseLabel">阶段 1 / 6</strong>
+          <span id="difficultyLabel">普通</span>
+          <span id="fundsLabel">资金 68</span>
+        </section>
+        <nav class="top-actions" aria-label="游戏操作">
+          <button id="tutorialBtn" class="icon-button" type="button" title="教程" aria-label="教程">?</button>
+          <button id="newGameBtn" class="icon-button" type="button" title="新游戏" aria-label="新游戏">↻</button>
+          <button id="continueBtn" class="icon-button" type="button" title="继续存档" aria-label="继续存档">▶</button>
+        </nav>
+      </header>
+
+      <section id="startScreen" class="start-screen">
+        <div class="start-copy">
+          <p class="eyebrow">档案编号 LJ-72</p>
+          <h2>在一张城市地图上，守住 72 天的多条红线。</h2>
+          <p>点击建筑、道路和人群，派出主动工程；处理每日事件；阅读随机新闻；用资金和城市状态换取更艰难但更主动的选择。</p>
+          <div class="start-actions">
+            <button id="startTutorialBtn" class="secondary-button" type="button">查看基础教程</button>
+          </div>
+          <div class="cover-mascots" aria-label="封面吉祥物互动区">
+            <button class="cover-mascot mascot-dingdong" type="button" data-mascot="dingdong" data-action="idle" aria-label="叮咚鸡">
+              <span class="mascot-sprite" aria-hidden="true"></span>
+              <span class="mascot-name">叮咚鸡</span>
+            </button>
+            <button class="cover-mascot mascot-dabai" type="button" data-mascot="dabai" data-action="idle" aria-label="大白">
+              <span class="mascot-sprite" aria-hidden="true"></span>
+              <span class="mascot-name">大白</span>
+            </button>
+            <p id="mascotBubble" class="mascot-bubble from-dingdong" aria-live="polite">叮咚鸡和大白已经抵达临江。</p>
+          </div>
+        </div>
+        <form id="startForm" class="start-form">
+          <fieldset>
+            <legend>难度</legend>
+            <label>
+              <input type="radio" name="difficulty" value="easy">
+              <span>简单</span>
+            </label>
+            <label>
+              <input type="radio" name="difficulty" value="normal" checked>
+              <span>普通</span>
+            </label>
+            <label>
+              <input type="radio" name="difficulty" value="hard">
+              <span>困难</span>
+            </label>
+          </fieldset>
+          <button class="primary-button" type="submit">开始第 1 天</button>
+          <img class="tilesheet-preview" src="./assets/tilesheet.png" alt="像素风城市贴图素材表">
+        </form>
+      </section>
+
+      <section id="gameScreen" class="game-grid" hidden>
+        <aside class="metrics-panel" aria-label="城市状态">
+          <div class="panel-heading">
+            <p class="eyebrow">城市状态</p>
+            <h2>六项红线</h2>
+          </div>
+          <div id="metricsList" class="metrics-list"></div>
+          <div class="resource-readouts">
+            <div tabindex="0" data-tooltip="应急资金：财政、专项拨款和社会协作额度。主动工程和城市决议会消耗资金，资金也会影响最终评分。">
+              <span>应急资金</span>
+              <strong id="fundsReadout">68</strong>
+            </div>
+            <div tabindex="0" data-tooltip="发现率：病例发现和监测能力。越高，报告感染压力越接近真实状况，也能让复工、分区治理等行动更可靠。">
+              <span>发现率</span>
+              <strong id="detectedRate">35</strong>
+            </div>
+            <div tabindex="0" data-tooltip="管控：限制流动和组织执行的强度。能压低感染传播，但会消耗城市活力、信任、物资和基层状态。">
+              <span>管控</span>
+              <strong id="policyStrictness">20</strong>
+            </div>
+            <div tabindex="0" data-tooltip="创伤：医疗、民生、沟通和强硬处置留下的长期公共记忆。数值越高，最终结局越沉重。">
+              <span>创伤</span>
+              <strong id="publicMemory">0</strong>
+            </div>
+          </div>
+        </aside>
+
+        <section class="map-column">
+          <section class="city-map-panel" aria-label="临江市地图">
+            <div class="map-toolbar">
+              <div>
+                <p class="eyebrow">临江市地图</p>
+                <h2>点击建筑、道路与人群</h2>
+              </div>
+              <div class="map-controls">
+                <span id="mapHint">滚轮缩放，拖拽移动地图</span>
+                <button id="resetMapView" class="icon-button" type="button" aria-label="重置地图视角" title="重置地图视角">⌖</button>
+              </div>
+            </div>
+            <div id="cityMapWrap" class="city-map-wrap">
+              <div id="mapStage" class="map-stage">
+                <img src="./assets/city-map.png" alt="临江市像素风模拟经营地图" class="city-map" draggable="false">
+                <div id="mapHighlightLayer" class="map-highlight-layer" aria-hidden="true"></div>
+                <div id="mapHotspots" class="map-hotspots"></div>
+              </div>
+            </div>
+            <article id="mapInspector" class="map-inspector"></article>
+          </section>
+
+          <section class="event-panel">
+            <article class="event-card">
+              <div id="eventVisual" class="event-visual" data-motion="hospital">
+                <img id="eventImage" class="event-image" src="./assets/news-hospital.png" alt="">
+                <span class="event-anim event-anim-a" aria-hidden="true"></span>
+                <span class="event-anim event-anim-b" aria-hidden="true"></span>
+                <span class="event-anim event-anim-c" aria-hidden="true"></span>
+              </div>
+              <div class="event-content">
+                <div class="event-heading">
+                  <p class="eyebrow" id="eventType">今日简报</p>
+                  <h2 id="eventTitle"></h2>
+                </div>
+                <p id="eventBody"></p>
+                <div id="choiceList" class="choice-list"></div>
+              </div>
+            </article>
+            <section class="alerts" id="alerts" aria-live="polite"></section>
+          </section>
+        </section>
+
+        <aside class="command-panel" aria-label="城市指挥面板">
+          <section class="stage-panel">
+            <div class="panel-heading">
+              <p class="eyebrow">阶段态势</p>
+              <h2 id="stageName">异常信号</h2>
+            </div>
+            <div class="stage-progress">
+              <span id="stageDays">第 1-12 天</span>
+              <strong id="stageProgressText">1 / 12</strong>
+              <div class="stage-meter" aria-hidden="true">
+                <div id="stageProgressFill"></div>
+              </div>
+            </div>
+            <p id="stageSituation" class="stage-situation"></p>
+            <div class="stage-focus">
+              <span>本阶段重点</span>
+              <strong id="stageFocus"></strong>
+            </div>
+            <ul id="stageChallenges" class="stage-challenges"></ul>
+          </section>
+
+          <section class="brief-console">
+            <div class="panel-heading">
+              <p class="eyebrow">即时简报</p>
+              <h2>系统读数</h2>
+            </div>
+            <div id="briefStrip" class="brief-strip"></div>
+          </section>
+
+          <section class="operations-panel">
+            <div class="panel-heading">
+              <p class="eyebrow">主动行动</p>
+              <h2>工程与决议</h2>
+            </div>
+            <div class="tab-row" role="tablist" aria-label="主动行动分类">
+              <button id="operationsTab" class="tab-button active" type="button">工程</button>
+              <button id="resolutionsTab" class="tab-button" type="button">决议</button>
+            </div>
+            <div id="operationsList" class="action-list"></div>
+          </section>
+
+          <section class="news-panel">
+            <div class="panel-heading">
+              <p class="eyebrow">临江快讯</p>
+              <h2>随机新闻</h2>
+            </div>
+            <div id="newsList" class="news-list"></div>
+          </section>
+
+          <section class="log-panel" aria-label="城市日志">
+            <div class="panel-heading">
+              <p class="eyebrow">城市日志</p>
+              <h2>最近决策</h2>
+            </div>
+            <ol id="historyList" class="history-list"></ol>
+          </section>
+        </aside>
+      </section>
+
+      <section id="endingScreen" class="ending-screen" hidden>
+        <p class="eyebrow">第 72 日归档</p>
+        <h2 id="endingTitle"></h2>
+        <p id="endingSummary"></p>
+        <strong id="endingScore"></strong>
+        <div id="endingMetrics" class="ending-metrics"></div>
+        <button id="endingRestartBtn" class="primary-button" type="button">重新开局</button>
+      </section>
+    </main>
+
+    <section id="tutorialOverlay" class="tutorial-overlay" hidden>
+      <article class="tutorial-card" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle">
+        <button id="closeTutorialBtn" class="icon-button tutorial-close" type="button" aria-label="关闭教程">×</button>
+        <p class="eyebrow">基础教程</p>
+        <h2 id="tutorialTitle">如何玩《临江72日》</h2>
+        <div class="tutorial-grid">
+          <section>
+            <h3>1. 看红线</h3>
+            <p>感染、医疗、疲劳越高越危险；物资、信任、活力越低越危险。资金用于主动工程和决议。</p>
+          </section>
+          <section>
+            <h3>2. 点地图</h3>
+            <p>医院、体育馆、市场、道路、学校、工厂和人群都有可执行工程。工程会消耗今天的行动。</p>
+          </section>
+          <section>
+            <h3>3. 处理事件</h3>
+            <p>每日事件也会消耗一天。选项没有绝对正确答案，延迟后果会在数日后显现。</p>
+          </section>
+          <section>
+            <h3>4. 等条件决议</h3>
+            <p>健康码、方舱、复工白名单、复盘简报等决议需要满足条件才可通过。</p>
+          </section>
+        </div>
+        <button id="tutorialStartBtn" class="primary-button" type="button">明白了</button>
+      </article>
+    </section>
+
+    <script src="./game-core.js?v=13"></script>
+    <script src="./app.js?v=13"></script>
+  </body>
+</html>
