@@ -1050,7 +1050,7 @@
     triageNetwork: {
       label: "分级诊疗网络",
       location: "hospital",
-      description: "建立社区转诊与分级分流。降低医院负载，但需要医护培训和信息沟通。",
+      description: "建立社区转诊与分级分流。适合医院或感染压力已经抬头时使用，能降低医院负载，但需要医护培训和信息沟通。",
       resources: { funds: -10 },
       effects: { hospitalLoad: -7, trust: 2, staffFatigue: 4, supplies: -3 },
       hidden: { detectedRate: 3 },
@@ -1062,6 +1062,9 @@
         completeProject: "triageNetwork",
       },
       maxUses: 2,
+      condition(state) {
+        return state.metrics.hospitalLoad >= 38 || state.metrics.infection >= 45 || state.day >= 25;
+      },
     },
     medicineRoute: {
       label: "慢病药品直送",
@@ -1081,7 +1084,7 @@
     mentalHealthLine: {
       label: "心理与轮休热线",
       location: "volunteers",
-      description: "为基层、医护和居民开通减压热线与轮换支持。不能直接压感染，但能保住执行系统。",
+      description: "为基层、医护和居民开通减压热线与轮换支持。适合疲劳、医疗或创伤已经显形时使用；过早铺设会被闲置，不能当成开局白拿的减压按钮。",
       resources: { funds: -7 },
       effects: { staffFatigue: -8, trust: 3, hospitalLoad: 1 },
       hidden: { publicMemory: -2 },
@@ -1092,6 +1095,12 @@
         hidden: {},
       },
       maxUses: 2,
+      condition(state) {
+        return state.metrics.staffFatigue >= 42
+          || state.metrics.hospitalLoad >= 65
+          || state.metrics.trust <= 45
+          || state.hidden.publicMemory >= 18;
+      },
     },
     campusSentinel: {
       label: "校园哨点筛查",
@@ -1134,7 +1143,7 @@
     volunteerDispatch: {
       label: "志愿者调度站",
       location: "volunteers",
-      description: "把志愿者纳入统一排班和物资登记。改善保供和信任，但需要资金和组织成本。",
+      description: "把志愿者纳入统一排班和物资登记。适合保供或基层排班出现缺口后启用；若城市还没有明显压力，提前扩站只会消耗预算。",
       resources: { funds: -6 },
       effects: { supplies: 6, trust: 4, staffFatigue: 1 },
       hidden: { publicMemory: -1 },
@@ -1145,11 +1154,18 @@
         hidden: {},
       },
       maxUses: 3,
+      condition(state) {
+        return state.metrics.supplies <= 55
+          || state.metrics.staffFatigue >= 42
+          || state.metrics.trust <= 52
+          || state.hidden.policyStrictness >= 45
+          || state.day >= 18;
+      },
     },
     communityClinic: {
       label: "社区临时门诊",
       location: "hospital",
-      description: "把轻症咨询和慢病续方前移到社区。能降低医院压力，也会增加保供和基层负担。",
+      description: "把轻症咨询和慢病续方前移到社区。适合医院压力或感染压力进入高位后分流；压力太低时改造门诊会变成低效消耗。",
       resources: { funds: -11 },
       effects: { hospitalLoad: -8, supplies: -4, staffFatigue: 5, trust: 3 },
       hidden: { detectedRate: 2 },
@@ -1162,7 +1178,8 @@
       },
       maxUses: 1,
       condition(state) {
-        return !state.completedProjects.communityClinic;
+        return !state.completedProjects.communityClinic
+          && (state.metrics.hospitalLoad >= 50 || state.metrics.infection >= 65 || state.day >= 37);
       },
     },
   };
@@ -1283,13 +1300,15 @@
     },
     enterpriseExemption: {
       label: "企业定向豁免",
-      description: "给关键企业定向通勤豁免，换取产能和税源恢复。名单公平性会损伤信任。",
+      description: "给关键企业定向通勤豁免，换取产能和税源恢复。只在活力或资金承压时值得冒险；名单公平性会损伤信任。",
       resources: { funds: 8 },
       effects: { economy: 12, infection: 3, trust: -5 },
       hidden: {},
       once: false,
       condition(state) {
-        return state.hidden.detectedRate >= 55 && state.metrics.infection < 70;
+        return state.hidden.detectedRate >= 55
+          && state.metrics.infection < 70
+          && (state.metrics.economy <= 65 || state.resources.funds <= 35);
       },
     },
     communityAutonomy: {
@@ -1527,14 +1546,14 @@
     if (m.infection <= 25) add("infectionLow", "低传播窗口", "good", "复工类行动的感染反弹代价降低。");
     if (m.hospitalLoad >= 85) add("hospitalHigh", "医疗红线", "danger", "信任与公共创伤持续恶化，医疗工程资金成本上升。");
     if (m.hospitalLoad <= 35) add("hospitalLow", "医疗余裕", "good", "轮休类行动造成的短期医疗代价降低。");
-    if (m.supplies >= 75) add("suppliesHigh", "库存缓冲", "good", "高管控带来的信任损失降低，保供危机事件变少。");
+    if (m.supplies >= 75) add("suppliesHigh", "库存缓冲", "good", "高管控带来的信任损失降低，保供危机事件变少；库存过高时会出现少量周转损耗。");
     if (m.supplies <= 25) add("suppliesLow", "供应低位", "danger", "信任和基层疲劳持续受损，保供行动效率降低。");
-    if (m.trust >= 75) add("trustHigh", "高配合", "good", "检测、管控和轮休类行动更顺。");
+    if (m.trust >= 75) add("trustHigh", "高配合", "good", "检测、管控和轮休类行动更顺；若危机仍在台面上，过高信任也会转化为更高期待。");
     if (m.trust <= 30) add("trustLow", "低配合", "danger", "行动效率下降，谣言和拒检类事件更容易出现。");
     if (m.economy >= 75) add("economyHigh", "财政余裕", "good", "每日资金和供应恢复更稳。");
     if (m.economy <= 25) add("economyLow", "财政吃紧", "danger", "每日资金受损，医疗和保供工程效果下降。");
     if (m.staffFatigue >= 80) add("fatigueHigh", "执行透支", "danger", "行动收益打折，发现率每天磨损。");
-    if (m.staffFatigue <= 35) add("fatigueLow", "执行余裕", "good", "检测、保供、医疗和志愿者类行动获得额外收益。");
+    if (m.staffFatigue <= 35) add("fatigueLow", "执行余裕", "good", "检测、保供、医疗和志愿者类行动获得额外收益；任务仍重时，余裕会被日常工作重新消耗。");
     if (r.funds <= 10) add("fundsLow", "财政透支", "danger", "高价工程和决议被锁定，资金事件权重上升。");
     if (r.funds >= 80) add("fundsHigh", "储备充足", "good", "一次性大型工程资金成本降低。");
     if (h.detectedRate >= 80) add("detectedHigh", "监测清晰", "good", "复工反弹更可控，但高疲劳下监测会自然衰减。");
@@ -2640,21 +2659,29 @@
     if (state.metrics.economy < 30) supplyRecovery -= 1;
     if (state.metrics.economy >= 75) supplyRecovery += 1;
     if (state.completedProjects.supplyCorridor) supplyRecovery += 1;
+    const stockRotationCost = state.metrics.supplies >= 90 ? 1 : 0;
     const suppliesDelta = supplyRecovery
       + (state.metrics.economy >= 60 ? 1 : 0)
       - Math.round(state.hidden.policyStrictness / 35)
       - (state.metrics.hospitalLoad >= 75 ? 1 : 0)
-      - (state.metrics.staffFatigue >= 70 ? 1 : 0);
+      - (state.metrics.staffFatigue >= 70 ? 1 : 0)
+      - stockRotationCost;
     applyEffects(state, { supplies: suppliesDelta }, dailyDelta, log, "供应联动");
 
     const strictTrustCost = state.hidden.policyStrictness >= 75
       ? (state.metrics.supplies >= 75 ? 0 : 1)
       : 0;
+    const supplyTrustBonus = state.metrics.supplies >= 70 && state.metrics.trust < 85 ? 1 : 0;
+    const expectationCost = state.metrics.trust >= 92
+      && (state.metrics.infection >= 45 || state.metrics.hospitalLoad >= 45 || state.hidden.publicMemory >= 20)
+      ? 2
+      : 0;
     const trustDelta = modifiers.transparencyBonus
-      + (state.metrics.supplies >= 70 ? 1 : 0)
+      + supplyTrustBonus
       - (state.metrics.hospitalLoad >= 80 ? 2 : 0)
       - (state.metrics.supplies < 30 ? 2 : 0)
       - strictTrustCost
+      - expectationCost
       - (state.hidden.publicMemory >= 60 ? 1 : 0);
     applyEffects(state, { trust: trustDelta }, dailyDelta, log, "信任联动");
 
@@ -2672,6 +2699,7 @@
       + (state.metrics.hospitalLoad >= 75 ? 1 : 0)
       + (state.metrics.supplies < 30 ? 1 : 0)
       + (state.hidden.policyStrictness >= 80 ? 1 : 0)
+      + (state.metrics.staffFatigue <= 25 && (state.metrics.infection >= 45 || state.metrics.hospitalLoad >= 45 || state.hidden.policyStrictness >= 35) ? 1 : 0)
       - modifiers.restPolicyBonus
       - (state.metrics.trust >= 70 ? 1 : 0);
     applyEffects(state, { staffFatigue: fatigueDelta }, dailyDelta, log, "执行联动");
