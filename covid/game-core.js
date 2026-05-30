@@ -1216,7 +1216,7 @@
         };
       },
       hidden: { policyStrictness: -6 },
-      once: false,
+      once: true,
       conditionText: "需要发现率≥60，且感染压力<62。",
       condition(state) {
         return state.hidden.detectedRate >= 60 && state.metrics.infection < 62;
@@ -1252,7 +1252,7 @@
       resources: { funds: -6 },
       effects: { supplies: -8, trust: 8, staffFatigue: 3 },
       hidden: { publicMemory: -4 },
-      once: false,
+      once: true,
       conditionText: "需要物资供应≥32。",
       condition(state) {
         return state.metrics.supplies >= 32;
@@ -1264,7 +1264,7 @@
       resources: { funds: -5 },
       effects: { economy: 9, supplies: 3, infection: 2, trust: 1 },
       hidden: { policyStrictness: -5 },
-      once: false,
+      once: true,
       conditionText: "需要城市活力<55，且感染压力<70。",
       condition(state) {
         return state.metrics.economy < 55 && state.metrics.infection < 70;
@@ -1276,7 +1276,7 @@
       resources: { funds: -4 },
       effects: { supplies: 14, trust: -8 },
       hidden: { publicMemory: 3 },
-      once: false,
+      once: true,
       conditionText: "需要物资供应<35，或管控强度>60。",
       condition(state) {
         return state.metrics.supplies < 35 || state.hidden.policyStrictness > 60;
@@ -1288,7 +1288,7 @@
       resources: {},
       effects: { trust: -6, infection: -2 },
       hidden: { detectedRate: -3, policyStrictness: 5 },
-      once: false,
+      once: true,
       conditionText: "需要市民信任≥45，且公共创伤≤40。",
       condition(state) {
         return state.metrics.trust >= 45 && state.hidden.publicMemory <= 40;
@@ -1319,7 +1319,7 @@
       resources: { funds: 8 },
       effects: { economy: 12, infection: 3, trust: -5 },
       hidden: {},
-      once: false,
+      once: true,
       conditionText: "需要发现率≥55、感染压力<70，且城市活力≤65或资金≤35。",
       condition(state) {
         return state.hidden.detectedRate >= 55
@@ -1333,7 +1333,7 @@
       resources: {},
       effects: { staffFatigue: -8, trust: -7, supplies: -3 },
       hidden: { publicMemory: 2 },
-      once: false,
+      once: true,
       conditionText: "需要基层疲劳≥70。",
       condition(state) {
         return state.metrics.staffFatigue >= 70;
@@ -1744,7 +1744,9 @@
     else if (!conditionOk) lockedReason = "条件未满足";
     else if (fiscalLocked) lockedReason = "财政透支";
     else if (!affordable) lockedReason = "资金不足";
-    const lockedDetail = !conditionOk
+    const lockedDetail = lockedReason === "已通过"
+      ? lockedReason
+      : !conditionOk
       ? resolveConditionText(state, resolution.conditionText)
       : lockedReason;
     const effects = adjustedEffectsForItem(state, resolutionId, resolveEffects(state, resolution));
@@ -1795,7 +1797,11 @@
     }
 
     const selected = chooseWeightedRandomEvent(state);
-    setCurrentEvent(state, selected.id);
+    if (selected) {
+      setCurrentEvent(state, selected.id);
+    } else {
+      setFallbackEvent(state);
+    }
     return getCurrentEvent(state);
   }
 
@@ -1875,16 +1881,14 @@
       event.phase.includes(state.phase)
       && !SCHEDULED_EVENT_IDS.has(event.id)
     ));
-    const freshCandidates = allCandidates.filter((event) => !state.flags.seenEventIds.includes(event.id));
-    const candidates = freshCandidates.length ? freshCandidates : allCandidates;
+    const candidates = allCandidates.filter((event) => !state.flags.seenEventIds.includes(event.id));
+    if (!candidates.length) return null;
     const weighted = candidates.map((event) => ({
       event,
       weight: eventWeight(event, state),
     })).filter((entry) => entry.weight > 0);
 
-    if (!weighted.length) {
-      return EVENTS.find((event) => event.phase.includes(state.phase)) || EVENTS[0];
-    }
+    if (!weighted.length) return null;
 
     const total = weighted.reduce((sum, entry) => sum + entry.weight, 0);
     let roll = random(state) * total;
@@ -1900,9 +1904,13 @@
     return selected;
   }
 
+  function setFallbackEvent(state) {
+    state.currentEventId = `fallback_${state.phase}_${state.day}`;
+  }
+
   function setCurrentEvent(state, eventId) {
     state.currentEventId = eventId;
-    if (String(eventId).startsWith("buffer_")) return;
+    if (String(eventId).startsWith("buffer_") || String(eventId).startsWith("fallback_")) return;
     state.flags.lastEventIds = [eventId, ...state.flags.lastEventIds.filter((id) => id !== eventId)].slice(0, 6);
     state.flags.seenEventIds = [eventId, ...state.flags.seenEventIds.filter((id) => id !== eventId)].slice(0, 96);
   }
@@ -1938,6 +1946,9 @@
     if (state.ended) return null;
     if (String(state.currentEventId || "").startsWith("buffer_")) {
       return buildBufferEvent(state);
+    }
+    if (String(state.currentEventId || "").startsWith("fallback_")) {
+      return buildFallbackEvent(state);
     }
     const event = EVENTS.find((item) => item.id === state.currentEventId) || EVENTS[0];
     const choices = event.choices
@@ -2019,6 +2030,114 @@
         },
       ],
     };
+  }
+
+  function buildFallbackEvent(state) {
+    const profile = fallbackPressureProfile(state);
+    const choiceSpecs = [
+      {
+        id: "fallback_livelihood",
+        label: "稳住民生面",
+        description: "把有限人手先投向配送、药品和居民热线，先稳住看得见的生活压力；代价是基层排班会更紧，流动接触略有增加。",
+        effects: { supplies: 4, trust: 2, staffFatigue: 1, infection: 1 },
+        hidden: { publicMemory: -1 },
+      },
+      {
+        id: "fallback_control",
+        label: "压低传播面",
+        description: "对当前风险点做短时加压处置，压低传播窗口；代价是城市活力和信任会被挤压，一线执行负荷也会上升。",
+        effects: { infection: -4, economy: -2, trust: -1, staffFatigue: 2 },
+        hidden: { policyStrictness: 3 },
+      },
+      {
+        id: "fallback_relief",
+        label: "释放执行压力",
+        description: "减少重复登记和非紧急任务，把人手还给基层与医院；代价是供应调度和监测清晰度会轻微下降。",
+        effects: { staffFatigue: -5, hospitalLoad: 1, supplies: -2, trust: 1 },
+        hidden: { detectedRate: -1 },
+      },
+    ];
+
+    return {
+      id: state.currentEventId || `fallback_${state.phase}_${state.day}`,
+      type: "event",
+      phase: [state.phase],
+      tags: profile.tags,
+      title: "城市滚动简报",
+      body: `${profile.summary} 今日没有新的新闻原型事件进入指挥部，但系统压力仍在累积。你可以把这次简报当成一次低强度调度窗口：收益不会很大，代价也不会被完全免除。`,
+      description: `${profile.summary} 今日没有新的新闻原型事件进入指挥部，但系统压力仍在累积。你可以把这次简报当成一次低强度调度窗口：收益不会很大，代价也不会被完全免除。`,
+      sourceNote: "",
+      imageKey: profile.imageKey,
+      image: profile.image,
+      choices: choiceSpecs.map((choice) => ({
+        ...choice,
+        customChoice: true,
+        strategyKey: choice.id,
+        actionKey: choice.id,
+        eventResources: {},
+        eventEffects: choice.effects,
+        eventHidden: choice.hidden,
+        modifiers: {},
+        delayed: null,
+        eventNotes: ["候选新闻事件已耗尽：使用低强度滚动简报，不记录为新闻原型事件。"],
+        effectPreview: previewEventChoiceEffects({
+          resources: {},
+          effects: choice.effects,
+          hidden: choice.hidden,
+          delayed: null,
+        }),
+        available: true,
+        lockedReason: "",
+      })),
+    };
+  }
+
+  function fallbackPressureProfile(state) {
+    const pressures = [
+      {
+        score: state.metrics.hospitalLoad,
+        image: "news-hospital.png",
+        imageKey: "hospital",
+        tags: ["medical"],
+        summary: "医院、急诊和分流系统仍然是今天最显眼的压力源。",
+      },
+      {
+        score: state.metrics.infection,
+        image: "news-health-code.png",
+        imageKey: "notice",
+        tags: ["infection"],
+        summary: "传播风险还没有完全退下去，社区和交通节点仍需要盯紧。",
+      },
+      {
+        score: 100 - state.metrics.supplies,
+        image: "news-supply.png",
+        imageKey: "market",
+        tags: ["supply"],
+        summary: "供应链和居民生活面出现缺口，保供系统需要重新排优先级。",
+      },
+      {
+        score: 100 - state.metrics.trust,
+        image: "news-health-code.png",
+        imageKey: "notice",
+        tags: ["trust"],
+        summary: "市民信任承压，信息解释和执行口径需要补上缝隙。",
+      },
+      {
+        score: state.metrics.staffFatigue,
+        image: "news-shelter.png",
+        imageKey: "community",
+        tags: ["fatigue"],
+        summary: "基层与志愿者排班已经偏紧，继续硬撑会影响后续执行。",
+      },
+      {
+        score: 100 - state.resources.funds,
+        image: "news-factory.png",
+        imageKey: "budget",
+        tags: ["funds"],
+        summary: "应急资金余量收窄，今天的调度需要更克制。",
+      },
+    ];
+    return pressures.sort((a, b) => b.score - a.score)[0];
   }
 
   function buildChoiceForAction(event, actionKey, state) {
