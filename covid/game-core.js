@@ -2447,16 +2447,8 @@
       phase: state.phase,
       title: "城市主动工程",
       choice: status.label,
-      notes: [`地图节点：${getMapPoint(state, status.location).label}`],
+      notes: [`地图节点：${getMapPoint(state, status.location).label}`, "工程即时生效，今日事件仍需处理"],
       changes: {},
-    };
-    const modifiers = {
-      medicalRelief: 0,
-      supplyRecovery: 0,
-      transparencyBonus: 0,
-      reopenBonus: 0,
-      restPolicyBonus: 0,
-      testingFocus: 0,
     };
     const effects = status.effects || {};
     const hidden = status.hidden || {};
@@ -2467,21 +2459,11 @@
     state.flags.operationUses[operationId] = (state.flags.operationUses[operationId] || 0) + 1;
     if (status.delayed) scheduleDelayedEffect(state, status.delayed, "城市主动工程", status.label);
 
-    applyDueDelayedEffects(state, dailyDelta, log);
-    applyDailyResolution(state, dailyDelta, log, modifiers);
-    applySoftDecay(state, log);
     clampAll(state);
     refreshStatusEffects(state);
-    updateFailureStreaks(state);
     log.changes = diffSnapshots(before, snapshotValues(state));
     state.history.unshift(log);
     state.history = state.history.slice(0, 24);
-    checkEnding(state);
-    if (!state.ended) {
-      state.day += 1;
-      state.news = generateNews(state);
-      chooseNextEvent(state);
-    }
     return state;
   }
 
@@ -2495,16 +2477,8 @@
       phase: state.phase,
       title: "城市决议",
       choice: status.label,
-      notes: ["决议通过并进入当日结算"],
+      notes: ["决议即时生效，今日事件仍需处理"],
       changes: {},
-    };
-    const modifiers = {
-      medicalRelief: 0,
-      supplyRecovery: 0,
-      transparencyBonus: 0,
-      reopenBonus: 0,
-      restPolicyBonus: 0,
-      testingFocus: 0,
     };
 
     applyResourceEffects(state, status.resources, log, "城市决议");
@@ -2513,21 +2487,11 @@
     state.flags.resolutions[resolutionId] = true;
     if (status.delayed) scheduleDelayedEffect(state, status.delayed, "城市决议", status.label);
 
-    applyDueDelayedEffects(state, dailyDelta, log);
-    applyDailyResolution(state, dailyDelta, log, modifiers);
-    applySoftDecay(state, log);
     clampAll(state);
     refreshStatusEffects(state);
-    updateFailureStreaks(state);
     log.changes = diffSnapshots(before, snapshotValues(state));
     state.history.unshift(log);
     state.history = state.history.slice(0, 24);
-    checkEnding(state);
-    if (!state.ended) {
-      state.day += 1;
-      state.news = generateNews(state);
-      chooseNextEvent(state);
-    }
     return state;
   }
 
