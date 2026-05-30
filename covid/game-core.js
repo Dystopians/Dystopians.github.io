@@ -667,7 +667,19 @@
 
   const EVENT_BLUEPRINTS = [
     [
-      e("notice_eight_rumor", "第一号通告：“八位散布谣言者”", ["trust", "infection", "rumor"], "notice", "临江卫健委刚发布不明肺炎通告，几个医院群聊截图却先一步流到网上。公安口径建议按扰乱秩序处理八名转发者，疾控人员提醒截图措辞不准但可能包含真实预警。", "2020 年初武汉不明肺炎通告与“8人传谣”争议", [c("open", "先纠错，再公开风险", "承认截图里存在真实预警，撤回过度定性，连夜补一份更清楚的风险说明。"), c("messageControl", "按扰乱秩序先压住", "先用治安口径压下转发，把有限时间留给内部核查和医院排查。"), c("testing", "设匿名医护上报通道", "让医院内部可直接上传异常病例和防护缺口，用发现率换取短期组织负荷。")]),
+      e(
+        "notice_eight_rumor",
+        "8名“造谣者”被查处",
+        ["trust", "infection", "rumor"],
+        "notice",
+        "临江卫健委刚发布不明肺炎通告，公安口径随即通报查处八名转发医院群聊截图的人。截图里有夸张措辞，也有一线医生对异常病例的真实担忧。通告压住了一部分转发，却让市民开始追问：到底是谣言，还是没人愿意说明的风险。",
+        "2020 年初武汉不明肺炎通告与“8人传谣”争议",
+        [
+          c("open", "纠正定性并补发风险说明", "承认查处口径过急，把截图中未经证实和需要警惕的部分分开说明，给市民一个可以核验的正式版本。"),
+          c("messageControl", "维持查处口径压住扩散", "坚持按扰乱秩序处理，要求平台降低转发热度，把时间留给内部排查和医院复核。"),
+          c("testing", "设匿名医护预警通道", "不公开翻案，先允许医护匿名上报异常病例、防护缺口和院感隐患，用更高发现率换取短期组织负荷。"),
+        ],
+      ),
       e("market_closure", "海鲜市场休市", ["infection", "supply", "economy"], "market", "批发市场里有摊位被临时封存，商户要求明确补偿，附近居民则担心货源和感染线索都被一起切断。市场是否马上休市，牵动采样、保供和舆情三条线。", "早期市场休市和环境采样报道", [c("testing", "封场采样并保留账册", "暂时关闭重点区，保留交易记录和物流单据，优先追踪潜在传播链。"), c("compensate", "给商户临时停业补偿", "用财政补偿换配合，避免摊主私下转移库存或隐瞒接触名单。"), c("supply", "设替代批发点", "把蔬菜和肉蛋交易挪到备用场地，先守住民生供应再慢慢复核。")]),
       e("fever_night_shift", "发热门诊夜班", ["medical", "infection", "fatigue"], "clinic", "中心医院夜间发热门诊排队到院外，护士长报告防护服更换频率异常升高，候诊区有人开始拍摄视频。", "早期发热门诊排队和医院承压报道", [c("medical", "临时扩出夜间诊区", "把普通门诊一角改成夜间发热分流区，先压住医疗负载。"), c("testing", "增派采样车到院门口", "把初筛前移到院外，减少候诊混杂，但采样物资会很快下降。"), c("rest", "强制换班防止差错", "让连续值守人员下线，接受短时服务窗口变薄的代价。")]),
       e("lab_report_leak", "检验报告外流", ["trust", "infection", "rumor"], "notice", "一张疑似阳性检验报告在群聊流传，报告编号和医院印章都被打码。宣传口担心引发恐慌，检验科担心样本链条被外界误读。", "早期检测报告和社交媒体截图传播", [c("open", "核验后公开样本口径", "确认报告真假后解释检测含义，把不确定性放进正式文本。"), c("delay", "暂缓回应等待复核", "先不回应截图，争取复核时间，但承担后续被追问的风险。"), c("messageControl", "要求平台删除截图", "先清理传播源，防止群聊继续发酵，同时牺牲部分公众信任。")]),
@@ -779,6 +791,31 @@
   const EVENTS = EVENT_BLUEPRINTS.flatMap((phaseEvents, phaseIndex) => (
     phaseEvents.map((item, eventIndex) => createEventFromBlueprint(item, phaseIndex + 1, eventIndex))
   ));
+
+  const SCHEDULED_EVENTS = [
+    { day: 1, eventId: "p1_notice_eight_rumor", condition: "always", priority: 100, reason: "开局必须处理早期通告与查处余波。" },
+    { day: 4, eventId: "p1_fever_night_shift", condition: "feverNightPressure", priority: 40, reason: "早期感染或信息盲区会先压到发热门诊。" },
+    { day: 8, eventId: "p1_first_press_conference", condition: "always", priority: 40, reason: "第一阶段中段必须面对正式风险沟通。" },
+    { day: 13, eventId: "p2_midnight_transport_stop", condition: "always", priority: 50, reason: "阶段切换后固定进入交通停摆议题。" },
+    { day: 18, eventId: "p2_charity_warehouse_dispute", condition: "warehouseDisputePressure", priority: 40, reason: "供应或信任吃紧时，捐赠仓储争议会被放大。" },
+    { day: 22, eventId: "p2_medical_team_arrival", condition: "medicalTeamNeed", priority: 40, reason: "医疗或基层承压时，支援队抵达成为关键选择。" },
+    { day: 25, eventId: "p3_stadium_shelter_conversion", condition: "shelterNeed", priority: 50, reason: "第三阶段开端固定检查方舱建设窗口。" },
+    { day: 29, eventId: "p3_collect_all_transfer_night", condition: "transferNeed", priority: 40, reason: "感染或医院压力高位时，转运夜会提前成为核心冲突。" },
+    { day: 34, eventId: "p3_discharge_standard_debate", condition: "dischargeDebateWindow", priority: 40, reason: "床位压力缓和且发现率尚可时，出舱标准才会成为争议。" },
+    { day: 37, eventId: "p4_health_code_launch", condition: "always", priority: 50, reason: "常态化阶段固定进入数字通行工具。" },
+    { day: 42, eventId: "p4_green_code_error", condition: "healthCodeRisk", priority: 40, reason: "发现率提高或健康码工程落地后，误判申诉才有现实基础。" },
+    { day: 47, eventId: "p4_enterprise_white_list", condition: "enterpriseWhiteListPressure", priority: 40, reason: "经济或资金承压时，企业白名单会推到桌面上。" },
+    { day: 49, eventId: "p5_zoned_silent_control", condition: "silentControlWindow", priority: 50, reason: "进入静默阶段后，若传播仍未降下，分区封控会成为固定冲突。" },
+    { day: 53, eventId: "p5_mass_testing_queue", condition: "massTestingNeed", priority: 40, reason: "感染压力或发现率不足会让全员检测队列成为焦点。" },
+    { day: 56, eventId: "p5_group_buy_overload", condition: "groupBuyPressure", priority: 40, reason: "供应或高管控压力会把团购互助推成新系统。" },
+    { day: 59, eventId: "p5_data_delay_release", condition: "dataDelayPressure", priority: 40, reason: "避开第 60 天阶段复盘，提前固定检查数据发布争议。" },
+    { day: 61, eventId: "p6_policy_optimization_notice", condition: "always", priority: 50, reason: "恢复阶段开端固定处理优化措施。" },
+    { day: 64, eventId: "p6_fever_medicine_shortage", condition: "feverMedicinePressure", priority: 40, reason: "感染或医疗压力仍高时，退烧药短缺才会显著化。" },
+    { day: 68, eventId: "p6_procurement_audit", condition: "procurementAuditPressure", priority: 40, reason: "资金吃紧或大额工程使用后，采购审计进入议程。" },
+    { day: 71, eventId: "p6_public_memorial", condition: "memorialPressure", priority: 40, reason: "结局前若创伤或医疗压力仍重，公共记忆事件固定出现。" },
+  ];
+
+  const SCHEDULED_EVENT_IDS = new Set(SCHEDULED_EVENTS.map((item) => item.eventId));
 
   const NEWS_POOL = [
     {
@@ -1407,6 +1444,8 @@
         silenceUses: 0,
         actionUses: {},
         lastEventIds: [],
+        seenEventIds: [],
+        missedScheduledEvents: [],
         operationUses: {},
         resolutions: {},
         failureStreaks: {
@@ -1441,9 +1480,19 @@
     state.statusEffects = state.statusEffects || [];
     state.selectedMapPointId = state.selectedMapPointId || "hospital";
     state.completedProjects = state.completedProjects || {};
+    state.flags = state.flags || {};
     state.flags.actionUses = state.flags.actionUses || {};
+    state.flags.lastEventIds = state.flags.lastEventIds || [];
+    state.flags.seenEventIds = state.flags.seenEventIds || [];
+    state.flags.missedScheduledEvents = state.flags.missedScheduledEvents || [];
     state.flags.operationUses = state.flags.operationUses || {};
     state.flags.resolutions = state.flags.resolutions || {};
+    state.flags.failureStreaks = state.flags.failureStreaks || {
+      medical: 0,
+      supply: 0,
+      trust: 0,
+      staff: 0,
+    };
     refreshStatusEffects(state);
     return state;
   }
@@ -1681,17 +1730,110 @@
 
   function chooseNextEvent(state) {
     if (state.ended) return null;
+    ensureEventScheduleFlags(state);
     state.phase = phaseForDay(state.day);
     if (isBufferDay(state)) {
       state.currentEventId = `buffer_${state.phase}`;
       return getCurrentEvent(state);
     }
 
-    const candidates = EVENTS.filter((event) => event.phase.includes(state.phase));
+    const scheduled = getScheduledEventForToday(state);
+    if (scheduled) {
+      setCurrentEvent(state, scheduled.eventId);
+      return getCurrentEvent(state);
+    }
+
+    const selected = chooseWeightedRandomEvent(state);
+    setCurrentEvent(state, selected.id);
+    return getCurrentEvent(state);
+  }
+
+  function ensureEventScheduleFlags(state) {
+    state.flags = state.flags || {};
+    state.flags.lastEventIds = state.flags.lastEventIds || [];
+    state.flags.seenEventIds = state.flags.seenEventIds || [];
+    state.flags.missedScheduledEvents = state.flags.missedScheduledEvents || [];
+  }
+
+  function getScheduledEventForToday(state) {
+    const todaysSchedule = SCHEDULED_EVENTS
+      .filter((item) => item.day === state.day)
+      .sort((a, b) => (b.priority || 0) - (a.priority || 0));
+
+    for (const schedule of todaysSchedule) {
+      if (state.flags.seenEventIds.includes(schedule.eventId)) continue;
+      if (scheduledConditionMet(state, schedule.condition)) return schedule;
+      recordMissedScheduledEvent(state, schedule);
+    }
+    return null;
+  }
+
+  function recordMissedScheduledEvent(state, schedule) {
+    const key = `${schedule.day}:${schedule.eventId}`;
+    if (state.flags.missedScheduledEvents.some((item) => item.key === key)) return;
+    state.flags.missedScheduledEvents = [
+      {
+        key,
+        day: schedule.day,
+        eventId: schedule.eventId,
+        condition: schedule.condition,
+        reason: schedule.reason,
+      },
+      ...state.flags.missedScheduledEvents,
+    ].slice(0, 24);
+  }
+
+  function scheduledConditionMet(state, condition) {
+    const m = state.metrics;
+    const h = state.hidden;
+    const r = state.resources;
+    const actionUses = state.flags.actionUses || {};
+    const operationUses = state.flags.operationUses || {};
+    const resolutions = state.flags.resolutions || {};
+
+    if (!condition || condition === "always") return true;
+    if (condition === "feverNightPressure") return m.infection >= 25 || h.detectedRate < 45;
+    if (condition === "warehouseDisputePressure") return m.supplies <= 55 || m.trust <= 55;
+    if (condition === "medicalTeamNeed") return m.hospitalLoad >= 45 || m.staffFatigue >= 45;
+    if (condition === "shelterNeed") return m.hospitalLoad >= 50 || m.infection >= 45;
+    if (condition === "transferNeed") return m.infection >= 55 || m.hospitalLoad >= 60;
+    if (condition === "dischargeDebateWindow") return m.hospitalLoad <= 70 && h.detectedRate >= 45;
+    if (condition === "healthCodeRisk") return h.detectedRate >= 55 || Boolean(state.completedProjects.healthCode);
+    if (condition === "enterpriseWhiteListPressure") return m.economy <= 60 || r.funds <= 35;
+    if (condition === "silentControlWindow") return m.infection >= 45;
+    if (condition === "massTestingNeed") return m.infection >= 50 || h.detectedRate <= 65;
+    if (condition === "groupBuyPressure") return m.supplies <= 60 || h.policyStrictness >= 60;
+    if (condition === "dataDelayPressure") return m.trust <= 60 || h.publicMemory >= 30 || m.hospitalLoad >= 65;
+    if (condition === "feverMedicinePressure") return m.infection >= 45 || m.hospitalLoad >= 55;
+    if (condition === "procurementAuditPressure") {
+      return r.funds <= 45
+        || Boolean(state.completedProjects.shelterHospital)
+        || Boolean(state.completedProjects.supplyCorridor)
+        || (operationUses.buildShelterHospital || 0) > 0
+        || (operationUses.supplyCorridor || 0) > 0
+        || (actionUses.outsourceDelivery || 0) > 0
+        || Boolean(resolutions.hardWarehouse)
+        || Boolean(resolutions.emergencyLevy);
+    }
+    if (condition === "memorialPressure") return h.publicMemory >= 35 || m.hospitalLoad >= 75 || ((state.flags.failureStreaks || {}).medical || 0) > 0;
+    return false;
+  }
+
+  function chooseWeightedRandomEvent(state) {
+    const allCandidates = EVENTS.filter((event) => (
+      event.phase.includes(state.phase)
+      && !SCHEDULED_EVENT_IDS.has(event.id)
+    ));
+    const freshCandidates = allCandidates.filter((event) => !state.flags.seenEventIds.includes(event.id));
+    const candidates = freshCandidates.length ? freshCandidates : allCandidates;
     const weighted = candidates.map((event) => ({
       event,
       weight: eventWeight(event, state),
     })).filter((entry) => entry.weight > 0);
+
+    if (!weighted.length) {
+      return EVENTS.find((event) => event.phase.includes(state.phase)) || EVENTS[0];
+    }
 
     const total = weighted.reduce((sum, entry) => sum + entry.weight, 0);
     let roll = random(state) * total;
@@ -1704,9 +1846,14 @@
       }
     }
 
-    state.currentEventId = selected.id;
-    state.flags.lastEventIds = [selected.id, ...state.flags.lastEventIds.filter((id) => id !== selected.id)].slice(0, 6);
-    return getCurrentEvent(state);
+    return selected;
+  }
+
+  function setCurrentEvent(state, eventId) {
+    state.currentEventId = eventId;
+    if (String(eventId).startsWith("buffer_")) return;
+    state.flags.lastEventIds = [eventId, ...state.flags.lastEventIds.filter((id) => id !== eventId)].slice(0, 6);
+    state.flags.seenEventIds = [eventId, ...state.flags.seenEventIds.filter((id) => id !== eventId)].slice(0, 96);
   }
 
   function eventWeight(event, state) {
@@ -2753,6 +2900,7 @@
     MAP_POINTS,
     NEWS_POOL,
     EVENTS,
+    SCHEDULED_EVENTS,
     ENDINGS,
     createGame,
     importState,
