@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v17";
+  const ASSET_VERSION = "v18";
   const core = window.Linjiang72;
 
   let state = null;
@@ -110,6 +110,10 @@
     endingScore: document.getElementById("endingScore"),
     endingMetrics: document.getElementById("endingMetrics"),
   };
+  const PREVIEW_METRIC_BY_SHORT = Object.fromEntries([
+    ...Object.entries(core.METRIC_META).map(([metric, meta]) => [meta.short, metric]),
+    ...Object.entries(core.RESOURCE_META).map(([metric, meta]) => [meta.short, metric]),
+  ]);
 
   function init() {
     els.startForm.addEventListener("submit", (event) => {
@@ -614,7 +618,7 @@
       button.type = "button";
       button.disabled = choice.available === false;
       const chips = choice.effectPreview
-        .map((item) => `<span class="chip">${escapeHtml(item)}</span>`)
+        .map((item) => `<span class="chip ${chipClassForPreview(item)}">${escapeHtml(item)}</span>`)
         .join("");
       button.innerHTML = `
         <strong>${escapeHtml(choice.label)}</strong>
@@ -799,6 +803,16 @@
     if (meta.direction === "good") return delta >= 0 ? "good-change" : "bad-change";
     if (meta.direction === "danger") return delta <= 0 ? "good-change" : "bad-change";
     return delta > 0 ? "bad-change" : "good-change";
+  }
+
+  function chipClassForPreview(text) {
+    const value = String(text);
+    if (/^\d+日后/.test(value)) return "delay";
+    const match = value.match(/^(.+?)\s*([+-]\d+)/);
+    if (!match) return "neutral";
+    const metric = PREVIEW_METRIC_BY_SHORT[match[1].trim()];
+    if (!metric) return "neutral";
+    return changeClass(metric, Number(match[2]));
   }
 
   function escapeHtml(value) {

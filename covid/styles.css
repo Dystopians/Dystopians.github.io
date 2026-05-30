@@ -1423,14 +1423,23 @@ label {
 }
 
 .chip.good-change {
-  background: #bdd49a;
+  border-color: #3f7a54;
+  background: #b9d98e;
+  color: #234522;
 }
 
 .chip.bad-change {
-  background: #e2a487;
+  border-color: #a83f32;
+  background: #eaa07c;
+  color: #5b1f18;
+}
+
+.chip.neutral {
+  background: #ead19a;
 }
 
 .chip.delay {
+  border-color: #76568a;
   background: #d7c5e3;
 }
 
