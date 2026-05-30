@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v29";
+  const ASSET_VERSION = "v30";
   const core = window.Linjiang72;
 
   let state = null;
