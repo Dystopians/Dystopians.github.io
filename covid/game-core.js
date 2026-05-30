@@ -446,336 +446,339 @@
     },
   };
 
-  const EVENTS = [
-    {
-      id: "p1_fever_queue",
-      phase: [1],
-      tags: ["infection", "medical", "trust"],
-      title: "发热门诊外排起长队",
-      body: "几家医院报告发热门诊等候时间明显拉长。公开数据仍不完整，市民已经开始在社交平台互相转发截图。",
-      actions: ["expandTesting", "medicalExpansion", "compressAdmin"],
-    },
-    {
-      id: "p1_school_absence",
-      phase: [1],
-      tags: ["infection", "trust", "economy"],
-      title: "学校出现异常缺勤",
-      body: "两个城区的学校报告流感样缺勤上升。教育部门希望尽快拿出统一口径，以免家长各自行动。",
-      actions: ["expandTesting", "zoningControl", "forceSimplify"],
-    },
-    {
-      id: "p1_market_rumor",
-      phase: [1],
-      tags: ["supply", "trust", "rumor"],
-      title: "市场传出抢购消息",
-      body: "批发市场有商户提前囤货，几家超市货架开始空缺。实际库存尚可，但恐慌比缺货跑得更快。",
-      actions: ["supplyPriority", "transparency", "outsourceDelivery"],
-    },
-    {
-      id: "p1_ppe_warning",
-      phase: [1],
-      tags: ["medical", "supply", "fatigue"],
-      title: "防护物资告急预警",
-      body: "医院后勤部门提醒，防护服和口罩库存下降快于预期。是否优先给医疗机构集中配发成为争议。",
-      actions: ["supplyPriority", "medicalExpansion", "supportTeam"],
-    },
-    {
-      id: "p1_first_notice",
-      phase: [1],
-      tags: ["trust", "infection", "rumor"],
-      title: "是否发布第一号通告",
-      body: "疾控简报认为存在社区传播风险。通告越早，越能争取配合；越具体，也越可能引发短期恐慌。",
-      actions: ["transparency", "expandTesting", "forceSimplify"],
-    },
-    {
-      id: "p2_testing_sites",
-      phase: [2],
-      tags: ["infection", "fatigue", "trust"],
-      title: "核酸点开始拥堵",
-      body: "临时采样点外出现长队，部分居民抱怨排队本身带来风险。检测速度与秩序都需要重新组织。",
-      actions: ["expandTesting", "restPolicy", "compressAdmin"],
-    },
-    {
-      id: "p2_transfer_dispute",
-      phase: [2],
-      tags: ["trust", "medical", "fatigue"],
-      title: "密接转运引发争议",
-      body: "一批密接人员转运时间过长，社区和转运组互相催促。家属要求解释标准，基层人员要求减压。",
-      actions: ["transparency", "medicalExpansion", "supportTeam"],
-    },
-    {
-      id: "p2_truck_delay",
-      phase: [2],
-      tags: ["supply", "economy", "trust"],
-      title: "外地货车滞留高速口",
-      body: "蔬菜和药品运输车因查验流程滞留，司机担心无法离城，商超担心次日配送断档。",
-      actions: ["supplyPriority", "reopenPilot", "outsourceDelivery"],
-    },
-    {
-      id: "p2_volunteers",
-      phase: [2],
-      tags: ["fatigue", "supply", "trust"],
-      title: "社区志愿者报名上升",
-      body: "一些居民主动报名配送和秩序维护，但社区担心组织能力跟不上，反而增加管理负担。",
-      actions: ["supplyPriority", "restPolicy", "supportTeam"],
-    },
-    {
-      id: "p2_online_rumor",
-      phase: [2],
-      tags: ["rumor", "trust", "infection"],
-      title: "网络谣言扩散",
-      body: "多条未经证实的消息在群聊中流传，有人开始拒绝配合流调，也有人要求公布更完整数据。",
-      actions: ["transparency", "expandTesting", "forceSimplify"],
-    },
-    {
-      id: "p2_roster_system_fail",
-      phase: [2, 3],
-      tags: ["fatigue", "trust", "funds"],
-      title: "排班系统失灵",
-      body: "街道排班表临时崩溃，重复派单和漏单同时出现。有人建议减少填报，有人要求外部支援立刻接管。",
-      actions: ["supportTeam", "compressAdmin", "restPolicy"],
-    },
-    {
-      id: "p2_special_funds",
-      phase: [2, 3],
-      tags: ["funds", "economy", "supply"],
-      title: "专项资金到账窗口",
-      body: "上级专项资金需要提交用途说明才能拨付。城市可以争取更多额度，也可能把恢复期预算提前用掉。",
-      actions: ["fiscalDebt", "supplyPriority", "transparency"],
-    },
-    {
-      id: "p3_elder_medicine",
-      phase: [3],
-      tags: ["supply", "trust", "fatigue"],
-      title: "独居老人断药",
-      body: "几个封控小区反映慢病药物不足。药房能调到部分药品，但配送人手和登记流程都很紧。",
-      actions: ["supplyPriority", "outsourceDelivery", "transparency"],
-    },
-    {
-      id: "p3_group_buy",
-      phase: [3],
-      tags: ["supply", "trust", "economy"],
-      title: "团购物资腐坏",
-      body: "一批蔬菜到达时已经腐坏，居民质疑采购渠道。供应链承压让每个环节都更容易出错。",
-      actions: ["supplyPriority", "transparency", "outsourceDelivery"],
-    },
-    {
-      id: "p3_building_conflict",
-      phase: [3],
-      tags: ["trust", "fatigue", "infection"],
-      title: "封控小区发生冲突",
-      body: "某小区因出入规则临时变化出现争执。网格员请求明确授权，也有人提醒不要进一步激化。",
-      actions: ["transparency", "forceSimplify", "restPolicy"],
-    },
-    {
-      id: "p3_doctor_shift",
-      phase: [3],
-      tags: ["medical", "fatigue", "supply"],
-      title: "医护连续值守超时",
-      body: "几名医护已连续多日无法回家。医院还能勉强维持排班，但差错风险正在上升。",
-      actions: ["restPolicy", "medicalExpansion", "supportTeam"],
-    },
-    {
-      id: "p3_pregnancy_access",
-      phase: [3],
-      tags: ["medical", "trust", "public"],
-      title: "孕妇就医通道被堵",
-      body: "一名孕妇转诊等待时间过长，事件开始发酵。医院、社区和交通卡口都在等待统一协调。",
-      actions: ["medicalExpansion", "transparency", "supportTeam"],
-    },
-    {
-      id: "p3_cadre_leave",
-      phase: [3, 4],
-      tags: ["fatigue", "supply", "trust"],
-      title: "社区干部请假潮",
-      body: "几个社区同时出现病假和调休申请。继续硬撑能维持表面秩序，但误派、漏派和情绪冲突会越来越多。",
-      actions: ["supportTeam", "forceSimplify", "restPolicy"],
-    },
-    {
-      id: "p3_hotel_requisition",
-      phase: [3, 4],
-      tags: ["trust", "supply", "public"],
-      title: "征用酒店引发争议",
-      body: "隔离和转运需要更多房间。酒店业主要求补偿，居民担心临近小区风险上升。",
-      actions: ["outsourceDelivery", "zoningControl", "transparency"],
-    },
-    {
-      id: "p3_control_wording_conflict",
-      phase: [3],
-      tags: ["trust", "rumor", "fatigue"],
-      title: "封控口径前后冲突",
-      body: "同一小区收到两版不同通知。基层要求给出一句能执行的话，居民则要求解释为什么口径会变。",
-      actions: ["forceSimplify", "transparency", "restPolicy"],
-    },
-    {
-      id: "p4_stadium_shelter",
-      phase: [4],
-      tags: ["medical", "supply", "fatigue"],
-      title: "体育馆改造方舱",
-      body: "改造方案能够缓解床位压力，但需要大量物资、转运车辆和医护支援。施工越快，代价越集中。",
-      actions: ["medicalExpansion", "supplyPriority", "citywideSilence"],
-    },
-    {
-      id: "p4_icu_triage",
-      phase: [4],
-      tags: ["medical", "trust", "public"],
-      title: "ICU 床位排序",
-      body: "重症床位接近满负荷。医院请求明确转诊与分级标准，否则一线只能在混乱中临场判断。",
-      actions: ["medicalExpansion", "transparency", "forceSimplify"],
-    },
-    {
-      id: "p4_non_covid_delay",
-      phase: [4],
-      tags: ["medical", "trust", "economy"],
-      title: "非疫情患者延误",
-      body: "透析、肿瘤和急诊患者的正常就医被挤压。城市不能只看一个数字，但资源确实不够。",
-      actions: ["medicalExpansion", "reopenPilot", "fiscalDebt"],
-    },
-    {
-      id: "p4_nurse_infection",
-      phase: [4],
-      tags: ["medical", "fatigue", "infection"],
-      title: "护士感染导致排班缺口",
-      body: "一家定点医院出现医护感染，排班表被打乱。继续硬撑会维持容量，但风险会积累。",
-      actions: ["restPolicy", "medicalExpansion", "supportTeam"],
-    },
-    {
-      id: "p4_oxygen_shortage",
-      phase: [4],
-      tags: ["medical", "supply", "economy"],
-      title: "氧气瓶供应吃紧",
-      body: "供氧企业表示运输与人手都到达极限。医院要求优先保障，工业端则担心停产扩大影响。",
-      actions: ["supplyPriority", "medicalExpansion", "outsourceDelivery"],
-    },
-    {
-      id: "p4_transfer_driver_gap",
-      phase: [4, 5],
-      tags: ["fatigue", "medical", "supply"],
-      title: "转运司机缺口扩大",
-      body: "转运车辆还在，但司机和调度员已经接近极限。外包车队可以补上空缺，也会带来问责和费用争议。",
-      actions: ["outsourceDelivery", "supportTeam", "medicalExpansion"],
-    },
-    {
-      id: "p4_procurement_audit",
-      phase: [4, 6],
-      tags: ["funds", "trust", "public"],
-      title: "采购审计提前介入",
-      body: "审计组要求保供和医疗采购留下完整链路。规范能减少争议，但也会拖慢一线处理速度。",
-      actions: ["compressAdmin", "transparency", "fiscalDebt"],
-    },
-    {
-      id: "p5_wage_pressure",
-      phase: [5],
-      tags: ["economy", "trust", "supply"],
-      title: "企业停薪压力上升",
-      body: "多家小企业表示现金流只能再撑一周。居民收入的不确定性开始反过来影响配合意愿。",
-      actions: ["reopenPilot", "fiscalDebt", "transparency"],
-    },
-    {
-      id: "p5_refuse_test",
-      phase: [5],
-      tags: ["trust", "infection", "fatigue"],
-      title: "部分居民拒绝检测",
-      body: "反复检测让一些居民失去耐心，社区担心强制推进会让关系进一步恶化。",
-      actions: ["transparency", "expandTesting", "forceSimplify"],
-    },
-    {
-      id: "p5_staff_resign",
-      phase: [5],
-      tags: ["fatigue", "supply", "trust"],
-      title: "基层人员提出请辞",
-      body: "连续高压后，几名社区工作人员提出辞职。留下的人更少，任务却没有减少。",
-      actions: ["restPolicy", "supportTeam", "transparency"],
-    },
-    {
-      id: "p5_false_negative",
-      phase: [5],
-      tags: ["infection", "trust", "medical"],
-      title: "假阴性争议",
-      body: "一名多次阴性的居民后续确诊，相关小区要求解释检测质量。系统需要承认不确定性。",
-      actions: ["expandTesting", "transparency", "forceSimplify"],
-    },
-    {
-      id: "p5_partial_open",
-      phase: [5],
-      tags: ["economy", "infection", "trust"],
-      title: "是否开放部分区域",
-      body: "低风险片区要求恢复通勤。继续收紧能减少反弹，过慢恢复则会拖垮城市活力。",
-      actions: ["reopenPilot", "zoningControl", "fiscalDebt"],
-    },
-    {
-      id: "p5_volunteer_subsidy",
-      phase: [5],
-      tags: ["fatigue", "trust", "funds"],
-      title: "志愿者补贴争议",
-      body: "志愿者和临聘人员要求明确补贴标准。财政口径、居民观感和执行稳定性被绑到一起。",
-      actions: ["fiscalDebt", "supportTeam", "transparency"],
-    },
-    {
-      id: "p5_data_delay",
-      phase: [5, 6],
-      tags: ["trust", "public", "infection"],
-      title: "数据延迟公布",
-      body: "一组复核数据与前日报告不一致。立刻公开会引起追问，暂缓解释能争取一点处置时间。",
-      actions: ["forceSimplify", "transparency", "expandTesting"],
-    },
-    {
-      id: "p5_exemption_leak",
-      phase: [5],
-      tags: ["trust", "economy", "infection"],
-      title: "企业豁免名单外泄",
-      body: "一份低风险复工白名单被转发。企业认为这是恢复机会，居民质疑标准是否公平。",
-      actions: ["reopenPilot", "fiscalDebt", "transparency"],
-    },
-    {
-      id: "p6_school_return",
-      phase: [6],
-      tags: ["economy", "trust", "infection"],
-      title: "复课安排被推到台前",
-      body: "家长、学校和企业都在等待复课时间表。教育秩序恢复越快，防疫冗余越薄。",
-      actions: ["reopenPilot", "expandTesting", "fiscalDebt"],
-    },
-    {
-      id: "p6_accountability",
-      phase: [6],
-      tags: ["trust", "public", "fatigue"],
-      title: "追责呼声出现",
-      body: "市民开始追问早期信息、转运流程和供应分配。复盘越具体，越可能牵动组织压力。",
-      actions: ["transparency", "restPolicy", "forceSimplify"],
-    },
-    {
-      id: "p6_memorial",
-      phase: [6],
-      tags: ["public", "trust", "medical"],
-      title: "纪念名单",
-      body: "媒体和家属希望为逝者、医护和志愿者留下公开记录。城市恢复不应只靠遗忘。",
-      actions: ["transparency", "restPolicy", "forceSimplify"],
-    },
-    {
-      id: "p6_budget_gap",
-      phase: [6],
-      tags: ["economy", "supply", "medical"],
-      title: "财政缺口浮出水面",
-      body: "临时医院、保供补贴和检测费用需要结算。账单不会马上压垮城市，但会影响恢复路径。",
-      actions: ["reopenPilot", "supplyPriority", "fiscalDebt"],
-    },
-    {
-      id: "p6_budget_hearing",
-      phase: [6],
-      tags: ["funds", "economy", "trust"],
-      title: "财政缺口听证",
-      body: "恢复期预算需要重新排序。公开解释能保住信任，提前举债能让工程不断档。",
-      actions: ["fiscalDebt", "reopenPilot", "transparency"],
-    },
-    {
-      id: "p6_full_review",
-      phase: [6],
-      tags: ["trust", "public", "economy"],
-      title: "是否公开完整复盘报告",
-      body: "内部复盘已经形成。公开能修复长期信任，也会让过去 72 天的伤痕重新被看见。",
-      actions: ["transparency", "reopenPilot", "fiscalDebt"],
-    },
+  function p(resources = {}, effects = {}, hidden = {}, modifiers = {}, extra = {}) {
+    return { resources, effects, hidden, modifiers, ...extra };
+  }
+
+  const CHOICE_PROFILES = {
+    open: p({}, { trust: 3, infection: 1 }, { detectedRate: 3, publicMemory: -1 }, { transparencyBonus: 1 }, {
+      axis: "公开沟通",
+      risk: "追问与短期恐慌",
+      delayed: { delay: 2, label: "公开后的追问", effects: { trust: -1 }, condition: "hospitalAtLeast80" },
+    }),
+    hard: p({}, { infection: -2, trust: -5, staffFatigue: 2 }, { policyStrictness: 5, publicMemory: 2 }, {}, {
+      axis: "强制秩序",
+      risk: "低信任回流",
+      delayed: { delay: 3, label: "强硬处置余波", effects: { trust: -2 }, condition: "trustBelow40" },
+    }),
+    testing: p({}, { infection: -1, supplies: -3, staffFatigue: 3 }, { detectedRate: 5 }, { testingFocus: 1 }, {
+      axis: "扩大筛查",
+      risk: "采样与复核挤压",
+      delayed: { delay: 2, label: "检测排队压力", effects: { staffFatigue: 1 }, condition: "staffFatigueAbove75" },
+    }),
+    medical: p({ funds: -5 }, { hospitalLoad: -4, supplies: -3, staffFatigue: 2 }, { publicMemory: 1 }, { medicalRelief: 1 }, {
+      axis: "医疗救急",
+      risk: "物资和人手透支",
+      delayed: { delay: 2, label: "医疗扩容账单", resources: { funds: -2 }, effects: { staffFatigue: 1 } },
+    }),
+    triage: p({ funds: -3 }, { hospitalLoad: -3, trust: 2, staffFatigue: 1 }, { detectedRate: 1 }, { medicalRelief: 1 }, {
+      axis: "分级调度",
+      risk: "标准争议",
+      delayed: { delay: 3, label: "分诊标准被复盘", effects: { trust: -1 }, condition: "trustBelow45" },
+    }),
+    supply: p({ funds: -4 }, { supplies: 5, trust: 1, staffFatigue: 2, economy: -1 }, {}, { supplyRecovery: 1 }, {
+      axis: "保供补位",
+      risk: "配送和仓储消耗",
+      delayed: { delay: 2, label: "配送队疲劳回流", effects: { staffFatigue: 1 }, condition: "staffFatigueAbove75" },
+    }),
+    outsource: p({ funds: -7 }, { supplies: 4, staffFatigue: -3, trust: -4 }, { publicMemory: 1 }, { supplyRecovery: 1 }, {
+      axis: "外包与征用",
+      risk: "公平性质疑",
+      delayed: { delay: 3, label: "外包合同争议", effects: { trust: -2 }, condition: "trustBelow45" },
+    }),
+    rest: p({ funds: -3 }, { staffFatigue: -9, hospitalLoad: 2, supplies: -2, trust: 1 }, {}, { restPolicyBonus: 1 }, {
+      axis: "轮换减压",
+      risk: "服务窗口变薄",
+      delayed: { delay: 2, label: "轮休稳定生效", effects: { staffFatigue: -2 }, condition: "trustAtLeast60" },
+    }),
+    compress: p({}, { staffFatigue: -5, trust: -3, infection: 1 }, { detectedRate: -4, publicMemory: 1 }, { restPolicyBonus: 1 }, {
+      axis: "压缩流程",
+      risk: "信息质量下降",
+      delayed: { delay: 3, label: "漏报补录", effects: { infection: 1 }, condition: "detectedBelow50" },
+    }),
+    finance: p({ funds: 12 }, { economy: -3, trust: -4 }, { publicMemory: 2 }, {}, {
+      axis: "财政透支",
+      risk: "恢复期账单",
+      delayed: { delay: 4, label: "举债压力显现", effects: { economy: -2 }, resources: { funds: -2 } },
+    }),
+    reopen: p({ funds: 2 }, { economy: 7, infection: 3, trust: 1 }, { policyStrictness: -4 }, { reopenBonus: 1 }, {
+      axis: "恢复流动",
+      risk: "传播反弹",
+      delayed: { delay: 2, label: "流动反弹观察", effects: { infection: 2 }, condition: "detectedBelow50" },
+    }),
+    digital: p({ funds: -5 }, { trust: -2, staffFatigue: 1 }, { detectedRate: 4, policyStrictness: 2 }, { testingFocus: 1 }, {
+      axis: "数字治理",
+      risk: "误判和申诉积压",
+      delayed: { delay: 3, label: "申诉队列堆积", effects: { trust: -2 }, condition: "trustBelow45" },
+    }),
+    audit: p({ funds: -2 }, { trust: 3, economy: -2 }, { publicMemory: -1 }, { transparencyBonus: 1 }, {
+      axis: "审计留痕",
+      risk: "一线速度放慢",
+      delayed: { delay: 2, label: "审计材料补交", effects: { staffFatigue: 1 } },
+    }),
+    delay: p({}, { trust: 3 }, { detectedRate: -5, publicMemory: 4 }, {}, {
+      axis: "延后公布",
+      risk: "坏消息集中爆发",
+      delayed: { delay: 3, label: "延迟公布反噬", effects: { trust: -6 }, condition: "hospitalAtLeast80" },
+    }),
+    whiteList: p({ funds: 4 }, { economy: 8, infection: 2, trust: -5 }, { policyStrictness: -3, publicMemory: 1 }, { reopenBonus: 1 }, {
+      axis: "白名单豁免",
+      risk: "公平性争议",
+      delayed: { delay: 3, label: "白名单外泄", effects: { trust: -2 }, condition: "trustBelow45" },
+    }),
+    compensate: p({ funds: -7 }, { trust: 4, economy: -1, staffFatigue: 1 }, { publicMemory: -2 }, { transparencyBonus: 1 }, {
+      axis: "补偿安抚",
+      risk: "资金消耗",
+      delayed: { delay: 3, label: "补偿缺口", resources: { funds: -2 }, condition: "fundsBelow20" },
+    }),
+    community: p({}, { staffFatigue: -6, trust: -3, supplies: -2 }, { publicMemory: 1 }, { restPolicyBonus: 1 }, {
+      axis: "社区自治",
+      risk: "责任下沉",
+      delayed: { delay: 2, label: "自治标准不一", effects: { trust: -1 }, condition: "trustBelow45" },
+    }),
+    volunteer: p({ funds: -4 }, { staffFatigue: -7, trust: 2, supplies: -1 }, {}, { restPolicyBonus: 1 }, {
+      axis: "志愿补位",
+      risk: "培训和补贴压力",
+      delayed: { delay: 2, label: "志愿者磨合", effects: { staffFatigue: 1 } },
+    }),
+    supportTeam: p({ funds: -5 }, { staffFatigue: -9, supplies: -2, trust: -3 }, { publicMemory: 1 }, { restPolicyBonus: 1 }, {
+      axis: "外部支援",
+      risk: "磨合和信任代价",
+      delayed: { delay: 2, label: "支援队磨合", effects: { trust: -1 }, condition: "trustBelow45" },
+    }),
+    messageControl: p({}, { infection: -1, trust: -6 }, { policyStrictness: 5, detectedRate: -2, publicMemory: 2 }, {}, {
+      axis: "口径压制",
+      risk: "信任伤痕",
+      delayed: { delay: 3, label: "口径冲突回流", effects: { trust: -2 }, condition: "trustBelow40" },
+    }),
+    medicine: p({ funds: -4 }, { hospitalLoad: -2, supplies: -5, trust: 3, staffFatigue: 3 }, {}, { medicalRelief: 1 }, {
+      axis: "重点救治",
+      risk: "药品与配送消耗",
+      delayed: { delay: 2, label: "慢病药库存告急", effects: { supplies: -2 }, condition: "suppliesBelow25" },
+    }),
+    protectWorkers: p({ funds: -4 }, { staffFatigue: -5, supplies: -3, trust: 2 }, { detectedRate: 1 }, { restPolicyBonus: 1 }, {
+      axis: "保护一线",
+      risk: "防护物资消耗",
+      delayed: { delay: 2, label: "防护消耗补单", effects: { supplies: -1 } },
+    }),
+    mutualAid: p({}, { supplies: 3, trust: 3, economy: 1, staffFatigue: 1 }, { detectedRate: -1 }, { supplyRecovery: 1 }, {
+      axis: "居民互助",
+      risk: "秩序和质量参差",
+      delayed: { delay: 3, label: "互助群质量争议", effects: { trust: -1 }, condition: "trustBelow45" },
+    }),
+    quietClose: p({}, { infection: -3, economy: -4, trust: -4, staffFatigue: 3 }, { policyStrictness: 7, publicMemory: 2 }, {}, {
+      axis: "静默收紧",
+      risk: "疲劳与创伤",
+      delayed: { delay: 2, label: "静默代价显现", effects: { staffFatigue: 1, trust: -1 } },
+    }),
+    memory: p({ funds: -2 }, { trust: 3, economy: -2, staffFatigue: -2 }, { publicMemory: -5 }, { transparencyBonus: 1, restPolicyBonus: 1 }, {
+      axis: "公共记忆",
+      risk: "复盘牵动旧伤",
+      delayed: { delay: 3, label: "复盘后的释压", effects: { trust: 1, staffFatigue: -1 } },
+    }),
+  };
+
+  const EVENT_IMAGE_BY_KEY = {
+    notice: "news-health-code.png",
+    market: "news-supply.png",
+    clinic: "news-hospital.png",
+    station: "news-factory.png",
+    hospital: "news-hospital.png",
+    community: "news-supply.png",
+    transport: "news-factory.png",
+    shelter: "news-shelter.png",
+    code: "news-health-code.png",
+    factory: "news-factory.png",
+    budget: "news-factory.png",
+    memory: "news-shelter.png",
+  };
+
+  const PHASE_EVENT_CONTEXT = [
+    "阴影初现",
+    "封城与急救",
+    "方舱与筛查",
+    "常态化与复工",
+    "静默城市",
+    "恢复与记忆",
   ];
+
+  function c(profile, label, detail, extra = {}) {
+    return { profile, label, detail, ...extra };
+  }
+
+  function e(id, title, tags, imageKey, scene, source, choices) {
+    return { id, title, tags, imageKey, scene, source, choices };
+  }
+
+  function createEventFromBlueprint(item, phase, index) {
+    const phaseName = PHASE_EVENT_CONTEXT[phase - 1];
+    const description = `${item.scene} 指挥部桌上同时摆着医院、社区、宣传和财政口的几份记录，数字彼此咬合却不完全吻合。临江正处在“${phaseName}”阶段，任何选择都会把压力推向感染、医疗、供应、信任、活力或基层疲劳中的另一端；新闻原型只提供一种现实质感，具体城市和人物均为虚构。`;
+    return {
+      id: `p${phase}_${item.id}`,
+      phase: [phase],
+      tags: item.tags,
+      title: item.title,
+      body: description,
+      description,
+      sourceNote: `受${item.source}启发。临江、机构与人员均为虚构，本事件仅用于模拟经营叙事，不构成现实治理建议。`,
+      sourceTags: item.tags,
+      imageKey: item.imageKey,
+      image: EVENT_IMAGE_BY_KEY[item.imageKey] || "news-supply.png",
+      choices: item.choices.map((choice, choiceIndex) => createCorpusChoice(item, choice, choiceIndex, index)),
+    };
+  }
+
+  function createCorpusChoice(event, choice, choiceIndex, eventIndex) {
+    const profile = CHOICE_PROFILES[choice.profile] || CHOICE_PROFILES.open;
+    const delayed = choice.delayed === false
+      ? null
+      : cloneDelayed(choice.delayed || profile.delayed);
+    const description = `${choice.detail} 这条策略围绕“${event.title}”展开，核心是${profile.axis}：今天会得到可见收益，但${profile.risk}可能在后续结算或事件权重里回流。`;
+    return {
+      id: `c${choiceIndex + 1}`,
+      strategyKey: choice.profile,
+      label: choice.label,
+      description,
+      resources: removeZeroes(mergeEffects(profile.resources, choice.resources)),
+      effects: removeZeroes(mergeEffects(profile.effects, choice.effects)),
+      hidden: removeZeroes(mergeEffects(profile.hidden, choice.hidden)),
+      modifiers: removeZeroes(mergeEffects(profile.modifiers, choice.modifiers)),
+      delayed,
+      condition: choice.condition || null,
+      notes: [
+        `新闻原型策略 ${eventIndex + 1}.${choiceIndex + 1}：${profile.axis}`,
+        ...(choice.notes || []),
+      ],
+    };
+  }
+
+  function cloneDelayed(delayed) {
+    if (!delayed) return null;
+    return {
+      delay: delayed.delay,
+      label: delayed.label,
+      effects: { ...(delayed.effects || {}) },
+      hidden: { ...(delayed.hidden || {}) },
+      resources: { ...(delayed.resources || {}) },
+      completeProject: delayed.completeProject || null,
+      condition: delayed.condition || null,
+    };
+  }
+
+  const EVENT_BLUEPRINTS = [
+    [
+      e("notice_eight_rumor", "第一号通告：“八位散布谣言者”", ["trust", "infection", "rumor"], "notice", "临江卫健委刚发布不明肺炎通告，几个医院群聊截图却先一步流到网上。公安口径建议按扰乱秩序处理八名转发者，疾控人员提醒截图措辞不准但可能包含真实预警。", "2020 年初武汉不明肺炎通告与“8人传谣”争议", [c("open", "先纠错，再公开风险", "承认截图里存在真实预警，撤回过度定性，连夜补一份更清楚的风险说明。"), c("messageControl", "按扰乱秩序先压住", "先用治安口径压下转发，把有限时间留给内部核查和医院排查。"), c("testing", "设匿名医护上报通道", "让医院内部可直接上传异常病例和防护缺口，用发现率换取短期组织负荷。")]),
+      e("market_closure", "海鲜市场休市", ["infection", "supply", "economy"], "market", "批发市场里有摊位被临时封存，商户要求明确补偿，附近居民则担心货源和感染线索都被一起切断。市场是否马上休市，牵动采样、保供和舆情三条线。", "早期市场休市和环境采样报道", [c("testing", "封场采样并保留账册", "暂时关闭重点区，保留交易记录和物流单据，优先追踪潜在传播链。"), c("compensate", "给商户临时停业补偿", "用财政补偿换配合，避免摊主私下转移库存或隐瞒接触名单。"), c("supply", "设替代批发点", "把蔬菜和肉蛋交易挪到备用场地，先守住民生供应再慢慢复核。")]),
+      e("fever_night_shift", "发热门诊夜班", ["medical", "infection", "fatigue"], "clinic", "中心医院夜间发热门诊排队到院外，护士长报告防护服更换频率异常升高，候诊区有人开始拍摄视频。", "早期发热门诊排队和医院承压报道", [c("medical", "临时扩出夜间诊区", "把普通门诊一角改成夜间发热分流区，先压住医疗负载。"), c("testing", "增派采样车到院门口", "把初筛前移到院外，减少候诊混杂，但采样物资会很快下降。"), c("rest", "强制换班防止差错", "让连续值守人员下线，接受短时服务窗口变薄的代价。")]),
+      e("lab_report_leak", "检验报告外流", ["trust", "infection", "rumor"], "notice", "一张疑似阳性检验报告在群聊流传，报告编号和医院印章都被打码。宣传口担心引发恐慌，检验科担心样本链条被外界误读。", "早期检测报告和社交媒体截图传播", [c("open", "核验后公开样本口径", "确认报告真假后解释检测含义，把不确定性放进正式文本。"), c("delay", "暂缓回应等待复核", "先不回应截图，争取复核时间，但承担后续被追问的风险。"), c("messageControl", "要求平台删除截图", "先清理传播源，防止群聊继续发酵，同时牺牲部分公众信任。")]),
+      e("spring_station_check", "春运车站测温", ["infection", "economy", "fatigue"], "station", "临江火车站进入春运高峰，测温枪、广播和临时隔离间都刚刚到位。交通口希望别拖慢客流，疾控口希望留下更完整名单。", "春运期间交通测温和人员流动报道", [c("digital", "建立旅客登记二维码", "用临时登记码记录去向和联系方式，提高后续发现率。"), c("hard", "对发热旅客就地留观", "把发热旅客直接带离候车区，用强制秩序压低传播风险。"), c("reopen", "只保留抽样测温", "减少排队和拥堵，保护交通效率，但承担漏检反弹。")]),
+      e("hospital_muzzle_meeting", "医院内部禁言会", ["trust", "medical", "rumor"], "hospital", "几名医生在内部会上被提醒不要向外讨论病例，院感办则认为一线提醒被压住会延误防护升级。沉默能稳住表面秩序，也可能让真实风险继续积累。", "早期医护预警和信息流动争议", [c("open", "允许专业预警上行", "把医护提醒纳入内部快报，并承诺不因专业判断追责。"), c("messageControl", "统一由院办对外发声", "收紧对外发言，避免多头信息，但基层会觉得真实问题被压住。"), c("protectWorkers", "先发防护升级令", "不公开争议，直接给重点科室升级防护和休整安排。")]),
+      e("unknown_pneumonia_family_group", "不明肺炎家属群", ["trust", "medical", "public"], "community", "几个病患家属自建群互通床位和药品消息，里面既有真实求助，也有无法核实的数字。群主请求政府给一个能联系到人的窗口。", "早期患者家属线上求助和信息互助", [c("open", "派驻公开联络员", "由卫健和社区共同进群回应，让求助信息进入正式台账。"), c("community", "交由街道分片承接", "把求助分给社区网格，减轻市级压力但可能出现标准不一。"), c("medical", "开设重症家属专线", "优先处理重症和转院问题，牺牲部分资金与人手。")]),
+      e("first_severe_transfer", "第一例重症转院", ["medical", "trust", "infection"], "hospital", "一名重症患者需要跨院转运，接收医院担心院感，家属担心再等几个小时会错过窗口。转运路径第一次暴露出系统缝隙。", "早期重症转院和定点医院调度报道", [c("triage", "建立重症绿色分诊", "先按重症风险排序，给转运和接收医院一个统一标准。"), c("medical", "临时打通 ICU 床位", "用资金和物资换床位，快速降低医疗负载。"), c("delay", "等专家组确认后转运", "先稳住院方疑虑，延迟决定会减少误判也会积累信任风险。")]),
+      e("mask_price_spike", "口罩批发价跳涨", ["supply", "trust", "economy"], "market", "口罩批发价一夜翻倍，药店说进不到货，居民怀疑有人囤积。市场监管想查处，保供组更担心明天医院也缺口罩。", "早期口罩抢购和价格波动报道", [c("supply", "统购统配重点口罩", "把现货优先配给医院和社区窗口，缓解最急的缺口。"), c("audit", "公开价格检查结果", "对哄抬价格立案并公示，让信任恢复但拖慢采购速度。"), c("outsource", "高价采购应急库存", "绕过常规比价先买一批，立刻补库存但留下公平和审计隐患。")]),
+      e("first_grid_survey", "社区网格第一次摸排", ["fatigue", "infection", "trust"], "community", "街道第一次要求网格员摸排发热、返乡和接触史，表格多到没人知道哪份最重要。居民还不理解为什么要报这么细。", "社区网格化排查和返乡登记报道", [c("testing", "摸排发热与接触史", "把登记重点收束到发热和接触史，提升发现率但增加基层疲劳。"), c("compress", "只保留三项必填", "砍掉冗余台账，让基层能喘口气，但信息盲区会变大。"), c("open", "向居民解释摸排用途", "说明数据只用于流调和保供，提高配合度但会引来更多追问。")]),
+      e("cross_city_case_rumor", "跨城病例传闻", ["rumor", "infection", "economy"], "station", "邻市出现疑似病例的传闻传到临江，客运站和物流园都要求给出通行口径。封不封、查不查，都会影响货流。", "跨城病例和交通防控报道", [c("digital", "建立跨城登记白单", "要求重点线路登记和回访，让货运继续走但保留追踪能力。"), c("quietClose", "临时收紧客运班线", "先压低输入风险，让城市活力承受短期损失。"), c("open", "联合邻市发布说明", "与邻市同步口径，减少谣言，但公开后会放大风险感。")]),
+      e("expert_team_eve", "专家组抵达前夜", ["trust", "infection", "medical"], "hospital", "专家组明天到临江，今晚各部门都想把材料整理得更好看。疾控人员提醒，漂亮材料可能遮住真正需要被看见的风险。", "专家组赴地方调查和会诊报道", [c("open", "提交原始问题清单", "把院感、防护和检测缺口原样交给专家组，换取更高发现率。"), c("delay", "先整理统一汇报稿", "把混乱材料收束成单一文本，短期稳住口径但可能延迟暴露问题。"), c("medical", "先按最坏情况补床位", "不等结论，提前做医疗扩容和物资调配。")]),
+      e("hospital_infection_doubt", "医院感染疑云", ["medical", "infection", "public"], "hospital", "一名住院患者的接触史说不清楚，同病区又出现发热。院方不愿承认院内传播，护士则要求立刻升级防护。", "院内感染风险和早期防护争议", [c("protectWorkers", "升级病区防护等级", "先保护医护和同病区患者，用防护物资换取稳定。"), c("testing", "全病区复核采样", "把相关病区纳入复核，尽快确定传播范围。"), c("messageControl", "先内部封存病区消息", "避免恐慌扩散，先在内部处理，但会加深创伤和不信任。")]),
+      e("school_winter_list", "学校寒假返乡名单", ["infection", "trust", "economy"], "school", "教育局收到学校返乡名单，部分学生来自出现病例传闻的城市。家长要求停课，企业家长又担心没人照看孩子。", "寒假返乡、停课和校园防控报道", [c("digital", "做校园返乡健康登记", "把学生返乡地和健康情况纳入登记，提升追踪能力。"), c("quietClose", "提前结束线下活动", "先暂停补课和集体活动，换取传播风险下降。"), c("open", "给家长发布问答清单", "承认不确定性并解释校园安排，争取家庭配合。")]),
+      e("sample_delivery_delay", "疾控样本送检延迟", ["infection", "fatigue", "medical"], "clinic", "疾控中心的样本箱排队等车，实验室说试剂和人手都有限。延迟一天，数据就会更模糊；硬推加班，错误率会上升。", "早期实验室检测能力和样本送检压力", [c("testing", "临时扩充送检批次", "增加样本车和夜间班次，提高发现率但迅速消耗一线。"), c("outsource", "借用第三方实验室", "付费接入外部检测能力，减轻压力但留下资质争议。"), c("rest", "保留复核休息窗口", "限制夜间连续工作，降低差错风险但让医疗负载短时上升。")]),
+      e("first_press_conference", "第一次新闻发布会", ["trust", "rumor", "infection"], "notice", "临江准备第一次发布会，稿子里每个词都被反复推敲。说得太满，未来会被反噬；说得太少，市民会从群聊里找答案。", "早期疫情新闻发布会和风险沟通报道", [c("open", "承认信息仍在核实", "用明确边界解释未知，争取信任和配合。"), c("messageControl", "突出总体可控", "用稳定口径降低短期恐慌，但牺牲发现率和长期信任。"), c("testing", "发布检测扩容承诺", "把发布会和检测计划绑定，让公众知道下一步如何验证。")]),
+    ],
+    [
+      e("midnight_transport_stop", "凌晨交通停摆", ["infection", "economy", "trust"], "transport", "凌晨四点，临江宣布暂停离城公共交通，车站外仍有人拖着行李排队。交通口要求明确例外，社区则担心消息传到小区后引发抢购。", "城市交通管制和离城通道关闭报道", [c("quietClose", "立即封停离城通道", "用最强流动限制压住外溢风险，承受活力和信任代价。"), c("open", "同步公布例外清单", "把就医、保供和特殊通行条件一次讲清，减少混乱。"), c("digital", "发放临时通行登记码", "让必要通行留下轨迹，避免一刀切拖垮供应。")]),
+      e("ticket_refund_wave", "离城车票退改潮", ["economy", "trust", "fatigue"], "station", "停售消息后，票务热线被打爆，外地务工者担心退票规则，车站工作人员也不知道该按哪份通知执行。", "封控初期退票、滞留和交通咨询报道", [c("compensate", "协调免手续费退票", "用财政和企业协调换取情绪稳定，保护信任。"), c("community", "把滞留者交给街道安置", "让各街道分片接住滞留人员，降低市级调度压力。"), c("messageControl", "只发布统一客服口径", "压缩解释空间，先让窗口人员有话可说。")]),
+      e("highway_checkpoint_queue", "高速卡口排队", ["supply", "economy", "fatigue"], "transport", "高速入口排起货车长队，司机睡在驾驶室里等核验。蔬菜、药品和工业零件混在一起，谁先过卡口成了今天的问题。", "高速卡口查验和货运保供报道", [c("supply", "开保供车辆绿色道", "把蔬菜药品车辆先放行，守住供应和医院。"), c("digital", "启用货运通行码", "用电子登记减少人工查验，提高效率但增加误判风险。"), c("audit", "公开卡口放行规则", "让司机知道排序标准，降低信任损耗但拖慢现场速度。")]),
+      e("ambulance_dispatch_overload", "救护车调度爆满", ["medical", "fatigue", "trust"], "hospital", "120 调度台同时接到发热、胸痛和转运请求，接线员开始手写补记录。每一辆车去哪，都可能让另一处等待更久。", "急救调度承压和转运需求上升报道", [c("triage", "设急救分级台", "先把呼叫按重症风险排序，减少盲目派车。"), c("medical", "征用非急救车辆转运", "把部分轻症转运交给改装车辆，缓解救护车压力。"), c("open", "公布非急救求助渠道", "引导轻症和咨询分流，换取接线压力下降。")]),
+      e("temporary_ward_requisition", "临时病区征用", ["medical", "supply", "public"], "shelter", "一栋培训中心被列入临时病区备选，业主要求补偿，周边居民担心感染风险。施工队今晚就能进场，但账本和口碑都会变重。", "临时病区、隔离点和公共设施征用报道", [c("medical", "马上改成观察病区", "用物资和资金换床位，先让医院喘口气。"), c("compensate", "先签补偿和告知书", "把征用补偿说清楚，减少公共创伤。"), c("messageControl", "低调施工不做公告", "避免周边反弹，争取建设时间，但后续解释成本更高。")]),
+      e("mask_factory_return", "口罩厂复工谈判", ["supply", "economy", "fatigue"], "factory", "郊区口罩厂愿意复工，但员工返岗、原料运输和住宿闭环都没准备好。厂长要求政府给出订单和防护承诺。", "防护物资产能恢复和企业复工报道", [c("finance", "预付订单锁产能", "用应急资金换产能，恢复库存但透支财政。"), c("protectWorkers", "派防护员驻厂", "保障工人安全和排班，让供应恢复更稳。"), c("reopen", "允许分批返岗生产", "加快城市活力和物资恢复，但增加流动风险。")]),
+      e("charity_warehouse_dispute", "红十字仓库争议", ["supply", "trust", "funds"], "market", "捐赠物资在仓库里堆着，医院说没拿到，志愿者说流程卡住。网上开始追问谁有权分配。", "捐赠物资分配和仓储争议报道", [c("audit", "公开入库出库流水", "把捐赠流向做成日清单，修复信任。"), c("supply", "直接转给定点医院", "先绕开慢流程，把物资送到最需要的地方。"), c("messageControl", "先压下仓库偷拍视频", "避免争议扩大，给内部整理留时间。")]),
+      e("online_help_form", "网上求助表单", ["trust", "medical", "fatigue"], "community", "一份民间求助表单在网上流传，里面有床位、买药和独居老人需求。数据很乱，但比官方热线更快。", "线上求助表单和民间互助信息报道", [c("open", "把表单接入热线台账", "承认民间表单价值，让求助进入正式流程。"), c("community", "交给各街道认领", "让社区认领本辖区求助，降低市级处理压力。"), c("medical", "优先筛出危急就医", "先处理危急患者，压低医疗风险但增加人手消耗。")]),
+      e("community_closure_notice", "社区封闭公告", ["infection", "trust", "fatigue"], "community", "第一批小区要贴封闭管理公告，门岗问能不能放人买菜，居民问还能不能照顾外地父母。公告每多一句，执行也多一层。", "小区封闭管理和社区执行报道", [c("quietClose", "统一封闭门岗规则", "先让所有门岗按同一标准执行，压低传播。"), c("open", "写明就医和照护例外", "把例外情形写进公告，换取信任和配合。"), c("compress", "只保留三条硬规则", "让门岗容易执行，但牺牲细节和发现率。")]),
+      e("vegetable_panic_buy", "菜场抢购", ["supply", "trust", "economy"], "market", "封城消息传开后，菜场摊位前排起长队。真正库存还够，但恐慌会把今天的供应拖进明天。", "封控初期抢购和民生保供报道", [c("supply", "投放平价保供菜", "把储备菜集中投放，先打断抢购循环。"), c("open", "公布库存和补货时间", "用可验证的补货节奏安抚居民。"), c("hard", "限制单人采购量", "用强规则压住抢购，但会伤害信任。")]),
+      e("medical_team_arrival", "医护支援队抵达", ["medical", "fatigue", "trust"], "hospital", "第一批外地支援医护抵达临江，机场和医院都在等接驳。如何分配支援队，会影响医院负载和本地医护情绪。", "各地医疗队支援疫情城市报道", [c("medical", "优先派往重症医院", "把支援队放到压力最高的医院，立刻降低医疗负载。"), c("protectWorkers", "先让本地医护轮换", "把支援队用于顶班，让疲劳从高位降下来。"), c("open", "公开支援队分配原则", "解释为什么有的医院先得到支援，减少猜疑。")]),
+      e("close_contact_verification", "密接名单核验", ["infection", "fatigue", "trust"], "community", "流调名单里同名同姓太多，电话打不通的密接越来越多。基层希望少填表，疾控希望每条线索都别丢。", "密接追踪、流调和信息核验报道", [c("testing", "扩充流调电话组", "增加核验电话和回访，提高发现率。"), c("compress", "只追高风险接触链", "压缩低价值台账，缓解基层疲劳但放大盲区。"), c("digital", "接入运营商轨迹核验", "用数字轨迹辅助核验，提升效率但带来隐私和信任代价。")]),
+      e("mortuary_data_dispute", "殡葬与死亡数据争议", ["medical", "trust", "public"], "hospital", "殡葬系统的转运量与公开数据不完全一致，家属和媒体开始追问口径。医疗系统已经很累，但沉默会让伤痕变深。", "死亡统计口径和殡葬压力报道", [c("open", "解释死亡统计口径", "承认口径差异，给出后续校正时间表。"), c("delay", "等复核后集中公布", "先争取核实时间，短期稳住舆情但积累反噬。"), c("memory", "设立家属联络窗口", "让家属得到回应，减少公共创伤。")]),
+      e("hotel_isolation_conversion", "隔离酒店改造", ["supply", "trust", "medical"], "shelter", "一批酒店被列入隔离点，消防、餐食和污物通道都要改。酒店老板问补偿，周边小区问安全距离。", "隔离酒店征用和集中隔离点改造报道", [c("medical", "先改造高标准楼层", "优先确保隔离点可用，缓解医院和转运压力。"), c("compensate", "同步签署补偿协议", "用资金换业主配合，减少后续争议。"), c("open", "发布周边安全说明", "解释隔离点运行和消杀流程，修复信任。")]),
+      e("forced_entry_dispute", "居家观察破门争议", ["trust", "infection", "public"], "community", "一户居家观察对象失联，楼栋群里有人要求破门，有人担心执法过度。门外的几分钟会被手机完整记录。", "居家隔离执行争议和执法边界报道", [c("triage", "请医疗与民警共同评估", "先确认健康风险和执法依据，避免单线决定。"), c("hard", "强制进入确认情况", "快速排除传播风险，但增加创伤和不信任。"), c("open", "事后公开处置流程", "将执法边界和救助理由写清楚，减少谣言。")]),
+      e("cross_district_pass", "跨区通行证", ["supply", "economy", "trust"], "transport", "保供车辆、医护通勤和照护家庭都在申请跨区通行证。审批口子开得太大，管控会漏；太小，城市会堵。", "疫情期间通行证和必要出行管理报道", [c("digital", "通行证改为扫码核验", "用动态核验减少纸质证明混乱。"), c("whiteList", "给关键企业批量通行", "让供应和生产先恢复一部分，但公平性争议会上升。"), c("audit", "公布通行证申请标准", "让各区按同一标准执行，减少暗箱质疑。")]),
+    ],
+    [
+      e("stadium_shelter_conversion", "体育馆改方舱", ["medical", "supply", "fatigue"], "shelter", "临江体育馆地板刚铺上临时床位，施工队、医护和转运组都在等最终图纸。方舱能分流轻症，也会把物资和人手集中拉紧。", "武汉方舱医院建设与轻症集中收治报道", [c("medical", "先开放低风险床区", "让轻症先进入分流区，迅速降低医院负载。"), c("supply", "先补齐床品和餐食", "把方舱开舱前的保供链条做实，避免入住后失控。"), c("protectWorkers", "给驻舱人员排轮休表", "提前保护医护和志愿者，降低后续疲劳爆点。")]),
+      e("collect_all_transfer_night", "“应收尽收”转运夜", ["infection", "medical", "fatigue"], "transport", "夜里转运名单突然加长，社区电话、救护车和方舱接收口全部排队。口号很清楚，执行却落在每一辆车和每一张床上。", "集中收治和转运压力报道", [c("quietClose", "集中转运不留尾巴", "用高强度转运快速切断传播尾巴。"), c("triage", "按症状分级转运", "先把重症和高风险人群排在前面，避免车床错配。"), c("rest", "给转运组强制换班", "保护司机和调度，接受短时转运速度下降。")]),
+      e("clinical_definition_change", "临床诊断口径变更", ["trust", "medical", "infection"], "notice", "上级允许临床诊断纳入统计，临江病例数可能一天跳高。数据更接近真实压力，也会让市民怀疑昨天的数据。", "病例诊断和统计口径调整报道", [c("open", "解释口径变更原因", "把病例数跳升和统计调整讲清楚，保护长期信任。"), c("delay", "分批消化新增数据", "把新增数据拆成几天公布，短期稳定但后续风险更大。"), c("medical", "同步扩充收治能力", "用医疗扩容承接口径变化带来的床位压力。")]),
+      e("test_kit_shortage", "核酸试剂短缺", ["infection", "supply", "fatigue"], "clinic", "实验室报告试剂盒只能撑两天，采样点却还在扩。继续大筛会让库存见底，收窄检测又会让盲区变大。", "核酸检测能力和试剂供应报道", [c("testing", "优先高风险人群检测", "把试剂用在密接、医护和发热人群，提高有效发现率。"), c("supply", "紧急调拨试剂库存", "用保供链条补检测物资，牺牲配送余力。"), c("compress", "暂停低风险重复检测", "减少试剂和人力消耗，但接受发现率下降。")]),
+      e("ct_queue", "CT 排队", ["medical", "trust", "fatigue"], "hospital", "影像科门口排起长队，医生说 CT 能补上核酸缺口，病人说自己只是想知道是否还有床。", "CT 筛查和医院影像资源承压报道", [c("triage", "按症状和血氧分流 CT", "优先让高风险患者进入影像检查，避免资源空转。"), c("medical", "临时调用民营影像车", "购买外部影像服务，缓解医院负载。"), c("open", "公布检查优先规则", "让等待者知道排序原因，减少冲突。")]),
+      e("shelter_broadcast", "方舱广播站", ["trust", "fatigue", "public"], "shelter", "方舱里开始有人组织广播、读信和求助登记。秩序需要温度，但每一项活动都需要志愿者和医护维持。", "方舱内患者互助、广播和心理支持报道", [c("volunteer", "招募舱内互助组长", "让轻症患者参与秩序维护，降低基层疲劳。"), c("memory", "保留舱内故事记录", "让城市记住普通人的互助，降低公共创伤。"), c("hard", "限制非必要聚集活动", "把舱内活动压到最低，减少传播和管理风险。")]),
+      e("mild_patient_mutual_aid", "轻症患者情绪互助", ["trust", "public", "fatigue"], "shelter", "方舱里有人开始焦虑失眠，也有人主动做互助表。医护希望情绪稳定，管理组担心互助群变成投诉群。", "方舱心理支持和患者互助报道", [c("mutualAid", "支持舱内互助小组", "让患者互相照看，提升信任但增加秩序维护压力。"), c("medical", "派心理医生巡舱", "用专业资源处理焦虑和冲突，减轻公共创伤。"), c("messageControl", "关闭舱内非官方群", "避免情绪扩散，换取短期秩序但伤害信任。")]),
+      e("chronic_medicine_delivery", "慢病药配送", ["supply", "medical", "trust"], "community", "慢病药需求被挤到社区群里，药房能配一部分，配送员却不够。老人和家属开始逐户打电话催促。", "封控期间慢病药配送和就医保障报道", [c("medicine", "开慢病药绿色配送", "把药房、社区和志愿者接成一条线，优先保障慢病患者。"), c("outsource", "外包药品末端配送", "花钱减轻社区压力，但药品错送和问责风险上升。"), c("open", "发布缺药登记入口", "让居民知道去哪登记，减少重复求助。")]),
+      e("nurse_shift_crash", "护士轮班崩溃", ["medical", "fatigue", "supply"], "hospital", "方舱和医院同时缺护士，几名护士已经连续多天睡在值班室。再撑一天也许能过关，但差错正在靠近。", "医护连续值守和疲劳报道", [c("rest", "强制下线超时班次", "让最疲劳的护士休息，接受医疗负载短时上升。"), c("protectWorkers", "给高压科室防护包", "用物资保护一线，降低疲劳和感染风险。"), c("medical", "调支援队补夜班", "把支援医护投向夜班缺口，快速稳住医疗负载。")]),
+      e("volunteer_driver_gap", "志愿司机缺口", ["fatigue", "supply", "medical"], "transport", "药品、样本和转运都在等车，志愿司机群里却没人敢接夜间单。补贴、保险和通行权都要今天定下来。", "志愿司机、转运和保供车辆缺口报道", [c("volunteer", "给志愿司机补贴保险", "用资金换稳定司机池，降低基层疲劳。"), c("digital", "发放夜间通行码", "让司机能快速过卡，提升调度效率。"), c("outsource", "临时外包车队", "花更多钱买车队能力，牺牲信任和审计安全。")]),
+      e("building_disinfection", "楼栋集中消杀", ["infection", "trust", "supply"], "community", "阳性楼栋要求集中消杀，居民担心物品被损坏，消杀队担心防护物资不够。看得见的动作能安抚人，也可能流于表演。", "楼栋消杀和社区防疫报道", [c("supply", "规范消杀物资配给", "把消杀物资统一配给重点楼栋，减少无序消耗。"), c("open", "公开消杀范围和流程", "解释为什么消杀、怎么保护个人物品，稳定信任。"), c("hard", "封闭楼栋完成集中消杀", "用更强管控保证消杀执行，压低感染风险。")]),
+      e("child_close_contact_care", "密接儿童照护", ["trust", "medical", "public"], "community", "几名儿童被判密接，家长要求陪护，隔离点担心管理难度。简单转运最省事，却可能留下很深的伤。", "儿童隔离、陪护和特殊人群保障报道", [c("compensate", "设家庭陪护隔离间", "用资源换取儿童和家属的安全感，降低创伤。"), c("triage", "由儿科医生评估转运", "让医疗判断进入流程，避免单纯行政处置。"), c("messageControl", "统一按成人密接流程", "快速执行并减少例外，但信任和创伤代价明显。")]),
+      e("positive_retest_dispute", "阳性复核争议", ["infection", "trust", "medical"], "clinic", "一名居民初筛阳性、复核阴性，楼栋群里吵成一团。继续转运还是等待第三次结果，会影响所有人对检测的理解。", "核酸复核、假阳性和检测争议报道", [c("testing", "启动第三方复核", "用额外检测提高确定性，消耗试剂和人力。"), c("open", "解释初筛和复核差别", "让居民理解检测不等于绝对答案，保护信任。"), c("hard", "按初筛阳性先转运", "宁可多转运也先压住传播风险，承担信任代价。")]),
+      e("bed_tiering", "病床分级调度", ["medical", "trust", "funds"], "hospital", "普通床、氧疗床、ICU 床开始互相挤压。医院希望有硬标准，家属希望自己的亲人不是被规则抛下。", "分级诊疗和床位调度报道", [c("triage", "发布床位分级标准", "用明确标准降低临场混乱和医疗负载。"), c("medical", "购买临时氧疗设备", "用资金和物资扩出中间层床位。"), c("open", "设家属解释热线", "把分级理由讲给家属，减少信任流失。")]),
+      e("psychological_hotline_day_one", "心理热线首日", ["trust", "fatigue", "public"], "community", "心理热线第一天就被打爆，来电有恐惧、愤怒和求药。接线员不是医生，却成了城市情绪的入口。", "疫情心理援助热线和情绪支持报道", [c("rest", "给接线员轮休督导", "让热线能持续运行，降低基层疲劳。"), c("volunteer", "培训志愿心理接线员", "扩大热线容量，用培训成本换社会支持。"), c("memory", "把高频诉求写进日报", "让情绪数据进入决策，减少被忽视的创伤。")]),
+      e("discharge_standard_debate", "出舱标准争论", ["medical", "infection", "trust"], "shelter", "方舱床位紧张，部分患者达到出舱指标，社区却担心接回后反弹。标准越严，床越满；标准越松，居民越怕。", "方舱出院/出舱标准和社区接收报道", [c("triage", "按风险分层出舱", "让低风险患者先出舱，高风险继续观察，缓解床位压力。"), c("open", "公开出舱医学标准", "解释为什么可以出舱，减少社区抵触。"), c("hard", "延长统一观察期", "用更严标准换取安全感，但推高医疗负载。")]),
+    ],
+    [
+      e("health_code_launch", "健康码上线", ["infection", "trust", "economy"], "code", "临江准备上线健康码，绿码能让城市部分恢复流动，红黄码也可能把误判和申诉推到每个卡口。", "杭州健康码和数字通行方案报道", [c("digital", "先在重点区域试运行", "让健康码从医院、车站和园区小范围开始，逐步提升发现率。"), c("open", "公布判码和申诉规则", "把判码逻辑和申诉入口讲清，减少误伤信任。"), c("whiteList", "直接接入企业复工名单", "让健康码服务复工白名单，恢复活力但加剧公平争议。")]),
+      e("green_code_error", "绿码误判", ["trust", "infection", "public"], "code", "一名有接触史的居民仍显示绿码，另一名低风险居民却被黄码困在楼下。技术问题变成了信任问题。", "健康码误判、申诉和数字治理争议报道", [c("audit", "建立人工复核窗口", "让误判有人工出口，修复信任但增加工作量。"), c("digital", "提高判码敏感度", "宁可多拦一点人，换取传播风险下降。"), c("messageControl", "先称系统正常运行", "避免短期质疑扩散，但会积累公共创伤。")]),
+      e("factory_closed_loop", "工厂闭环复产", ["economy", "infection", "fatigue"], "factory", "工业园申请闭环复产，员工吃住在厂内，物流走专用通道。企业说再不开工订单就没了，社区担心外溢风险。", "闭环生产和工业复工报道", [c("whiteList", "批准重点工厂闭环", "让关键工厂先恢复生产，换取资金和活力。"), c("testing", "每日抽检闭环人员", "用检测保障闭环可信度，增加疲劳和物资消耗。"), c("open", "公布闭环违规处罚", "让居民知道复工不是放任，保护信任。")]),
+      e("bus_scan_crowd", "公交扫码拥堵", ["economy", "infection", "fatigue"], "transport", "公交恢复后，扫码上车导致站台拥堵，老人不会操作，司机也被迫当解释员。恢复流动的第一天并不轻松。", "公共交通扫码和恢复运行报道", [c("digital", "优化公交离线核验", "减少扫码失败和拥堵，提高通行效率。"), c("volunteer", "派志愿者协助老人扫码", "用志愿者补上数字鸿沟，降低现场冲突。"), c("reopen", "高峰期放宽扫码速度", "保护通勤效率，但接受感染反弹。")]),
+      e("courier_pass", "外卖骑手通行", ["supply", "economy", "trust"], "transport", "外卖骑手既是保供末端，也是跨小区流动风险。没有他们，独居和隔离家庭会更难；放得太宽，卡口形同虚设。", "骑手、配送和通行管理报道", [c("digital", "给骑手动态通行码", "用通行码记录配送路径，兼顾保供和追踪。"), c("protectWorkers", "发放骑手防护包", "保护配送员并稳定供应末端。"), c("hard", "限制骑手跨区接单", "压低流动风险，但削弱供应和活力。")]),
+      e("online_school_fatigue", "学校网课疲劳", ["trust", "fatigue", "economy"], "school", "网课进入第三周，学生和家长都开始疲惫。教育局想保持教学进度，心理老师则提醒家庭压力已经外溢。", "停课不停学、网课压力和家庭照护报道", [c("rest", "给学校设置无课缓冲日", "降低家庭和教师疲劳，接受进度放慢。"), c("open", "公布返校判断指标", "让家长知道复课看什么，不再只等传闻。"), c("reopen", "低风险毕业班先返校", "恢复教育秩序和城市活力，但增加感染代价。")]),
+      e("imported_flight", "境外输入航班", ["infection", "medical", "trust"], "station", "一趟国际航班转降临江，隔离酒店、机场和医院都要配合。市民担心输入风险，商务口担心航线直接停掉。", "境外输入病例和入境隔离报道", [c("triage", "机场设独立分诊线", "把入境人员和本地就医流线分开，降低医疗混杂。"), c("digital", "接入入境闭环健康码", "用数字闭环提高追踪能力。"), c("quietClose", "暂停相关中转业务", "用强管控压输入风险，牺牲城市活力。")]),
+      e("cold_chain_positive", "冷链仓库检出", ["infection", "supply", "economy"], "market", "冷链仓库环境样本出现阳性，仓库里还有肉类和药品冷藏物资。封仓容易，替代供应不容易。", "冷链检测、仓储和货物流通报道", [c("testing", "仓库人员全量复核", "先确认人群风险，提高发现率。"), c("supply", "调拨替代冷链仓", "守住冷藏物资供应，增加保供压力。"), c("hard", "封存全部关联货品", "用最稳妥方式压风险，但损伤供应和经济。")]),
+      e("sentinel_clinic", "社区哨点诊所", ["infection", "medical", "trust"], "clinic", "常态化后，社区诊所被要求承担哨点功能。诊所医生担心设备不足，居民则希望别一发热就跑大医院。", "基层哨点诊所和分级防控报道", [c("medical", "给哨点诊所配设备", "增强基层识别能力，减轻医院负载。"), c("testing", "发热首诊即采样", "把发现率前移到社区，但增加基层疲劳。"), c("open", "公布基层就诊流程", "让居民知道何时去诊所、何时去医院。")]),
+      e("mall_limited_reopen", "商圈限流复开", ["economy", "infection", "trust"], "market", "临江核心商圈申请限流开放，商户需要现金流，居民也想看看城市是否真的恢复。入口限流和健康码核验会决定风险。", "商场限流开放和消费恢复报道", [c("reopen", "分时段限流复开", "恢复消费和活力，承担可控感染反弹。"), c("digital", "入口健康码加预约", "用预约和扫码降低人流峰值。"), c("open", "公布商圈风险评估", "让开放理由可被检查，减少质疑。")]),
+      e("enterprise_white_list", "企业白名单", ["economy", "trust", "funds"], "factory", "复工白名单摆上桌，龙头企业、保供企业和小微企业都要求优先。名单越有用，越会被质疑。", "复工复产白名单和企业豁免报道", [c("whiteList", "先批关键供应企业", "让对供应链最重要的企业先动起来，恢复资金和活力。"), c("audit", "公开白名单评分项", "解释为什么这些企业先复工，降低不公平感。"), c("finance", "给小微企业纾困贷款", "用财政透支缓和白名单之外的压力。")]),
+      e("dashboard_revision", "数据看板改版", ["trust", "infection", "public"], "notice", "数据看板准备增加无症状、复核中和转归三栏。信息更细，也更难解释；少一栏，就少一个被误解的入口。", "疫情数据看板、统计口径和公开信息报道", [c("open", "上线分层数据看板", "把数据口径拆清楚，提高信任和发现率。"), c("compress", "只保留核心三项", "让公众更容易理解，但牺牲信息质量。"), c("delay", "等口径稳定再改版", "避免今天改明天又改，但承担延迟公开风险。")]),
+      e("asymptomatic_count", "无症状统计口径", ["trust", "infection", "medical"], "notice", "无症状感染者是否并入每日主标题，成为宣传口和疾控口的争论。口径变化会让风险更清楚，也会让数字变难看。", "无症状感染者统计和公开口径报道", [c("open", "把无症状单列说明", "承认无症状传播风险，提升长期信任。"), c("testing", "加强无症状关联筛查", "围绕无症状病例扩大筛查，压低隐匿传播。"), c("messageControl", "主标题只报确诊", "维持短期稳定口径，但发现率和信任会受损。")]),
+      e("community_unlock_countdown", "小区解封倒计时", ["trust", "economy", "infection"], "community", "连续多日无新增的小区开始问解封时间。太早解封可能反弹，太晚解封会让配合变成怨气。", "分区解封、无新增小区管理和恢复流动报道", [c("open", "公布解封倒计时规则", "让居民看见解除条件，修复信任。"), c("reopen", "低风险楼栋先恢复出入", "让城市活力回升，承担小幅反弹。"), c("hard", "继续整区观察七天", "压低感染风险，但加重疲劳和信任损耗。")]),
+      e("wedding_delay_dispute", "婚宴延期纠纷", ["trust", "economy", "public"], "community", "几场婚宴因限流被取消，酒店、家庭和市场监管都在互相推责任。看似不是医疗问题，却会影响人们对规则的感受。", "聚集活动取消、婚宴延期和消费纠纷报道", [c("compensate", "协调延期和定金规则", "用协调补偿减少个人损失和公共创伤。"), c("open", "发布聚集活动问答", "把婚宴、会议和宴席的边界讲清楚。"), c("hard", "一律暂停大型宴席", "保持简单硬规则，牺牲经济和信任。")]),
+      e("vaccine_booking_prep", "疫苗预约早期准备", ["trust", "medical", "funds"], "clinic", "疫苗预约系统还在测试，社区已经被问到什么时候能打。早铺底能提高信任，但过早承诺会被追着兑现。", "疫苗接种预约和重点人群准备报道", [c("digital", "搭建重点人群预约库", "提前整理接种对象，提高后续组织能力。"), c("open", "发布不承诺日期的说明", "说清楚准备进度和不确定性，减少误解。"), c("medical", "先培训接种点人员", "投入医疗和基层资源，为后续接种做准备。")]),
+    ],
+    [
+      e("zoned_silent_control", "分区分批封控", ["infection", "trust", "economy"], "community", "新增曲线又抬头，临江准备分区分批静默。低风险片区质疑为什么一起承受代价，高风险片区希望快一点切断传播。", "分区封控、静默管理和差异化管控报道", [c("quietClose", "高风险区先静默三天", "把最危险片区先压住，降低感染压力。"), c("open", "公开分区判定图", "让居民知道为什么本楼本街道被纳入管控。"), c("reopen", "保留低风险通勤窗口", "给低风险片区留一条恢复线，承受反弹风险。")]),
+      e("mass_testing_queue", "全员核酸长队", ["infection", "fatigue", "trust"], "clinic", "全员核酸点排到街角，排队本身开始带来风险。大筛能找出隐匿传播，也能把基层和居民耐心磨薄。", "全员核酸、排队和采样点管理报道", [c("testing", "增设流动采样小队", "把采样点拆到楼栋和园区，提升发现率。"), c("rest", "给采样人员轮换间隔", "降低采样差错和疲劳，接受速度变慢。"), c("open", "公布各点排队热力", "让居民错峰采样，减少拥堵和不满。")]),
+      e("antigen_to_door", "抗原试剂入户", ["infection", "supply", "trust"], "community", "抗原试剂开始按户发放，楼组长担心有人不会用，也担心有人不上传结果。自测让筛查更快，也让数据更乱。", "抗原自测入户和结果上报报道", [c("testing", "抗原阳性优先复核", "用抗原做前哨，核酸资源跟进高风险结果。"), c("supply", "按楼栋发放抗原包", "用物资换更快覆盖，增加配送压力。"), c("open", "制作自测图文说明", "减少误用和漏报，保护信任。")]),
+      e("group_buy_overload", "团购群爆单", ["supply", "trust", "fatigue"], "market", "居民团购群一夜增加几十个，团长、司机和小区门岗都被订单压住。互助正在变成新的供应系统。", "封控期间社区团购和微信群互助报道", [c("mutualAid", "承认团购群为补充渠道", "让居民互助进入秩序，提升供应和信任。"), c("outsource", "引入平台统一配送", "用外部平台承接爆单，降低疲劳但牺牲信任。"), c("audit", "公开团购价格抽查", "减少劣质和加价争议，拖慢部分配送。")]),
+      e("vegetable_pack_quality", "蔬菜包质量争议", ["supply", "trust", "funds"], "market", "一批蔬菜包送达后被拍出烂叶和缺斤少两。供应团队说仓储太急，居民说这是最低限度的生活。", "保供物资质量和价格争议报道", [c("audit", "抽查并公开供应商", "把采购和质量问题摊开，修复信任。"), c("supply", "立刻补发问题蔬菜包", "先补货止损，牺牲资金和配送人手。"), c("messageControl", "要求删除夸张视频", "压住舆情扩散，换取短期稳定但加深创伤。")]),
+      e("elder_lives_alone_medicine", "独居老人断药", ["medical", "supply", "trust"], "community", "独居老人慢病药只剩一天，子女在外区进不来，社区电话一直占线。每个环节都能解释，却没人真正把药送到门口。", "独居老人、慢病药和封控就医保障报道", [c("medicine", "开通独居老人送药线", "把药房、社区和志愿者连成专线，优先保障慢病药。"), c("community", "交由楼栋自治认领", "让楼栋内互助解决最后一百米，降低基层压力。"), c("open", "公布急药求助热线", "让类似求助进入统一入口，减少无序求救。")]),
+      e("non_covid_er_blocked", "非新冠急诊受阻", ["medical", "trust", "public"], "hospital", "一名非疫情急症患者在卡口等待，医院要求核酸证明，家属要求先救人。规则和生命在同一个路口相撞。", "非新冠患者就医延误和急诊通道报道", [c("triage", "急危重症先救治后补验", "给急危重症明确例外，降低医疗创伤。"), c("open", "公布非新冠急诊流程", "让卡口和医院按同一流程执行。"), c("hard", "继续执行核酸前置", "减少院感风险，但信任和公共创伤代价很高。")]),
+      e("midnight_transfer_bus", "转运大巴深夜到达", ["medical", "fatigue", "trust"], "transport", "凌晨两点，转运大巴停在小区门口，居民不知道去哪里、带什么、住几天。司机、社区和接收点都在等下一条消息。", "集中转运、隔离点接收和深夜转运报道", [c("open", "转运前发清单和去向", "让居民知道目的地、携带物和联系人，减少恐惧。"), c("triage", "按楼栋风险分车转运", "避免车上混杂和接收点错配，降低医疗压力。"), c("rest", "限制司机连续夜班", "保护转运司机，接受转运速度下降。")]),
+      e("central_isolation_beds", "集中隔离点床位", ["medical", "supply", "funds"], "shelter", "集中隔离点床位还差两百张，床品、餐食、保洁和医废路线都没完全到位。床位数字背后是完整系统。", "集中隔离点建设和床位扩容报道", [c("medical", "先启用基础床位", "用最小配置先接收，迅速缓解医院压力。"), c("supply", "补齐餐食保洁链条", "先把隔离点生活保障做好，避免二次危机。"), c("finance", "追加隔离点专项款", "用资金换建设速度，承担恢复期财政压力。")]),
+      e("building_zero_clear", "楼栋阳性“清零”", ["infection", "trust", "fatigue"], "community", "几个楼栋被要求尽快清零，基层担心目标变成层层加码。居民希望解封，却不想被为了数字而转运。", "动态清零、楼栋管理和执行压力报道", [c("testing", "用连续复核确认清零", "用检测证明楼栋风险下降，增加人力和试剂消耗。"), c("open", "公布楼栋清零标准", "让居民知道清零不是口号，而是可验证条件。"), c("messageControl", "压实街道清零责任", "用硬目标加速执行，但疲劳和创伤都会上升。")]),
+      e("care_package_dispute", "陪护物品处置争议", ["trust", "public", "supply"], "community", "隔离转运时，一户人家的陪护物品被要求留在门外。工作人员说流程如此，家属说那是孩子唯一熟悉的东西。", "转运、隔离和个人物品处置争议报道", [c("compensate", "设特殊物品登记袋", "允许必要陪护物品登记随行，降低公共创伤。"), c("open", "解释消杀和携带边界", "把什么能带、为什么不能带说清楚。"), c("hard", "一律禁止非必要物品", "简化执行并降低感染风险，但信任代价明显。")]),
+      e("volunteer_subsidy_dispute", "志愿者补贴争议", ["fatigue", "trust", "funds"], "community", "志愿者和临聘人员开始询问补贴标准，居民也想知道钱从哪里来。没有补贴，人留不住；补贴不明，信任也留不住。", "志愿者补贴、临聘人员和基层保障报道", [c("volunteer", "明确补贴和保险标准", "用资金稳定志愿者队伍，降低疲劳。"), c("audit", "公开补贴发放规则", "减少补贴争议，保护信任。"), c("finance", "先垫付后审计", "让补贴不断档，承担财政和审计压力。")]),
+      e("supply_vehicle_pass", "保供车辆通行", ["supply", "economy", "infection"], "transport", "保供车辆拿着不同颜色的通行证，卡口却不认识。司机不敢进城，居民等不到菜。", "保供车辆通行证和物流白名单报道", [c("digital", "统一电子保供通行证", "用一个码打通卡口识别，提高保供效率。"), c("supply", "派驻卡口保供专员", "让保供车辆有人解释和协调，增加基层消耗。"), c("whiteList", "给核心供应商长期通行", "稳定供应链，但公平性争议上升。")]),
+      e("cadre_sick_leave_wave", "社区干部请假潮", ["fatigue", "trust", "supply"], "community", "几个街道同时出现病假和调休申请，留下的人已经接近极限。任务不减，人却在减少。", "基层人员疲劳、请假和社区执行压力报道", [c("rest", "批准轮休并重排任务", "让基层疲劳真正下降，承受服务窗口变薄。"), c("community", "把部分事务交给楼组", "让社区自治承接低风险事务，降低干部负荷。"), c("supportTeam", "调配机关支援队", "抽调机关干部下沉，资金和信任都会承压。", { effects: { staffFatigue: -4, trust: -2 }, resources: { funds: -3 } })]),
+      e("data_delay_release", "数据延迟公布", ["trust", "infection", "public"], "notice", "一组复核数据与前日报告不一致，发布口径迟迟没有签字。每晚的数据都在塑造市民对城市的判断。", "疫情数据延迟、复核和统计口径争议报道", [c("open", "连同误差一起公布", "承认数据修订，把复核原因写清楚。"), c("delay", "等复核完成再发布", "争取核对时间，短期保住秩序但后续反噬大。"), c("messageControl", "只发布趋势不放明细", "减少被抓住细节质疑，牺牲发现率和信任。")]),
+      e("balcony_video_spread", "阳台呼喊视频流传", ["trust", "supply", "public"], "community", "夜里有居民在阳台喊缺菜缺药，视频被迅速转发。有人说夸张，有人说终于有人把话喊出来。", "封控期间居民求助视频和舆情传播报道", [c("supply", "逐栋核查缺菜缺药", "用保供行动回应视频，快速修复民生压力。"), c("open", "承认问题并给处理时限", "公开回应诉求，避免把情绪推向谣言。"), c("messageControl", "要求平台降低传播", "先压住扩散，争取补救时间但伤害信任。")]),
+    ],
+    [
+      e("policy_optimization_notice", "优化措施发布", ["trust", "economy", "infection"], "notice", "上级发布优化措施，临江要把旧规则撤到哪里、保留到哪里。放松太快会反弹，撤得太慢会失去信任。", "防控措施优化和政策转换报道", [c("open", "逐条解释新旧规则", "把哪些取消、哪些保留说清楚，修复信任。"), c("reopen", "同步恢复低风险流动", "让城市活力尽快回升，承担感染反弹。"), c("triage", "保留医院重点防线", "把防线从社区转向医院，保护医疗系统。")]),
+      e("health_code_retirement", "健康码退场争议", ["trust", "public", "economy"], "code", "健康码不再作为日常通行依据，但很多场所还在要求扫码。数字工具退出时，留下的数据和习惯也要处理。", "健康码使用调整、退出和数据治理争议报道", [c("open", "公布健康码停用边界", "明确哪些场景不再扫码，修复信任。"), c("audit", "启动健康数据封存审计", "让数据退出有记录，降低公共创伤。"), c("digital", "保留医院预约核验", "在医疗场景保留少量数字核验，提升发现率但延长争议。")]),
+      e("fever_clinic_queue_return", "发热门诊排队", ["medical", "infection", "fatigue"], "clinic", "措施调整后，发热门诊再次排队。很多人不再等社区安排，直接到医院寻找确定答案。", "优化后发热门诊压力和就医高峰报道", [c("triage", "设置轻重症分流线", "让轻症咨询和重症救治分开，降低医疗负载。"), c("medical", "临时扩容发热门诊", "用资金和人手迅速压低医院压力。"), c("open", "发布居家观察与就医指南", "减少不必要就诊，保护信任。")]),
+      e("fever_medicine_shortage", "退烧药短缺", ["supply", "trust", "medical"], "market", "退烧药货架空了，药店门口排着人。医院不希望轻症都涌进来，居民只想知道什么时候能买到药。", "退烧药短缺和药品保供报道", [c("medicine", "定量保障重点人群用药", "优先老人、儿童和基础病患者，降低医疗风险。"), c("supply", "协调药企紧急配送", "补药品供应，增加资金和配送压力。"), c("open", "公布到货时间和替代方案", "减少抢购和重复排队，修复信任。")]),
+      e("elder_booster_mobilization", "老年加强针动员", ["medical", "trust", "fatigue"], "community", "老年加强针动员重新提上日程。社区知道名单，却不知道怎么说服犹豫的人，也担心把医疗建议说成行政任务。", "老年人疫苗接种和加强针动员报道", [c("open", "请家庭医生做风险沟通", "用专业解释替代命令，提升信任。"), c("community", "楼栋逐户预约接种", "把任务交给熟人网络，降低市级压力但消耗社区信任。"), c("medical", "布置流动接种点", "让医疗资源靠近老人，降低重症压力。")]),
+      e("factory_absenteeism", "企业复工缺勤", ["economy", "supply", "infection"], "factory", "企业复工后，很多员工因感染、照护或担忧无法返岗。产线开了灯，却没有足够的人。", "复工后缺勤、感染高峰和生产恢复报道", [c("reopen", "允许弹性返岗排班", "保护企业活力，让恢复不被一次性卡死。"), c("protectWorkers", "给复工人员防护包", "减少岗位传播和焦虑，消耗物资。"), c("finance", "给关键岗位稳岗补贴", "用资金留住产线和物流骨干。")]),
+      e("normal_clinic_restart", "医院恢复普通门诊", ["medical", "economy", "trust"], "hospital", "医院想恢复普通门诊，积压的慢病、手术和复查排队很长。恢复越快，发热高峰越容易挤在一起。", "普通医疗服务恢复和积压就医需求报道", [c("triage", "分时恢复普通门诊", "让普通门诊和发热流线错开，降低医疗混杂。"), c("open", "公布积压就诊排序", "解释哪些患者先恢复，减少争议。"), c("medical", "购买周末加诊班次", "用资金和人手消化积压，增加疲劳。")]),
+      e("procurement_audit", "财政审计", ["funds", "trust", "public"], "budget", "保供、方舱、检测和外包账单终于进入审计。有人希望查清楚，有人担心追责让后续工作无人敢做。", "疫情采购审计、财政结算和问责报道", [c("audit", "公开重点采购审计", "把大额采购和异常合同交代清楚，修复信任。"), c("finance", "先结清一线欠款", "用财政透支避免工程和补贴断档。"), c("delay", "等恢复稳定后再披露", "避免此刻引发争议，但创伤和质疑会积累。")]),
+      e("community_archive_seal", "社区档案封存", ["trust", "public", "fatigue"], "community", "街道准备封存疫情期间的台账、截图和通行证记录。基层想尽快结束，居民担心自己的信息和求助就此消失。", "社区防疫档案、个人信息和治理记录报道", [c("audit", "清理并封存个人数据", "用审计流程处理台账，降低公共创伤。"), c("memory", "保留匿名复盘材料", "把经验留下，不让一线只剩疲劳。"), c("compress", "快速销毁非必要台账", "让基层减负，但可能损失复盘线索。")]),
+      e("public_memorial", "悼念与公共记忆", ["public", "trust", "medical"], "memory", "城市恢复了人流，也有人开始在网上整理逝者、医护和志愿者名单。忘记能让生活继续，记住才能让伤口不被遮住。", "疫情悼念、公共记忆和医护纪念报道", [c("memory", "设立公开纪念页面", "让逝者和一线人员被记录，降低公共创伤。"), c("open", "发布医疗救治复盘摘要", "把救治中的经验和不足写出来，修复信任。"), c("messageControl", "引导纪念保持低调", "避免情绪再度聚集，但信任代价很重。")]),
+      e("student_return", "学生返校", ["economy", "trust", "infection"], "school", "学校准备返校，家长担心交叉感染，企业家长又需要恢复工作节奏。教室门口的测温线成了恢复的象征。", "返校复课和校园防控报道", [c("reopen", "分年级错峰返校", "恢复教育和家庭秩序，承担可控感染反弹。"), c("digital", "校园健康申报保留两周", "用短期健康申报降低返校风险。"), c("open", "公布停课触发条件", "让家长知道何时会再次调整，保护信任。")]),
+      e("dine_in_restart", "餐饮堂食重开", ["economy", "infection", "trust"], "market", "餐饮店终于等到堂食重开，店主想多摆几桌，监管人员要求间距和通风。烟火气回来，也会带回风险。", "堂食恢复、限流和消费复苏报道", [c("reopen", "限流恢复堂食", "恢复城市活力和就业，承担感染代价。"), c("digital", "保留预约和通风检查", "让堂食恢复更可控，增加执行成本。"), c("audit", "公开抽查问题店铺", "用可见监管换取信任，拖慢部分恢复。")]),
+      e("antigen_reporting_fatigue", "抗原自测上报疲劳", ["fatigue", "infection", "trust"], "community", "居民已经不愿每天上传抗原结果，社区也看不过来。自测从工具变成了负担。", "抗原自测上报、居民疲劳和常态化监测报道", [c("compress", "改为阳性和重点人群上报", "减少低价值填报，降低疲劳但扩大盲区。"), c("open", "解释为何调整上报频率", "承认疲劳，说明监测目标改变，保护信任。"), c("testing", "保留重点楼栋抽样复核", "把资源集中到风险点，避免完全失明。")]),
+      e("hotline_review", "热线投诉复盘", ["trust", "fatigue", "public"], "community", "热线系统导出几千条投诉，买药、转运和通行是最高频词。把它们看完很累，但不看就等于没听见。", "市民热线、投诉复盘和服务改进报道", [c("memory", "把投诉整理成复盘清单", "承认问题并修复创伤，让基层也看见改进方向。"), c("rest", "给热线人员复盘假", "让长期接线人员休整，降低疲劳。"), c("delay", "先归档不公开", "避免再掀舆情，但会牺牲信任。")]),
+      e("grassroots_honor_list", "基层表彰名单", ["trust", "fatigue", "public"], "community", "表彰名单准备发布，有人连续值守却没上榜，也有人认为现在谈表彰太早。荣誉能修复疲劳，也可能制造新的不公平。", "基层表彰、志愿者认可和一线疲劳报道", [c("memory", "把表彰与问题复盘同发", "既记录付出，也承认不足，减少空泛宣传感。"), c("volunteer", "给一线人员补休补贴", "用实质补偿而不是只给荣誉，降低疲劳。"), c("messageControl", "先发正面名单不谈争议", "快速提振士气，但被遗漏者的不满会回流。")]),
+      e("final_review_meeting", "最后一次阶段总结会", ["trust", "economy", "public"], "budget", "第 72 天前的最后一次总结会开始，桌上有恢复指标、投诉清单、财政账本和未公开的伤痕。城市要决定留下些什么。", "疫情阶段复盘、恢复评估和长期治理讨论", [c("memory", "发布完整阶段复盘", "把成功和失败一起写进公开报告，修复长期信任。"), c("finance", "优先结算恢复工程", "让城市活力继续回升，承担财政和信任代价。"), c("open", "召开市民代表说明会", "用面对面解释完成最后一次信任修复。")]),
+    ],
+  ];
+
+  const EVENTS = EVENT_BLUEPRINTS.flatMap((phaseEvents, phaseIndex) => (
+    phaseEvents.map((item, eventIndex) => createEventFromBlueprint(item, phaseIndex + 1, eventIndex))
+  ));
 
   const NEWS_POOL = [
     {
@@ -1529,6 +1532,8 @@
   }
 
   function getEventImage(event) {
+    if (event && event.imageKey && EVENT_IMAGE_BY_KEY[event.imageKey]) return EVENT_IMAGE_BY_KEY[event.imageKey];
+    if (event && event.image) return event.image;
     const tags = event && event.tags ? event.tags : [];
     if (tags.includes("medical")) return "news-hospital.png";
     if (tags.includes("supply")) return "news-supply.png";
@@ -1708,6 +1713,7 @@
     const m = state.metrics;
     let weight = 10;
     if (state.flags.lastEventIds.includes(event.id)) weight *= 0.2;
+    const strategyKeys = eventStrategyKeys(event);
 
     if (event.tags.includes("infection")) weight += m.infection >= 70 ? 8 : m.infection >= 50 ? 3 : 0;
     if (event.tags.includes("medical")) weight += m.hospitalLoad >= 75 ? 9 : m.hospitalLoad <= 45 ? -4 : 2;
@@ -1719,10 +1725,15 @@
     if (event.tags.includes("fatigue")) weight += m.staffFatigue > 85 ? 12 : m.staffFatigue > 70 ? 7 : m.staffFatigue < 45 ? -1 : 2;
     if (event.tags.includes("funds")) weight += state.resources.funds <= 10 ? 14 : state.resources.funds < 25 ? 8 : 1;
     if (event.tags.includes("public")) weight += state.hidden.publicMemory > 55 ? 8 : state.hidden.publicMemory > 35 ? 4 : 1;
-    if (m.infection >= 80 && (event.actions || []).some((action) => TESTING_KEYS.includes(action) || CONTROL_KEYS.includes(action))) weight += 5;
+    if (m.infection >= 80 && strategyKeys.some((action) => TESTING_KEYS.includes(action) || CONTROL_KEYS.includes(action) || ["testing", "hard", "quietClose", "digital"].includes(action))) weight += 5;
     if (m.trust <= 30 && (event.tags.includes("rumor") || event.id.includes("refuse"))) weight += 5;
 
     return Math.max(1, weight);
+  }
+
+  function eventStrategyKeys(event) {
+    if (event.actions) return event.actions;
+    return (event.choices || []).map((choice) => choice.strategyKey || choice.profile || choice.id);
   }
 
   function getCurrentEvent(state) {
@@ -1731,12 +1742,49 @@
       return buildBufferEvent(state);
     }
     const event = EVENTS.find((item) => item.id === state.currentEventId) || EVENTS[0];
+    const choices = event.choices
+      ? ensureEventChoiceFallback(
+        event.choices.map((choice) => buildCustomEventChoice(event, choice, state)),
+      )
+      : event.actions.map((actionKey) => buildChoiceForAction(event, actionKey, state));
     return {
       ...event,
       type: "event",
       image: getEventImage(event),
-      choices: event.actions.map((actionKey) => buildChoiceForAction(event, actionKey, state)),
+      body: event.description || event.body,
+      choices,
     };
+  }
+
+  function ensureEventChoiceFallback(choices) {
+    if (!choices.length || choices.some((choice) => choice.available !== false)) return choices;
+    const fallbackIndex = choices.reduce((bestIndex, choice, index) => {
+      const bestFunds = choices[bestIndex].eventResources ? choices[bestIndex].eventResources.funds || 0 : 0;
+      const funds = choice.eventResources ? choice.eventResources.funds || 0 : 0;
+      return funds > bestFunds ? index : bestIndex;
+    }, 0);
+    return choices.map((choice, index) => {
+      if (index !== fallbackIndex) return choice;
+      const eventResources = { ...(choice.eventResources || {}) };
+      if (eventResources.funds < 0) delete eventResources.funds;
+      return {
+        ...choice,
+        available: true,
+        lockedReason: "",
+        description: `${choice.description} 当前财政见底时会转为低成本应急版，收益仍在，但不再消耗资金。`,
+        eventResources,
+        effectPreview: previewEventChoiceEffects({
+          resources: eventResources,
+          effects: choice.eventEffects,
+          hidden: choice.eventHidden,
+          delayed: choice.delayed,
+        }),
+        eventNotes: [
+          ...(choice.eventNotes || []),
+          "财政见底：系统保留一个低成本应急选项，避免事件卡死。",
+        ],
+      };
+    });
   }
 
   function buildBufferEvent(state) {
@@ -1788,11 +1836,80 @@
       effectPreview: preview,
       eventEffects: eventMod.effects,
       eventHidden: eventMod.hidden,
+      eventResources: {},
+      modifiers: {},
       delayed: eventMod.delayed,
       eventNotes: eventMod.notes,
       available: status.available,
       lockedReason: status.lockedReason,
     };
+  }
+
+  function buildCustomEventChoice(event, choice, state) {
+    const result = computeEventChoiceResult(state, event, choice);
+    let lockedReason = "";
+    if (!conditionMet(state, choice.condition)) lockedReason = "条件未满足";
+    else if (isFiscalLock(state, result.resources)) lockedReason = "财政透支";
+    else if (!canPay(state, result.resources)) lockedReason = "资金不足";
+    return {
+      id: `${event.id}:${choice.id}`,
+      customChoice: true,
+      strategyKey: choice.strategyKey,
+      actionKey: choice.strategyKey,
+      label: choice.label,
+      description: choice.description,
+      effectPreview: previewEventChoiceEffects(result),
+      eventResources: result.resources,
+      eventEffects: result.effects,
+      eventHidden: result.hidden,
+      modifiers: result.modifiers,
+      delayed: result.delayed,
+      eventNotes: result.notes,
+      available: !lockedReason,
+      lockedReason,
+    };
+  }
+
+  function computeEventChoiceResult(state, event, choice) {
+    const itemId = choice.strategyKey || choice.id;
+    const efficiency = choice.scale === false ? 1 : actionEfficiency(state);
+    const resources = adjustedResourcesForItem(state, itemId, choice.resources || {});
+    const effects = scaleBeneficialEffects(
+      adjustedEffectsForItem(state, itemId, choice.effects || {}),
+      efficiency,
+    );
+    const hidden = scaleBeneficialEffects(
+      adjustedHiddenForItem(state, itemId, choice.hidden || {}),
+      efficiency,
+    );
+    return {
+      resources,
+      effects,
+      hidden,
+      modifiers: choice.modifiers || {},
+      delayed: choice.delayed || null,
+      notes: choice.notes || [],
+      eventTitle: event.title,
+    };
+  }
+
+  function previewEventChoiceEffects(result) {
+    const lines = [];
+    Object.entries(result.resources || {}).forEach(([metric, delta]) => {
+      if (!delta) return;
+      lines.push(`${RESOURCE_META[metric].short} ${delta > 0 ? "+" : ""}${delta}`);
+    });
+    Object.entries(result.effects || {}).forEach(([metric, delta]) => {
+      if (!delta) return;
+      const displayDelta = clamp(delta, -DAILY_CORE_CAP, DAILY_CORE_CAP);
+      lines.push(`${METRIC_META[metric].short} ${displayDelta > 0 ? "+" : ""}${displayDelta}`);
+    });
+    Object.entries(result.hidden || {}).forEach(([metric, delta]) => {
+      if (!delta) return;
+      lines.push(`${METRIC_META[metric].short} ${delta > 0 ? "+" : ""}${delta}`);
+    });
+    if (result.delayed) lines.push(`${result.delayed.delay}日后：${result.delayed.label}`);
+    return lines.slice(0, 6);
   }
 
   function previewActionEffects(state, actionKey, eventMod) {
@@ -2078,6 +2195,13 @@
 
     if (event.type === "buffer") {
       applyBufferChoice(state, choice.id, dailyDelta, log);
+    } else if (choice.customChoice) {
+      applyResourceEffects(state, choice.eventResources, log, "事件策略");
+      applyEffects(state, choice.eventEffects, dailyDelta, log, "事件策略");
+      applyHiddenEffects(state, choice.eventHidden, log, "事件策略");
+      addModifiers(modifiers, choice.modifiers);
+      if (choice.delayed) scheduleDelayedEffect(state, choice.delayed, event.title, choice.label);
+      log.notes.push(...(choice.eventNotes || []));
     } else {
       const actionResult = computeActionResult(state, choice.actionKey);
       applyResourceEffects(state, actionResult.resources, log, "行动");
@@ -2276,10 +2400,15 @@
   function conditionMet(state, condition) {
     if (!condition) return true;
     if (condition === "staffFatigueAbove80") return state.metrics.staffFatigue > 80;
+    if (condition === "staffFatigueAbove75") return state.metrics.staffFatigue > 75;
     if (condition === "trustBelow40") return state.metrics.trust < 40;
+    if (condition === "trustBelow45") return state.metrics.trust < 45;
+    if (condition === "trustAtLeast60") return state.metrics.trust >= 60;
     if (condition === "hospitalAtLeast80") return state.metrics.hospitalLoad >= 80;
     if (condition === "hospitalAbove85") return state.metrics.hospitalLoad > 85;
     if (condition === "suppliesBelow25") return state.metrics.supplies < 25;
+    if (condition === "detectedBelow50") return state.hidden.detectedRate < 50;
+    if (condition === "fundsBelow20") return state.resources.funds < 20;
     return true;
   }
 

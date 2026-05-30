@@ -1226,6 +1226,68 @@ label {
   animation: eventSoftPulse 4.6s steps(5) infinite;
 }
 
+.event-visual[data-key="notice"] .event-anim-c,
+.event-visual[data-key="code"] .event-anim-c {
+  inset: 18px 22px auto;
+  height: 54px;
+  border: 2px solid rgba(255, 241, 200, 0.55);
+  background:
+    linear-gradient(#f5dc94 0 0) 12px 14px / 72px 4px no-repeat,
+    linear-gradient(#7b4c18 0 0) 12px 26px / 104px 4px no-repeat,
+    linear-gradient(#7b4c18 0 0) 12px 38px / 82px 4px no-repeat,
+    rgba(88, 103, 79, 0.3);
+}
+
+.event-visual[data-key="market"] .event-anim-c,
+.event-visual[data-key="community"] .event-anim-c {
+  inset: auto 18px 26px 18px;
+  height: 44px;
+  border: 0;
+  background:
+    linear-gradient(#fff1c8 0 0) 10px 10px / 26px 18px no-repeat,
+    linear-gradient(#c78d34 0 0) 46px 8px / 32px 22px no-repeat,
+    linear-gradient(#8b7144 0 0) 90px 13px / 42px 15px no-repeat;
+  animation: eventSoftPulse 3.8s steps(4) infinite;
+}
+
+.event-visual[data-key="clinic"] .event-anim-c,
+.event-visual[data-key="hospital"] .event-anim-c {
+  inset: 28px auto auto 28px;
+  width: 76px;
+  height: 76px;
+  border: 0;
+  background:
+    linear-gradient(#f2e7c2 0 0) 0 28px / 76px 20px no-repeat,
+    linear-gradient(#f2e7c2 0 0) 28px 0 / 20px 76px no-repeat,
+    rgba(155, 74, 59, 0.28);
+}
+
+.event-visual[data-key="transport"] .event-anim-c,
+.event-visual[data-key="station"] .event-anim-c,
+.event-visual[data-key="factory"] .event-anim-c,
+.event-visual[data-key="budget"] .event-anim-c {
+  inset: auto 20px 32px 20px;
+  height: 34px;
+  border: 0;
+  background:
+    linear-gradient(#5c6d67 0 0) 8px 12px / 116px 10px no-repeat,
+    linear-gradient(#f5dc94 0 0) 26px 4px / 20px 8px no-repeat,
+    linear-gradient(#f5dc94 0 0) 72px 4px / 20px 8px no-repeat,
+    radial-gradient(circle, #3e3426 0 6px, transparent 7px) 26px 22px / 18px 18px no-repeat,
+    radial-gradient(circle, #3e3426 0 6px, transparent 7px) 88px 22px / 18px 18px no-repeat;
+}
+
+.event-visual[data-key="shelter"] .event-anim-c,
+.event-visual[data-key="memory"] .event-anim-c {
+  inset: 24px 18px auto;
+  height: 76px;
+  border: 0;
+  background:
+    repeating-linear-gradient(90deg, #f2e7c2 0 24px, transparent 24px 34px) 0 34px / 100% 18px no-repeat,
+    linear-gradient(#8f6f44 0 0) 0 26px / 100% 4px no-repeat,
+    linear-gradient(#fff1c8 0 0) 22px 10px / 76px 8px no-repeat;
+}
+
 .event-content {
   position: relative;
   z-index: 2;
@@ -1251,8 +1313,34 @@ label {
 #eventBody {
   margin: 0;
   color: var(--deep);
-  font-size: 0.94rem;
+  font-size: 0.9rem;
   line-height: 1.7;
+}
+
+.event-source {
+  margin-top: 9px;
+  padding: 7px 9px;
+  border: 2px solid rgba(123, 76, 24, 0.38);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 241, 200, 0.38) 0 7px, rgba(244, 218, 155, 0.24) 7px 14px),
+    rgba(255, 246, 214, 0.7);
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.event-source[hidden] {
+  display: none;
+}
+
+.event-source summary {
+  cursor: pointer;
+  color: var(--deep);
+  font-weight: 800;
+}
+
+.event-source p {
+  margin: 6px 0 0;
+  line-height: 1.55;
 }
 
 .choice-list,
@@ -1264,7 +1352,7 @@ label {
 }
 
 .choice-list {
-  margin-top: 14px;
+  margin-top: 12px;
 }
 
 .choice-button {
@@ -1311,8 +1399,8 @@ label {
 .news-card p {
   margin: 0 0 8px;
   color: var(--muted);
-  font-size: 0.82rem;
-  line-height: 1.45;
+  font-size: 0.8rem;
+  line-height: 1.5;
 }
 
 .chips {

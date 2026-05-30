@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v15";
+  const ASSET_VERSION = "v16";
   const core = window.Linjiang72;
 
   let state = null;
@@ -94,6 +94,8 @@
     eventType: document.getElementById("eventType"),
     eventTitle: document.getElementById("eventTitle"),
     eventBody: document.getElementById("eventBody"),
+    eventSource: document.getElementById("eventSource"),
+    eventSourceNote: document.getElementById("eventSourceNote"),
     eventVisual: document.getElementById("eventVisual"),
     eventImage: document.getElementById("eventImage"),
     choiceList: document.getElementById("choiceList"),
@@ -590,10 +592,20 @@
     const event = core.getCurrentEvent(state);
     els.eventType.textContent = event.type === "buffer" ? "阶段缓冲" : "今日事件";
     els.eventTitle.textContent = event.title;
-    els.eventBody.textContent = event.body;
+    els.eventBody.textContent = event.description || event.body;
+    if (event.sourceNote) {
+      els.eventSource.hidden = false;
+      els.eventSource.open = false;
+      els.eventSourceNote.textContent = event.sourceNote;
+    } else {
+      els.eventSource.hidden = true;
+      els.eventSource.open = false;
+      els.eventSourceNote.textContent = "";
+    }
     els.eventImage.src = ASSET_PATH + event.image;
     els.eventImage.alt = `${event.title} 配图`;
-    els.eventVisual.dataset.motion = motionForEventImage(event.image);
+    els.eventVisual.dataset.motion = motionForEventImage(event.image, event.imageKey);
+    els.eventVisual.dataset.key = event.imageKey || "default";
     els.choiceList.innerHTML = "";
 
     event.choices.forEach((choice) => {
@@ -633,7 +645,12 @@
     return true;
   }
 
-  function motionForEventImage(image) {
+  function motionForEventImage(image, imageKey = "") {
+    if (["notice", "code"].includes(imageKey)) return "code";
+    if (["clinic", "hospital"].includes(imageKey)) return "medical";
+    if (["market", "community"].includes(imageKey)) return "supply";
+    if (["station", "transport", "factory", "budget"].includes(imageKey)) return "factory";
+    if (["shelter", "memory"].includes(imageKey)) return "shelter";
     if (!image) return "default";
     if (image.includes("hospital")) return "medical";
     if (image.includes("supply")) return "supply";
