@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v23";
+  const ASSET_VERSION = "v24";
   const core = window.Linjiang72;
 
   let state = null;
@@ -618,7 +618,7 @@
       button.type = "button";
       button.disabled = choice.available === false;
       const chips = choice.effectPreview
-        .map((item) => `<span class="chip ${chipClassForPreview(item)}">${escapeHtml(item)}</span>`)
+        .map((item) => `<span class="chip ${chipClassForPreview(item)}" title="${escapeHtml(previewChipTitle(item))}">${escapeHtml(item)}</span>`)
         .join("");
       button.innerHTML = `
         <strong>${escapeHtml(choice.label)}</strong>
@@ -731,7 +731,7 @@
     const chips = all
       .filter(([, delta, meta]) => delta && meta)
       .slice(0, 5)
-      .map(([metric, delta, meta]) => `<span class="chip ${changeClass(metric, delta)}">${meta.short} ${delta > 0 ? "+" : ""}${delta}</span>`);
+      .map(([metric, delta, meta]) => `<span class="chip ${changeClass(metric, delta)}" title="${escapeHtml(meta.description)}">${meta.short} ${delta > 0 ? "+" : ""}${delta}</span>`);
     if (item.delayed) chips.push(`<span class="chip delay">${item.delayed.delay}日后：${escapeHtml(item.delayed.label)}</span>`);
     return chips.join("");
   }
@@ -767,7 +767,7 @@
         .map(([metric, delta]) => {
           const meta = core.METRIC_META[metric] || core.RESOURCE_META[metric];
           if (!meta) return "";
-          return `<span class="change ${changeClass(metric, delta)}">${meta.short} ${delta > 0 ? "+" : ""}${delta}</span>`;
+          return `<span class="change ${changeClass(metric, delta)}" title="${escapeHtml(meta.description)}">${meta.short} ${delta > 0 ? "+" : ""}${delta}</span>`;
         })
         .join("");
       li.innerHTML = `
@@ -808,7 +808,7 @@
     if (!meta) return "neutral";
     if (meta.direction === "good") return delta >= 0 ? "good-change" : "bad-change";
     if (meta.direction === "danger") return delta <= 0 ? "good-change" : "bad-change";
-    return delta > 0 ? "bad-change" : "good-change";
+    return "mixed-change";
   }
 
   function chipClassForPreview(text) {
@@ -819,6 +819,16 @@
     const metric = PREVIEW_METRIC_BY_SHORT[match[1].trim()];
     if (!metric) return "neutral";
     return changeClass(metric, Number(match[2]));
+  }
+
+  function previewChipTitle(text) {
+    const value = String(text);
+    if (/^\d+日后/.test(value)) return "延迟后果，会在之后的每日结算中触发。";
+    const match = value.match(/^(.+?)\s*([+-]\d+)/);
+    if (!match) return "";
+    const metric = PREVIEW_METRIC_BY_SHORT[match[1].trim()];
+    const meta = metric && (core.METRIC_META[metric] || core.RESOURCE_META[metric]);
+    return meta ? meta.description : "";
   }
 
   function escapeHtml(value) {

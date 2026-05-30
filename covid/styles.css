@@ -1443,6 +1443,12 @@ label {
   color: #5b1f18;
 }
 
+.chip.mixed-change {
+  border-color: #9b7134;
+  background: #f0ca75;
+  color: #583b15;
+}
+
 .chip.neutral {
   background: #ead19a;
 }
@@ -1644,6 +1650,10 @@ label {
 
 .change.bad-change {
   color: var(--danger);
+}
+
+.change.mixed-change {
+  color: #9b7134;
 }
 
 .ending-screen {
