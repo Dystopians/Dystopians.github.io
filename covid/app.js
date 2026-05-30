@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v13";
+  const ASSET_VERSION = "v14";
   const core = window.Linjiang72;
 
   let state = null;
@@ -486,7 +486,6 @@
     mapPointer.startClientY = event.clientY;
     mapPointer.startX = mapView.x;
     mapPointer.startY = mapView.y;
-    els.cityMapWrap.setPointerCapture(event.pointerId);
   }
 
   function onMapPointerMove(event) {
@@ -496,6 +495,7 @@
     if (!mapPointer.moved && Math.abs(dx) + Math.abs(dy) > 4) {
       mapPointer.moved = true;
       els.cityMapWrap.classList.add("is-dragging");
+      els.cityMapWrap.setPointerCapture(event.pointerId);
     }
     if (!mapPointer.moved) return;
     event.preventDefault();
