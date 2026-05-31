@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v90";
+  const ASSET_VERSION = "v92";
   const core = window.Linjiang72;
 
   let state = null;
@@ -452,6 +452,7 @@
     resetMapView();
     save();
     render();
+    resetPageScroll();
   }
 
   function continueGame() {
@@ -462,6 +463,7 @@
       resetMapView();
       save();
       render();
+      resetPageScroll();
     } catch (error) {
       console.error(error);
       localStorage.removeItem(STORAGE_KEY);
@@ -480,6 +482,7 @@
     els.fundsLabel.textContent = "资金 68";
     updateContinueButton();
     renderScenarioBrief();
+    resetPageScroll();
   }
 
   function renderScenarioBrief() {
@@ -532,6 +535,20 @@
     if (!state) return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(core.exportState(state)));
     updateContinueButton();
+  }
+
+  function resetPageScroll() {
+    const reset = () => {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      window.scrollTo(0, 0);
+    };
+    reset();
+    window.requestAnimationFrame(() => {
+      reset();
+      window.requestAnimationFrame(reset);
+    });
+    window.setTimeout(reset, 80);
   }
 
   function render() {
@@ -2196,6 +2213,7 @@
     els.startScreen.hidden = true;
     els.gameScreen.hidden = true;
     els.endingScreen.hidden = false;
+    resetPageScroll();
 
     els.dayLabel.textContent = `第 ${state.day} 天`;
     els.phaseLabel.textContent = "归档";
