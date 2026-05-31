@@ -1777,6 +1777,67 @@ label {
   background: #bed0cf;
 }
 
+.trend-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin: -3px 0 10px;
+  padding: 6px 7px;
+  border: 2px solid rgba(123, 76, 24, 0.32);
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 242, 202, 0.48) 0 2px, rgba(233, 205, 143, 0.34) 2px 4px),
+    rgba(255, 238, 183, 0.58);
+  box-shadow: inset 0 0 0 2px rgba(255, 251, 228, 0.34);
+}
+
+.trend-preview[hidden] {
+  display: none;
+}
+
+.trend-label,
+.trend-chip {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  border: 2px solid rgba(119, 82, 33, 0.55);
+  font-size: 0.68rem;
+  line-height: 1;
+}
+
+.trend-label {
+  padding: 0 7px;
+  background: #8e6330;
+  color: #fff1bf;
+}
+
+.trend-chip {
+  padding: 0 6px;
+  background: #f5d88b;
+  color: var(--deep);
+  box-shadow: 1px 1px 0 rgba(95, 75, 42, 0.22);
+}
+
+.trend-chip.good {
+  border-color: var(--good);
+  background: #c9dd91;
+}
+
+.trend-chip.bad {
+  border-color: var(--danger);
+  background: #e6a17c;
+}
+
+.trend-chip.mixed {
+  border-color: var(--warn);
+  background: #eec673;
+}
+
+.trend-chip.neutral {
+  border-color: var(--blue);
+  background: #c5d2ca;
+}
+
 #eventBody {
   margin: 0;
   color: var(--deep);

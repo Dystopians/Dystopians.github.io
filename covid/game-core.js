@@ -4012,6 +4012,303 @@
       .map(({ score, ...item }) => item);
   }
 
+  function getDailyTrendPreview(state) {
+    if (!state || state.ended) return [];
+    const projection = calculateProjectedDailyDeltas(state);
+    const rows = [
+      ...Object.entries(projection.metrics).map(([metric, delta]) => buildTrendItem(metric, delta, state.metrics[metric], projection.values.metrics[metric])),
+      ...Object.entries(projection.hidden).map(([metric, delta]) => buildTrendItem(metric, delta, state.hidden[metric], projection.values.hidden[metric])),
+      ...Object.entries(projection.resources).map(([metric, delta]) => buildTrendItem(metric, delta, state.resources[metric], projection.values.resources[metric])),
+    ].filter(Boolean);
+
+    return rows
+      .sort((a, b) => b.priority - a.priority)
+      .slice(0, 6)
+      .map(({ priority, ...item }) => item);
+  }
+
+  function buildTrendItem(metric, delta, before, after) {
+    if (!delta) return null;
+    const meta = METRIC_META[metric] || RESOURCE_META[metric];
+    if (!meta) return null;
+    const bad = isBadDelta(metric, delta);
+    const good = isGoodDelta(metric, delta);
+    const tone = good ? "good" : bad ? "bad" : "mixed";
+    const abs = Math.abs(delta);
+    return {
+      metric,
+      label: meta.label,
+      short: meta.short,
+      delta,
+      tone,
+      detail: `${meta.label}：按当前状态且不计入即将选择的事件策略，今晚结算预计 ${before} → ${after}。`,
+      priority: (bad ? 80 : good ? 45 : 55) + abs * 8 + (["infection", "hospitalLoad", "staffFatigue", "funds"].includes(metric) ? 6 : 0),
+    };
+  }
+
+  function isGoodDelta(metric, delta) {
+    const meta = METRIC_META[metric] || RESOURCE_META[metric];
+    if (!meta) return false;
+    if (meta.direction === "good") return delta > 0;
+    if (meta.direction === "danger") return delta < 0;
+    return false;
+  }
+
+  function isBadDelta(metric, delta) {
+    const meta = METRIC_META[metric] || RESOURCE_META[metric];
+    if (!meta) return false;
+    if (meta.direction === "good") return delta < 0;
+    if (meta.direction === "danger") return delta > 0;
+    return false;
+  }
+
+  function calculateProjectedDailyDeltas(state, incomingModifiers = {}) {
+    const modifiers = normalizeDailyModifiers(incomingModifiers);
+    const projection = {
+      day: state.day,
+      phase: state.phase,
+      difficulty: state.difficulty,
+      metrics: { ...state.metrics },
+      hidden: { ...state.hidden },
+      resources: { ...state.resources },
+      completedProjects: { ...(state.completedProjects || {}) },
+      flags: clone(state.flags || {}),
+      dailyDelta: Object.fromEntries(CORE_METRICS.map((metric) => [metric, 0])),
+      deltas: {
+        metrics: {},
+        hidden: {},
+        resources: {},
+      },
+    };
+
+    (state.pendingEffects || [])
+      .filter((item) => item.dueDay <= state.day)
+      .forEach((item) => {
+        if (!conditionMet(projectedState(projection), item.condition)) return;
+        applyProjectedResourceDelta(projection, item.resources || {});
+        applyProjectedCoreDelta(projection, item.effects || {});
+        applyProjectedHiddenDelta(projection, item.hidden || {});
+        if (item.completeProject) projection.completedProjects[item.completeProject] = true;
+      });
+
+    let phasePressure = PHASE_PRESSURE[projection.phase - 1] || 1;
+    if (projection.metrics.infection > 85) phasePressure -= 1;
+
+    const mobilityPressure = Math.round(projection.metrics.economy / 30) - Math.round(projection.hidden.policyStrictness / 25);
+    const controlEffect = Math.round(projection.hidden.policyStrictness / 20) + Math.round(projection.metrics.trust / 35);
+    let detectionEffect = projection.hidden.detectedRate >= 60 ? 1 : 0;
+    if (projection.completedProjects.healthCode && projection.hidden.detectedRate >= 55) detectionEffect += 1;
+    const fatiguePenalty = projection.metrics.staffFatigue >= 75 ? 2 : projection.metrics.staffFatigue >= 60 ? 1 : 0;
+    const trustPenalty = projection.metrics.trust < 30 ? 2 : projection.metrics.trust < 45 ? 1 : 0;
+    const strictControlEffect = projection.hidden.policyStrictness >= 80 ? 1 : 0;
+    const openFlowPressure = projection.hidden.policyStrictness <= 15 ? 1 : 0;
+    const infectionDelta = clamp(
+      phasePressure + mobilityPressure - controlEffect - detectionEffect - strictControlEffect + openFlowPressure + fatiguePenalty + trustPenalty,
+      -6,
+      7,
+    );
+    applyProjectedCoreDelta(projection, { infection: infectionDelta });
+
+    const hospitalSurgePenalty = projection.metrics.infection >= 70 && projection.hidden.detectedRate < 85 ? 1 : 0;
+    const hospitalDelta = Math.round(projection.metrics.infection / 22)
+      - modifiers.medicalRelief
+      - (projection.completedProjects.triageNetwork ? 1 : 0)
+      - (projection.completedProjects.communityClinic ? 1 : 0)
+      + (projection.metrics.supplies < 30 ? 1 : 0)
+      + (projection.metrics.staffFatigue > 75 ? 1 : 0)
+      + (projection.metrics.infection >= 80 ? 1 : 0)
+      + hospitalSurgePenalty;
+    applyProjectedCoreDelta(projection, { hospitalLoad: hospitalDelta });
+
+    let supplyRecovery = 1 + modifiers.supplyRecovery;
+    if (projection.metrics.economy < 30) supplyRecovery -= 1;
+    if (projection.metrics.economy >= 75) supplyRecovery += 1;
+    if (projection.completedProjects.supplyCorridor) supplyRecovery += 1;
+    const stockRotationCost = projection.metrics.supplies >= 90 ? 1 : 0;
+    const suppliesDelta = supplyRecovery
+      + (projection.metrics.economy >= 60 ? 1 : 0)
+      - Math.round(projection.hidden.policyStrictness / 35)
+      - (projection.metrics.hospitalLoad >= 75 ? 1 : 0)
+      - (projection.metrics.staffFatigue >= 70 ? 1 : 0)
+      - stockRotationCost;
+    applyProjectedCoreDelta(projection, { supplies: suppliesDelta });
+
+    const strictTrustCost = projection.hidden.policyStrictness >= 75
+      ? (projection.metrics.supplies >= 75 ? 0 : 1)
+      : 0;
+    const supplyTrustBonus = projection.metrics.supplies >= 80 && projection.metrics.trust < 80 ? 1 : 0;
+    const expectationCost = projection.metrics.trust >= 92
+      && (projection.metrics.infection >= 45 || projection.metrics.hospitalLoad >= 45 || projection.hidden.publicMemory >= 20)
+      ? 2
+      : 0;
+    const trustDelta = modifiers.transparencyBonus
+      + supplyTrustBonus
+      - (projection.metrics.hospitalLoad >= 80 ? 2 : 0)
+      - (projection.metrics.supplies < 30 ? 2 : 0)
+      - strictTrustCost
+      - expectationCost
+      - (projection.hidden.publicMemory >= 60 ? 1 : 0);
+    applyProjectedCoreDelta(projection, { trust: trustDelta });
+
+    const controlledRecovery = projection.metrics.infection < 45
+      && projection.hidden.policyStrictness <= 45
+      && projection.metrics.economy < 55
+      ? 1
+      : 0;
+    const highTrustRecovery = projection.metrics.trust >= 75
+      && projection.metrics.infection < 60
+      && projection.hidden.policyStrictness <= 55
+      && projection.metrics.economy < 65
+      ? 1
+      : 0;
+    const economyDelta = modifiers.reopenBonus
+      + controlledRecovery
+      + highTrustRecovery
+      - Math.round(projection.hidden.policyStrictness / 25)
+      - (projection.metrics.infection >= 55 ? 1 : 0)
+      - (projection.metrics.hospitalLoad >= 80 ? 1 : 0)
+      - (projection.metrics.trust < 30 ? 1 : 0)
+      - (projection.hidden.policyStrictness >= 80 ? 1 : 0)
+      + (projection.hidden.policyStrictness <= 15 ? 1 : 0);
+    applyProjectedCoreDelta(projection, { economy: economyDelta });
+
+    const fatigueBase = projection.metrics.staffFatigue >= 70 ? 1 : 2;
+    const fatigueDelta = fatigueBase
+      + Math.round(projection.hidden.policyStrictness / 25)
+      + (projection.metrics.hospitalLoad >= 75 ? 1 : 0)
+      + (projection.metrics.supplies < 30 ? 1 : 0)
+      + (projection.hidden.policyStrictness >= 80 ? 1 : 0)
+      + (projection.metrics.staffFatigue <= 25 && (projection.metrics.infection >= 45 || projection.metrics.hospitalLoad >= 45 || projection.hidden.policyStrictness >= 35) ? 1 : 0)
+      - modifiers.restPolicyBonus
+      - (projection.metrics.trust >= 70 ? 1 : 0);
+    applyProjectedCoreDelta(projection, { staffFatigue: fatigueDelta });
+
+    if (projection.metrics.staffFatigue >= 88) {
+      applyProjectedCoreDelta(projection, {
+        staffFatigue: -5,
+        hospitalLoad: 2,
+        supplies: -2,
+        trust: -2,
+        economy: -1,
+      });
+      applyProjectedHiddenDelta(projection, { publicMemory: 1 });
+    }
+
+    const operationUses = projection.flags.operationUses || {};
+    const fiscalBase = projection.metrics.economy >= 75 && projection.resources.funds <= 65
+      ? 1
+      : projection.metrics.economy >= 60 && projection.resources.funds <= 45
+        ? 1
+        : projection.metrics.economy >= 50 && projection.resources.funds <= 40
+          ? 1
+          : 0;
+    const trustPremium = projection.metrics.trust >= 72 && projection.metrics.economy >= 60 && projection.resources.funds <= 50 ? 1 : 0;
+    const assetYield = (operationUses.fiscalTransparencyLedger && projection.metrics.trust >= 55 && projection.resources.funds <= 55 ? 1 : 0)
+      + (operationUses.donationCoordination && projection.metrics.trust >= 50 && projection.resources.funds <= 55 ? 1 : 0)
+      + (operationUses.factoryClosedLoop && projection.metrics.economy >= 58 && projection.resources.funds <= 60 ? 1 : 0)
+      + (operationUses.remoteWorkGovServices && projection.metrics.economy >= 55 && projection.resources.funds <= 45 ? 1 : 0)
+      + (projection.completedProjects.supplyCorridor && projection.metrics.supplies >= 60 && projection.resources.funds <= 55 ? 1 : 0);
+    const passiveFundsGain = fiscalBase + trustPremium + clamp(assetYield, 0, 2);
+    const passiveFundsLoss = (projection.metrics.economy <= 25 ? 1 : 0)
+      + (projection.metrics.hospitalLoad >= 85 ? 1 : 0)
+      + (projection.hidden.policyStrictness >= 80 ? 1 : 0)
+      + (projection.metrics.trust < 25 ? 1 : 0)
+      + (projection.resources.funds > 85 ? 1 : 0);
+    const fundsDelta = clamp(passiveFundsGain, 0, 2) - passiveFundsLoss;
+    applyProjectedResourceDelta(projection, { funds: fundsDelta });
+
+    if (projection.metrics.hospitalLoad >= 85) {
+      applyProjectedCoreDelta(projection, { trust: -2 });
+      applyProjectedHiddenDelta(projection, { publicMemory: 2 });
+    }
+    if (projection.metrics.supplies < 25) {
+      applyProjectedCoreDelta(projection, { trust: -2, staffFatigue: 1 });
+    }
+    if (projection.metrics.staffFatigue >= 80 || projection.metrics.supplies < 25) {
+      applyProjectedHiddenDelta(projection, { detectedRate: -1 });
+    }
+    if (projection.hidden.detectedRate > 85 && !modifiers.testingFocus) {
+      applyProjectedHiddenDelta(projection, { detectedRate: -1 });
+    }
+
+    return {
+      metrics: projection.deltas.metrics,
+      hidden: projection.deltas.hidden,
+      resources: projection.deltas.resources,
+      values: {
+        metrics: projection.metrics,
+        hidden: projection.hidden,
+        resources: projection.resources,
+      },
+    };
+  }
+
+  function normalizeDailyModifiers(modifiers = {}) {
+    return {
+      medicalRelief: modifiers.medicalRelief || 0,
+      supplyRecovery: modifiers.supplyRecovery || 0,
+      transparencyBonus: modifiers.transparencyBonus || 0,
+      reopenBonus: modifiers.reopenBonus || 0,
+      restPolicyBonus: modifiers.restPolicyBonus || 0,
+      testingFocus: modifiers.testingFocus || 0,
+    };
+  }
+
+  function projectedState(projection) {
+    return {
+      day: projection.day,
+      phase: projection.phase,
+      difficulty: projection.difficulty,
+      metrics: projection.metrics,
+      hidden: projection.hidden,
+      resources: projection.resources,
+      completedProjects: projection.completedProjects,
+      flags: projection.flags,
+    };
+  }
+
+  function applyProjectedCoreDelta(projection, effects = {}) {
+    Object.entries(effects || {}).forEach(([metric, delta]) => {
+      if (!CORE_METRICS.includes(metric) || !delta) return;
+      const remainingCap = delta > 0
+        ? DAILY_CORE_CAP - projection.dailyDelta[metric]
+        : -DAILY_CORE_CAP - projection.dailyDelta[metric];
+      const cappedDelta = clamp(delta, Math.min(0, remainingCap), Math.max(0, remainingCap));
+      const before = projection.metrics[metric];
+      const after = boundedMetricValue(metric, before + cappedDelta);
+      const actual = after - before;
+      projection.metrics[metric] = after;
+      projection.dailyDelta[metric] += actual;
+      addProjectedDelta(projection.deltas.metrics, metric, actual);
+    });
+  }
+
+  function applyProjectedHiddenDelta(projection, effects = {}) {
+    Object.entries(effects || {}).forEach(([metric, delta]) => {
+      if (!HIDDEN_METRICS.includes(metric) || !delta) return;
+      const before = projection.hidden[metric];
+      const after = boundedMetricValue(metric, before + delta);
+      projection.hidden[metric] = after;
+      addProjectedDelta(projection.deltas.hidden, metric, after - before);
+    });
+  }
+
+  function applyProjectedResourceDelta(projection, effects = {}) {
+    Object.entries(effects || {}).forEach(([metric, delta]) => {
+      if (!RESOURCE_METRICS.includes(metric) || !delta) return;
+      const before = projection.resources[metric];
+      const after = boundedMetricValue(metric, before + delta);
+      projection.resources[metric] = after;
+      addProjectedDelta(projection.deltas.resources, metric, after - before);
+    });
+  }
+
+  function addProjectedDelta(target, metric, delta) {
+    if (!delta) return;
+    target[metric] = (target[metric] || 0) + delta;
+    if (!target[metric]) delete target[metric];
+  }
+
   function getSystemReadouts(state) {
     const visible = getVisibleMetrics(state);
     const budget = getCityActionBudget(state);
@@ -4069,6 +4366,7 @@
     getAvailableResolutions,
     getRiskBand,
     getDailyPressureSummary,
+    getDailyTrendPreview,
     getChoiceRouteTag,
     getSystemReadouts,
     getCityActionBudget,

@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v47";
+  const ASSET_VERSION = "v48";
   const core = window.Linjiang72;
 
   let state = null;
@@ -239,6 +239,7 @@
     eventType: document.getElementById("eventType"),
     eventTitle: document.getElementById("eventTitle"),
     pressureSummary: document.getElementById("pressureSummary"),
+    trendPreview: document.getElementById("trendPreview"),
     eventBody: document.getElementById("eventBody"),
     eventSource: document.getElementById("eventSource"),
     eventSourceNote: document.getElementById("eventSourceNote"),
@@ -965,6 +966,7 @@
     els.eventType.textContent = event.type === "buffer" ? "阶段缓冲" : "今日事件";
     els.eventTitle.textContent = event.title;
     renderPressureSummary();
+    renderTrendPreview();
     els.eventBody.textContent = event.description || event.body;
     if (event.sourceNote) {
       els.eventSource.hidden = false;
@@ -1040,6 +1042,25 @@
         </span>
       `)
       .join("");
+  }
+
+  function renderTrendPreview() {
+    if (!els.trendPreview || !core.getDailyTrendPreview) return;
+    const items = core.getDailyTrendPreview(state);
+    if (!items.length) {
+      els.trendPreview.hidden = true;
+      els.trendPreview.innerHTML = "";
+      return;
+    }
+    els.trendPreview.hidden = false;
+    els.trendPreview.innerHTML = `
+      <span class="trend-label" title="按当前状态估算今晚自然联动和已到期后续影响，不含你接下来选择的事件策略。">今晚趋势</span>
+      ${items.map((item) => `
+        <span class="trend-chip ${item.tone || "neutral"}" title="${escapeHtml(item.detail)}">
+          ${escapeHtml(item.short)} ${item.delta > 0 ? "+" : ""}${item.delta}
+        </span>
+      `).join("")}
+    `;
   }
 
   function handleMapTargetActivation(event) {
