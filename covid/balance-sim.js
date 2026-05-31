@@ -95,10 +95,10 @@ function chooseMove(state, policy) {
     return prefer(["hard", "messageControl", "quietClose", "zoningControl", "citywideSilence", "suppressRumorLine"]) || moves[0];
   }
   if (policy === "reopen") {
-    return prefer(["reopen", "whiteList", "remoteWorkGovServices", "contactlessServiceRegistry", "microFreightPermit", "livelihoodStaggeredReopen", "closedLoopSmallShift", "lowRiskWorkList", "elasticTransit", "nightFreightWindow", "jobSubsidyAdvance", "rentDeferralCoordination", "enterpriseExemption", "factoryClosedLoop"]) || moves[0];
+    return prefer(["reopen", "whiteList", "remoteWorkGovServices", "essentialServicePermit", "taxFeeDeferralDesk", "contactlessServiceRegistry", "microFreightPermit", "livelihoodStaggeredReopen", "closedLoopSmallShift", "lowRiskWorkList", "elasticTransit", "nightFreightWindow", "jobSubsidyAdvance", "rentDeferralCoordination", "enterpriseExemption", "factoryClosedLoop"]) || moves[0];
   }
   if (policy === "financeFirst") {
-    return prefer(["fiscalTransparencyLedger", "procurementCreditNegotiation", "specialFundingApplication", "donationCoordination", "budgetReallocationMeeting", "specialBondQuota", "emergencyLevy", "fiscalDebt", "finance", "enterpriseExemption", "jobSubsidyAdvance"]) || moves[0];
+    return prefer(["fiscalTransparencyLedger", "emergencyAccountClearing", "procurementCreditNegotiation", "specialFundingApplication", "donationCoordination", "budgetReallocationMeeting", "specialBondQuota", "emergencyLevy", "fiscalDebt", "finance", "enterpriseExemption", "jobSubsidyAdvance", "taxFeeDeferralDesk"]) || moves[0];
   }
   if (policy === "trustSacrifice") {
     return prefer(["messageControl", "delay", "hard", "outsource", "finance", "whiteList", "community", "hardWarehouse", "emergencyLevy", "specialBondQuota", "delayBadNews", "communityAutonomy"]) || moves[0];

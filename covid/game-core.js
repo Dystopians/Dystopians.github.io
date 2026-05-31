@@ -1103,7 +1103,7 @@
       x: 39,
       y: 81,
       description: "保供网络的关键节点。保障这里能明显改善物资，但会挤占财政和配送人手。",
-      operations: ["supplyCorridor", "donationCoordination", "procurementCreditNegotiation", "rentDeferralCoordination", "livelihoodStaggeredReopen", "contactlessServiceRegistry"],
+      operations: ["supplyCorridor", "essentialServicePermit", "donationCoordination", "procurementCreditNegotiation", "rentDeferralCoordination", "livelihoodStaggeredReopen", "contactlessServiceRegistry"],
       resolutions: ["priorityMedicineRoute", "hardWarehouse", "emergencyLevy", "nightFreightWindow"],
     },
     {
@@ -1133,7 +1133,7 @@
       x: 86,
       y: 19,
       description: "城市活力和财政恢复来源。复工需要足够发现率和通行秩序支撑。",
-      operations: ["factoryClosedLoop", "fiscalTransparencyLedger", "specialFundingApplication", "closedLoopSmallShift", "budgetReallocationMeeting"],
+      operations: ["factoryClosedLoop", "taxFeeDeferralDesk", "fiscalTransparencyLedger", "emergencyAccountClearing", "specialFundingApplication", "closedLoopSmallShift", "budgetReallocationMeeting"],
       resolutions: ["lowRiskWorkList", "elasticTransit", "enterpriseExemption", "jobSubsidyAdvance", "specialBondQuota"],
     },
     {
@@ -1325,6 +1325,29 @@
         return state.day >= 3 && state.resources.funds <= 56 && state.metrics.supplies >= 28;
       },
     },
+    emergencyAccountClearing: {
+      label: "小额账款清分",
+      location: "factory",
+      description: "把保供、街道和医院的小额欠款拆成可延期、可核销和必须立刻支付的清单。能早期释放现金流，但会增加审计、人手和口径压力。",
+      resources: { funds: 6 },
+      effects: { economy: -1, trust: -1, staffFatigue: 2 },
+      hidden: { publicMemory: 1 },
+      delayed: {
+        delay: 3,
+        label: "清分账目追问",
+        resources: { funds: -2 },
+        effects: { trust: -1 },
+        condition: "trustBelow45",
+      },
+      maxUses: 1,
+      conditionText: "需要第2天后，且资金≤62、活力≤68或物资≤58。",
+      condition(state) {
+        return state.day >= 2
+          && (state.resources.funds <= 62
+            || state.metrics.economy <= 68
+            || state.metrics.supplies <= 58);
+      },
+    },
     triageNetwork: {
       label: "分级诊疗网络",
       location: "hospital",
@@ -1456,6 +1479,36 @@
           && (state.metrics.economy <= 68 || state.metrics.trust <= 62);
       },
     },
+    essentialServicePermit: {
+      label: "民生服务保留名录",
+      location: "market",
+      description: "先保留药店、菜摊、维修和少量社区服务点，用预约、限流和门外交接维持最低城市运转。它比复工更温和，但会带来流动、排班和漏检压力。",
+      resources: { funds: -3 },
+      effects(state) {
+        return {
+          economy: 4,
+          supplies: 1,
+          trust: 1,
+          infection: state.hidden.detectedRate < 45 ? 2 : 1,
+          staffFatigue: 2,
+        };
+      },
+      hidden: { policyStrictness: -1 },
+      delayed: {
+        delay: 2,
+        label: "保留名录复核",
+        effects: { economy: 1 },
+        hidden: {},
+        condition: "detectedAtLeast50",
+      },
+      maxUses: 1,
+      conditionText: "需要第2天后，感染压力<65，且城市活力≤70或物资≤68。",
+      condition(state) {
+        return state.day >= 2
+          && state.metrics.infection < 65
+          && (state.metrics.economy <= 70 || state.metrics.supplies <= 68);
+      },
+    },
     closedLoopSmallShift: {
       label: "保供工厂闭环小班",
       location: "factory",
@@ -1559,6 +1612,26 @@
       conditionText: "需要第5天后，城市活力≤66，且应急资金≥12。",
       condition(state) {
         return state.day >= 5 && state.metrics.economy <= 66 && state.resources.funds >= 12;
+      },
+    },
+    taxFeeDeferralDesk: {
+      label: "税费社保缓缴窗口",
+      location: "factory",
+      description: "把小微商户和关键企业的税费、社保和平台服务费缓一缓。它能在封控初期留住经营主体，但会推迟财政回款并增加材料审核压力。",
+      resources: { funds: -2 },
+      effects: { economy: 5, trust: 1, staffFatigue: 2 },
+      hidden: { publicMemory: -1 },
+      delayed: {
+        delay: 5,
+        label: "缓缴回款缺口",
+        resources: { funds: -3 },
+        effects: { economy: 1 },
+        condition: "economyBelow40",
+      },
+      maxUses: 1,
+      conditionText: "需要第3天后，城市活力≤68，且应急资金≥18。",
+      condition(state) {
+        return state.day >= 3 && state.metrics.economy <= 68 && state.resources.funds >= 18;
       },
     },
     remoteWorkGovServices: {
@@ -1933,10 +2006,10 @@
 
   const TESTING_KEYS = ["expandTesting", "campusSentinel", "deployHealthCode", "triageNetwork", "communityClinic"];
   const CONTROL_KEYS = ["zoningControl", "citywideSilence", "suppressRumorLine", "deployHealthCode"];
-  const SUPPLY_KEYS = ["supplyPriority", "supplyCorridor", "volunteerDispatch", "hardWarehouse", "elasticTransit", "outsourceDelivery", "donationCoordination", "closedLoopSmallShift", "contactlessServiceRegistry", "nightFreightWindow", "microFreightPermit"];
+  const SUPPLY_KEYS = ["supplyPriority", "supplyCorridor", "volunteerDispatch", "hardWarehouse", "elasticTransit", "outsourceDelivery", "donationCoordination", "closedLoopSmallShift", "essentialServicePermit", "contactlessServiceRegistry", "nightFreightWindow", "microFreightPermit"];
   const MEDICAL_KEYS = ["medicalExpansion", "buildShelterHospital", "triageNetwork", "communityClinic", "shelterAdmissionStandard"];
   const REST_KEYS = ["restPolicy", "mentalHealthLine", "staffRotationOrder", "communityAutonomy", "supportTeam", "compressAdmin", "forceSimplify"];
-  const REOPEN_KEYS = ["reopenPilot", "lowRiskWorkList", "factoryClosedLoop", "elasticTransit", "enterpriseExemption", "livelihoodStaggeredReopen", "closedLoopSmallShift", "contactlessServiceRegistry", "remoteWorkGovServices", "nightFreightWindow", "jobSubsidyAdvance", "microFreightPermit", "rentDeferralCoordination"];
+  const REOPEN_KEYS = ["reopenPilot", "lowRiskWorkList", "factoryClosedLoop", "elasticTransit", "enterpriseExemption", "livelihoodStaggeredReopen", "closedLoopSmallShift", "essentialServicePermit", "contactlessServiceRegistry", "remoteWorkGovServices", "nightFreightWindow", "jobSubsidyAdvance", "microFreightPermit", "rentDeferralCoordination", "taxFeeDeferralDesk"];
   const VOLUNTEER_KEYS = ["volunteerDispatch", "mentalHealthLine", "supportTeam", "communityAutonomy"];
   const PUBLIC_REPAIR_KEYS = ["transparency", "publicReviewBrief"];
 
@@ -3844,6 +3917,8 @@
     const assetYield = (operationUses.fiscalTransparencyLedger && state.metrics.trust >= 55 && state.resources.funds <= 55 ? 1 : 0)
       + (operationUses.donationCoordination && state.metrics.trust >= 50 && state.resources.funds <= 55 ? 1 : 0)
       + (operationUses.factoryClosedLoop && state.metrics.economy >= 58 && state.resources.funds <= 60 ? 1 : 0)
+      + (operationUses.emergencyAccountClearing && state.metrics.trust >= 50 && state.resources.funds <= 50 ? 1 : 0)
+      + (operationUses.essentialServicePermit && state.metrics.economy >= 55 && state.resources.funds <= 45 ? 1 : 0)
       + (operationUses.remoteWorkGovServices && state.metrics.economy >= 55 && state.resources.funds <= 45 ? 1 : 0)
       + (state.completedProjects.supplyCorridor && state.metrics.supplies >= 60 && state.resources.funds <= 55 ? 1 : 0);
     const passiveFundsGain = fiscalBase + trustPremium + clamp(assetYield, 0, 2);
@@ -4143,7 +4218,7 @@
     } else if (score < 62 && state.metrics.economy <= 35) {
       detail = "当前分数主要被城市活力和财政循环拖住，早期的小复苏动作能明显改变归档走势。";
     } else if (score < 62 && state.resources.funds <= 20) {
-      detail = "资金偏低会限制后续工程选择，专项资金、捐助统筹或账期谈判会改变回旋余地。";
+      detail = "资金偏低会限制后续工程选择，账款清分、专项资金、捐助统筹或账期谈判会改变回旋余地。";
     }
 
     let nextText = nextTarget
@@ -4219,7 +4294,7 @@
     else if (m.economy <= 45 && state.day >= 8 && m.infection < 70) add("metric_economy_recovery_window", "info", "小复苏窗口", "民生网点、闭环保供和稳岗类动作可以托住活力，但仍要看发现率。", 62);
     if (r.funds <= 10) add("resource_funds_low", "danger", "财政透支", "高价工程和决议会被锁定。", 105 - r.funds);
     else if (r.funds <= 20) add("resource_funds_warn", "warn", "资金偏低", "工程选择需要更克制。", 100 - r.funds);
-    else if (r.funds <= 45 && state.day >= 7) add("resource_fiscal_window", "info", "财政窗口", "专项资金、捐助统筹或举债能补缺口，但会转化为信任、活力或审计压力。", 61);
+    else if (r.funds <= 45 && state.day >= 7) add("resource_fiscal_window", "info", "财政窗口", "账款清分、专项资金、捐助统筹或举债能补缺口，但会转化为信任、活力或审计压力。", 61);
     if (h.detectedRate <= 35) add("hidden_detected_low", "warn", "信息盲区", "报告感染压力误差扩大，复工代价更高。", 100 - h.detectedRate);
     if (h.policyStrictness >= 80) add("hidden_policy_high", "warn", "高压管控", "感染压制增强，但活力和疲劳代价上升。", h.policyStrictness);
     if (h.publicMemory >= 60) add("hidden_memory_high", "danger", "长期伤痕", "信任恢复会变慢，结局更容易偏向沉重代价。", h.publicMemory);
@@ -4520,6 +4595,8 @@
     const assetYield = (operationUses.fiscalTransparencyLedger && projection.metrics.trust >= 55 && projection.resources.funds <= 55 ? 1 : 0)
       + (operationUses.donationCoordination && projection.metrics.trust >= 50 && projection.resources.funds <= 55 ? 1 : 0)
       + (operationUses.factoryClosedLoop && projection.metrics.economy >= 58 && projection.resources.funds <= 60 ? 1 : 0)
+      + (operationUses.emergencyAccountClearing && projection.metrics.trust >= 50 && projection.resources.funds <= 50 ? 1 : 0)
+      + (operationUses.essentialServicePermit && projection.metrics.economy >= 55 && projection.resources.funds <= 45 ? 1 : 0)
       + (operationUses.remoteWorkGovServices && projection.metrics.economy >= 55 && projection.resources.funds <= 45 ? 1 : 0)
       + (projection.completedProjects.supplyCorridor && projection.metrics.supplies >= 60 && projection.resources.funds <= 55 ? 1 : 0);
     const passiveFundsGain = fiscalBase + trustPremium + clamp(assetYield, 0, 2);

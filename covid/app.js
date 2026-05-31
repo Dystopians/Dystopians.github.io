@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v58";
+  const ASSET_VERSION = "v59";
   const core = window.Linjiang72;
 
   let state = null;
@@ -117,11 +117,32 @@
       operation: "factoryClosedLoop",
     },
     {
+      id: "taxFeeDeferralDesk",
+      label: "税费社保缓缴窗口",
+      kind: "财政",
+      detail: "小微商户和关键企业获得缴费缓冲，城市活力被更早托住。",
+      operation: "taxFeeDeferralDesk",
+    },
+    {
       id: "fiscalTransparencyLedger",
       label: "财政透明台账",
       kind: "财政",
       detail: "应急采购、捐赠和拨付开始可追踪，信任能更稳定地转成协作资金。",
       operation: "fiscalTransparencyLedger",
+    },
+    {
+      id: "emergencyAccountClearing",
+      label: "小额账款清分",
+      kind: "财政",
+      detail: "可延期、可核销和必须支付的账目被拆开，早期现金流获得小幅缓冲。",
+      operation: "emergencyAccountClearing",
+    },
+    {
+      id: "essentialServicePermit",
+      label: "民生服务保留名录",
+      kind: "节点",
+      detail: "药店、菜摊和维修点以限流方式保留，最低城市运转没有完全熄火。",
+      operation: "essentialServicePermit",
     },
     {
       id: "livelihoodStaggeredReopen",
