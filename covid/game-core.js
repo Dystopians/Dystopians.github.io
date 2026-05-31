@@ -7199,6 +7199,8 @@
       || a.label.localeCompare(b.label, "zh-Hans-CN");
     available.sort(sorter);
     locked.sort(sorter);
+    const tomorrow = locked.filter((item) => item.lockedReason === "今日调度已满");
+    const lockedPreview = locked.filter((item) => item.lockedReason !== "今日调度已满");
 
     const budget = getCityActionBudget(state);
     const tone = budget.exhausted
@@ -7209,20 +7211,22 @@
           ? "warn"
           : "info";
     const detail = budget.exhausted
-      ? "今日城市调度已满，行动窗口会保留明日可排项目。"
+      ? `今日城市调度已满，已整理 ${tomorrow.length} 个明日可排项目。`
       : available.length
         ? `当前有 ${available.length} 个可执行城市行动，优先处理能缓解红线或补足长期资产的项目。`
-        : locked.length
+        : lockedPreview.length || tomorrow.length
           ? "暂无可执行行动，但有接近解锁的工程或决议，可先补资金、条件或等待明日调度。"
           : "暂无明确城市行动窗口，先处理今日事件。";
 
     return {
       tone,
       detail,
-      items: available.slice(0, locked.length ? 4 : 6),
-      lockedItems: locked.slice(0, available.length ? 3 : 5),
+      items: available.slice(0, (lockedPreview.length || tomorrow.length) ? 4 : 6),
+      nextDayItems: tomorrow.slice(0, budget.exhausted ? 5 : 3),
+      lockedItems: lockedPreview.slice(0, (available.length || tomorrow.length) ? 3 : 5),
       availableCount: available.length,
-      lockedCount: locked.length,
+      lockedCount: lockedPreview.length,
+      nextDayCount: tomorrow.length,
       totalCount: available.length + locked.length,
       budget,
     };
@@ -7370,6 +7374,12 @@
 
   function actionOpportunityReason(state, item, bucket, tradeoffs) {
     if (bucket !== "available") {
+      if (item.lockedReason === "今日调度已满") {
+        const best = tradeoffs.find((entry) => entry.good && entry.score > 0);
+        const worst = tradeoffs.find((entry) => entry.bad && entry.score < 0);
+        if (best && worst) return `明日可排：${formatActionDelta(best)}；代价 ${formatActionDelta(worst)}。`;
+        if (best) return `明日可排：${formatActionDelta(best)}。`;
+      }
       return item.lockedDetail || item.lockedReason || "当前条件不足。";
     }
     const best = tradeoffs.find((entry) => entry.good && entry.score > 0);

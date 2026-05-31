@@ -471,6 +471,24 @@ function validateCityActionOpportunities() {
     report.items.every((item) => item.available === true),
     "Available action opportunities should expose available=true for UI badges.",
   );
+
+  const fullBudget = core.createGame({ difficulty: "normal", seed: 20260605 });
+  fullBudget.flags.cityActionsToday = core.getCityActionBudget(fullBudget).limit;
+  fullBudget.metrics.hospitalLoad = 76;
+  fullBudget.metrics.supplies = 42;
+  fullBudget.metrics.staffFatigue = 66;
+  fullBudget.resources.funds = 40;
+  const fullReport = core.getCityActionOpportunities(fullBudget);
+  assert(Array.isArray(fullReport.nextDayItems), "Action opportunity report should expose nextDayItems.");
+  assert(fullReport.nextDayItems.length > 0, "Full city action budget should expose tomorrow's queue.");
+  assert(
+    fullReport.nextDayItems.every((item) => item.lockedReason === "今日调度已满" && item.status === "明日可排"),
+    "Tomorrow queue should only contain actions locked by today's city action budget.",
+  );
+  assert(
+    (fullReport.lockedItems || []).every((item) => item.lockedReason !== "今日调度已满"),
+    "Condition/funding locked preview should not mix in tomorrow-queue actions.",
+  );
 }
 
 function validateCityActionUndo() {

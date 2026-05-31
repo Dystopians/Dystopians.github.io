@@ -4464,6 +4464,10 @@ label {
   grid-template-columns: 1fr;
 }
 
+.action-finder-list.tomorrow {
+  grid-template-columns: 1fr;
+}
+
 .action-finder-subhead {
   display: flex;
   align-items: center;
@@ -4478,6 +4482,20 @@ label {
   color: #6d4a1e;
   font-size: 0.68rem;
   font-weight: 900;
+}
+
+.action-finder-subhead.tomorrow {
+  border-top-style: solid;
+}
+
+.action-finder-subhead.tomorrow span {
+  color: #244258;
+}
+
+.action-finder-subhead.tomorrow strong {
+  border-color: var(--blue);
+  background: #c8d7df;
+  color: #244258;
 }
 
 .action-finder-subhead strong {
@@ -4543,6 +4561,21 @@ label {
   background:
     repeating-linear-gradient(90deg, rgba(255, 248, 215, 0.38) 0 6px, transparent 6px 12px),
     #f4c86c;
+}
+
+.action-finder-item.next-day {
+  min-height: 82px;
+  border-color: var(--blue);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 248, 215, 0.3) 0 6px, transparent 6px 12px),
+    linear-gradient(90deg, rgba(200, 215, 223, 0.5), rgba(255, 241, 200, 0.94)),
+    #fff1c8;
+}
+
+.action-finder-item.next-day:hover {
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 248, 215, 0.34) 0 6px, transparent 6px 12px),
+    #d7e4e8;
 }
 
 .action-finder-item span {

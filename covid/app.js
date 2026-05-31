@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v95";
+  const ASSET_VERSION = "v96";
   const core = window.Linjiang72;
 
   let state = null;
@@ -1935,11 +1935,12 @@
     }
     const report = core.getCityActionOpportunities(state);
     const cityActions = report.items || [];
+    const nextDayActions = report.nextDayItems || [];
     const lockedActions = report.lockedItems || [];
     const budget = report.budget || core.getCityActionBudget(state);
     const budgetClass = budget.exhausted ? "city-budget-pill exhausted" : "city-budget-pill";
     const budgetText = `${budget.label} ${budget.remaining}/${budget.limit}`;
-    if (!cityActions.length && !lockedActions.length) {
+    if (!cityActions.length && !nextDayActions.length && !lockedActions.length) {
       els.actionFinder.innerHTML = `
         <div class="action-finder-head">
           <span>行动窗口</span>
@@ -1968,6 +1969,26 @@
         </div>
       `
       : "<p class=\"action-finder-empty\">暂无立即可执行的工程或决议，先处理今日事件或改善条件。</p>";
+    const nextDayList = nextDayActions.length
+      ? `
+        <div class="action-finder-subhead tomorrow">
+          <span>明日可排</span>
+          <strong>${nextDayActions.length}/${report.nextDayCount || nextDayActions.length}</strong>
+        </div>
+        <div class="action-finder-list tomorrow">
+          ${nextDayActions.map((item) => `
+            <button class="action-finder-item next-day ${escapeHtml(item.tone || "info")}" type="button"
+              data-point-id="${escapeHtml(item.pointId)}" data-mode="${escapeHtml(item.mode)}"
+              title="${escapeHtml(item.detail || item.reason || "")}">
+              <span>${escapeHtml(item.kind)} · ${escapeHtml(item.pointLabel)} · ${escapeHtml(item.status || "明日可排")}</span>
+              <strong>${escapeHtml(item.label)}</strong>
+              <p>${escapeHtml(item.reason || item.impact || "明日调度额度恢复后可执行。")}</p>
+              <div class="action-finder-chips">${renderOpportunityChips(item)}</div>
+            </button>
+          `).join("")}
+        </div>
+      `
+      : "";
     const lockedList = lockedActions.length
       ? `
         <div class="action-finder-subhead">
@@ -1997,6 +2018,7 @@
       </div>
       ${report.detail ? `<p class="action-finder-summary">${escapeHtml(report.detail)}</p>` : ""}
       ${availableList}
+      ${nextDayList}
       ${lockedList}
     `;
 
