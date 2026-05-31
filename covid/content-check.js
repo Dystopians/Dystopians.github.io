@@ -74,6 +74,7 @@ function eventImagePath(event) {
 
 function validateEventCorpus() {
   const eventIds = new Set();
+  const eventImages = new Map();
   const phaseCounts = new Map();
 
   assert(Array.isArray(core.EVENTS), "EVENTS must be exported as an array.");
@@ -99,7 +100,10 @@ function validateEventCorpus() {
     assert(Boolean(event.imageKey || event.image), `${event.id} is missing imageKey/image.`);
 
     const image = eventImagePath(event);
+    assert(image.startsWith("events/"), `${event.id} must use a dedicated event image, found ${image}.`);
     assert(assetExists(image), `${event.id} image is missing: covid/assets/${image}.`);
+    if (!eventImages.has(image)) eventImages.set(image, []);
+    eventImages.get(image).push(event.id);
 
     assert(Array.isArray(event.choices), `${event.id} choices must be an array.`);
     assert(event.choices.length === 3, `${event.id} must have exactly 3 choices.`);
@@ -129,6 +133,10 @@ function validateEventCorpus() {
         }
       });
     });
+  });
+
+  eventImages.forEach((ids, image) => {
+    assert(ids.length === 1, `Dedicated event image is reused by multiple events: ${image} -> ${ids.join(", ")}.`);
   });
 
   for (let phase = 1; phase <= 6; phase += 1) {

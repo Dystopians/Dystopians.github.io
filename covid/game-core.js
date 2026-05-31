@@ -1150,7 +1150,7 @@
         c("open", "公开哀悼并重启早期口径复盘", "承认早期沟通造成的伤口，公布医护预警的处理流程和复盘时限，让哀悼转化成可见的制度修补。", { resources: { funds: -2 }, effects: { trust: 2, hospitalLoad: -1, staffFatigue: 1 }, hidden: { detectedRate: 2, publicMemory: 3 }, delayed: { delay: 3, label: "复盘追问继续发酵", effects: { trust: -1 }, hidden: { detectedRate: 1 } } }),
         c("protectWorkers", "设立医护预警保护机制", "不把事件只停留在悼念上，给医护匿名上报、院感升级和轮换保护明确入口，优先保护仍在一线的人。", { effects: { hospitalLoad: -1, trust: 1, staffFatigue: 2 }, hidden: { publicMemory: 2 }, delayed: { delay: 2, label: "预警通道带来新线索", hidden: { detectedRate: 2 }, effects: { staffFatigue: 1 } } }),
         c("messageControl", "低调处理追悼和讨论", "限制相关讨论扩散，只发布简短慰问和工作伤害认定，避免悲伤迅速变成对早期处置的集中质疑。", { effects: { staffFatigue: 1, infection: -1 }, hidden: { publicMemory: 5, detectedRate: -1 }, delayed: { delay: 3, label: "压低哀悼后的反噬", effects: { trust: -3 }, hidden: { publicMemory: 1 }, condition: "trustBelow45" } }),
-      ], { image: "news-hospital.png" }),
+      ], { image: "events/p2_li_liang_death.png" }),
       e("community_closure_notice", "社区封闭公告", ["infection", "trust", "fatigue"], "community", "第一批小区要贴封闭管理公告，门岗问能不能放人买菜，居民问还能不能照顾外地父母。公告每多一句，执行也多一层。", "小区封闭管理和社区执行报道", [c("quietClose", "统一封闭门岗规则", "先让所有门岗按同一标准执行，压低传播。"), c("open", "写明就医和照护例外", "把例外情形写进公告，换取信任和配合。"), c("compress", "只保留三条硬规则", "让门岗容易执行，但牺牲细节和发现率。")]),
       e("vegetable_panic_buy", "菜场抢购", ["supply", "trust", "economy"], "market", "封城消息传开后，菜场摊位前排起长队。真正库存还够，但恐慌会把今天的供应拖进明天。", "封控初期抢购和民生保供报道", [c("supply", "投放平价保供菜", "把储备菜集中投放，先打断抢购循环。"), c("open", "公布库存和补货时间", "用可验证的补货节奏安抚居民。"), c("hard", "限制单人采购量", "用强规则压住抢购，但会伤害信任。")]),
       e("medical_team_arrival", "医护支援队抵达", ["medical", "fatigue", "trust"], "hospital", "第一批外地支援医护抵达临江，机场和医院都在等接驳。如何分配支援队，会影响医院负载和本地医护情绪。", "各地医疗队支援疫情城市报道", [c("medical", "优先派往重症医院", "把支援队放到压力最高的医院，立刻降低医疗负载。"), c("protectWorkers", "先让本地医护轮换", "把支援队用于顶班，让疲劳从高位降下来。"), c("open", "公开支援队分配原则", "解释为什么有的医院先得到支援，减少猜疑。")]),
@@ -1240,72 +1240,72 @@
         c("testing", "优先复核重症和医护样本", "把最容易影响医院调度的样本先送出去，尽快识别院感和重症风险。", { resources: { funds: -2 }, effects: { trust: 2 }, hidden: { detectedRate: 2 }, delayed: { delay: 2, label: "复核数据并表", effects: { trust: 1 }, hidden: { detectedRate: 1 } } }),
         c("audit", "建立跨实验室样本台账", "每份样本都留转运、接收和复核记录，降低误读和追责争议。", { effects: { supplies: -1, staffFatigue: 1 }, hidden: { detectedRate: 3 }, delayed: { delay: 2, label: "台账补录压力", effects: { staffFatigue: 1 } } }),
         c("compress", "只送关键样本不做全量复核", "把通道留给重症、医护和聚集性病例，减少基层填报，但会扩大一部分信息盲区。", { effects: { hospitalLoad: -1, supplies: 1 }, hidden: { publicMemory: -1 }, delayed: { delay: 3, label: "未复核样本追问", effects: { trust: -1 }, condition: "trustBelow45" } }),
-      ], { image: "news-hospital.png" }),
+      ], { image: "events/p1_provincial_lab_channel.png" }),
       e("protective_supply_package", "定向防护包送达一线", ["supply", "medical", "trust"], "hospital", "几家企业和校友会把口罩、防护面屏和消毒物资送到临江，纸箱上写着收货科室。医院想直接入库，社区窗口也在缺防护，公众则盯着这批物资会不会又变成一笔说不清的账。", "疫情期间社会捐赠防护物资和定向支援一线报道", [
         c("protectWorkers", "先配发发热门诊和转运队", "把最危险岗位的防护缺口先补上，减少一线焦虑。", { effects: { hospitalLoad: -1, trust: 1 }, hidden: { publicMemory: -1 }, delayed: { delay: 2, label: "防护消耗回补", effects: { supplies: -1 } } }),
         c("supply", "拆分给医院和社区窗口", "医院、街道和卡口各拿一部分，保护更多服务窗口。", { effects: { supplies: 2, trust: 1, staffFatigue: 1 }, delayed: { delay: 2, label: "分发记录补交", effects: { staffFatigue: 1 } } }),
         c("audit", "公布捐赠流向清单", "用公开清单解释谁收到了物资、为什么这样分配，换取信任。", { effects: { supplies: 2, staffFatigue: 1 }, hidden: { publicMemory: -1 }, delayed: { delay: 2, label: "清单核对完成", effects: { trust: 1 } } }),
-      ], { image: "news-supply.png" }),
+      ], { image: "events/p1_protective_supply_package.png" }),
     ],
     [
       e("multi_province_volunteer_team", "多省抗疫志愿队抵达临江", ["fatigue", "medical", "trust"], "transport", "几支来自外省的志愿队和机关支援队抵达临江，车上有人做过医院后勤，有人熟悉社区配送，也有人第一次进入封控城市。支援让街道终于看见轮换机会，但陌生队伍接管本地工作会带来磨合、住宿、防护和解释成本。", "全国多地支援湖北、医疗队和志愿力量驰援疫区报道", [
         c("supportTeam", "按街道分派支援队", "把外部人手直接补到最缺人的街道，先让连续值守人员下线。", { resources: { funds: -1 }, effects: { hospitalLoad: -1, trust: 4, staffFatigue: 4 }, hidden: { publicMemory: -1 }, delayed: { delay: 2, label: "支援队磨合完成", effects: { staffFatigue: -1 } } }),
         c("protectWorkers", "优先补进医院后勤和转运", "让外援接住发热门诊后勤、转运登记和物资搬运，保护医护排班。", { effects: { hospitalLoad: -1, staffFatigue: 2, trust: 1 }, hidden: { detectedRate: 1 }, delayed: { delay: 2, label: "岗位培训消耗", effects: { staffFatigue: 1 } } }),
         c("open", "公开支援队排班和职责", "让居民知道外援做什么、不做什么，减少陌生队伍带来的误解。", { resources: { funds: -2 }, effects: { supplies: -1, staffFatigue: 1 }, delayed: { delay: 3, label: "支援名单复核", effects: { trust: 1 } } }),
-      ], { image: "news-hospital.png" }),
+      ], { image: "events/p2_multi_province_volunteer_team.png" }),
       e("traceable_donation_account", "捐款专户到账并可追踪", ["funds", "supply", "trust"], "budget", "社会捐款和几笔专项援助汇入临江应急专户，金额足以补上一批短板，却也足以引发新的追问：钱先给医院、保供还是隔离点？财务口建议每笔留痕，保供组担心流程太慢会错过采购窗口。", "疫情防控社会捐赠、专项资金和公开监督报道", [
         c("audit", "上线可追踪捐款台账", "每笔捐款标注来源、用途和拨付状态，先稳住公信力。", { resources: { funds: 10 }, effects: { supplies: 2, trust: 1 }, delayed: { delay: 2, label: "台账审核补件", effects: { staffFatigue: 1 } } }),
         c("supply", "直拨保供和医院短缺清单", "把到账资金立刻换成药品、防护和菜包，让居民看见实物。", { resources: { funds: 2 }, effects: { supplies: 4, hospitalLoad: -2, trust: 1 }, delayed: { delay: 3, label: "采购价格复核", resources: { funds: -1 } } }),
         c("finance", "先拨付最危险缺口", "允许指挥部先花后审，快速补上隔离点和急诊账单。", { effects: { supplies: 4, hospitalLoad: -2, trust: 2 }, hidden: { publicMemory: -1 }, delayed: { delay: 4, label: "专户审计压力", effects: { trust: -1 } } }),
-      ], { image: "news-factory.png" }),
+      ], { image: "events/p2_traceable_donation_account.png" }),
     ],
     [
       e("recovered_plasma_call", "康复者血浆倡议", ["medical", "trust", "public"], "hospital", "几名康复出院者愿意登记捐献血浆，医院伦理组、检验科和宣传口同时坐到一张桌前。倡议能给重症救治带来新的希望，但也必须把适应症、风险和自愿原则说清楚，否则好消息很快会变成过度承诺。", "康复者捐献血浆和恢复期血浆治疗探索报道", [
         c("triage", "只纳入重症会诊名单", "把血浆作为重症会诊的补充方案，不把它宣传成万能办法。", { effects: { hospitalLoad: -3, trust: 1 }, hidden: { detectedRate: 1 }, delayed: { delay: 3, label: "疗效口径复盘", effects: { trust: 1 } } }),
         c("open", "公开自愿登记和适应症", "把谁能捐、谁适合用、可能有什么风险讲清楚。", { resources: { funds: -2 }, effects: { hospitalLoad: -1, trust: 2 }, hidden: { publicMemory: -1 }, delayed: { delay: 2, label: "家属咨询增多", effects: { staffFatigue: 1 } } }),
         c("medical", "建立采供血绿色流程", "用专门流程接住康复者登记、检测和医院使用，争取更快缓解重症压力。", { effects: { hospitalLoad: -2, trust: 2 }, hidden: { detectedRate: 1 }, delayed: { delay: 2, label: "采供血流程消耗", effects: { supplies: -1, staffFatigue: 1 } } }),
-      ], { image: "news-hospital.png" }),
+      ], { image: "events/p3_recovered_plasma_call.png" }),
       e("remote_psych_support", "外地心理援助热线接入", ["fatigue", "trust", "public"], "community", "外地高校和心理协会愿意为临江接入远程热线，先服务一线人员和隔离点居民。热线不是床位也不是菜包，却能让不断被求助电话击穿的基层得到一点支撑；难点在于转介、保密和危机个案交接。", "疫情期间心理援助热线、远程咨询和一线人员心理支持报道", [
         c("rest", "优先服务医护和社区值守", "把最透支岗位列为首批支持对象，减少连续值守后的失误。", { effects: { trust: 2, staffFatigue: 4 }, hidden: { publicMemory: -2 }, delayed: { delay: 2, label: "心理热线稳定生效", effects: { staffFatigue: -1 } } }),
         c("digital", "开通匿名线上咨询入口", "让隔离点和小区居民能匿名求助，提高可达性。", { effects: { trust: 4, staffFatigue: -2 }, hidden: { publicMemory: -1 }, delayed: { delay: 3, label: "危机个案转介压力", effects: { staffFatigue: 1 } } }),
         c("volunteer", "培训志愿者做首轮倾听", "把普通陪伴和高危个案分开，让专业热线不被淹没。", { effects: { hospitalLoad: 1, staffFatigue: 3 }, hidden: { publicMemory: -2 }, delayed: { delay: 2, label: "志愿者督导补课", resources: { funds: -1 }, effects: { staffFatigue: 1 } } }),
-      ], { image: "news-shelter.png" }),
+      ], { image: "events/p3_remote_psych_support.png" }),
     ],
     [
       e("vaccine_trial_greenlight", "疫苗研究获批试点", ["trust", "medical", "infection"], "code", "临江参与的疫苗研究项目获得小范围试点许可，科研团队希望招募低风险志愿者，医院更关心不良反应监测，宣传口则担心市民把试点误解为城市已经安全。科研进展是好消息，但它更像一份需要耐心解释的长期投资。", "新冠疫苗早期临床试验、志愿者招募和安全性研究报道", [
         c("open", "公开伦理审查和招募边界", "把试点目的、风险和不纳入人群写清楚，避免把科研进展说成即时解药。", { resources: { funds: -4 }, effects: { trust: 1, staffFatigue: 1 }, hidden: { detectedRate: 2 }, delayed: { delay: 3, label: "试点随访队列建立", effects: { trust: 1 } } }),
         c("medical", "优先纳入高风险岗位观察", "让医护、转运和保供岗位进入严格随访队列，换取未来保护窗口。", { effects: { trust: 2, infection: 1 }, hidden: { detectedRate: 2 }, delayed: { delay: 4, label: "随访占用医疗人手", effects: { staffFatigue: 1 } } }),
         c("audit", "设独立不良反应登记", "把科研团队、医院和监督方分开记录，避免好消息压过真实风险。", { effects: { staffFatigue: 2, infection: 1, trust: 1 }, hidden: { detectedRate: 3, publicMemory: -1 }, delayed: { delay: 3, label: "登记数据公开摘要", effects: { trust: 1 } } }),
-      ], { image: "news-health-code.png" }),
+      ], { image: "events/p4_vaccine_trial_greenlight.png" }),
       e("online_consultation_open", "互联网医院义诊开放", ["medical", "trust", "fatigue"], "code", "几家互联网医院和本地三甲医院开通免费图文问诊，居民可以先在线咨询发热、慢病用药和复诊问题。线上入口能分流医院排队，但也会把很多难以判断的病情推到护士和社区的二次转介里。", "疫情期间互联网医院、在线问诊和远程医疗服务报道", [
         c("digital", "接入官方发热门诊分流", "把线上问诊和线下分诊连起来，减少无效到院。", { effects: { hospitalLoad: -3, trust: 3 }, hidden: { detectedRate: 1 }, delayed: { delay: 3, label: "线上申诉队列", effects: { staffFatigue: 1 } } }),
         c("open", "发布线上问诊使用指南", "说明哪些情况可以线上问、哪些必须马上就医，减少误用。", { effects: { hospitalLoad: -2, staffFatigue: -1 }, hidden: { detectedRate: 1 }, delayed: { delay: 2, label: "指南带来更多咨询", effects: { staffFatigue: 1 } } }),
         c("triage", "设护士二次回拨小组", "把疑似重症和慢病断药从线上队列里捞出来，保护医院入口。", { effects: { hospitalLoad: -2, trust: 1 }, hidden: { detectedRate: 1 }, delayed: { delay: 2, label: "回拨小组加班", effects: { staffFatigue: 1 } } }),
-      ], { image: "news-health-code.png" }),
+      ], { image: "events/p4_online_consultation_open.png" }),
     ],
     [
       e("neighboring_vegetable_convoy", "邻省蔬菜车队抵达", ["supply", "trust", "fatigue"], "market", "邻省组织的蔬菜、米面和药品车队抵达临江外环，司机带着绿色通行单等在卡口。车队能迅速补上菜篮子，但进城排序、消杀卸货和分配规则会决定这份好消息是安定人心，还是引发新的不公平感。", "多地向封控城市捐赠蔬菜、生活物资和保供车队报道", [
         c("supply", "按缺口清单直配社区", "把物资先送到缺菜、缺药和高龄居民集中的社区。", { resources: { funds: 1 }, effects: { supplies: 5, trust: 2 }, delayed: { delay: 2, label: "卸货队疲劳回流", effects: { staffFatigue: 1 }, condition: "staffFatigueAbove75" } }),
         c("audit", "公开车队分配规则", "先把每车去向和分配标准贴出来，避免好事变成质疑。", { effects: { supplies: 4, staffFatigue: 1 }, hidden: { publicMemory: -1 }, delayed: { delay: 2, label: "分配争议降温", effects: { trust: 1 } } }),
         c("mutualAid", "交给团长按楼栋认领", "利用熟人网络加快分发，让低风险楼栋自己组织到户。", { resources: { funds: -1 }, effects: { supplies: 4, staffFatigue: 1 }, delayed: { delay: 3, label: "团长质量差异", effects: { trust: -1 }, condition: "trustBelow45" } }),
-      ], { image: "news-supply.png" }),
+      ], { image: "events/p5_neighboring_vegetable_convoy.png" }),
       e("group_buy_orderbook", "团购团长共建订货表", ["supply", "trust", "economy"], "community", "几个小区团长把各自的采购渠道、价格和余量汇成共享表，街道第一次看见民间保供网络的真实规模。它能补上官方配送的盲点，也可能把质量、价格和优先级争议带进每个楼栋群。", "封控期间社区团购、微信群互助和居民自组织保供报道", [
         c("mutualAid", "承认团购表为辅助渠道", "把民间团购纳入保供地图，不让它和官方配送互相打架。", { effects: { supplies: 3, trust: 1, staffFatigue: 1 }, delayed: { delay: 3, label: "团购质量抽检", resources: { funds: -1 }, effects: { trust: 1 } } }),
         c("audit", "公布团购价格和投诉入口", "允许居民继续自组织，但让价格、退款和质量投诉有入口。", { effects: { supplies: 3, economy: 1, staffFatigue: 1 }, hidden: { publicMemory: -1 }, delayed: { delay: 2, label: "投诉归集压力", effects: { staffFatigue: 1 } } }),
         c("outsource", "外包统一结算和配送", "让第三方平台把团购订单合并配送，减轻基层搬运。", { effects: { supplies: 2, staffFatigue: -2, trust: 1 }, delayed: { delay: 3, label: "外包价格争议", effects: { trust: -1 }, condition: "trustBelow45" } }),
-      ], { image: "news-supply.png" }),
+      ], { image: "events/p5_group_buy_orderbook.png" }),
     ],
     [
       e("aid_team_handoff", "援临队返程前交接", ["fatigue", "trust", "public"], "memory", "援临医疗队和志愿队准备分批返程，病区、隔离点和街道都递来交接表。欢送仪式能鼓舞士气，但更重要的是把他们留下的流程、缺口和教训交给本地团队，否则外援离开后压力会重新塌回来。", "援助湖北医疗队返程、交接和表彰报道", [
         c("memory", "发布交接清单和感谢名单", "把外援做过的工作、接手人和未完成问题一起写清楚。", { effects: { hospitalLoad: -2, trust: 1 }, hidden: { publicMemory: -1 }, delayed: { delay: 3, label: "交接后本地接稳", effects: { staffFatigue: -1 } } }),
         c("rest", "给本地接班队伍补休窗口", "趁外援还在，让本地队伍轮换恢复，避免返程后立刻断档。", { effects: { trust: 1, hospitalLoad: -1, staffFatigue: 5 }, hidden: { publicMemory: -1 }, delayed: { delay: 2, label: "补休后执行恢复", effects: { staffFatigue: -1 } } }),
         c("audit", "整理外援流程为本地手册", "把临时经验固化成手册，减少恢复期反复摸索。", { effects: { trust: 1 }, hidden: { publicMemory: -2 }, delayed: { delay: 2, label: "手册培训消耗", effects: { staffFatigue: 1 } } }),
-      ], { image: "news-shelter.png" }),
+      ], { image: "events/p6_aid_team_handoff.png" }),
       e("recovery_grant_window", "小微恢复补助到账", ["economy", "funds", "trust"], "budget", "一笔面向小微商户、物流网点和药店的恢复补助终于到账。经济口希望尽快发下去，审计口要求留发放标准，街道担心谁先拿、谁没拿会在居民群里发酵。补助能让城市重新动起来，但它不是没有代价的礼物。", "疫情后复工复产扶持、减免补贴和小微企业恢复政策报道", [
         c("compensate", "优先补贴药店和保供网点", "让药店、菜店和物流点先恢复供给，稳定居民日常。", { resources: { funds: 8 }, effects: { economy: 3, supplies: 1 }, delayed: { delay: 3, label: "补助名单复核", effects: { staffFatigue: 1 } } }),
         c("whiteList", "给低风险商户复业额度", "让符合条件的小店尽快开门，恢复街面活力。", { effects: { infection: -1, trust: 2, staffFatigue: 1 }, delayed: { delay: 3, label: "复业名单质疑", effects: { trust: -1 }, condition: "trustBelow45" } }),
         c("audit", "公开补助标准后分批发放", "先把谁能领、怎么领、如何申诉说清楚，再分批拨付。", { resources: { funds: 4 }, effects: { economy: 4, trust: 1 }, hidden: { publicMemory: -1 }, delayed: { delay: 2, label: "材料审核排队", effects: { staffFatigue: 1 } } }),
-      ], { image: "news-factory.png" }),
+      ], { image: "events/p6_recovery_grant_window.png" }),
     ],
   ];
 
