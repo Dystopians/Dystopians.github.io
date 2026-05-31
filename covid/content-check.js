@@ -163,6 +163,13 @@ function validateSchedule(eventIds) {
 
   const liLiang = core.SCHEDULED_EVENTS.find((item) => item.eventId === "p2_li_liang_death");
   assert(liLiang && liLiang.day === 21, "p2_li_liang_death must be fixed on day 21.");
+
+  [
+    "p4_online_consultation_open",
+    "p6_recovery_grant_window",
+  ].forEach((eventId) => {
+    assert(core.SCHEDULED_EVENTS.some((item) => item.eventId === eventId), `Positive support event should have a fixed window: ${eventId}.`);
+  });
 }
 
 function validateMapAndCityActions() {

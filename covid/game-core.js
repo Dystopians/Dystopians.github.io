@@ -1328,6 +1328,7 @@
     { day: 31, eventId: "p3_recovered_plasma_call", condition: "plasmaResearchWindow", priority: 42, reason: "筛查和收治稳定后，康复者支援议题出现。" },
     { day: 34, eventId: "p3_discharge_standard_debate", condition: "dischargeDebateWindow", priority: 40, reason: "床位压力缓和且发现率尚可时，出舱标准才会成为争议。" },
     { day: 37, eventId: "p4_health_code_launch", condition: "always", priority: 50, reason: "常态化阶段固定进入数字通行工具。" },
+    { day: 41, eventId: "p4_online_consultation_open", condition: "onlineConsultNeed", priority: 43, reason: "常态化前段若医院或感染仍承压，互联网医院会成为非工程分流窗口。" },
     { day: 42, eventId: "p4_green_code_error", condition: "healthCodeRisk", priority: 40, reason: "发现率提高或健康码工程落地后，误判申诉才有现实基础。" },
     { day: 43, eventId: "p4_vaccine_trial_greenlight", condition: "always", priority: 42, reason: "常态化阶段引入科研试点与风险沟通。" },
     { day: 47, eventId: "p4_enterprise_white_list", condition: "enterpriseWhiteListPressure", priority: 40, reason: "经济或资金承压时，企业白名单会推到桌面上。" },
@@ -1340,6 +1341,7 @@
     { day: 64, eventId: "p6_fever_medicine_shortage", condition: "feverMedicinePressure", priority: 40, reason: "感染或医疗压力仍高时，退烧药短缺才会显著化。" },
     { day: 66, eventId: "p6_aid_team_handoff", condition: "always", priority: 42, reason: "恢复阶段需要处理支援队交接与记忆修复。" },
     { day: 68, eventId: "p6_procurement_audit", condition: "procurementAuditPressure", priority: 40, reason: "资金吃紧或大额工程使用后，采购审计进入议程。" },
+    { day: 70, eventId: "p6_recovery_grant_window", condition: "recoveryGrantNeed", priority: 41, reason: "结局前若活力或资金仍偏低，小微恢复补助会给最后一次修复机会。" },
     { day: 71, eventId: "p6_public_memorial", condition: "memorialPressure", priority: 40, reason: "结局前若创伤或医疗压力仍重，公共记忆事件固定出现。" },
   ];
 
@@ -3198,7 +3200,7 @@
     if (m.economy >= 75) add("economyHigh", "财政余裕", "good", "每日资金和供应恢复更稳。");
     if (m.economy <= 25) add("economyLow", "财政吃紧", "danger", "每日资金受损，医疗和保供工程效果下降。");
     if (m.staffFatigue >= 80) add("fatigueHigh", "执行透支", "danger", "行动收益打折，发现率每天磨损。");
-    if (m.staffFatigue >= 88) add("fatigueFuse", "执行熔断", "danger", "基层系统会自动降速减压，疲劳不再直线上冲，但医疗、供应、活力和信任会承受转移代价。");
+    if (m.staffFatigue >= 86) add("fatigueFuse", "执行熔断", "danger", "基层系统会自动降速减压，疲劳不再直线上冲，但医疗、供应、活力和信任会承受转移代价。");
     if (m.staffFatigue <= 35) add("fatigueLow", "执行余裕", "good", "检测、保供、医疗和志愿者类行动获得额外收益；任务仍重时，余裕会被日常工作重新消耗。");
     if (r.funds <= 10) add("fundsLow", "财政透支", "danger", "高价工程和决议被锁定，资金事件权重上升。");
     if (r.funds >= 80) add("fundsHigh", "储备充足", "good", "一次性大型工程资金成本降低。");
@@ -3804,7 +3806,14 @@
     if (condition === "dischargeDebateWindow") return m.hospitalLoad <= 70 && h.detectedRate >= 45;
     if (condition === "psychSupportNeed") return m.staffFatigue >= 50 || h.publicMemory >= 25 || m.trust <= 60;
     if (condition === "healthCodeRisk") return h.detectedRate >= 55 || Boolean(state.completedProjects.healthCode);
-    if (condition === "onlineConsultNeed") return m.hospitalLoad >= 40 || m.infection >= 35;
+    if (condition === "onlineConsultNeed") {
+      const noMedicalInfrastructure = !state.completedProjects.shelterHospital
+        && !state.completedProjects.triageNetwork
+        && !state.completedProjects.communityClinic;
+      return (noMedicalInfrastructure && (m.hospitalLoad >= 40 || m.infection >= 35))
+        || m.hospitalLoad >= 72
+        || (m.infection >= 70 && m.hospitalLoad >= 58);
+    }
     if (condition === "enterpriseWhiteListPressure") return m.economy <= 60 || r.funds <= 35;
     if (condition === "silentControlWindow") return m.infection >= 45;
     if (condition === "massTestingNeed") return m.infection >= 50 || h.detectedRate <= 65;
@@ -5518,7 +5527,7 @@
       - (state.metrics.trust >= 70 ? 1 : 0);
     applyEffects(state, { staffFatigue: fatigueDelta }, dailyDelta, log, "执行联动");
 
-    if (state.metrics.staffFatigue >= 88) {
+    if (state.metrics.staffFatigue >= 86) {
       applyEffects(state, {
         staffFatigue: -5,
         hospitalLoad: 2,
@@ -6667,7 +6676,7 @@
       - (projection.metrics.trust >= 70 ? 1 : 0);
     applyProjectedCoreDelta(projection, { staffFatigue: fatigueDelta });
 
-    if (projection.metrics.staffFatigue >= 88) {
+    if (projection.metrics.staffFatigue >= 86) {
       applyProjectedCoreDelta(projection, {
         staffFatigue: -5,
         hospitalLoad: 2,
