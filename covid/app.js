@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v65";
+  const ASSET_VERSION = "v66";
   const core = window.Linjiang72;
 
   let state = null;
@@ -266,6 +266,7 @@
     pressureSummary: document.getElementById("pressureSummary"),
     trendPreview: document.getElementById("trendPreview"),
     eventBody: document.getElementById("eventBody"),
+    eventStageReview: document.getElementById("eventStageReview"),
     eventSource: document.getElementById("eventSource"),
     eventSourceNote: document.getElementById("eventSourceNote"),
     eventVisual: document.getElementById("eventVisual"),
@@ -1143,6 +1144,7 @@
     renderPressureSummary();
     renderTrendPreview();
     els.eventBody.textContent = event.description || event.body;
+    renderEventStageReview(event.stageReview);
     if (event.sourceNote) {
       els.eventSource.hidden = false;
       els.eventSource.open = false;
@@ -1192,6 +1194,51 @@
       button.addEventListener("blur", () => renderTrendPreview());
       els.choiceList.appendChild(button);
     });
+  }
+
+  function renderEventStageReview(review) {
+    if (!els.eventStageReview) return;
+    if (!review) {
+      els.eventStageReview.hidden = true;
+      els.eventStageReview.innerHTML = "";
+      return;
+    }
+    els.eventStageReview.hidden = false;
+    const weaknesses = (review.weaknesses || []).length
+      ? (review.weaknesses || []).map((item) => `
+        <article class="stage-review-weakness ${escapeHtml(item.tone || "warn")}" title="${escapeHtml(item.detail)}">
+          <strong>${escapeHtml(item.label)}</strong>
+          <p>${escapeHtml(item.detail)}</p>
+        </article>
+      `).join("")
+      : "<p class=\"stage-review-empty\">没有明显红线短板，可以把缓冲选择用于下一阶段铺垫。</p>";
+    const objectives = (review.objectives || []).map((item) => `
+      <span class="stage-review-objective ${escapeHtml(item.tone || "warn")}" title="${escapeHtml(item.targetText)}">
+        ${escapeHtml(item.label)} · ${escapeHtml(item.done ? "达成" : `${item.metricShort} ${item.value}`)}
+      </span>
+    `).join("");
+    const next = review.nextPhase
+      ? `
+        <div class="stage-review-next">
+          <span>下一阶段</span>
+          <strong>${escapeHtml(review.nextPhase.name)}</strong>
+          <p>${escapeHtml(review.nextPhase.focus)}</p>
+          <div>
+            ${(review.nextPhase.objectives || []).map((item) => `<em title="${escapeHtml(item.detail)}">${escapeHtml(item.targetText)}</em>`).join("")}
+          </div>
+        </div>
+      `
+      : "";
+    els.eventStageReview.innerHTML = `
+      <div class="stage-review-head ${escapeHtml(review.tone || "warn")}">
+        <span>${escapeHtml(review.title || "阶段复盘")}</span>
+        <strong>${escapeHtml(String(review.completed))}/${escapeHtml(String(review.total))}</strong>
+      </div>
+      <p class="stage-review-summary">${escapeHtml(review.summary || "")}</p>
+      <div class="stage-review-objectives">${objectives}</div>
+      <div class="stage-review-weaknesses">${weaknesses}</div>
+      ${next}
+    `;
   }
 
   function renderChoiceImpacts(choice) {

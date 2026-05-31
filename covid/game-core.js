@@ -2205,6 +2205,126 @@
     });
   }
 
+  function getStageReview(state) {
+    if (!state) return null;
+    const phase = phaseForDay(state.day);
+    const info = getStageInfo(phase);
+    const objectives = getStageObjectives(state);
+    const completed = objectives.filter((objective) => objective.done).length;
+    const dangerCount = objectives.filter((objective) => objective.tone === "danger").length;
+    const tone = dangerCount
+      ? "danger"
+      : completed === objectives.length
+        ? "good"
+        : "warn";
+    const verdict = tone === "good"
+      ? "阶段目标完成良好，城市进入下一阶段时保留了较多调度余地。"
+      : tone === "danger"
+        ? "阶段目标留下明显缺口，下一阶段会更容易被红线和资源锁定拖住。"
+        : "阶段目标部分完成，下一阶段仍需要围绕短板安排主动行动。";
+    const weaknesses = buildStageWeaknesses(state, objectives);
+    const nextPhase = phase < STAGE_INFO.length ? getStageInfo(phase + 1) : null;
+    const nextObjectives = nextPhase
+      ? (STAGE_OBJECTIVES[nextPhase.phase] || []).slice(0, 3).map((spec) => {
+        const meta = getObjectiveMeta(spec.metric);
+        return {
+          id: spec.id,
+          label: spec.label,
+          targetText: `${meta.short} ${spec.op} ${spec.target}`,
+          detail: spec.detail,
+        };
+      })
+      : [];
+    const detail = nextPhase
+      ? `下一阶段「${nextPhase.name}」重点：${nextPhase.focus}`
+      : "这是最后一次阶段复盘，结局会同时读取疫情、医疗、信任、活力、疲劳、资金和公共创伤。";
+
+    return {
+      phase,
+      title: `${info.name}复盘`,
+      tone,
+      completed,
+      total: objectives.length,
+      summary: `阶段目标 ${completed}/${objectives.length} 达成。${verdict}`,
+      detail,
+      objectives: objectives.map((objective) => ({
+        id: objective.id,
+        label: objective.label,
+        metricShort: objective.metricShort,
+        value: objective.value,
+        targetText: objective.targetText,
+        done: objective.done,
+        tone: objective.tone,
+      })),
+      weaknesses,
+      nextPhase: nextPhase ? {
+        phase: nextPhase.phase,
+        name: nextPhase.name,
+        focus: nextPhase.focus,
+        objectives: nextObjectives,
+      } : null,
+    };
+  }
+
+  function buildStageWeaknesses(state, objectives) {
+    const rows = objectives
+      .filter((objective) => !objective.done)
+      .map((objective) => {
+        const rawGap = objective.targetText.includes("<=")
+          ? objective.value - objective.target
+          : objective.target - objective.value;
+        return {
+          id: objective.id,
+          tone: objective.tone,
+          label: objective.label,
+          detail: `${objective.metricShort} ${objective.value}，目标 ${objective.targetText}。${objective.detail}`,
+          score: (objective.tone === "danger" ? 70 : 45) + Math.max(0, rawGap),
+        };
+      });
+
+    const streaks = state.flags.failureStreaks || {};
+    [
+      { id: "medical_streak", streak: streaks.medical || 0, label: "医疗红线倒计时", detail: "医疗负载已经进入失败倒计时，优先寻找分流、方舱或诊疗网络。" },
+      { id: "supply_streak", streak: streaks.supply || 0, label: "供应断裂倒计时", detail: "物资低位已经进入失败倒计时，保供和药品通道需要优先处理。" },
+      { id: "trust_streak", streak: streaks.trust || 0, label: "信任崩塌倒计时", detail: "低信任已经进入失败倒计时，公开修复和可核验流程需要补位。" },
+      { id: "staff_streak", streak: streaks.staff || 0, label: "执行失灵倒计时", detail: "基层疲劳已经进入失败倒计时，轮休、减压和简化流程必须进入日程。" },
+    ].forEach((item) => {
+      if (!item.streak) return;
+      rows.push({
+        id: item.id,
+        tone: "danger",
+        label: `${item.label} ${item.streak}/${getFailureLimit(state)}`,
+        detail: item.detail,
+        score: 95 + item.streak * 8,
+      });
+    });
+
+    if (state.resources.funds <= 18) {
+      rows.push({
+        id: "funds_low_review",
+        tone: "warn",
+        label: "应急资金偏低",
+        detail: `资金 ${state.resources.funds}，下一阶段高价工程会更容易被锁定。`,
+        score: 62 - state.resources.funds,
+      });
+    }
+
+    if (state.hidden.publicMemory >= 45) {
+      rows.push({
+        id: "memory_high_review",
+        tone: "warn",
+        label: "公共创伤偏高",
+        detail: `创伤 ${state.hidden.publicMemory}，结局会更难进入轻盈恢复。`,
+        score: state.hidden.publicMemory,
+      });
+    }
+
+    return rows
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+      .map(({ score, ...item }) => item);
+  }
+
   function getStageSchedule(state) {
     if (!state) return [];
     ensureEventScheduleFlags(state);
@@ -3248,29 +3368,40 @@
 
   function buildBufferEvent(state) {
     const phase = phaseForDay(state.day);
+    const review = getStageReview(state);
+    const worst = findWorstMetric(state);
+    const sacrifice = findSacrificeMetric(state, worst.metric);
+    const worstMeta = METRIC_META[worst.metric];
+    const sacrificeMeta = METRIC_META[sacrifice];
+    const repairDelta = worstMeta.direction === "danger" ? -8 : 8;
+    const sacrificeDelta = sacrificeMeta.direction === "danger" ? 6 : -6;
     return {
       id: `buffer_${phase}`,
       type: "buffer",
       phase: [phase],
       tags: ["buffer"],
       title: `第 ${phase} 阶段复盘会`,
-      body: "阶段总结给了城市一次缓冲窗口：可以修补最危险的短板，也可以选择更明确的恢复方向。没有免费的修复，每一项补救都会挤占另一个系统。",
+      body: `${review.summary} ${review.detail} 阶段总结给了城市一次缓冲窗口：可以修补最危险的短板，也可以选择更明确的恢复方向。没有免费的修复，每一项补救都会挤占另一个系统。`,
       image: "news-shelter.png",
+      stageReview: review,
       choices: [
         {
           id: "repairWorst",
-          label: "托底最危险短板",
+          label: `托底${worstMeta.label}`,
           actionKey: "dynamicRepair",
-          description: "修复当前最接近崩溃的指标，同时牺牲一个仍有余量的系统。",
+          description: `把当前最危险的短板先拉回一点：${worstMeta.label}会得到直接修复，但代价会落在仍有余量的${sacrificeMeta.label}上。`,
           routeTag: getChoiceRouteTag({ actionKey: "dynamicRepair" }),
-          effectPreview: ["最差指标 +10/-10", "次要系统付出代价", "公共创伤 +1"],
-          crisisImpacts: [{ id: "repair", tone: "good", label: "托底红线", detail: "修复最危险短板" }],
+          effectPreview: [`${worstMeta.short} ${repairDelta > 0 ? "+" : ""}${repairDelta}`, `${sacrificeMeta.short} ${sacrificeDelta > 0 ? "+" : ""}${sacrificeDelta}`, "创伤 +1"],
+          crisisImpacts: [
+            { id: "repair", tone: "good", label: "托底红线", detail: `${worstMeta.label} ${repairDelta > 0 ? "+" : ""}${repairDelta}` },
+            { id: "cost", tone: "danger", label: "转移代价", detail: `${sacrificeMeta.label} ${sacrificeDelta > 0 ? "+" : ""}${sacrificeDelta}` },
+          ],
         },
         {
           id: "releasePressure",
           label: "释放社会压力",
           actionKey: "dynamicRelease",
-          description: "降低管控与疲劳，修复信任和活力，但承担轻微感染反弹。",
+          description: "把阶段末的解释、轮休和恢复节奏放到台前，降低管控与疲劳，修复信任和活力，但承担轻微感染反弹。",
           routeTag: getChoiceRouteTag({ actionKey: "dynamicRelease" }),
           effectPreview: ["信任 +6", "疲劳 -6", "感染 +2"],
           crisisImpacts: [
@@ -3283,12 +3414,12 @@
           id: "concentrateResources",
           label: "集中防疫资源",
           actionKey: "dynamicConcentrate",
-          description: "继续压低感染和医疗压力，消耗物资、活力与基层状态。",
+          description: "把阶段复盘转成一次更集中调度，继续压低感染和医疗压力，代价是物资、活力与基层状态会继续承压。",
           routeTag: getChoiceRouteTag({ actionKey: "dynamicConcentrate" }),
           effectPreview: ["感染 -5", "医疗负载 -4", "物资/活力/疲劳承压"],
           crisisImpacts: [
             { id: "infection", tone: "good", label: "压低传播", detail: "感染 -5" },
-            { id: "medical", tone: "good", label: "护住医疗", detail: "医疗 -4" },
+            { id: "medical", tone: "good", label: "护住医疗", detail: "医疗负载 -4" },
             { id: "staff", tone: "danger", label: "疲劳上升", detail: "基层承压" },
           ],
         },
@@ -5615,6 +5746,7 @@
     getSystemReadouts,
     getCityActionBudget,
     getStrategyProfile,
+    getStageReview,
     isConditionMet: conditionMet,
     resolveChoice,
     executeOperation,

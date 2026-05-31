@@ -267,6 +267,25 @@ function validateCityActionOpportunities() {
   );
 }
 
+function validateStageReview() {
+  assert(typeof core.getStageReview === "function", "game-core.js must export getStageReview.");
+  const state = core.createGame({ difficulty: "normal", seed: 20260605 });
+  state.day = 12;
+  state.phase = 1;
+  state.currentEventId = "buffer_1";
+  state.metrics.staffFatigue = 72;
+  state.metrics.trust = 42;
+  state.hidden.detectedRate = 43;
+  const review = core.getStageReview(state);
+  assert(review && review.summary && review.detail, "getStageReview must return summary and detail.");
+  assert(Array.isArray(review.objectives) && review.objectives.length === 3, "Stage review should include current phase objectives.");
+  assert(Array.isArray(review.weaknesses), "Stage review should expose weaknesses.");
+  assert(review.nextPhase && review.nextPhase.objectives.length > 0, "Stage review should include next phase preparation.");
+  const event = core.getCurrentEvent(state);
+  assert(event && event.stageReview && event.type === "buffer", "Buffer event should include dynamic stageReview data.");
+  assert(event.choices.some((choice) => /托底/.test(choice.label) && choice.effectPreview.length >= 3), "Buffer repair choice should describe its dynamic target.");
+}
+
 function validateChoiceRiskPreview() {
   assert(typeof core.getChoiceRiskPreview === "function", "game-core.js must export getChoiceRiskPreview.");
   const state = core.createGame({ difficulty: "normal", seed: 20260602 });
@@ -314,6 +333,7 @@ function run() {
   validateCacheVersions();
   validateRecoveryLevers();
   validateCityActionOpportunities();
+  validateStageReview();
   validateChoiceRiskPreview();
   validateEndingStrategyReview();
 
