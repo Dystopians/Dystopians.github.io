@@ -5253,11 +5253,29 @@ label {
 .city-badge {
   position: relative;
   min-width: 0;
+  display: block;
+  width: 100%;
+  appearance: none;
   padding: 7px;
   border: 2px solid #b89752;
   background: rgba(255, 241, 200, 0.7);
   box-shadow: inset 1px 1px 0 rgba(255, 247, 209, 0.88);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
   overflow: hidden;
+}
+
+.city-badge.actionable {
+  cursor: pointer;
+}
+
+.city-badge.actionable:hover,
+.city-badge.actionable:focus-visible {
+  transform: translate(-1px, -1px);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 247, 209, 0.88),
+    3px 3px 0 rgba(45, 40, 31, 0.24);
 }
 
 .city-badge.earned {
@@ -5317,6 +5335,18 @@ label {
   font-style: normal;
   font-weight: 900;
   line-height: 1.1;
+}
+
+.city-badge-focus {
+  display: block;
+  margin-top: 5px;
+  padding: 3px 4px;
+  border: 1px solid rgba(39, 63, 73, 0.5);
+  background: rgba(190, 208, 207, 0.7);
+  color: #273f49;
+  font-size: 0.58rem;
+  font-weight: 900;
+  line-height: 1.2;
 }
 
 .city-badge i {

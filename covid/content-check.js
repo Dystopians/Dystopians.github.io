@@ -545,6 +545,10 @@ function validateCityBadges() {
   const opening = core.getCityBadges(state);
   assert(opening && Array.isArray(opening.earned) && Array.isArray(opening.watch), "getCityBadges must return earned and watch arrays.");
   assert(opening.total >= 8, `Expected at least 8 city badge rules, found ${opening.total}.`);
+  assert(
+    opening.watch.every((item) => item.focus && item.focus.pointId && item.focus.mode && item.focus.actionId),
+    "Opening watched city badges should expose focusable map actions.",
+  );
   const developed = core.createGame({ difficulty: "normal", seed: 20260618 });
   developed.day = 40;
   developed.metrics.infection = 28;
@@ -576,12 +580,16 @@ function validateCityBadges() {
   const report = core.getCityBadges(developed);
   assert(report.earned.length >= 6, `Developed state should earn several city badges, found ${report.earned.length}.`);
   assert(
-    [...report.earned, ...report.watch].every((item) => item.id && item.label && item.category && item.detail && item.status && item.tone && Array.isArray(item.gaps)),
-    "Every city badge needs id, label, category, detail, status, tone, and gaps.",
+    [...report.earned, ...report.watch].every((item) => item.id && item.label && item.category && item.detail && item.status && item.tone && Array.isArray(item.gaps) && Object.prototype.hasOwnProperty.call(item, "focus")),
+    "Every city badge needs id, label, category, detail, status, tone, gaps, and focus.",
   );
   assert(
     report.watch.every((item) => item.gaps.length > 0),
     "Watched city badges should expose concrete remaining gaps.",
+  );
+  assert(
+    report.watch.every((item) => item.focus && item.focus.pointId && item.focus.mode && item.focus.actionId && item.focus.label && item.focus.status),
+    "Watched city badges should expose a focusable map action.",
   );
 }
 
@@ -1080,6 +1088,10 @@ function validateActionPreviewCoverage() {
   assert(styles.includes(".choice-button.choice-recommended"), "Recommended choice buttons should have a visible persistent state.");
   assert(appJs.includes("renderCityBadgeGaps"), "City badge cards should render concrete remaining gaps.");
   assert(styles.includes(".city-badge-gaps"), "City badge gap chips need dedicated styling.");
+  assert(appJs.includes("focusCityBadgeAction"), "City badge cards should be clickable map-action targets.");
+  assert(appJs.includes("data-badge-point"), "City badge cards should carry map target data attributes.");
+  assert(styles.includes(".city-badge.actionable"), "Clickable city badges need dedicated styling.");
+  assert(styles.includes(".city-badge-focus"), "City badge focus hints need dedicated styling.");
 }
 
 function run() {

@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v126";
+  const ASSET_VERSION = "v127";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -2505,19 +2505,57 @@
       </div>
       ${badges.length ? `
         <div class="city-badge-list">
-          ${badges.map((badge) => `
-            <article class="city-badge ${escapeHtml(badge.tone || "info")} ${badge.earned ? "earned" : "watch"}"
-              title="${escapeHtml(badge.hint || badge.detail || "")}">
-              <span>${escapeHtml(badge.category || "档案")} · ${escapeHtml(badge.status || "")}</span>
-              <strong>${escapeHtml(badge.label)}</strong>
-              <p>${escapeHtml(badge.detail || "")}</p>
-              ${renderCityBadgeGaps(badge)}
-              ${badge.earned ? "" : `<i style="width:${Math.max(4, Math.min(100, badge.progress || 0))}%" aria-hidden="true"></i>`}
-            </article>
-          `).join("")}
+          ${badges.map((badge) => renderCityBadgeCard(badge)).join("")}
         </div>
       ` : ""}
     `;
+    els.cityBadges.querySelectorAll("[data-badge-point]").forEach((button) => {
+      bindCityActionPreview(button, () => button.dataset.badgeMode, () => button.dataset.badgeAction);
+      button.addEventListener("click", () => {
+        focusCityBadgeAction(button);
+      });
+    });
+  }
+
+  function renderCityBadgeCard(badge) {
+    const focus = badge.focus || null;
+    const tag = focus ? "button" : "article";
+    const actionAttrs = focus
+      ? ` type="button" data-badge-point="${escapeHtml(focus.pointId || "")}" data-badge-mode="${escapeHtml(focus.mode || "")}" data-badge-action="${escapeHtml(focus.actionId || "")}"`
+      : "";
+    const focusLine = focus
+      ? `<small class="city-badge-focus">${escapeHtml(focus.status)} · ${escapeHtml(focus.label)}${focus.pointLabel ? ` · ${escapeHtml(focus.pointLabel)}` : ""}</small>`
+      : "";
+    return `
+      <${tag} class="city-badge ${escapeHtml(badge.tone || "info")} ${badge.earned ? "earned" : "watch"}${focus ? " actionable" : ""}"
+        title="${escapeHtml(focus ? focus.detail || badge.hint || badge.detail || "" : badge.hint || badge.detail || "")}"${actionAttrs}>
+        <span>${escapeHtml(badge.category || "档案")} · ${escapeHtml(badge.status || "")}</span>
+        <strong>${escapeHtml(badge.label)}</strong>
+        <p>${escapeHtml(badge.detail || "")}</p>
+        ${renderCityBadgeGaps(badge)}
+        ${focusLine}
+        ${badge.earned ? "" : `<i style="width:${Math.max(4, Math.min(100, badge.progress || 0))}%" aria-hidden="true"></i>`}
+      </${tag}>
+    `;
+  }
+
+  function focusCityBadgeAction(button) {
+    const pointId = button.dataset.badgePoint;
+    const mode = button.dataset.badgeMode === "resolutions" ? "resolutions" : "operations";
+    const actionId = button.dataset.badgeAction;
+    if (!pointId) return;
+    core.selectMapPoint(state, pointId);
+    actionMode = mode;
+    save();
+    renderMap();
+    renderActionMode();
+    renderCityAssets();
+    previewCityAction(actionMode, actionId);
+    const point = core.getMapPoint(state, pointId);
+    els.mapHint.textContent = `已定位城市档案目标：${point ? point.label : "城市节点"}`;
+    if (els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
+      els.operationsList.scrollIntoView({ block: "nearest" });
+    }
   }
 
   function renderCityBadgeGaps(badge) {

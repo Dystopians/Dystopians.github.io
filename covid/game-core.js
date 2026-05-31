@@ -1140,6 +1140,96 @@
     return gaps.slice(0, 3);
   }
 
+  const CITY_BADGE_FOCUS_CANDIDATES = {
+    monitoring_net: [
+      ["operations", "deployHealthCode"],
+      ["operations", "campusSentinel"],
+    ],
+    medical_buffer: [
+      ["operations", "triageNetwork"],
+      ["operations", "communityClinic"],
+      ["operations", "buildShelterHospital"],
+      ["resolutions", "shelterAdmissionStandard"],
+    ],
+    supply_mesh: [
+      ["operations", "supplyCorridor"],
+      ["operations", "donationCoordination"],
+      ["operations", "microFreightPermit"],
+      ["operations", "publicDonationDrive"],
+    ],
+    trusted_city: [
+      ["resolutions", "publicReviewBrief"],
+      ["resolutions", "priorityMedicineRoute"],
+      ["operations", "fiscalTransparencyLedger"],
+    ],
+    worker_breathing_room: [
+      ["operations", "mentalHealthLine"],
+      ["operations", "volunteerDispatch"],
+      ["resolutions", "staffRotationOrder"],
+    ],
+    fiscal_landing: [
+      ["operations", "emergencyGapLedger"],
+      ["operations", "fastGrantReport"],
+      ["operations", "remoteApprovalDesk"],
+      ["operations", "factoryClosedLoop"],
+    ],
+    low_spread_window: [
+      ["operations", "deployHealthCode"],
+      ["operations", "campusSentinel"],
+      ["resolutions", "lowRiskWorkList"],
+    ],
+    memory_repair: [
+      ["resolutions", "publicReviewBrief"],
+      ["operations", "mentalHealthLine"],
+      ["resolutions", "priorityMedicineRoute"],
+    ],
+    mixed_governance: [
+      ["operations", "fiscalTransparencyLedger"],
+      ["operations", "triageNetwork"],
+      ["operations", "volunteerDispatch"],
+      ["operations", "supplyCorridor"],
+    ],
+  };
+
+  function cityBadgeFocus(state, id) {
+    const candidates = CITY_BADGE_FOCUS_CANDIDATES[id] || [];
+    const rows = candidates
+      .map(([mode, actionId]) => {
+        const status = mode === "resolutions"
+          ? getResolutionStatus(state, actionId)
+          : getOperationStatus(state, actionId);
+        if (!status) return null;
+        return { mode, status };
+      })
+      .filter(Boolean);
+    const selected = rows.find((row) => row.status.available)
+      || rows.find((row) => row.status.lockedReason !== "次数已用完" && row.status.lockedReason !== "已通过")
+      || rows[0];
+    if (!selected) return null;
+    const pointId = mapPointIdForAction(selected.mode, selected.status.id, selected.status.location);
+    const point = getMapPoint(state, pointId);
+    const detail = selected.status.available
+      ? selected.status.description
+      : selected.status.lockedDetail || selected.status.lockedReason || selected.status.description;
+    return {
+      mode: selected.mode,
+      actionId: selected.status.id,
+      pointId,
+      pointLabel: point ? point.label : "",
+      label: selected.status.label,
+      status: selected.status.available ? "可执行" : unlockPreviewLabel(selected.status.lockedReason),
+      detail,
+      available: Boolean(selected.status.available),
+    };
+  }
+
+  function mapPointIdForAction(mode, actionId, fallback = "") {
+    if (fallback) return fallback;
+    const key = mode === "resolutions" ? "resolutions" : "operations";
+    const point = MAP_POINTS.find((item) => (item[key] || []).includes(actionId));
+    return point ? point.id : "";
+  }
+
   const EVENT_IMAGE_BY_KEY = {
     notice: "news-health-code.png",
     market: "news-supply.png",
@@ -8115,6 +8205,7 @@
         detail: earned ? rule.detail : rule.hint,
         hint: rule.hint,
         gaps: earned ? [] : cityBadgeGaps(rule.id, state),
+        focus: earned ? null : cityBadgeFocus(state, rule.id),
         progress,
         earned,
         status: earned ? "已入档" : `接近 ${progress}%`,
