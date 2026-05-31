@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v42";
+  const ASSET_VERSION = "v43";
   const core = window.Linjiang72;
 
   let state = null;
@@ -953,6 +953,7 @@
       button.innerHTML = `
         <div class="choice-title"><strong>${escapeHtml(choice.label)}</strong>${tag}</div>
         <p>${escapeHtml(choice.available === false ? choice.lockedReason : choice.description)}</p>
+        ${renderChoiceImpacts(choice)}
         <div class="chips">${chips}</div>
       `;
       button.addEventListener("click", () => {
@@ -963,6 +964,20 @@
       });
       els.choiceList.appendChild(button);
     });
+  }
+
+  function renderChoiceImpacts(choice) {
+    const impacts = choice.crisisImpacts || [];
+    if (!impacts.length) return "";
+    return `
+      <div class="choice-impact-list" aria-label="策略影响">
+        ${impacts.map((impact) => `
+          <span class="choice-impact ${escapeHtml(impact.tone)}" title="${escapeHtml(impact.detail)}">
+            ${escapeHtml(impact.label)}
+          </span>
+        `).join("")}
+      </div>
+    `;
   }
 
   function renderPressureSummary() {

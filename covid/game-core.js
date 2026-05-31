@@ -2594,6 +2594,48 @@
     return ROUTE_TAGS[key] || { label: "综合调度", tone: "neutral" };
   }
 
+  function getChoiceCrisisImpacts(result = {}) {
+    const effects = result.effects || {};
+    const hidden = result.hidden || {};
+    const delayed = result.delayed || null;
+    const impacts = [];
+    const add = (id, tone, label, detail, score) => {
+      if (impacts.some((item) => item.id === id)) return;
+      impacts.push({ id, tone, label, detail, score });
+    };
+    const addMetric = (id, metric, delta, goodWhenPositive, goodLabel, badLabel, scoreBase = 50) => {
+      if (!delta) return;
+      const helpful = goodWhenPositive ? delta > 0 : delta < 0;
+      const meta = METRIC_META[metric];
+      add(
+        id,
+        helpful ? "good" : "danger",
+        helpful ? goodLabel : badLabel,
+        `${meta.short} ${delta > 0 ? "+" : ""}${delta}`,
+        scoreBase + Math.abs(delta) * (helpful ? 8 : 12),
+      );
+    };
+
+    addMetric("infection", "infection", effects.infection, false, "压低传播", "传播反弹", 44);
+    addMetric("medical", "hospitalLoad", effects.hospitalLoad, false, "护住医疗", "推高医疗", 70);
+    addMetric("supply", "supplies", effects.supplies, true, "补强供应", "供应承压", 64);
+    addMetric("trust", "trust", effects.trust, true, "修复信任", "信任受损", 66);
+    addMetric("staff", "staffFatigue", effects.staffFatigue, false, "基层减压", "疲劳上升", 68);
+    addMetric("memory", "publicMemory", hidden.publicMemory, false, "修复创伤", "创伤累积", 55);
+
+    if (delayed && delayed.effects && delayed.effects.trust < 0) {
+      add("delayedTrust", "danger", "后续信任反噬", `信任 ${delayed.effects.trust}`, 78 + Math.abs(delayed.effects.trust) * 8);
+    }
+    if (delayed && delayed.effects && delayed.effects.hospitalLoad > 0) {
+      add("delayedMedical", "danger", "后续医疗承压", `医疗 ${delayed.effects.hospitalLoad > 0 ? "+" : ""}${delayed.effects.hospitalLoad}`, 74 + delayed.effects.hospitalLoad * 8);
+    }
+
+    return impacts
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+      .map(({ score, ...impact }) => impact);
+  }
+
   function getCurrentEvent(state) {
     if (state.ended) return null;
     if (String(state.currentEventId || "").startsWith("buffer_")) {
@@ -2640,6 +2682,11 @@
           hidden: choice.eventHidden,
           delayed: choice.delayed,
         }),
+        crisisImpacts: getChoiceCrisisImpacts({
+          effects: choice.eventEffects,
+          hidden: choice.eventHidden,
+          delayed: choice.delayed,
+        }),
         eventNotes: [
           ...(choice.eventNotes || []),
           "财政见底：系统保留一个低成本应急选项，避免事件卡死。",
@@ -2666,6 +2713,7 @@
           description: "修复当前最接近崩溃的指标，同时牺牲一个仍有余量的系统。",
           routeTag: getChoiceRouteTag({ actionKey: "dynamicRepair" }),
           effectPreview: ["最差指标 +10/-10", "次要系统付出代价", "公共创伤 +1"],
+          crisisImpacts: [{ id: "repair", tone: "good", label: "托底红线", detail: "修复最危险短板" }],
         },
         {
           id: "releasePressure",
@@ -2674,6 +2722,11 @@
           description: "降低管控与疲劳，修复信任和活力，但承担轻微感染反弹。",
           routeTag: getChoiceRouteTag({ actionKey: "dynamicRelease" }),
           effectPreview: ["信任 +6", "疲劳 -6", "感染 +2"],
+          crisisImpacts: [
+            { id: "trust", tone: "good", label: "修复信任", detail: "信任 +6" },
+            { id: "staff", tone: "good", label: "基层减压", detail: "疲劳 -6" },
+            { id: "infection", tone: "danger", label: "传播反弹", detail: "感染 +2" },
+          ],
         },
         {
           id: "concentrateResources",
@@ -2682,6 +2735,11 @@
           description: "继续压低感染和医疗压力，消耗物资、活力与基层状态。",
           routeTag: getChoiceRouteTag({ actionKey: "dynamicConcentrate" }),
           effectPreview: ["感染 -5", "医疗负载 -4", "物资/活力/疲劳承压"],
+          crisisImpacts: [
+            { id: "infection", tone: "good", label: "压低传播", detail: "感染 -5" },
+            { id: "medical", tone: "good", label: "护住医疗", detail: "医疗 -4" },
+            { id: "staff", tone: "danger", label: "疲劳上升", detail: "基层承压" },
+          ],
         },
       ],
     };
@@ -2738,6 +2796,11 @@
         eventNotes: ["候选新闻事件已耗尽：使用低强度滚动简报，不记录为新闻原型事件。"],
         effectPreview: previewEventChoiceEffects({
           resources: {},
+          effects: choice.effects,
+          hidden: choice.hidden,
+          delayed: null,
+        }),
+        crisisImpacts: getChoiceCrisisImpacts({
           effects: choice.effects,
           hidden: choice.hidden,
           delayed: null,
@@ -2808,6 +2871,7 @@
       description: `${action.intent}。${eventMod.text}`,
       routeTag: getChoiceRouteTag({ actionKey }),
       effectPreview: preview,
+      crisisImpacts: getChoiceCrisisImpacts(eventMod),
       eventEffects: eventMod.effects,
       eventHidden: eventMod.hidden,
       eventResources: {},
@@ -2834,6 +2898,7 @@
       description: choice.description,
       routeTag: getChoiceRouteTag(choice),
       effectPreview: previewEventChoiceEffects(result),
+      crisisImpacts: getChoiceCrisisImpacts(result),
       eventResources: result.resources,
       eventEffects: result.effects,
       eventHidden: result.hidden,
