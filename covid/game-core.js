@@ -6603,8 +6603,19 @@
       );
     }
 
+    const undo = getCityActionUndo(state);
+    if (undo) {
+      add(
+        "city_action_undo",
+        "info",
+        "行动可撤销",
+        `刚执行“${undo.label}”，今日事件仍未处理；如果判断有误，可先撤销再选择别的城市行动。`,
+        83,
+      );
+    }
+
     const actionBudget = getCityActionBudget(state);
-    if (actionBudget.remaining > 0) {
+    if (!undo && actionBudget.remaining > 0) {
       const opportunities = getCityActionOpportunities(state);
       const bestAction = (opportunities.items || [])[0];
       if (bestAction && opportunities.availableCount > 0) {

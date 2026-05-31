@@ -657,6 +657,11 @@ function validateCityActionUndo() {
   assert(undo && undo.label === core.OPERATIONS.campusSentinel.label, "Executed city actions should expose an undo record.");
   assert(state.flags.cityActionsToday === 1, "Executing a city action should consume today's city action budget.");
   assert(state.history.length === 1, "Executing a city action should add one history row before undo.");
+  const undoSummary = core.getDailyPressureSummary(state);
+  assert(
+    undoSummary.some((item) => item.id === "city_action_undo" && /可先撤销/.test(item.detail)),
+    "Daily pressure summary should remind players that the latest city action can be undone before resolving the event.",
+  );
   const imported = core.importState(core.exportState(state));
   assert(core.getCityActionUndo(imported), "City action undo should survive save/import before the daily event is resolved.");
   const undone = core.undoCityAction(state);
