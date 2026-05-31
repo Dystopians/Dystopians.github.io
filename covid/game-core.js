@@ -4402,6 +4402,7 @@
               ? (forecast.length ? forecast.join(" / ") : "这项城市行动能补足当前路线结构。")
               : item.lockedDetail || item.lockedReason || "当前条件不足。",
             mode: group.mode,
+            actionId: item.id,
             pointId: pointDef.id,
             pointLabel: point.label,
             locked: !item.available,

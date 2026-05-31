@@ -2884,6 +2884,13 @@ label {
     rgba(244, 229, 169, 0.72);
 }
 
+.trend-preview.is-action {
+  border-color: rgba(98, 84, 138, 0.74);
+  background:
+    repeating-linear-gradient(0deg, rgba(246, 237, 203, 0.48) 0 2px, rgba(204, 190, 151, 0.32) 2px 4px),
+    rgba(238, 220, 164, 0.76);
+}
+
 .trend-label,
 .trend-chip {
   min-height: 24px;
@@ -2903,6 +2910,11 @@ label {
 .trend-preview.is-choice .trend-label {
   background: #467653;
   color: #f5ffd6;
+}
+
+.trend-preview.is-action .trend-label {
+  background: #5e5482;
+  color: #fff1bf;
 }
 
 .trend-chip {

@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v102";
+  const ASSET_VERSION = "v104";
   const core = window.Linjiang72;
 
   let state = null;
@@ -1088,6 +1088,7 @@
           ${recommendations.map((item) => `
             <button class="strategy-rec ${escapeHtml(item.tone || "info")}${item.locked ? " locked" : ""}" type="button"
               data-mode="${escapeHtml(item.mode || "")}" data-point-id="${escapeHtml(item.pointId || "")}"
+              data-action-id="${escapeHtml(item.actionId || "")}"
               data-choice-id="${escapeHtml(item.choiceId || "")}" title="${escapeHtml(item.detail)}">
               <span>${escapeHtml(item.kind)} · ${escapeHtml(item.status)}${item.pointLabel ? ` · ${escapeHtml(item.pointLabel)}` : ""}</span>
               <strong>${escapeHtml(item.label)}</strong>
@@ -1113,6 +1114,7 @@
     `;
     els.strategyProfile.querySelectorAll(".strategy-rec").forEach((button) => {
       bindChoicePreview(button, () => button.dataset.choiceId);
+      bindCityActionPreview(button, () => button.dataset.mode, () => button.dataset.actionId);
       button.addEventListener("click", () => {
         const choiceId = button.dataset.choiceId;
         if (choiceId) {
@@ -1127,6 +1129,7 @@
           save();
           renderMap();
           renderActionMode();
+          previewCityAction(actionMode, button.dataset.actionId);
           els.mapHint.textContent = `已定位配套建议：${core.getMapPoint(state, button.dataset.pointId).label}`;
           els.cityMapWrap.scrollIntoView({ behavior: "smooth", block: "center" });
         }
@@ -1778,6 +1781,7 @@
             data-directive-choice="${escapeHtml(item.choiceId || "")}"
             data-directive-point="${escapeHtml(item.pointId || "")}"
             data-directive-mode="${escapeHtml(item.mode || "")}"
+            data-directive-action="${escapeHtml(item.actionId || "")}"
             title="${escapeHtml(item.detail || "")}">
             <strong>${escapeHtml(item.label)}</strong>
             <em>${escapeHtml(item.kind)} · ${escapeHtml(item.routeLabel || item.pointLabel || "候选")}</em>
@@ -1790,6 +1794,7 @@
   function bindDailyDirectiveOptions() {
     els.dailyDirective.querySelectorAll(".directive-option").forEach((button) => {
       bindChoicePreview(button, () => button.dataset.directiveChoice);
+      bindCityActionPreview(button, () => button.dataset.directiveMode, () => button.dataset.directiveAction);
       button.addEventListener("click", () => {
         const choiceId = button.dataset.directiveChoice;
         if (choiceId) {
@@ -1806,6 +1811,7 @@
         renderMap();
         renderActionMode();
         renderCityAssets();
+        previewCityAction(actionMode, button.dataset.directiveAction);
         const point = core.getMapPoint(state, pointId);
         els.mapHint.textContent = `已定位今日目标候选：${point ? point.label : "城市节点"}`;
         if (els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
@@ -1850,23 +1856,56 @@
     button.addEventListener("blur", clear);
   }
 
+  function previewCityAction(mode, actionId) {
+    if (!actionId || !core.getCityActionOutcomePreview) return;
+    const normalizedMode = mode === "resolutions" ? "resolutions" : "operations";
+    const items = core.getCityActionOutcomePreview(state, normalizedMode, actionId);
+    if (!items.length) {
+      renderTrendPreview();
+      return;
+    }
+    const label = normalizedMode === "resolutions" ? "决议后趋势" : "工程后趋势";
+    const title = normalizedMode === "resolutions"
+      ? "若先通过这项城市决议，不含今日事件选择，估算今晚主要变化。"
+      : "若先执行这项城市工程，不含今日事件选择，估算今晚主要变化。";
+    renderTrendItems(items, label, title, "is-action");
+  }
+
+  function bindCityActionPreview(element, getMode, getActionId) {
+    if (!element || typeof getMode !== "function" || typeof getActionId !== "function") return;
+    const show = () => previewCityAction(getMode(), getActionId());
+    const clear = () => renderTrendPreview();
+    element.addEventListener("mouseenter", show);
+    element.addEventListener("pointerenter", show);
+    element.addEventListener("focusin", show);
+    element.addEventListener("mouseleave", clear);
+    element.addEventListener("pointerleave", clear);
+    element.addEventListener("focusout", clear);
+  }
+
   function renderTrendPreview(choice = null) {
     if (!els.trendPreview || !core.getDailyTrendPreview) return;
     const useChoice = choice && choice.available !== false && core.getChoiceOutcomePreview;
     const items = useChoice
       ? core.getChoiceOutcomePreview(state, choice.id)
       : core.getDailyTrendPreview(state);
+    const label = useChoice ? "选后结算" : "今晚趋势";
+    const title = useChoice
+      ? `若选择“${choice.label}”，估算本日完整结算后的主要变化。`
+      : "按当前状态估算今晚自然联动和已到期后续影响，不含你接下来选择的事件策略。";
+    renderTrendItems(items, label, title, useChoice ? "is-choice" : "");
+  }
+
+  function renderTrendItems(items, label, title, modeClass = "") {
+    if (!els.trendPreview) return;
     if (!items.length) {
       els.trendPreview.hidden = true;
       els.trendPreview.innerHTML = "";
       return;
     }
     els.trendPreview.hidden = false;
-    els.trendPreview.classList.toggle("is-choice", Boolean(useChoice));
-    const label = useChoice ? "选后结算" : "今晚趋势";
-    const title = useChoice
-      ? `若选择“${choice.label}”，估算本日完整结算后的主要变化。`
-      : "按当前状态估算今晚自然联动和已到期后续影响，不含你接下来选择的事件策略。";
+    els.trendPreview.classList.toggle("is-choice", modeClass === "is-choice");
+    els.trendPreview.classList.toggle("is-action", modeClass === "is-action");
     els.trendPreview.innerHTML = `
       <span class="trend-label" title="${escapeHtml(title)}">${escapeHtml(label)}</span>
       ${items.map((item) => `
@@ -1998,6 +2037,7 @@
               data-next-choice="${escapeHtml(item.choiceId || "")}"
               data-next-point="${escapeHtml(item.pointId || "")}"
               data-next-mode="${escapeHtml(item.mode || "")}"
+              data-next-action="${escapeHtml(item.actionId || "")}"
               title="${escapeHtml(item.detail || "")}">
               <strong>${escapeHtml(item.label)}</strong>
               <em>${escapeHtml(item.kind)} · ${escapeHtml(item.status || item.routeLabel || "候选")}</em>
@@ -2020,6 +2060,7 @@
     if (!els.alerts) return;
     els.alerts.querySelectorAll(".settlement-next-action").forEach((button) => {
       bindChoicePreview(button, () => button.dataset.nextChoice);
+      bindCityActionPreview(button, () => button.dataset.nextMode, () => button.dataset.nextAction);
       button.addEventListener("click", () => {
         const choiceId = button.dataset.nextChoice;
         if (choiceId) {
@@ -2036,6 +2077,7 @@
         renderMap();
         renderActionMode();
         renderCityAssets();
+        previewCityAction(actionMode, button.dataset.nextAction);
         const point = core.getMapPoint(state, pointId);
         els.mapHint.textContent = `已定位下一步候选：${point ? point.label : "城市节点"}`;
         if (els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
@@ -2063,6 +2105,8 @@
     items.forEach((item) => {
       const card = document.createElement("article");
       card.className = `action-card${item.available ? "" : " locked"}`;
+      card.dataset.actionMode = actionMode;
+      card.dataset.actionId = item.id;
       const lockDetail = item.available ? "" : item.lockedDetail || item.lockedReason || "";
       if (lockDetail) {
         card.setAttribute("data-lock-detail", lockDetail);
@@ -2090,6 +2134,7 @@
         save();
         render();
       });
+      bindCityActionPreview(card, () => actionMode, () => item.id);
       els.operationsList.appendChild(card);
     });
     bindCityActionUndo();
@@ -2154,6 +2199,7 @@
           ${cityActions.map((item) => `
             <button class="action-finder-item ${escapeHtml(item.tone || "info")}" type="button"
               data-point-id="${escapeHtml(item.pointId)}" data-mode="${escapeHtml(item.mode)}"
+              data-action-id="${escapeHtml(item.id)}"
               title="${escapeHtml(item.detail || item.reason || "")}">
               <span>${escapeHtml(item.kind)} · ${escapeHtml(item.pointLabel)} · ${escapeHtml((item.routeTag && item.routeTag.label) || "综合调度")}</span>
               <strong>${escapeHtml(item.label)}</strong>
@@ -2175,6 +2221,7 @@
           ${nextDayActions.map((item) => `
             <button class="action-finder-item next-day ${escapeHtml(item.tone || "info")}" type="button"
               data-point-id="${escapeHtml(item.pointId)}" data-mode="${escapeHtml(item.mode)}"
+              data-action-id="${escapeHtml(item.id)}"
               title="${escapeHtml(item.detail || item.reason || "")}">
               <span>${escapeHtml(item.kind)} · ${escapeHtml(item.pointLabel)} · ${escapeHtml(item.status || "明日可排")}</span>
               <strong>${escapeHtml(item.label)}</strong>
@@ -2195,6 +2242,7 @@
           ${lockedActions.map((item) => `
             <button class="action-finder-item locked-preview ${escapeHtml(item.tone || "mixed")}" type="button"
               data-point-id="${escapeHtml(item.pointId)}" data-mode="${escapeHtml(item.mode)}"
+              data-action-id="${escapeHtml(item.id)}"
               title="${escapeHtml(item.detail || item.reason || "")}">
               <span>${escapeHtml(item.kind)} · ${escapeHtml(item.pointLabel)} · ${escapeHtml(item.status || "未解锁")}</span>
               <strong>${escapeHtml(item.label)}</strong>
@@ -2219,6 +2267,7 @@
     `;
 
     els.actionFinder.querySelectorAll(".action-finder-item").forEach((button) => {
+      bindCityActionPreview(button, () => button.dataset.mode, () => button.dataset.actionId);
       button.addEventListener("click", () => {
         core.selectMapPoint(state, button.dataset.pointId);
         actionMode = button.dataset.mode === "resolutions" ? "resolutions" : "operations";
@@ -2226,6 +2275,7 @@
         renderMap();
         renderActionMode();
         renderCrisisBoard();
+        previewCityAction(actionMode, button.dataset.actionId);
         els.mapHint.textContent = `已定位行动窗口：${core.getMapPoint(state, button.dataset.pointId).label}`;
       });
     });
