@@ -394,6 +394,7 @@ function validateCityActionUndo() {
 
 function validateMapSignals() {
   assert(typeof core.getMapSignals === "function", "game-core.js must export getMapSignals.");
+  assert(typeof core.getMapPointStatus === "function", "game-core.js must export getMapPointStatus.");
   const state = core.createGame({ difficulty: "normal", seed: 20260606 });
   state.metrics.hospitalLoad = 90;
   state.metrics.supplies = 24;
@@ -406,6 +407,13 @@ function validateMapSignals() {
     signals.every((item) => item.id && item.pointId && item.pointLabel && item.label && item.detail && item.tone && item.status),
     "Every map signal needs id, pointId, pointLabel, label, detail, tone, and status.",
   );
+  assert(core.getMapPointStatus(state, "hospital").tone === "danger", "Hospital map status should reflect a medical redline.");
+  const appJs = fs.readFileSync(path.join(rootDir, "app.js"), "utf8");
+  const styles = fs.readFileSync(path.join(rootDir, "styles.css"), "utf8");
+  assert(appJs.includes("status-${pointStatus.tone}"), "Map hotspots should receive status tone classes.");
+  ["status-danger", "status-warn", "status-good"].forEach((className) => {
+    assert(styles.includes(`.map-hotspot.${className}::before`), `Missing map pressure halo style for ${className}.`);
+  });
 }
 
 function validateStageReview() {
