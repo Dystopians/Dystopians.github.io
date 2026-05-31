@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v116";
+  const ASSET_VERSION = "v117";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -1191,9 +1191,10 @@
     add(item.effects, core.METRIC_META || {});
     add(item.hidden, core.METRIC_META || {});
     if (item.completeProject) parts.push("项目完成");
+    const prefix = item.condition ? "若触发" : "预计";
     return parts.length
-      ? `预计：${parts.slice(0, 5).join(" / ")}`
-      : "预计：仅记录后续叙事变化";
+      ? `${prefix}：${parts.slice(0, 5).join(" / ")}`
+      : `${prefix}：仅记录后续叙事变化`;
   }
 
   function conditionLabel(condition) {
