@@ -1076,6 +1076,29 @@ label {
   font-weight: 900;
 }
 
+.crisis-jump {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 25px;
+  margin-top: 6px;
+  padding: 3px 8px;
+  border: 2px solid var(--line-dark);
+  background: #fff1c8;
+  color: var(--deep);
+  box-shadow: 2px 2px 0 rgba(95, 75, 42, 0.42);
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.crisis-jump:hover,
+.crisis-jump:focus-visible {
+  background: #ffd86f;
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 rgba(95, 75, 42, 0.52);
+}
+
 .map-column {
   display: grid;
   gap: 12px;

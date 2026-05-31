@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v40";
+  const ASSET_VERSION = "v41";
   const core = window.Linjiang72;
 
   let state = null;
@@ -491,9 +491,44 @@
           </div>
           <p>${escapeHtml(risk.metricShort)} ${risk.value} · ${escapeHtml(risk.thresholdText)}</p>
           <em title="${escapeHtml(risk.detail)}">${escapeHtml(risk.hint)}</em>
+          <button class="crisis-jump" type="button" data-crisis-target="${escapeHtml(risk.focusPointId)}" data-crisis-mode="${escapeHtml(risk.focusMode)}">
+            ${escapeHtml(risk.focusLabel || "定位补救")}
+          </button>
         </article>
       `)
       .join("");
+    els.crisisList.querySelectorAll("[data-crisis-target]").forEach((button) => {
+      button.addEventListener("click", () => {
+        focusCrisisTarget(button.dataset.crisisTarget, button.dataset.crisisMode);
+      });
+    });
+  }
+
+  function focusCrisisTarget(pointId, preferredMode = "operations") {
+    if (!pointId) return;
+    core.selectMapPoint(state, pointId);
+    const point = core.getMapPoint(state, pointId);
+    actionMode = chooseCrisisActionMode(point, preferredMode);
+    save();
+    renderMap();
+    renderActionMode();
+    renderCityAssets();
+    renderCrisisBoard();
+    const pointLabel = point ? point.label : "补救节点";
+    els.mapHint.textContent = `已定位：${pointLabel} · 查看${actionMode === "resolutions" ? "决议" : "工程"}`;
+    if (els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
+      els.operationsList.scrollIntoView({ block: "nearest" });
+    }
+  }
+
+  function chooseCrisisActionMode(point, preferredMode) {
+    if (!point) return preferredMode === "resolutions" ? "resolutions" : "operations";
+    const hasAvailable = (items) => items.some((item) => item.available);
+    const preferredItems = preferredMode === "resolutions" ? point.resolutions : point.operations;
+    const alternateItems = preferredMode === "resolutions" ? point.operations : point.resolutions;
+    if (hasAvailable(preferredItems)) return preferredMode;
+    if (hasAvailable(alternateItems)) return preferredMode === "resolutions" ? "operations" : "resolutions";
+    return preferredMode === "resolutions" ? "resolutions" : "operations";
   }
 
   function renderStageInfo() {

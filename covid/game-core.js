@@ -2062,6 +2062,9 @@
         overLine: m.hospitalLoad >= 95,
         detail: "连续越线会进入医疗挤兑结局。",
         hint: "补救：医疗扩容、分级诊疗、方舱收治。",
+        focusPointId: "hospital",
+        focusMode: "operations",
+        focusLabel: "定位医疗补救",
       },
       {
         id: "supply",
@@ -2075,6 +2078,9 @@
         overLine: m.supplies < 15,
         detail: "低物资会持续拖累信任和基层疲劳。",
         hint: "补救：保供专线、捐助统筹、仓储征用。",
+        focusPointId: "market",
+        focusMode: "operations",
+        focusLabel: "定位保供节点",
       },
       {
         id: "trust",
@@ -2088,6 +2094,9 @@
         overLine: m.trust < 20,
         detail: "低信任会让政策执行变钝并触发失败倒计时。",
         hint: "补救：信息公开、阶段复盘、药品直送。",
+        focusPointId: "residents",
+        focusMode: "resolutions",
+        focusLabel: "定位信任修复",
       },
       {
         id: "staff",
@@ -2101,6 +2110,9 @@
         overLine: m.staffFatigue > 90,
         detail: "疲劳高位会削弱行动收益并磨损发现率。",
         hint: "补救：轮换令、心理热线、社区自治包干。",
+        focusPointId: "volunteers",
+        focusMode: "resolutions",
+        focusLabel: "定位基层减压",
       },
     ];
 
@@ -2130,6 +2142,9 @@
         thresholdText: item.thresholdText,
         detail: item.detail,
         hint: item.hint,
+        focusPointId: item.focusPointId,
+        focusMode: item.focusMode,
+        focusLabel: item.focusLabel,
       };
     });
   }
