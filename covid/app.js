@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v101";
+  const ASSET_VERSION = "v102";
   const core = window.Linjiang72;
 
   let state = null;
@@ -1112,6 +1112,7 @@
       </div>
     `;
     els.strategyProfile.querySelectorAll(".strategy-rec").forEach((button) => {
+      bindChoicePreview(button, () => button.dataset.choiceId);
       button.addEventListener("click", () => {
         const choiceId = button.dataset.choiceId;
         if (choiceId) {
@@ -1589,6 +1590,7 @@
 
   function bindChoiceComparison() {
     els.choiceList.querySelectorAll("[data-compare-choice]").forEach((button) => {
+      bindChoicePreview(button, () => button.dataset.compareChoice);
       button.addEventListener("click", () => {
         const choiceId = button.dataset.compareChoice;
         focusChoiceOption(choiceId);
@@ -1787,6 +1789,7 @@
 
   function bindDailyDirectiveOptions() {
     els.dailyDirective.querySelectorAll(".directive-option").forEach((button) => {
+      bindChoicePreview(button, () => button.dataset.directiveChoice);
       button.addEventListener("click", () => {
         const choiceId = button.dataset.directiveChoice;
         if (choiceId) {
@@ -1822,6 +1825,29 @@
     const choice = event && event.choices.find((item) => item.id === choiceId);
     if (choice) renderTrendPreview(choice);
     setTimeout(() => target.classList.remove("is-recommended"), 1600);
+  }
+
+  function getCurrentChoiceById(choiceId) {
+    if (!choiceId) return null;
+    const event = core.getCurrentEvent(state);
+    return event && event.choices.find((item) => item.id === choiceId);
+  }
+
+  function previewChoiceOption(choiceId) {
+    const choice = getCurrentChoiceById(choiceId);
+    if (choice) renderTrendPreview(choice);
+  }
+
+  function bindChoicePreview(button, getChoiceId) {
+    if (!button || typeof getChoiceId !== "function") return;
+    const show = () => previewChoiceOption(getChoiceId());
+    const clear = () => renderTrendPreview();
+    button.addEventListener("mouseenter", show);
+    button.addEventListener("pointerenter", show);
+    button.addEventListener("focus", show);
+    button.addEventListener("mouseleave", clear);
+    button.addEventListener("pointerleave", clear);
+    button.addEventListener("blur", clear);
   }
 
   function renderTrendPreview(choice = null) {
@@ -1993,6 +2019,7 @@
   function bindLatestSettlementActions() {
     if (!els.alerts) return;
     els.alerts.querySelectorAll(".settlement-next-action").forEach((button) => {
+      bindChoicePreview(button, () => button.dataset.nextChoice);
       button.addEventListener("click", () => {
         const choiceId = button.dataset.nextChoice;
         if (choiceId) {
