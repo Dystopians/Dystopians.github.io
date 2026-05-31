@@ -686,6 +686,7 @@ function validateSettlementBreakdown() {
     "Every settlement breakdown row needs source and non-empty deltas.",
   );
   assert(typeof core.getSettlementHighlights === "function", "game-core.js must export getSettlementHighlights.");
+  assert(typeof core.getHistoryEntryMeta === "function", "game-core.js must export getHistoryEntryMeta.");
   const highlights = core.getSettlementHighlights(entry);
   assert(Array.isArray(highlights), "Settlement highlights should return an array.");
   assert(highlights.length > 0, "Settlement highlights should include at least one readable battle-report item.");
@@ -697,6 +698,13 @@ function validateSettlementBreakdown() {
     highlights.every((item) => !String(item.detail).includes("[object Object]")),
     "Settlement highlight details must render readable text.",
   );
+  const eventMeta = core.getHistoryEntryMeta(entry);
+  assert(eventMeta && eventMeta.label === "最新结算" && eventMeta.status === "日期推进", "Event history should be labeled as daily settlement.");
+  const actionState = core.createGame({ difficulty: "normal", seed: 20260622 });
+  core.executeOperation(actionState, "campusSentinel");
+  const actionMeta = core.getHistoryEntryMeta(actionState.history[0]);
+  assert(actionMeta.label === "最新行动" && actionMeta.sourceLabel === "工程", "Operation history should be labeled as an immediate action.");
+  assert(/不会因此推进/.test(actionMeta.detail), "Immediate action meta should clarify that the date does not advance.");
 }
 
 function validateMetricTrends() {

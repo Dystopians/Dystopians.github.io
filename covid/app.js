@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v99";
+  const ASSET_VERSION = "v100";
   const core = window.Linjiang72;
 
   let state = null;
@@ -1895,6 +1895,7 @@
   function renderLatestSettlement() {
     const entry = state.history && state.history[0];
     if (!entry) return null;
+    const meta = historyEntryMeta(entry);
     const card = document.createElement("article");
     card.className = `settlement-recap ${settlementTone(entry)}`;
     const changes = renderChangeChips(entry.changes, 7);
@@ -1907,16 +1908,48 @@
       .join("");
     card.innerHTML = `
       <div class="settlement-head">
-        <span>最新结算</span>
+        <span>${escapeHtml(meta.label)}</span>
         <strong>第 ${entry.day} 天</strong>
       </div>
       <p><b>${escapeHtml(entry.choice)}</b> / ${escapeHtml(entry.title)}</p>
+      ${renderHistoryBadges(meta, "settlement-tags")}
       ${highlights}
       <div class="change-list">${changes}</div>
       ${breakdown}
       ${notes ? `<ul class="settlement-notes">${notes}</ul>` : ""}
     `;
     return card;
+  }
+
+  function historyEntryMeta(entry) {
+    if (core.getHistoryEntryMeta) return core.getHistoryEntryMeta(entry);
+    return {
+      label: "最新结算",
+      sourceLabel: "事件选择",
+      routeLabel: entry.routeLabel || "综合路线",
+      status: "日期推进",
+      tone: entry.routeTone || "info",
+      detail: "",
+    };
+  }
+
+  function renderHistoryBadges(meta, className = "history-tags") {
+    if (!meta) return "";
+    const tags = [
+      [meta.sourceLabel, meta.detail],
+      [meta.routeLabel, meta.detail],
+      [meta.status, meta.detail],
+    ].filter(([label]) => label);
+    if (!tags.length) return "";
+    return `
+      <div class="${className}" aria-label="记录来源">
+        ${tags.map(([label, title], index) => `
+          <span class="${index === 1 ? escapeHtml(meta.tone || "info") : "info"}" title="${escapeHtml(title || "")}">
+            ${escapeHtml(label)}
+          </span>
+        `).join("")}
+      </div>
+    `;
   }
 
   function renderActionMode() {
@@ -2308,6 +2341,7 @@
 
     state.history.forEach((entry) => {
       const li = document.createElement("li");
+      const meta = historyEntryMeta(entry);
       const changes = renderChangeChips(entry.changes, 8);
       const breakdown = renderBreakdownRows(entry.breakdown, 2);
       const notes = (entry.notes || [])
@@ -2316,9 +2350,10 @@
         .map((note) => `<li>${escapeHtml(note)}</li>`)
         .join("");
       li.innerHTML = `
-        <span class="history-meta">第 ${entry.day} 天 / 阶段 ${entry.phase}</span>
+        <span class="history-meta">第 ${entry.day} 天 / 阶段 ${entry.phase} / ${escapeHtml(meta.label)}</span>
         <strong>${escapeHtml(entry.choice)}</strong>
         <p>${escapeHtml(entry.title)}</p>
+        ${renderHistoryBadges(meta)}
         <div class="change-list">${changes}</div>
         ${breakdown}
         ${notes ? `<ul class="history-notes">${notes}</ul>` : ""}

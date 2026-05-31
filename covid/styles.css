@@ -5287,6 +5287,58 @@ label {
   color: var(--deep);
 }
 
+.settlement-tags,
+.history-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.settlement-tags span,
+.history-tags span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 21px;
+  padding: 2px 6px;
+  border: 2px solid #9b7134;
+  background: #fff1c8;
+  color: var(--deep);
+  font-size: 0.64rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.settlement-tags span.good,
+.history-tags span.good {
+  border-color: var(--good);
+  background: #cde2a3;
+  color: #244d35;
+}
+
+.settlement-tags span.warn,
+.settlement-tags span.mixed,
+.history-tags span.warn,
+.history-tags span.mixed {
+  border-color: var(--warn);
+  background: #f1c45f;
+  color: #5b3715;
+}
+
+.settlement-tags span.danger,
+.history-tags span.danger {
+  border-color: var(--danger);
+  background: #eaa07c;
+  color: #5b1f18;
+}
+
+.settlement-tags span.info,
+.history-tags span.info {
+  border-color: var(--blue);
+  background: #d6e4df;
+  color: #244258;
+}
+
 .settlement-highlights {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -5452,6 +5452,54 @@
     return highlights.slice(0, 4);
   }
 
+  function getHistoryEntryMeta(entry = {}) {
+    const source = entry.routeSource || "";
+    const routeLabel = entry.routeLabel || "综合路线";
+    const routeTone = entry.routeTone || "info";
+    if (source === "operation") {
+      return {
+        id: "operation",
+        label: "最新行动",
+        sourceLabel: "工程",
+        routeLabel,
+        status: "即时生效",
+        tone: routeTone,
+        detail: "工程已经生效，但今日事件仍未处理，日期不会因此推进。",
+      };
+    }
+    if (source === "resolution") {
+      return {
+        id: "resolution",
+        label: "最新行动",
+        sourceLabel: "决议",
+        routeLabel,
+        status: "即时生效",
+        tone: routeTone,
+        detail: "决议已经生效，但今日事件仍未处理，日期不会因此推进。",
+      };
+    }
+    if (source === "buffer") {
+      return {
+        id: "buffer",
+        label: "阶段复盘",
+        sourceLabel: "缓冲选择",
+        routeLabel,
+        status: "阶段结算",
+        tone: routeTone,
+        detail: "阶段缓冲选择会修补短板，同时把代价转移到另一个系统。",
+      };
+    }
+    return {
+      id: source || "event",
+      label: "最新结算",
+      sourceLabel: source === "fallback" ? "滚动简报" : "事件选择",
+      routeLabel,
+      status: "日期推进",
+      tone: routeTone,
+      detail: "事件选择完成当天结算，并推进到下一天。",
+    };
+  }
+
   function addModifiers(target, incoming = {}) {
     Object.entries(incoming).forEach(([key, value]) => {
       target[key] = (target[key] || 0) + value;
@@ -7858,6 +7906,7 @@
     getCityActionBudget,
     getCityActionUndo,
     undoCityAction,
+    getHistoryEntryMeta,
     getStrategyProfile,
     getStageReview,
     isConditionMet: conditionMet,
