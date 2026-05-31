@@ -396,9 +396,14 @@ function validateTutorialCopy() {
   const indexHtml = fs.readFileSync(path.join(rootDir, "index.html"), "utf8");
   [
     "推荐顺序",
+    "今日压力摘要",
     "今日调度目标",
+    "今晚趋势",
     "对准目标",
+    "选后结算",
     "明日可排",
+    "后续影响",
+    "若触发",
     "财政与活力面板",
     "治理路线",
   ].forEach((text) => {
