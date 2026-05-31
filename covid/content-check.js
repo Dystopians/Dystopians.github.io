@@ -66,6 +66,40 @@ function assetExists(relativePath) {
   return Boolean(relativePath) && fs.existsSync(path.join(assetsDir, relativePath));
 }
 
+function readPngDimensions(relativePath) {
+  const fullPath = path.join(assetsDir, relativePath);
+  if (!fs.existsSync(fullPath)) return null;
+  const buffer = fs.readFileSync(fullPath);
+  const isPng = buffer.length >= 24
+    && buffer[0] === 0x89
+    && buffer[1] === 0x50
+    && buffer[2] === 0x4e
+    && buffer[3] === 0x47;
+  if (!isPng) return null;
+  return {
+    width: buffer.readUInt32BE(16),
+    height: buffer.readUInt32BE(20),
+  };
+}
+
+function assertPngQuality(relativePath, rules = {}) {
+  const dimensions = readPngDimensions(relativePath);
+  assert(Boolean(dimensions), `${relativePath} should be a readable PNG file.`);
+  if (!dimensions) return null;
+  const ratio = dimensions.width / dimensions.height;
+  const minWidth = rules.minWidth || 1;
+  const minHeight = rules.minHeight || 1;
+  const minRatio = rules.minRatio || 0.1;
+  const maxRatio = rules.maxRatio || 10;
+  assert(dimensions.width >= minWidth, `${relativePath} width ${dimensions.width} is below ${minWidth}.`);
+  assert(dimensions.height >= minHeight, `${relativePath} height ${dimensions.height} is below ${minHeight}.`);
+  assert(
+    ratio >= minRatio && ratio <= maxRatio,
+    `${relativePath} aspect ratio ${ratio.toFixed(2)} is outside ${minRatio}-${maxRatio}.`,
+  );
+  return dimensions;
+}
+
 function eventImagePath(event) {
   const image = core.getEventImage(event);
   if (!image) return "";
@@ -102,6 +136,7 @@ function validateEventCorpus() {
     const image = eventImagePath(event);
     assert(image.startsWith("events/"), `${event.id} must use a dedicated event image, found ${image}.`);
     assert(assetExists(image), `${event.id} image is missing: covid/assets/${image}.`);
+    assertPngQuality(image, { minWidth: 900, minHeight: 900, minRatio: 0.9, maxRatio: 1.9 });
     if (!eventImages.has(image)) eventImages.set(image, []);
     eventImages.get(image).push(event.id);
 
@@ -202,12 +237,17 @@ function validateMapAndCityActions() {
   assert(assetExists("tilesheet.png"), "Missing tilesheet.png.");
   assert(assetExists("mascot-dingdong-sprite.png"), "Missing mascot-dingdong-sprite.png.");
   assert(assetExists("mascot-dabai-sprite.png"), "Missing mascot-dabai-sprite.png.");
+  assertPngQuality("city-map.png", { minWidth: 1200, minHeight: 800, minRatio: 1.4, maxRatio: 1.6 });
+  assertPngQuality("tilesheet.png", { minWidth: 1200, minHeight: 800, minRatio: 1.4, maxRatio: 1.6 });
+  assertPngQuality("mascot-dingdong-sprite.png", { minWidth: 1600, minHeight: 300, minRatio: 4, maxRatio: 7 });
+  assertPngQuality("mascot-dabai-sprite.png", { minWidth: 1600, minHeight: 300, minRatio: 4, maxRatio: 7 });
 
   assert(Array.isArray(core.MAP_POINTS), "MAP_POINTS must be exported as an array.");
   core.MAP_POINTS.forEach((point) => {
     assert(point.id && point.label, "Each map point needs id and label.");
     assert(Number.isFinite(point.x) && Number.isFinite(point.y), `${point.id} needs numeric x/y coordinates.`);
     assert(assetExists(`highlight-${point.id}.png`), `${point.id} highlight asset is missing.`);
+    assertPngQuality(`highlight-${point.id}.png`, { minWidth: 1200, minHeight: 760, minRatio: 1.4, maxRatio: 1.8 });
 
     (point.operations || []).forEach((id) => {
       assert(operationIds.has(id), `${point.id} references missing operation ${id}.`);
@@ -243,6 +283,7 @@ function validateNewsAssets() {
   (core.NEWS_POOL || []).forEach((item) => {
     assert(item.id && item.title && item.body, "Every news item needs id/title/body.");
     assert(assetExists(item.image), `${item.id} news image is missing: covid/assets/${item.image}.`);
+    assertPngQuality(item.image, { minWidth: 900, minHeight: 900, minRatio: 0.9, maxRatio: 1.1 });
   });
 }
 
