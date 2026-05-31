@@ -328,12 +328,25 @@ function validateStageReview() {
   state.hidden.detectedRate = 43;
   const review = core.getStageReview(state);
   assert(review && review.summary && review.detail, "getStageReview must return summary and detail.");
+  assert(review.reward && review.reward.label && review.reward.detail, "Stage review should expose momentum reward status.");
   assert(Array.isArray(review.objectives) && review.objectives.length === 3, "Stage review should include current phase objectives.");
   assert(Array.isArray(review.weaknesses), "Stage review should expose weaknesses.");
   assert(review.nextPhase && review.nextPhase.objectives.length > 0, "Stage review should include next phase preparation.");
   const event = core.getCurrentEvent(state);
   assert(event && event.stageReview && event.type === "buffer", "Buffer event should include dynamic stageReview data.");
   assert(event.choices.some((choice) => /托底/.test(choice.label) && choice.effectPreview.length >= 3), "Buffer repair choice should describe its dynamic target.");
+  const goodState = core.createGame({ difficulty: "normal", seed: 20260610 });
+  goodState.day = 12;
+  goodState.phase = 1;
+  goodState.currentEventId = "buffer_1";
+  goodState.hidden.detectedRate = 60;
+  goodState.metrics.trust = 60;
+  goodState.metrics.staffFatigue = 30;
+  const goodEvent = core.getCurrentEvent(goodState);
+  assert(
+    goodEvent.choices.some((choice) => choice.id === "claimStageMomentum" && choice.effectPreview.length >= 3),
+    "Buffer event should add a momentum reward choice when enough stage objectives are complete.",
+  );
 }
 
 function validateChoiceRiskPreview() {

@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v71";
+  const ASSET_VERSION = "v72";
   const core = window.Linjiang72;
 
   let state = null;
@@ -1341,6 +1341,15 @@
         </div>
       `
       : "";
+    const reward = review.reward
+      ? `
+        <div class="stage-review-reward ${escapeHtml(review.reward.tone || "warn")}">
+          <span>${escapeHtml(review.reward.available ? "可兑现余裕" : "余裕不足")}</span>
+          <strong>${escapeHtml(review.reward.label)}</strong>
+          <p>${escapeHtml(review.reward.detail)}</p>
+        </div>
+      `
+      : "";
     els.eventStageReview.innerHTML = `
       <div class="stage-review-head ${escapeHtml(review.tone || "warn")}">
         <span>${escapeHtml(review.title || "阶段复盘")}</span>
@@ -1348,6 +1357,7 @@
       </div>
       <p class="stage-review-summary">${escapeHtml(review.summary || "")}</p>
       <div class="stage-review-objectives">${objectives}</div>
+      ${reward}
       <div class="stage-review-weaknesses">${weaknesses}</div>
       ${next}
     `;

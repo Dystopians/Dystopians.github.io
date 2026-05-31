@@ -687,6 +687,7 @@
     dynamicRepair: { label: "应急托底", tone: "info" },
     dynamicRelease: { label: "基层减压", tone: "good" },
     dynamicConcentrate: { label: "高压止血", tone: "danger" },
+    dynamicMomentum: { label: "恢复财政", tone: "good" },
     fallback_livelihood: { label: "民生保供", tone: "good" },
     fallback_control: { label: "高压止血", tone: "danger" },
     fallback_relief: { label: "基层减压", tone: "good" },
@@ -2372,6 +2373,7 @@
     const objectives = getStageObjectives(state);
     const completed = objectives.filter((objective) => objective.done).length;
     const dangerCount = objectives.filter((objective) => objective.tone === "danger").length;
+    const reward = getStageMomentumReward(state, objectives);
     const tone = dangerCount
       ? "danger"
       : completed === objectives.length
@@ -2407,6 +2409,7 @@
       total: objectives.length,
       summary: `阶段目标 ${completed}/${objectives.length} 达成。${verdict}`,
       detail,
+      reward,
       objectives: objectives.map((objective) => ({
         id: objective.id,
         label: objective.label,
@@ -2423,6 +2426,42 @@
         focus: nextPhase.focus,
         objectives: nextObjectives,
       } : null,
+    };
+  }
+
+  function getStageMomentumReward(state, objectives = getStageObjectives(state)) {
+    const completed = objectives.filter((objective) => objective.done).length;
+    const total = objectives.length || 0;
+    if (completed >= 3) {
+      return {
+        available: true,
+        tone: "good",
+        label: "阶段余裕充足",
+        detail: `阶段目标 ${completed}/${total} 达成，可把调度余裕转成下一阶段小额周转和轻度执行缓冲。`,
+        resources: { funds: 3 },
+        effects: { trust: 1, economy: 1, staffFatigue: -1 },
+        hidden: {},
+      };
+    }
+    if (completed >= 2) {
+      return {
+        available: true,
+        tone: "good",
+        label: "阶段余裕可用",
+        detail: `阶段目标 ${completed}/${total} 达成，可兑现一笔小额周转，帮助下一阶段少一点卡手。`,
+        resources: { funds: 2 },
+        effects: { staffFatigue: -1 },
+        hidden: {},
+      };
+    }
+    return {
+      available: false,
+      tone: completed ? "warn" : "danger",
+      label: "阶段余裕不足",
+      detail: `阶段目标 ${completed}/${total} 达成，复盘会只提供补救选择，不会额外生成奖励性余裕。`,
+      resources: {},
+      effects: {},
+      hidden: {},
     };
   }
 
@@ -3721,12 +3760,69 @@
   function buildBufferEvent(state) {
     const phase = phaseForDay(state.day);
     const review = getStageReview(state);
+    const reward = review.reward || getStageMomentumReward(state);
     const worst = findWorstMetric(state);
     const sacrifice = findSacrificeMetric(state, worst.metric);
     const worstMeta = METRIC_META[worst.metric];
     const sacrificeMeta = METRIC_META[sacrifice];
     const repairDelta = worstMeta.direction === "danger" ? -8 : 8;
     const sacrificeDelta = sacrificeMeta.direction === "danger" ? 6 : -6;
+    const choices = [
+      ...(reward.available ? [{
+        id: "claimStageMomentum",
+        label: "兑现阶段余裕",
+        actionKey: "dynamicMomentum",
+        description: `${reward.detail} 这不是救急按钮，而是对阶段目标完成度的奖励：收益温和，但没有明显副作用。`,
+        routeTag: getChoiceRouteTag({ actionKey: "dynamicMomentum" }),
+        effectPreview: [
+          ...previewEventChoiceEffects({ resources: reward.resources, effects: reward.effects, hidden: reward.hidden }).slice(0, 5),
+          "阶段奖励",
+        ],
+        crisisImpacts: [
+          { id: "rewardFunds", tone: "good", label: "兑现余裕", detail: `资金 +${reward.resources.funds || 0}` },
+          { id: "rewardFatigue", tone: "good", label: "执行缓冲", detail: reward.effects.staffFatigue ? `疲劳 ${reward.effects.staffFatigue}` : "疲劳缓冲" },
+          { id: "rewardTrust", tone: "good", label: "信任留存", detail: reward.effects.trust ? `信任 +${reward.effects.trust}` : "信任留存" },
+        ],
+      }] : []),
+      {
+        id: "repairWorst",
+        label: `托底${worstMeta.label}`,
+        actionKey: "dynamicRepair",
+        description: `把当前最危险的短板先拉回一点：${worstMeta.label}会得到直接修复，但代价会落在仍有余量的${sacrificeMeta.label}上。`,
+        routeTag: getChoiceRouteTag({ actionKey: "dynamicRepair" }),
+        effectPreview: [`${worstMeta.short} ${repairDelta > 0 ? "+" : ""}${repairDelta}`, `${sacrificeMeta.short} ${sacrificeDelta > 0 ? "+" : ""}${sacrificeDelta}`, "创伤 +1"],
+        crisisImpacts: [
+          { id: "repair", tone: "good", label: "托底红线", detail: `${worstMeta.label} ${repairDelta > 0 ? "+" : ""}${repairDelta}` },
+          { id: "cost", tone: "danger", label: "转移代价", detail: `${sacrificeMeta.label} ${sacrificeDelta > 0 ? "+" : ""}${sacrificeDelta}` },
+        ],
+      },
+      {
+        id: "releasePressure",
+        label: "释放社会压力",
+        actionKey: "dynamicRelease",
+        description: "把阶段末的解释、轮休和恢复节奏放到台前，降低管控与疲劳，修复信任和活力，但承担轻微感染反弹。",
+        routeTag: getChoiceRouteTag({ actionKey: "dynamicRelease" }),
+        effectPreview: ["信任 +6", "疲劳 -6", "感染 +2"],
+        crisisImpacts: [
+          { id: "trust", tone: "good", label: "修复信任", detail: "信任 +6" },
+          { id: "staff", tone: "good", label: "基层减压", detail: "疲劳 -6" },
+          { id: "infection", tone: "danger", label: "传播反弹", detail: "感染 +2" },
+        ],
+      },
+      {
+        id: "concentrateResources",
+        label: "集中防疫资源",
+        actionKey: "dynamicConcentrate",
+        description: "把阶段复盘转成一次更集中调度，继续压低感染和医疗压力，代价是物资、活力与基层状态会继续承压。",
+        routeTag: getChoiceRouteTag({ actionKey: "dynamicConcentrate" }),
+        effectPreview: ["感染 -5", "医疗负载 -4", "物资/活力/疲劳承压"],
+        crisisImpacts: [
+          { id: "infection", tone: "good", label: "压低传播", detail: "感染 -5" },
+          { id: "medical", tone: "good", label: "护住医疗", detail: "医疗负载 -4" },
+          { id: "staff", tone: "danger", label: "疲劳上升", detail: "基层承压" },
+        ],
+      },
+    ];
     return {
       id: `buffer_${phase}`,
       type: "buffer",
@@ -3736,46 +3832,7 @@
       body: `${review.summary} ${review.detail} 阶段总结给了城市一次缓冲窗口：可以修补最危险的短板，也可以选择更明确的恢复方向。没有免费的修复，每一项补救都会挤占另一个系统。`,
       image: "news-shelter.png",
       stageReview: review,
-      choices: [
-        {
-          id: "repairWorst",
-          label: `托底${worstMeta.label}`,
-          actionKey: "dynamicRepair",
-          description: `把当前最危险的短板先拉回一点：${worstMeta.label}会得到直接修复，但代价会落在仍有余量的${sacrificeMeta.label}上。`,
-          routeTag: getChoiceRouteTag({ actionKey: "dynamicRepair" }),
-          effectPreview: [`${worstMeta.short} ${repairDelta > 0 ? "+" : ""}${repairDelta}`, `${sacrificeMeta.short} ${sacrificeDelta > 0 ? "+" : ""}${sacrificeDelta}`, "创伤 +1"],
-          crisisImpacts: [
-            { id: "repair", tone: "good", label: "托底红线", detail: `${worstMeta.label} ${repairDelta > 0 ? "+" : ""}${repairDelta}` },
-            { id: "cost", tone: "danger", label: "转移代价", detail: `${sacrificeMeta.label} ${sacrificeDelta > 0 ? "+" : ""}${sacrificeDelta}` },
-          ],
-        },
-        {
-          id: "releasePressure",
-          label: "释放社会压力",
-          actionKey: "dynamicRelease",
-          description: "把阶段末的解释、轮休和恢复节奏放到台前，降低管控与疲劳，修复信任和活力，但承担轻微感染反弹。",
-          routeTag: getChoiceRouteTag({ actionKey: "dynamicRelease" }),
-          effectPreview: ["信任 +6", "疲劳 -6", "感染 +2"],
-          crisisImpacts: [
-            { id: "trust", tone: "good", label: "修复信任", detail: "信任 +6" },
-            { id: "staff", tone: "good", label: "基层减压", detail: "疲劳 -6" },
-            { id: "infection", tone: "danger", label: "传播反弹", detail: "感染 +2" },
-          ],
-        },
-        {
-          id: "concentrateResources",
-          label: "集中防疫资源",
-          actionKey: "dynamicConcentrate",
-          description: "把阶段复盘转成一次更集中调度，继续压低感染和医疗压力，代价是物资、活力与基层状态会继续承压。",
-          routeTag: getChoiceRouteTag({ actionKey: "dynamicConcentrate" }),
-          effectPreview: ["感染 -5", "医疗负载 -4", "物资/活力/疲劳承压"],
-          crisisImpacts: [
-            { id: "infection", tone: "good", label: "压低传播", detail: "感染 -5" },
-            { id: "medical", tone: "good", label: "护住医疗", detail: "医疗负载 -4" },
-            { id: "staff", tone: "danger", label: "疲劳上升", detail: "基层承压" },
-          ],
-        },
-      ],
+      choices,
     };
   }
 
@@ -4765,6 +4822,15 @@
   }
 
   function applyBufferChoice(state, choiceId, dailyDelta, log) {
+    if (choiceId === "claimStageMomentum") {
+      const reward = getStageMomentumReward(state);
+      applyResourceEffects(state, reward.resources, log, "阶段余裕");
+      applyEffects(state, reward.effects, dailyDelta, log, "阶段余裕");
+      applyHiddenEffects(state, reward.hidden, log, "阶段余裕");
+      log.notes.push(reward.available ? reward.detail : "阶段余裕不足，未获得额外奖励。");
+      return;
+    }
+
     if (choiceId === "repairWorst") {
       const worst = findWorstMetric(state);
       const sacrifice = findSacrificeMetric(state, worst.metric);

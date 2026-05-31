@@ -2430,6 +2430,43 @@ label {
   gap: 5px;
 }
 
+.stage-review-reward {
+  display: grid;
+  gap: 4px;
+  padding: 7px;
+  border: 2px solid var(--warn);
+  background: rgba(255, 241, 200, 0.72);
+}
+
+.stage-review-reward.good {
+  border-color: var(--good);
+  background: #dfe9a7;
+}
+
+.stage-review-reward.danger {
+  border-color: var(--danger);
+  background: #e9ad88;
+}
+
+.stage-review-reward span {
+  color: #6d4a1e;
+  font-size: 0.64rem;
+  font-weight: 900;
+}
+
+.stage-review-reward strong {
+  color: var(--deep);
+  font-size: 0.75rem;
+}
+
+.stage-review-reward p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .stage-review-weakness {
   padding: 6px 7px;
   border: 2px solid #b89752;
