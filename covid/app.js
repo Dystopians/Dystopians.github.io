@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v67";
+  const ASSET_VERSION = "v69";
   const core = window.Linjiang72;
 
   let state = null;
@@ -259,6 +259,7 @@
     mapHighlightLayer: document.getElementById("mapHighlightLayer"),
     resetMapView: document.getElementById("resetMapView"),
     mapHotspots: document.getElementById("mapHotspots"),
+    mapSignals: document.getElementById("mapSignals"),
     mapInspector: document.getElementById("mapInspector"),
     mapHint: document.getElementById("mapHint"),
     eventType: document.getElementById("eventType"),
@@ -877,15 +878,17 @@
   function renderMap() {
     els.mapHotspots.innerHTML = "";
     renderMapHighlights();
+    const mapSignals = core.getMapSignals ? core.getMapSignals(state) : [];
     core.MAP_POINTS.forEach((point) => {
       const pointState = core.getMapPoint(state, point.id);
       const pointStatus = core.getMapPointStatus ? core.getMapPointStatus(state, point.id) : null;
+      const pointSignal = mapSignals.find((item) => item.pointId === point.id);
       const availableOps = pointState.operations.filter((item) => item.available).length;
       const availableRes = pointState.resolutions.filter((item) => item.available).length;
       const availableTotal = availableOps + availableRes;
       const footprint = getMapFootprint(point);
       const button = document.createElement("button");
-      button.className = `map-hotspot ${point.type}${state.selectedMapPointId === point.id ? " active" : ""}${availableTotal ? " has-actions" : ""}${pointStatus ? ` status-${pointStatus.tone}` : ""}`;
+      button.className = `map-hotspot ${point.type}${state.selectedMapPointId === point.id ? " active" : ""}${availableTotal ? " has-actions" : ""}${pointStatus ? ` status-${pointStatus.tone}` : ""}${pointSignal ? ` has-signal signal-${pointSignal.tone}` : ""}`;
       button.type = "button";
       button.style.left = `${point.x}%`;
       button.style.top = `${point.y}%`;
@@ -907,11 +910,12 @@
             <em>${escapeHtml(String(pointStatus.value))}</em>
           </span>
         ` : ""}
+        ${pointSignal ? `<span class="map-signal-dot ${escapeHtml(pointSignal.tone)}" title="${escapeHtml(pointSignal.detail)}">!</span>` : ""}
         ${availableTotal ? `<span class="map-hotspot-badge" aria-hidden="true">${availableTotal}</span>` : ""}
       `;
       const showHighlight = () => {
         setMapHighlight(point.id);
-        els.mapHint.textContent = `悬停：${point.label}${pointStatus ? ` · ${pointStatus.short} ${pointStatus.value}` : ""}${availableTotal ? ` · 可用行动 ${availableTotal}` : ""} · ${cityActionBudgetText()}`;
+        els.mapHint.textContent = `悬停：${point.label}${pointSignal ? ` · ${pointSignal.label}` : ""}${pointStatus ? ` · ${pointStatus.short} ${pointStatus.value}` : ""}${availableTotal ? ` · 可用行动 ${availableTotal}` : ""} · ${cityActionBudgetText()}`;
       };
       const hideHighlight = () => {
         setMapHighlight(null);
@@ -931,7 +935,51 @@
       });
       els.mapHotspots.appendChild(button);
     });
+    renderMapSignals(mapSignals);
     renderMapInspector();
+  }
+
+  function renderMapSignals(signals = []) {
+    if (!els.mapSignals) return;
+    if (!signals.length) {
+      els.mapSignals.innerHTML = `
+        <div class="map-signals-head">
+          <span>城市信号</span>
+          <strong>0</strong>
+        </div>
+        <p class="map-signals-empty">暂无高优先地图信号，当前可按事件和行动窗口推进。</p>
+      `;
+      return;
+    }
+    els.mapSignals.innerHTML = `
+      <div class="map-signals-head">
+        <span>城市信号</span>
+        <strong>${signals.length}</strong>
+      </div>
+      <div class="map-signal-list">
+        ${signals.map((signal) => `
+          <button class="map-signal-item ${escapeHtml(signal.tone || "info")}" type="button"
+            data-point-id="${escapeHtml(signal.pointId)}" data-mode="${escapeHtml(signal.mode || "")}"
+            title="${escapeHtml(signal.detail)}">
+            <span>${escapeHtml(signal.pointLabel)} · ${escapeHtml(signal.status || "观察")}</span>
+            <strong>${escapeHtml(signal.label)}</strong>
+            <em>${escapeHtml(signal.detail)}</em>
+          </button>
+        `).join("")}
+      </div>
+    `;
+    els.mapSignals.querySelectorAll(".map-signal-item").forEach((button) => {
+      button.addEventListener("click", () => {
+        core.selectMapPoint(state, button.dataset.pointId);
+        if (button.dataset.mode) {
+          actionMode = button.dataset.mode === "resolutions" ? "resolutions" : "operations";
+        }
+        save();
+        renderMap();
+        renderActionMode();
+        els.mapHint.textContent = `已定位城市信号：${core.getMapPoint(state, button.dataset.pointId).label}`;
+      });
+    });
   }
 
   function renderMapHighlights() {

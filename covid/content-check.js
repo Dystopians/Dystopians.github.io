@@ -243,6 +243,40 @@ function validateRecoveryLevers() {
   );
 }
 
+function validateFiscalEconomyChannels() {
+  const required = [
+    "fastGrantReport",
+    "interProvinceSupport",
+    "supplierPaymentExtension",
+    "contactlessLivelihoodStalls",
+    "onlineGovOvertime",
+    "communityRepairWhitelist",
+  ];
+  required.forEach((id) => {
+    assert(core.OPERATIONS[id], `Missing fiscal/economy recovery operation: ${id}.`);
+  });
+  const mappedOperationIds = new Set(core.MAP_POINTS.flatMap((point) => point.operations || []));
+  required.forEach((id) => {
+    assert(mappedOperationIds.has(id), `Fiscal/economy operation is not reachable from the city map: ${id}.`);
+  });
+  const state = core.createGame({ difficulty: "normal", seed: 20260607 });
+  state.day = 9;
+  state.metrics.infection = 44;
+  state.metrics.hospitalLoad = 50;
+  state.metrics.supplies = 55;
+  state.metrics.trust = 58;
+  state.metrics.economy = 58;
+  state.metrics.staffFatigue = 46;
+  state.resources.funds = 48;
+  state.hidden.detectedRate = 58;
+  const statuses = core.getAvailableOperations(state).filter((item) => required.includes(item.id));
+  const available = statuses.filter((item) => item.available);
+  assert(statuses.length === required.length, "All new fiscal/economy operations should produce operation statuses.");
+  assert(available.length >= 4, `Expected at least 4 early fiscal/economy channels available, found ${available.length}.`);
+  const report = core.getRecoveryLevers(state);
+  assert(report.totalCount >= 29, `Recovery lever report should recognize expanded fiscal/economy channels, found ${report.totalCount}.`);
+}
+
 function validateCityActionOpportunities() {
   assert(typeof core.getCityActionOpportunities === "function", "game-core.js must export getCityActionOpportunities.");
   const state = core.createGame({ difficulty: "normal", seed: 20260604 });
@@ -264,6 +298,22 @@ function validateCityActionOpportunities() {
   assert(
     report.items.every((item) => item.routeTag && item.routeTag.label),
     "Every action opportunity should expose a routeTag label.",
+  );
+}
+
+function validateMapSignals() {
+  assert(typeof core.getMapSignals === "function", "game-core.js must export getMapSignals.");
+  const state = core.createGame({ difficulty: "normal", seed: 20260606 });
+  state.metrics.hospitalLoad = 90;
+  state.metrics.supplies = 24;
+  state.metrics.staffFatigue = 82;
+  state.resources.funds = 14;
+  const signals = core.getMapSignals(state);
+  assert(Array.isArray(signals), "getMapSignals must return an array.");
+  assert(signals.length > 0 && signals.length <= 3, "Map signals should surface 1-3 top entries under pressure.");
+  assert(
+    signals.every((item) => item.id && item.pointId && item.pointLabel && item.label && item.detail && item.tone && item.status),
+    "Every map signal needs id, pointId, pointLabel, label, detail, tone, and status.",
   );
 }
 
@@ -335,7 +385,9 @@ function run() {
   validateNewsAssets();
   validateCacheVersions();
   validateRecoveryLevers();
+  validateFiscalEconomyChannels();
   validateCityActionOpportunities();
+  validateMapSignals();
   validateStageReview();
   validateChoiceRiskPreview();
   validateEndingStrategyReview();

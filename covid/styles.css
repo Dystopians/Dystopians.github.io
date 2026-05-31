@@ -1657,9 +1657,200 @@ label {
   background: #e6a17c;
 }
 
+.map-signal-dot {
+  position: absolute;
+  left: calc(var(--marker-x, 50%) + 19px);
+  top: calc(var(--marker-y, 50%) + 18px);
+  z-index: 5;
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  transform: translate(-50%, -50%);
+  border: 2px solid #8e6330;
+  background: #f6c957;
+  color: #4a2516;
+  box-shadow: 2px 2px 0 rgba(45, 40, 31, 0.58);
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+  animation: signalBeat 1.6s steps(2) infinite;
+}
+
+.map-signal-dot.good {
+  border-color: var(--good);
+  background: #c9dd91;
+  color: #244d35;
+}
+
+.map-signal-dot.warn {
+  border-color: var(--warn);
+  background: #eec673;
+  color: #583b15;
+}
+
+.map-signal-dot.danger {
+  border-color: var(--danger);
+  background: #e6a17c;
+  color: #5b1f18;
+}
+
 .map-hotspot:hover .map-hotspot-label,
 .map-hotspot.active .map-hotspot-label {
   display: block;
+}
+
+.map-hotspot.has-signal::after {
+  box-shadow:
+    2px 2px 0 rgba(45, 40, 31, 0.58),
+    0 0 0 5px rgba(255, 241, 200, 0.2);
+}
+
+.map-hotspot.signal-danger::after {
+  border-color: #fff1c8;
+  background:
+    linear-gradient(90deg, transparent 0 5px, rgba(255, 241, 200, 0.9) 5px 9px, transparent 9px),
+    #a83f32;
+}
+
+.map-hotspot.signal-warn::after {
+  border-color: #fff1c8;
+  background:
+    linear-gradient(90deg, transparent 0 5px, rgba(255, 241, 200, 0.9) 5px 9px, transparent 9px),
+    #d79b2c;
+}
+
+.map-hotspot.signal-good::after,
+.map-hotspot.signal-info::after {
+  border-color: #fff1c8;
+  background:
+    linear-gradient(90deg, transparent 0 5px, rgba(255, 241, 200, 0.9) 5px 9px, transparent 9px),
+    #3f7a54;
+}
+
+.map-signals {
+  display: grid;
+  gap: 7px;
+  margin-top: 9px;
+  padding: 8px;
+  border: 2px solid #9b7134;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 241, 200, 0.44) 0 7px, rgba(244, 218, 155, 0.24) 7px 14px),
+    #ead19a;
+  box-shadow: inset 2px 2px 0 rgba(255, 247, 209, 0.72);
+}
+
+.map-signals-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.map-signals-head span {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.map-signals-head strong {
+  min-width: 24px;
+  height: 22px;
+  display: inline-grid;
+  place-items: center;
+  border: 2px solid var(--line-dark);
+  background: #f6c957;
+  color: #4a2516;
+  box-shadow: 2px 2px 0 rgba(45, 40, 31, 0.46);
+  font-size: 0.72rem;
+}
+
+.map-signal-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.map-signal-item {
+  min-height: 72px;
+  padding: 6px 7px;
+  border: 2px solid #b89752;
+  background: #fff1c8;
+  color: var(--deep);
+  box-shadow: 2px 2px 0 rgba(95, 75, 42, 0.38);
+  text-align: left;
+}
+
+.map-signal-item:hover,
+.map-signal-item:focus-visible {
+  background: #ffd86f;
+  transform: translate(-1px, -1px);
+}
+
+.map-signal-item.good {
+  border-color: var(--good);
+  background:
+    linear-gradient(90deg, rgba(207, 228, 154, 0.5), rgba(255, 241, 200, 0.92)),
+    #fff1c8;
+}
+
+.map-signal-item.info {
+  border-color: var(--blue);
+  background:
+    linear-gradient(90deg, rgba(200, 215, 223, 0.52), rgba(255, 241, 200, 0.92)),
+    #fff1c8;
+}
+
+.map-signal-item.warn {
+  border-color: var(--warn);
+  background:
+    linear-gradient(90deg, rgba(243, 201, 110, 0.46), rgba(255, 241, 200, 0.92)),
+    #fff1c8;
+}
+
+.map-signal-item.danger {
+  border-color: var(--danger);
+  background:
+    linear-gradient(90deg, rgba(230, 161, 124, 0.52), rgba(255, 241, 200, 0.9)),
+    #fff1c8;
+}
+
+.map-signal-item span,
+.map-signal-item em {
+  display: block;
+  color: #6d4a1e;
+  font-size: 0.6rem;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1.18;
+}
+
+.map-signal-item strong {
+  display: block;
+  margin: 3px 0;
+  color: var(--deep);
+  font-size: 0.74rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.map-signal-item em {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.62rem;
+  line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.map-signals-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.35;
 }
 
 .map-inspector {
@@ -4212,6 +4403,17 @@ label {
   }
   50% {
     filter: brightness(1.16);
+  }
+}
+
+@keyframes signalBeat {
+  0%, 100% {
+    filter: brightness(1);
+    transform: translate(-50%, -50%);
+  }
+  50% {
+    filter: brightness(1.14);
+    transform: translate(-50%, -50%) translateY(-1px);
   }
 }
 
