@@ -1046,6 +1046,8 @@ function validateActionPreviewCoverage() {
   assert(styles.includes(".trend-summary"), "Trend preview summary needs dedicated styling.");
   assert(appJs.includes("strategy-inertia"), "Strategy profile should render route inertia warnings.");
   assert(styles.includes(".strategy-inertia"), "Route inertia warnings need dedicated styling.");
+  assert(appJs.includes("renderActionFinderRouteTag"), "Action finder should render explicit strategy route tags.");
+  assert(styles.includes(".action-finder-route"), "Action finder route tags need dedicated styling.");
 }
 
 function run() {

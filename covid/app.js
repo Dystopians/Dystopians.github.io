@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v121";
+  const ASSET_VERSION = "v122";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -2310,7 +2310,8 @@
               data-point-id="${escapeHtml(item.pointId)}" data-mode="${escapeHtml(item.mode)}"
               data-action-id="${escapeHtml(item.id)}"
               title="${escapeHtml(item.detail || item.reason || "")}">
-              <span>${escapeHtml(item.kind)} · ${escapeHtml(item.pointLabel)} · ${escapeHtml((item.routeTag && item.routeTag.label) || "综合调度")}</span>
+              <span>${escapeHtml(item.kind)} · ${escapeHtml(item.pointLabel)} · ${escapeHtml(item.status || "可执行")}</span>
+              ${renderActionFinderRouteTag(item)}
               <strong>${escapeHtml(item.label)}</strong>
               <p>${escapeHtml(item.reason || item.impact || "根据当前压力推荐。")}</p>
               ${renderActionFinderDirective(item)}
@@ -2333,6 +2334,7 @@
               data-action-id="${escapeHtml(item.id)}"
               title="${escapeHtml(item.detail || item.reason || "")}">
               <span>${escapeHtml(item.kind)} · ${escapeHtml(item.pointLabel)} · ${escapeHtml(item.status || "明日可排")}</span>
+              ${renderActionFinderRouteTag(item)}
               <strong>${escapeHtml(item.label)}</strong>
               <p>${escapeHtml(item.reason || item.impact || "明日调度额度恢复后可执行。")}</p>
               <div class="action-finder-chips">${renderOpportunityChips(item)}</div>
@@ -2354,6 +2356,7 @@
               data-action-id="${escapeHtml(item.id)}"
               title="${escapeHtml(item.detail || item.reason || "")}">
               <span>${escapeHtml(item.kind)} · ${escapeHtml(item.pointLabel)} · ${escapeHtml(item.status || "未解锁")}</span>
+              ${renderActionFinderRouteTag(item)}
               <strong>${escapeHtml(item.label)}</strong>
               <p>${escapeHtml(item.reason || item.detail || "当前条件不足。")}</p>
               <div class="action-finder-chips">${renderOpportunityChips(item)}</div>
@@ -2388,6 +2391,12 @@
         els.mapHint.textContent = `已定位行动窗口：${core.getMapPoint(state, button.dataset.pointId).label}`;
       });
     });
+  }
+
+  function renderActionFinderRouteTag(item) {
+    const tag = item && item.routeTag ? item.routeTag : null;
+    if (!tag || !tag.label) return "";
+    return `<em class="action-finder-route ${escapeHtml(tag.tone || "neutral")}">${escapeHtml(tag.label)}</em>`;
   }
 
   function renderOpportunityChips(item) {

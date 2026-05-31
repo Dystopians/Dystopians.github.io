@@ -4881,11 +4881,54 @@ label {
 }
 
 .action-finder-item span {
-  display: block;
+  display: inline-flex;
+  max-width: 100%;
   color: #6d4a1e;
   font-size: 0.62rem;
   font-weight: 900;
   line-height: 1.2;
+}
+
+.action-finder-route {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 19px;
+  align-items: center;
+  margin: 2px 0 1px;
+  padding: 1px 5px;
+  border: 2px solid rgba(119, 82, 33, 0.58);
+  background: #fff1c8;
+  color: var(--deep);
+  font-size: 0.58rem;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+.action-finder-route.good {
+  border-color: var(--good);
+  background: #dcebac;
+  color: #244d35;
+}
+
+.action-finder-route.danger {
+  border-color: var(--danger);
+  background: #eaa07c;
+  color: #5b1f18;
+}
+
+.action-finder-route.mixed,
+.action-finder-route.warn {
+  border-color: var(--warn);
+  background: #f0ca75;
+  color: #5b3715;
+}
+
+.action-finder-route.info {
+  border-color: var(--blue);
+  background: #cbd7d0;
+  color: #244258;
 }
 
 .action-finder-item strong {
