@@ -566,6 +566,18 @@ function validateSettlementBreakdown() {
     entry.breakdown.every((item) => item.source && item.deltas && Object.keys(item.deltas).length),
     "Every settlement breakdown row needs source and non-empty deltas.",
   );
+  assert(typeof core.getSettlementHighlights === "function", "game-core.js must export getSettlementHighlights.");
+  const highlights = core.getSettlementHighlights(entry);
+  assert(Array.isArray(highlights), "Settlement highlights should return an array.");
+  assert(highlights.length > 0, "Settlement highlights should include at least one readable battle-report item.");
+  assert(
+    highlights.every((item) => item.id && item.label && item.detail && item.tone),
+    "Every settlement highlight needs id, label, detail, and tone.",
+  );
+  assert(
+    highlights.every((item) => !String(item.detail).includes("[object Object]")),
+    "Settlement highlight details must render readable text.",
+  );
 }
 
 function validateMetricTrends() {

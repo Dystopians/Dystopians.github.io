@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v84";
+  const ASSET_VERSION = "v85";
   const core = window.Linjiang72;
 
   let state = null;
@@ -1666,6 +1666,7 @@
     const card = document.createElement("article");
     card.className = `settlement-recap ${settlementTone(entry)}`;
     const changes = renderChangeChips(entry.changes, 7);
+    const highlights = renderSettlementHighlights(entry);
     const breakdown = renderBreakdownRows(entry.breakdown, 4);
     const notes = (entry.notes || [])
       .filter(Boolean)
@@ -1678,6 +1679,7 @@
         <strong>第 ${entry.day} 天</strong>
       </div>
       <p><b>${escapeHtml(entry.choice)}</b> / ${escapeHtml(entry.title)}</p>
+      ${highlights}
       <div class="change-list">${changes}</div>
       ${breakdown}
       ${notes ? `<ul class="settlement-notes">${notes}</ul>` : ""}
@@ -2196,6 +2198,22 @@
     if (meta.direction === "good") return delta >= 0 ? "good-change" : "bad-change";
     if (meta.direction === "danger") return delta <= 0 ? "good-change" : "bad-change";
     return "mixed-change";
+  }
+
+  function renderSettlementHighlights(entry) {
+    if (!core.getSettlementHighlights) return "";
+    const highlights = core.getSettlementHighlights(entry);
+    if (!highlights.length) return "";
+    return `
+      <div class="settlement-highlights" aria-label="结算要点">
+        ${highlights.map((item) => `
+          <article class="${escapeHtml(item.tone || "info")}">
+            <span>${escapeHtml(item.label)}</span>
+            <strong>${escapeHtml(item.detail)}</strong>
+          </article>
+        `).join("")}
+      </div>
+    `;
   }
 
   function renderBreakdownRows(breakdown = [], limit = 4) {

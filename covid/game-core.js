@@ -5123,6 +5123,74 @@
       .sort((a, b) => b.weight - a.weight || a.source.localeCompare(b.source, "zh-Hans-CN"));
   }
 
+  function getSettlementHighlights(entry) {
+    if (!entry || !entry.changes) return [];
+    const changes = Object.entries(entry.changes)
+      .filter(([, delta]) => delta)
+      .map(([metric, delta]) => {
+        const meta = getObjectiveMeta(metric);
+        const bad = changeIsBad(metric, delta);
+        const mixed = meta.direction === "mixed";
+        return {
+          metric,
+          delta,
+          meta,
+          bad,
+          mixed,
+          score: Math.abs(delta)
+            + (bad ? 8 : 0)
+            + (CORE_METRICS.includes(metric) || RESOURCE_METRICS.includes(metric) ? 3 : 0),
+        };
+      });
+    const byScore = (a, b) => b.score - a.score || a.meta.short.localeCompare(b.meta.short, "zh-Hans-CN");
+    const best = changes.filter((item) => !item.bad && !item.mixed).sort(byScore)[0];
+    const cost = changes.filter((item) => item.bad).sort(byScore)[0];
+    const hidden = changes.filter((item) => HIDDEN_METRICS.includes(item.metric)).sort(byScore)[0];
+    const source = (entry.breakdown || [])[0];
+    const highlights = [];
+    if (best) {
+      highlights.push({
+        id: "benefit",
+        label: "最大收益",
+        tone: "good",
+        detail: `${best.meta.short} ${signedDelta(best.delta)}`,
+      });
+    }
+    if (cost) {
+      highlights.push({
+        id: "cost",
+        label: "最大代价",
+        tone: "warn",
+        detail: `${cost.meta.short} ${signedDelta(cost.delta)}`,
+      });
+    }
+    if (hidden && (!best || hidden.metric !== best.metric) && (!cost || hidden.metric !== cost.metric)) {
+      const hiddenTone = hidden.bad ? "warn" : hidden.mixed ? "mixed" : "good";
+      highlights.push({
+        id: "hidden",
+        label: "隐藏账",
+        tone: hiddenTone,
+        detail: `${hidden.meta.short} ${signedDelta(hidden.delta)}`,
+      });
+    }
+    if (source) {
+      const detail = Object.entries(source.deltas || {})
+        .slice(0, 3)
+        .map(([metric, delta]) => {
+          const meta = getObjectiveMeta(metric);
+          return `${meta.short} ${signedDelta(delta)}`;
+        })
+        .join("，");
+      highlights.push({
+        id: "source",
+        label: "主要来源",
+        tone: "info",
+        detail: `${source.source}${detail ? `：${detail}` : ""}`,
+      });
+    }
+    return highlights.slice(0, 4);
+  }
+
   function addModifiers(target, incoming = {}) {
     Object.entries(incoming).forEach(([key, value]) => {
       target[key] = (target[key] || 0) + value;
@@ -7231,6 +7299,7 @@
     getRecoveryLevers,
     getFiscalOutlook,
     getCityBadges,
+    getSettlementHighlights,
     getSystemReadouts,
     getCityActionBudget,
     getCityActionUndo,
