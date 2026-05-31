@@ -1070,6 +1070,10 @@ function validateActionPreviewCoverage() {
   assert(appJs.includes("core.getChoiceRouteTag({ id: item.id })"), "City action cards should derive route tags from their action id.");
   assert(styles.includes(".action-finder-route"), "Action finder route tags need dedicated styling.");
   assert(styles.includes(".action-card .action-finder-route"), "Map action cards should style route tags consistently.");
+  assert(appJs.includes("renderChoiceRankBadge"), "Event choice buttons should render recommendation/rank badges from the comparison model.");
+  assert(appJs.includes("choiceButtonComparisonClass"), "Event choice buttons should inherit comparison tone classes.");
+  assert(styles.includes(".choice-rank-badge"), "Choice recommendation badges need dedicated styling.");
+  assert(styles.includes(".choice-button.choice-recommended"), "Recommended choice buttons should have a visible persistent state.");
 }
 
 function run() {

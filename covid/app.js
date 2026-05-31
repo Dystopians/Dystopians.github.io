@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v124";
+  const ASSET_VERSION = "v125";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -1585,15 +1585,21 @@
       els.eventVisual,
     );
     els.choiceList.innerHTML = "";
-    const comparison = renderChoiceComparison();
+    const comparisonReport = core.getChoiceComparison ? core.getChoiceComparison(state) : null;
+    const comparisonByChoice = new Map((comparisonReport && comparisonReport.items ? comparisonReport.items : []).map((item) => [item.choiceId, item]));
+    const comparison = renderChoiceComparison(comparisonReport);
     if (comparison) {
       els.choiceList.insertAdjacentHTML("beforeend", comparison);
       bindChoiceComparison();
     }
 
     event.choices.forEach((choice) => {
+      const comparisonItem = comparisonByChoice.get(choice.id);
       const button = document.createElement("button");
-      button.className = "choice-button";
+      button.className = [
+        "choice-button",
+        choiceButtonComparisonClass(comparisonItem),
+      ].filter(Boolean).join(" ");
       button.type = "button";
       button.disabled = choice.available === false;
       button.dataset.choiceId = choice.id;
@@ -1605,7 +1611,7 @@
         ? `<span class="route-tag ${routeTag.tone || "neutral"}">${escapeHtml(routeTag.label)}</span>`
         : "";
       button.innerHTML = `
-        <div class="choice-title"><strong>${escapeHtml(choice.label)}</strong>${tag}</div>
+        <div class="choice-title"><strong>${escapeHtml(choice.label)}</strong><span class="choice-title-tags">${renderChoiceRankBadge(comparisonItem)}${tag}</span></div>
         <p>${escapeHtml(choice.available === false ? choice.lockedReason : choice.description)}</p>
         ${renderChoiceFit(choice)}
         ${renderChoiceDirectiveFit(choice)}
@@ -1630,9 +1636,7 @@
     });
   }
 
-  function renderChoiceComparison() {
-    if (!core.getChoiceComparison) return "";
-    const comparison = core.getChoiceComparison(state);
+  function renderChoiceComparison(comparison) {
     const items = comparison && comparison.items ? comparison.items : [];
     if (!items.length) return "";
     return `
@@ -1663,6 +1667,21 @@
         focusChoiceOption(choiceId);
       });
     });
+  }
+
+  function choiceButtonComparisonClass(item) {
+    if (!item || !item.available) return "";
+    if (item.recommended) return "choice-recommended";
+    if (item.tone === "danger") return "choice-risky";
+    if (item.tone === "warn") return "choice-costly";
+    return "";
+  }
+
+  function renderChoiceRankBadge(item) {
+    if (!item || !item.available) return "";
+    const label = item.recommended ? "建议" : item.rank ? `#${item.rank}` : "";
+    if (!label) return "";
+    return `<span class="choice-rank-badge ${escapeHtml(item.tone || "info")}" title="${escapeHtml(item.detail || "")}">${escapeHtml(label)}</span>`;
   }
 
   function renderChoiceFit(choice) {

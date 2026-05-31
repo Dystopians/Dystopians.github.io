@@ -3398,6 +3398,24 @@ label {
   background: #a83f32;
 }
 
+.choice-button.choice-recommended {
+  border-color: var(--good);
+  background:
+    linear-gradient(90deg, #fff4c9, #e6e7a8);
+}
+
+.choice-button.choice-recommended::before {
+  background: var(--good);
+}
+
+.choice-button.choice-costly {
+  border-color: var(--warn);
+}
+
+.choice-button.choice-risky {
+  border-color: var(--danger);
+}
+
 .choice-button:disabled {
   opacity: 0.58;
   filter: grayscale(0.22);
@@ -3418,6 +3436,52 @@ label {
 .choice-title strong {
   min-width: 0;
   margin-bottom: 0;
+}
+
+.choice-title-tags {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  max-width: 124px;
+}
+
+.choice-rank-badge {
+  flex: 0 0 auto;
+  padding: 2px 5px;
+  border: 2px solid var(--line-dark);
+  background: #f6c957;
+  color: #4a2516;
+  font-size: 0.66rem;
+  font-weight: 900;
+  line-height: 1.1;
+  box-shadow: 1px 1px 0 rgba(45, 40, 31, 0.35);
+}
+
+.choice-rank-badge.good {
+  border-color: var(--good);
+  background: #b9d98e;
+  color: #234522;
+}
+
+.choice-rank-badge.warn,
+.choice-rank-badge.mixed {
+  border-color: var(--warn);
+  background: #f0ca75;
+  color: #583b15;
+}
+
+.choice-rank-badge.danger {
+  border-color: var(--danger);
+  background: #eaa07c;
+  color: #5b1f18;
+}
+
+.choice-rank-badge.info {
+  border-color: var(--blue);
+  background: #bed0cf;
+  color: #273f49;
 }
 
 .route-tag {
