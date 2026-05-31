@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v41";
+  const ASSET_VERSION = "v42";
   const core = window.Linjiang72;
 
   let state = null;
@@ -491,9 +491,10 @@
           </div>
           <p>${escapeHtml(risk.metricShort)} ${risk.value} · ${escapeHtml(risk.thresholdText)}</p>
           <em title="${escapeHtml(risk.detail)}">${escapeHtml(risk.hint)}</em>
-          <button class="crisis-jump" type="button" data-crisis-target="${escapeHtml(risk.focusPointId)}" data-crisis-mode="${escapeHtml(risk.focusMode)}">
+          ${renderCrisisReliefActions(risk)}
+          ${risk.tone === "good" ? "" : `<button class="crisis-jump" type="button" data-crisis-target="${escapeHtml(risk.focusPointId)}" data-crisis-mode="${escapeHtml(risk.focusMode)}">
             ${escapeHtml(risk.focusLabel || "定位补救")}
-          </button>
+          </button>`}
         </article>
       `)
       .join("");
@@ -502,6 +503,25 @@
         focusCrisisTarget(button.dataset.crisisTarget, button.dataset.crisisMode);
       });
     });
+  }
+
+  function renderCrisisReliefActions(risk) {
+    if (risk.tone === "good") return "";
+    const actions = risk.reliefActions || [];
+    if (!actions.length) {
+      return "<p class=\"crisis-empty\">暂无直接可用补救，先改善资金、条件或处理今日事件。</p>";
+    }
+    return `
+      <div class="crisis-relief-list" aria-label="${escapeHtml(risk.label)}候选补救">
+        ${actions.map((action) => `
+          <button class="crisis-relief" type="button" data-crisis-target="${escapeHtml(action.pointId)}" data-crisis-mode="${escapeHtml(action.mode)}">
+            <span>${escapeHtml(action.kind)} · ${escapeHtml(action.pointLabel)}</span>
+            <strong>${escapeHtml(action.label)}</strong>
+            <em>${escapeHtml(action.effectText)}</em>
+          </button>
+        `).join("")}
+      </div>
+    `;
   }
 
   function focusCrisisTarget(pointId, preferredMode = "operations") {

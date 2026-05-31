@@ -2128,6 +2128,8 @@
         : tone === "warn"
           ? "接近红线"
           : "稳定";
+      const reliefActions = tone === "good" ? [] : collectCrisisReliefActions(state, item.id);
+      const primaryRelief = reliefActions[0] || null;
       return {
         id: item.id,
         label: item.label,
@@ -2142,11 +2144,84 @@
         thresholdText: item.thresholdText,
         detail: item.detail,
         hint: item.hint,
-        focusPointId: item.focusPointId,
-        focusMode: item.focusMode,
-        focusLabel: item.focusLabel,
+        reliefActions,
+        focusPointId: primaryRelief ? primaryRelief.pointId : item.focusPointId,
+        focusMode: primaryRelief ? primaryRelief.mode : item.focusMode,
+        focusLabel: primaryRelief ? `定位：${primaryRelief.label}` : item.focusLabel,
       };
     });
+  }
+
+  function collectCrisisReliefActions(state, crisisId) {
+    const candidates = [];
+    const seen = new Set();
+    MAP_POINTS.forEach((pointDef) => {
+      const point = getMapPoint(state, pointDef.id);
+      [
+        { mode: "operations", kind: "工程", items: point.operations },
+        { mode: "resolutions", kind: "决议", items: point.resolutions },
+      ].forEach((group) => {
+        group.items
+          .filter((item) => item.available)
+          .forEach((item) => {
+            const key = `${group.mode}:${item.id}`;
+            if (seen.has(key)) return;
+            seen.add(key);
+            const score = crisisReliefScore(crisisId, item);
+            if (score <= 0) return;
+            candidates.push({
+              id: item.id,
+              label: item.label,
+              kind: group.kind,
+              mode: group.mode,
+              pointId: point.id,
+              pointLabel: point.label,
+              effectText: crisisReliefText(crisisId, item),
+              score,
+            });
+          });
+      });
+    });
+    return candidates
+      .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label, "zh-Hans-CN"))
+      .slice(0, 3);
+  }
+
+  function crisisReliefScore(crisisId, item) {
+    const effects = item.effects || {};
+    const hidden = item.hidden || {};
+    if (crisisId === "medical") {
+      if ((effects.hospitalLoad || 0) >= 0) return 0;
+      return -(effects.hospitalLoad || 0) * 10 + Math.max(0, hidden.detectedRate || 0);
+    }
+    if (crisisId === "supply") {
+      if ((effects.supplies || 0) <= 0) return 0;
+      return (effects.supplies || 0) * 10 + Math.max(0, effects.trust || 0);
+    }
+    if (crisisId === "trust") {
+      const trustRepair = Math.max(0, effects.trust || 0) * 10 + Math.max(0, -(hidden.publicMemory || 0)) * 3;
+      const memoryCost = Math.max(0, hidden.publicMemory || 0) * 4;
+      const delayedTrustCost = Math.max(0, -((item.delayed && item.delayed.effects && item.delayed.effects.trust) || 0)) * 6;
+      const detectionCost = Math.max(0, -(hidden.detectedRate || 0));
+      return trustRepair - memoryCost - delayedTrustCost - detectionCost;
+    }
+    if (crisisId === "staff") {
+      if ((effects.staffFatigue || 0) >= 0) return 0;
+      return -(effects.staffFatigue || 0) * 10 + Math.max(0, effects.trust || 0);
+    }
+    return 0;
+  }
+
+  function crisisReliefText(crisisId, item) {
+    const effects = item.effects || {};
+    const hidden = item.hidden || {};
+    const pick = (metric, delta, meta = METRIC_META[metric]) => `${meta.short} ${delta > 0 ? "+" : ""}${delta}`;
+    if (crisisId === "medical" && effects.hospitalLoad) return pick("hospitalLoad", effects.hospitalLoad);
+    if (crisisId === "supply" && effects.supplies) return pick("supplies", effects.supplies);
+    if (crisisId === "trust" && effects.trust) return pick("trust", effects.trust);
+    if (crisisId === "trust" && hidden.publicMemory) return pick("publicMemory", hidden.publicMemory);
+    if (crisisId === "staff" && effects.staffFatigue) return pick("staffFatigue", effects.staffFatigue);
+    return "可缓解";
   }
 
   function generateNews(state) {

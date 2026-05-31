@@ -1076,6 +1076,67 @@ label {
   font-weight: 900;
 }
 
+.crisis-relief-list {
+  display: grid;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.crisis-relief {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 6px;
+  align-items: center;
+  padding: 5px 6px;
+  border: 2px solid #b89752;
+  background: #fff1c8;
+  color: var(--deep);
+  box-shadow: 2px 2px 0 rgba(95, 75, 42, 0.34);
+  text-align: left;
+}
+
+.crisis-relief:hover,
+.crisis-relief:focus-visible {
+  background: #ffd86f;
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 rgba(95, 75, 42, 0.46);
+}
+
+.crisis-relief span,
+.crisis-empty {
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.crisis-relief strong {
+  overflow-wrap: anywhere;
+  font-size: 0.7rem;
+  line-height: 1.18;
+}
+
+.crisis-relief em {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  min-width: 44px;
+  margin: 0;
+  padding: 2px 5px;
+  border: 2px solid var(--good);
+  background: #b9d98e;
+  color: #244d35;
+  text-align: center;
+  font-size: 0.62rem;
+  line-height: 1.1;
+}
+
+.crisis-empty {
+  margin: 6px 0 0;
+  padding: 5px 6px;
+  border: 2px dashed #b89752;
+  background: rgba(255, 241, 200, 0.5);
+}
+
 .crisis-jump {
   display: inline-flex;
   align-items: center;
