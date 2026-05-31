@@ -7625,6 +7625,7 @@
       tone,
       detail,
       lockedByFunds,
+      activeAssets: fiscal.activeAssets || [],
       items: [
         {
           id: "funds",

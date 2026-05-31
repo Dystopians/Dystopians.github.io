@@ -322,6 +322,10 @@ function validateFiscalOutlook() {
     "Every fiscal outlook item needs id, label, value, detail, and tone.",
   );
   assert(
+    opening.items.every((item) => Array.isArray(item.components)),
+    "Every fiscal outlook item should expose component rows for readable formula breakdowns.",
+  );
+  assert(
     opening.items.every((item) => !String(item.detail).includes("[object Object]")),
     "Fiscal outlook details must be readable text.",
   );
@@ -334,6 +338,15 @@ function validateFiscalOutlook() {
   const report = core.getFiscalOutlook(pressured);
   assert(report.tone === "danger", "Fiscal outlook should flag severe cashflow states as danger.");
   assert(report.items.some((item) => item.id === "locks"), "Fiscal outlook should include funding lock count.");
+
+  const assetState = core.createGame({ difficulty: "normal", seed: 20260621 });
+  assetState.flags.operationUses.fiscalTransparencyLedger = 1;
+  assetState.flags.operationUses.emergencyGapLedger = 1;
+  assetState.metrics.trust = 62;
+  assetState.resources.funds = 42;
+  const assetReport = core.getFiscalOutlook(assetState);
+  assert(Array.isArray(assetReport.activeAssets), "Fiscal outlook should expose active fiscal assets.");
+  assert(assetReport.activeAssets.length >= 2, "Fiscal outlook should surface active recovery assets after setup actions.");
 }
 
 function validateCityBadges() {

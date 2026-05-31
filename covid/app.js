@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v96";
+  const ASSET_VERSION = "v97";
   const core = window.Linjiang72;
 
   let state = null;
@@ -914,6 +914,15 @@
     if (!els.fiscalOutlook || !core.getFiscalOutlook) return;
     const report = core.getFiscalOutlook(state);
     const items = (report.items || []).slice(0, 3);
+    const activeAssets = (report.activeAssets || []).slice(0, 4);
+    const assetList = activeAssets.length
+      ? `
+        <div class="fiscal-assets" aria-label="生效恢复资产">
+          <span>生效资产</span>
+          ${activeAssets.map((asset) => `<em>${escapeHtml(asset)}</em>`).join("")}
+        </div>
+      `
+      : "";
     els.fiscalOutlook.innerHTML = `
       <div class="fiscal-head">
         <div>
@@ -927,8 +936,24 @@
           <article class="fiscal-item ${escapeHtml(item.tone || "info")}" title="${escapeHtml(item.detail || "")}">
             <span>${escapeHtml(item.label)}</span>
             <strong>${escapeHtml(item.value)}</strong>
-            <p>${escapeHtml(item.detail || "")}</p>
+            ${(item.components || []).length ? "" : `<p>${escapeHtml(item.detail || "")}</p>`}
+            ${renderFiscalComponents(item)}
           </article>
+        `).join("")}
+      </div>
+      ${assetList}
+    `;
+  }
+
+  function renderFiscalComponents(item) {
+    const components = (item.components || []).slice(0, 3);
+    if (!components.length) return "";
+    return `
+      <div class="fiscal-components" aria-label="${escapeHtml(item.label || "联动")}拆解">
+        ${components.map((component) => `
+          <span class="${escapeHtml(component.tone || "info")}" title="${escapeHtml(component.detail || "")}">
+            ${escapeHtml(component.label)} ${Number(component.value) > 0 ? "+" : ""}${escapeHtml(String(component.value))}
+          </span>
         `).join("")}
       </div>
     `;
