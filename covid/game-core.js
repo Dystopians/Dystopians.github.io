@@ -138,6 +138,7 @@
       label: "标准档案",
       summary: "保持默认开局，适合第一次游玩和继续调参对照。",
       adjustments: {},
+      priorities: ["按第一号通告建立可信口径", "观察发现率与医疗负载的联动", "保留资金给前两周的关键工程"],
     },
     medicalFront: {
       label: "医疗前线吃紧",
@@ -149,6 +150,7 @@
         staffFatigue: 6,
         funds: 4,
       },
+      priorities: ["尽早做分诊或医疗扩容", "避免连续强压基层", "用保供和公开解释稳住信任"],
     },
     supplyStress: {
       label: "保供链条紧绷",
@@ -160,6 +162,7 @@
         staffFatigue: 3,
         funds: 6,
       },
+      priorities: ["优先打通市场和道路节点", "避免物资低位拖垮信任", "把民间互助纳入可见流程"],
     },
     fiscalSqueeze: {
       label: "财政收缩",
@@ -170,6 +173,7 @@
         trust: 3,
         publicMemory: -2,
       },
+      priorities: ["早做专项资金或台账工程", "谨慎使用高价工程", "用小规模复业托住活力"],
     },
     informationBlind: {
       label: "信息盲区",
@@ -181,6 +185,7 @@
         staffFatigue: -2,
         funds: 3,
       },
+      priorities: ["优先扩大检测和信息公开", "低发现率下谨慎复工", "用匿名上报和健康码铺垫监测"],
     },
   };
 
@@ -2652,10 +2657,10 @@
     return Math.round(value);
   }
 
-  function createGame(options = {}) {
-    const difficulty = options.difficulty || "normal";
+  function buildOpeningValues(difficultyId = "normal", scenarioId = "standard") {
+    const difficulty = difficultyId && DIFFICULTIES[difficultyId] ? difficultyId : "normal";
     const diff = DIFFICULTIES[difficulty] || DIFFICULTIES.normal;
-    const scenario = options.scenario && SCENARIOS[options.scenario] ? options.scenario : "standard";
+    const scenario = scenarioId && SCENARIOS[scenarioId] ? scenarioId : "standard";
     const scenarioDef = SCENARIOS[scenario] || SCENARIOS.standard;
     const all = { ...INITIAL_VALUES };
     Object.entries(diff.adjustments).forEach(([metric, delta]) => {
@@ -2664,6 +2669,43 @@
     Object.entries(scenarioDef.adjustments).forEach(([metric, delta]) => {
       all[metric] = boundedMetricValue(metric, all[metric] + delta);
     });
+    return { all, difficulty, diff, scenario, scenarioDef };
+  }
+
+  function getScenarioBriefing(options = {}) {
+    const opening = buildOpeningValues(options.difficulty || "normal", options.scenario || "standard");
+    const baseline = buildOpeningValues(opening.difficulty, "standard");
+    const changes = {};
+    Object.keys(opening.all).forEach((metric) => {
+      const delta = opening.all[metric] - baseline.all[metric];
+      if (delta) changes[metric] = delta;
+    });
+    const readoutKeys = ["infection", "hospitalLoad", "supplies", "trust", "economy", "staffFatigue", "detectedRate", "funds"];
+    return {
+      id: opening.scenario,
+      label: opening.scenarioDef.label,
+      summary: opening.scenarioDef.summary,
+      difficulty: opening.difficulty,
+      difficultyLabel: opening.diff.label,
+      changes,
+      priorities: opening.scenarioDef.priorities || [],
+      readouts: readoutKeys.map((metric) => {
+        const meta = getObjectiveMeta(metric);
+        return {
+          metric,
+          label: meta.label,
+          short: meta.short,
+          value: opening.all[metric],
+          tone: getRiskBand(metric, opening.all[metric]),
+          description: meta.description,
+        };
+      }),
+    };
+  }
+
+  function createGame(options = {}) {
+    const opening = buildOpeningValues(options.difficulty || "normal", options.scenario || "standard");
+    const { all, difficulty, scenario } = opening;
 
     const state = {
       version: 2,
@@ -5252,7 +5294,9 @@
   }
 
   function getRiskBand(metric, value) {
-    const direction = METRIC_META[metric].direction;
+    const meta = METRIC_META[metric] || RESOURCE_META[metric];
+    if (!meta) return "warn";
+    const direction = meta.direction;
     if (direction === "good") {
       if (value >= 65) return "good";
       if (value >= 35) return "warn";
@@ -6404,6 +6448,7 @@
     getCrisisDashboard,
     getVisibleMetrics,
     getMetricTrend,
+    getScenarioBriefing,
     getEventImage,
     getMapSignals,
     getMapPoint,

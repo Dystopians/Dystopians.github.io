@@ -234,13 +234,16 @@ function validateCacheVersions() {
 function validateScenarios() {
   const indexHtml = fs.readFileSync(path.join(rootDir, "index.html"), "utf8");
   assert(core.SCENARIOS && typeof core.SCENARIOS === "object", "game-core.js must export SCENARIOS.");
+  assert(typeof core.getScenarioBriefing === "function", "game-core.js must export getScenarioBriefing.");
   const scenarioIds = Object.keys(core.SCENARIOS || {});
   assert(scenarioIds.length >= 5, `Expected at least 5 starting scenarios, found ${scenarioIds.length}.`);
   assert(indexHtml.includes('name="scenario"'), "index.html must expose starting scenario radio options.");
+  assert(indexHtml.includes("scenarioBrief"), "index.html must expose the scenario briefing container.");
   scenarioIds.forEach((id) => {
     const scenario = core.SCENARIOS[id];
     assert(scenario.label && scenario.summary, `${id} scenario needs label and summary.`);
     assert(scenario.adjustments && typeof scenario.adjustments === "object", `${id} scenario needs adjustments object.`);
+    assert(Array.isArray(scenario.priorities) && scenario.priorities.length >= 2, `${id} scenario needs at least two early priorities.`);
     assert(indexHtml.includes(`value="${id}"`), `${id} scenario is not selectable on the start screen.`);
   });
   const standard = core.createGame({ difficulty: "normal", scenario: "standard", seed: 20260613 });
@@ -257,6 +260,14 @@ function validateScenarios() {
   assert(blind.hidden.detectedRate < standard.hidden.detectedRate, "informationBlind should lower opening detectedRate.");
   const imported = core.importState(core.exportState(blind));
   assert(imported.scenario === "informationBlind", "Scenario id should survive export/import.");
+  const blindBrief = core.getScenarioBriefing({ difficulty: "normal", scenario: "informationBlind" });
+  assert(blindBrief.label === core.SCENARIOS.informationBlind.label, "Scenario briefing should expose the selected label.");
+  assert(blindBrief.changes.detectedRate === -12, "Scenario briefing should expose detectedRate delta for informationBlind.");
+  assert(Array.isArray(blindBrief.readouts) && blindBrief.readouts.length >= 8, "Scenario briefing should include opening readouts.");
+  assert(Array.isArray(blindBrief.priorities) && blindBrief.priorities.length >= 2, "Scenario briefing should include early priorities.");
+  const hardFiscalBrief = core.getScenarioBriefing({ difficulty: "hard", scenario: "fiscalSqueeze" });
+  assert(hardFiscalBrief.difficultyLabel === core.DIFFICULTIES.hard.label, "Scenario briefing should respect selected difficulty.");
+  assert(hardFiscalBrief.changes.funds === -16, "Scenario deltas should be relative to the selected difficulty baseline.");
 }
 
 function validateRecoveryLevers() {

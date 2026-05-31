@@ -537,6 +537,104 @@ label {
   font-weight: 800;
 }
 
+.scenario-brief {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 3px solid #b89752;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 248, 215, 0.3) 0 2px, transparent 2px 4px),
+    #f8e9bd;
+  box-shadow: inset 2px 2px 0 rgba(255, 247, 209, 0.78);
+}
+
+.scenario-brief-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.scenario-brief-head span,
+.scenario-brief-head strong {
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.scenario-brief-head span {
+  color: var(--muted);
+}
+
+.scenario-brief-head strong {
+  color: var(--deep);
+  text-align: right;
+}
+
+.scenario-brief p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.scenario-readouts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.scenario-readouts span {
+  min-width: 0;
+  padding: 3px 4px;
+  border: 2px solid #b89752;
+  background: #ead19a;
+  color: var(--deep);
+  font-size: 0.62rem;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.scenario-readouts span.good {
+  border-color: var(--good);
+  background: #b9d98e;
+  color: #234522;
+}
+
+.scenario-readouts span.danger {
+  border-color: var(--danger);
+  background: #eaa07c;
+  color: #5b1f18;
+}
+
+.scenario-brief ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scenario-brief li {
+  position: relative;
+  padding-left: 11px;
+  color: var(--ink);
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.scenario-brief li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.48em;
+  width: 5px;
+  height: 5px;
+  background: var(--warn);
+}
+
 .tilesheet-preview {
   width: 100%;
   max-height: 220px;

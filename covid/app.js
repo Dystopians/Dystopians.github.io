@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v75";
+  const ASSET_VERSION = "v76";
   const core = window.Linjiang72;
 
   let state = null;
@@ -286,6 +286,7 @@
     endingScore: document.getElementById("endingScore"),
     endingMetrics: document.getElementById("endingMetrics"),
     endingReview: document.getElementById("endingReview"),
+    scenarioBrief: document.getElementById("scenarioBrief"),
   };
   const PREVIEW_METRIC_BY_SHORT = Object.fromEntries([
     ...Object.entries(core.METRIC_META).map(([metric, meta]) => [meta.short, metric]),
@@ -322,6 +323,9 @@
     els.resolutionsTab.addEventListener("click", () => {
       actionMode = "resolutions";
       renderActionMode();
+    });
+    els.startForm.querySelectorAll("input[name='difficulty'], input[name='scenario']").forEach((input) => {
+      input.addEventListener("change", renderScenarioBrief);
     });
 
     updateContinueButton();
@@ -429,6 +433,39 @@
     els.difficultyLabel.textContent = "普通 · 标准档案";
     els.fundsLabel.textContent = "资金 68";
     updateContinueButton();
+    renderScenarioBrief();
+  }
+
+  function renderScenarioBrief() {
+    if (!els.scenarioBrief || !core.getScenarioBriefing) return;
+    const data = new FormData(els.startForm);
+    const brief = core.getScenarioBriefing({
+      difficulty: data.get("difficulty") || "normal",
+      scenario: data.get("scenario") || "standard",
+    });
+    const changes = Object.keys(brief.changes || {}).length
+      ? renderChangeChips(brief.changes, 8)
+      : "<span class=\"change neutral\">保持标准开局</span>";
+    const readouts = (brief.readouts || [])
+      .map((item) => `
+        <span class="${escapeHtml(item.tone || "warn")}" title="${escapeHtml(item.description || "")}">
+          ${escapeHtml(item.short)} ${escapeHtml(String(item.value))}
+        </span>
+      `)
+      .join("");
+    const priorities = (brief.priorities || [])
+      .map((item) => `<li>${escapeHtml(item)}</li>`)
+      .join("");
+    els.scenarioBrief.innerHTML = `
+      <div class="scenario-brief-head">
+        <span>档案情报</span>
+        <strong>${escapeHtml(brief.difficultyLabel)} · ${escapeHtml(brief.label)}</strong>
+      </div>
+      <p>${escapeHtml(brief.summary)}</p>
+      <div class="scenario-readouts" aria-label="开局读数">${readouts}</div>
+      <div class="chips">${changes}</div>
+      ${priorities ? `<ul>${priorities}</ul>` : ""}
+    `;
   }
 
   function openTutorial() {
