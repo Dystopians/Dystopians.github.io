@@ -403,6 +403,25 @@ function validateChoiceRiskPreview() {
   assert(fit && fit.label && fit.tone && fit.detail, "getChoiceFit should expose label, tone, and detail for event choices.");
 }
 
+function validateDailyDirective() {
+  assert(typeof core.getDailyDirective === "function", "game-core.js must export getDailyDirective.");
+  assert(typeof core.getChoiceDirectiveFit === "function", "game-core.js must export getChoiceDirectiveFit.");
+  const state = core.createGame({ difficulty: "normal", seed: 20260614 });
+  const directive = core.getDailyDirective(state);
+  assert(directive && directive.label && directive.detail, "getDailyDirective should return a readable daily target.");
+  assert(directive.metric && directive.targetText && directive.status, "Daily directive needs metric, targetText, and status.");
+  const event = core.getCurrentEvent(state);
+  const choice = event.choices.find((item) => item.available !== false);
+  assert(Boolean(choice), "Expected an available opening choice for daily directive validation.");
+  const fit = core.getChoiceDirectiveFit(state, choice.id);
+  assert(fit && fit.label && fit.tone && fit.detail, "Choice directive fit should describe how a choice affects today's target.");
+  const pressured = core.createGame({ difficulty: "normal", seed: 20260615 });
+  pressured.metrics.hospitalLoad = 88;
+  const pressureDirective = core.getDailyDirective(pressured);
+  assert(pressureDirective.metric === "hospitalLoad", "Hospital redline should become the daily directive under medical pressure.");
+  assert(pressureDirective.tone === "danger", "Redline daily directive should use danger tone.");
+}
+
 function validateSettlementBreakdown() {
   const state = core.createGame({ difficulty: "normal", seed: 20260609 });
   const event = core.getCurrentEvent(state);
@@ -509,6 +528,7 @@ function run() {
   validateMapSignals();
   validateStageReview();
   validateChoiceRiskPreview();
+  validateDailyDirective();
   validateSettlementBreakdown();
   validateMetricTrends();
   validateEndingStrategyReview();

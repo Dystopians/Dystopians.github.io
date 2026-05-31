@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v76";
+  const ASSET_VERSION = "v77";
   const core = window.Linjiang72;
 
   let state = null;
@@ -265,6 +265,7 @@
     eventType: document.getElementById("eventType"),
     eventTitle: document.getElementById("eventTitle"),
     pressureSummary: document.getElementById("pressureSummary"),
+    dailyDirective: document.getElementById("dailyDirective"),
     trendPreview: document.getElementById("trendPreview"),
     eventBody: document.getElementById("eventBody"),
     eventStageReview: document.getElementById("eventStageReview"),
@@ -1324,6 +1325,7 @@
     els.eventType.textContent = event.type === "buffer" ? "阶段缓冲" : "今日事件";
     els.eventTitle.textContent = event.title;
     renderPressureSummary();
+    renderDailyDirective();
     renderTrendPreview();
     els.eventBody.textContent = event.description || event.body;
     renderEventStageReview(event.stageReview);
@@ -1359,6 +1361,7 @@
         <div class="choice-title"><strong>${escapeHtml(choice.label)}</strong>${tag}</div>
         <p>${escapeHtml(choice.available === false ? choice.lockedReason : choice.description)}</p>
         ${renderChoiceFit(choice)}
+        ${renderChoiceDirectiveFit(choice)}
         ${renderChoiceImpacts(choice)}
         ${renderChoiceForecast(choice)}
         ${renderChoiceRiskPreview(choice)}
@@ -1388,6 +1391,19 @@
       <div class="choice-fit ${escapeHtml(fit.tone || "info")}" title="${escapeHtml(fit.detail || "")}">
         <span>适配</span>
         <strong>${escapeHtml(fit.label || "策略取舍")}</strong>
+        <em>${escapeHtml(fit.detail || "")}</em>
+      </div>
+    `;
+  }
+
+  function renderChoiceDirectiveFit(choice) {
+    if (!core.getChoiceDirectiveFit) return "";
+    const fit = core.getChoiceDirectiveFit(state, choice.id);
+    if (!fit) return "";
+    return `
+      <div class="choice-directive ${escapeHtml(fit.tone || "info")}" title="${escapeHtml(fit.detail || "")}">
+        <span>今日目标</span>
+        <strong>${escapeHtml(fit.label || "目标影响")}</strong>
         <em>${escapeHtml(fit.detail || "")}</em>
       </div>
     `;
@@ -1511,6 +1527,26 @@
         </span>
       `)
       .join("");
+  }
+
+  function renderDailyDirective() {
+    if (!els.dailyDirective || !core.getDailyDirective) return;
+    const directive = core.getDailyDirective(state);
+    if (!directive) {
+      els.dailyDirective.hidden = true;
+      els.dailyDirective.innerHTML = "";
+      return;
+    }
+    els.dailyDirective.hidden = false;
+    els.dailyDirective.className = `daily-directive ${escapeHtml(directive.tone || "warn")}`;
+    els.dailyDirective.innerHTML = `
+      <div>
+        <span>今日调度目标</span>
+        <strong>${escapeHtml(directive.label)}</strong>
+        <em>${escapeHtml(directive.status)} · ${escapeHtml(directive.metricShort)} ${escapeHtml(String(directive.current))} / ${escapeHtml(directive.targetText)}</em>
+      </div>
+      <p>${escapeHtml(directive.detail)}</p>
+    `;
   }
 
   function renderTrendPreview(choice = null) {

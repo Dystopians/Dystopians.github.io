@@ -2411,6 +2411,7 @@
         label: spec.label,
         detail: spec.detail,
         metric: spec.metric,
+        op: spec.op,
         metricLabel: meta.label,
         metricShort: meta.short,
         value,
@@ -5312,6 +5313,136 @@
     return "danger";
   }
 
+  function makeDailyDirective(state, config) {
+    const meta = getObjectiveMeta(config.metric);
+    const current = getObjectiveValue(state, config.metric);
+    const done = conditionByOperator(current, config.op, config.target);
+    return {
+      id: config.id,
+      label: config.label,
+      detail: config.detail,
+      metric: config.metric,
+      metricLabel: meta.label,
+      metricShort: meta.short,
+      current,
+      op: config.op,
+      target: config.target,
+      targetText: `${meta.short} ${config.op} ${config.target}`,
+      done,
+      tone: done ? "good" : config.tone || "warn",
+      status: done ? "已达成" : "进行中",
+      priority: config.priority || 0,
+    };
+  }
+
+  function conditionByOperator(value, op, target) {
+    return op === "<=" ? value <= target : value >= target;
+  }
+
+  function directiveProgressScore(state, directive) {
+    const value = getObjectiveValue(state, directive.metric);
+    return directive.op === "<=" ? directive.target - value : value - directive.target;
+  }
+
+  function getDailyDirective(state) {
+    if (!state || state.ended) return null;
+    const m = state.metrics;
+    const h = state.hidden;
+    const r = state.resources;
+    const streaks = state.flags.failureStreaks || {};
+    const rows = [];
+    const add = (config) => rows.push(makeDailyDirective(state, config));
+
+    if ((streaks.medical || 0) > 0) add({ id: "escape_medical", label: "脱离医疗倒计时", metric: "hospitalLoad", op: "<=", target: 94, tone: "danger", priority: 180, detail: "医疗负载越过失败红线，今天优先把它拉回倒计时外。" });
+    if ((streaks.supply || 0) > 0) add({ id: "escape_supply", label: "脱离供应倒计时", metric: "supplies", op: ">=", target: 15, tone: "danger", priority: 178, detail: "供应断裂倒计时已经开始，先让最低民生库存回到线内。" });
+    if ((streaks.trust || 0) > 0) add({ id: "escape_trust", label: "脱离信任倒计时", metric: "trust", op: ">=", target: 20, tone: "danger", priority: 176, detail: "信任崩塌倒计时已经开始，今天需要任何可见修复。" });
+    if ((streaks.staff || 0) > 0) add({ id: "escape_staff", label: "脱离执行倒计时", metric: "staffFatigue", op: "<=", target: 90, tone: "danger", priority: 174, detail: "基层疲劳进入失灵区，今天应优先减压或少加码。" });
+
+    if (m.hospitalLoad >= 85) add({ id: "hospital_redline", label: "卸下医院红线", metric: "hospitalLoad", op: "<=", target: 84, tone: "danger", priority: 150, detail: "医疗负载高位会持续伤害信任并增加公共创伤。" });
+    else if (m.hospitalLoad >= 75) add({ id: "hospital_pressure", label: "缓和医疗高压", metric: "hospitalLoad", op: "<=", target: 74, tone: "warn", priority: 108, detail: "医院接近红线，分流和扩容会给后续几天留空间。" });
+    if (m.infection >= 80) add({ id: "infection_redline", label: "压低社区扩散", metric: "infection", op: "<=", target: 75, tone: "danger", priority: 145, detail: "感染高位会继续推高医院负载，今天需要监测或管控止血。" });
+    else if (m.infection >= 70) add({ id: "infection_pressure", label: "压住传播上行", metric: "infection", op: "<=", target: 68, tone: "warn", priority: 104, detail: "感染压力偏高时，早一点压峰比等到医疗红线更便宜。" });
+    if (m.supplies <= 25) add({ id: "supply_redline", label: "补回民生库存", metric: "supplies", op: ">=", target: 30, tone: "danger", priority: 140, detail: "物资低位会同时伤害信任和基层效率。" });
+    else if (m.supplies <= 35) add({ id: "supply_pressure", label: "稳住供应链条", metric: "supplies", op: ">=", target: 40, tone: "warn", priority: 98, detail: "保供链条偏紧，今天可以用小收益避免后续连锁下滑。" });
+    if (m.trust <= 30) add({ id: "trust_redline", label: "修复低配合", metric: "trust", op: ">=", target: 35, tone: "danger", priority: 136, detail: "低信任会削弱行动效率，让强政策也变钝。" });
+    else if (m.trust <= 40) add({ id: "trust_pressure", label: "补一口信任", metric: "trust", op: ">=", target: 45, tone: "warn", priority: 92, detail: "信任承压时，公开解释和补偿流程会提高后续执行效率。" });
+    if (m.staffFatigue >= 80) add({ id: "staff_redline", label: "给基层减压", metric: "staffFatigue", op: "<=", target: 75, tone: "danger", priority: 132, detail: "疲劳高位会让所有行动收益打折，并磨损发现率。" });
+    else if (m.staffFatigue >= 70) add({ id: "staff_pressure", label: "降低排班压力", metric: "staffFatigue", op: "<=", target: 65, tone: "warn", priority: 88, detail: "排班偏紧时，今天少一点透支能换后期更稳定执行。" });
+    if (r.funds <= 15) add({ id: "funds_redline", label: "补足现金流", metric: "funds", op: ">=", target: 20, tone: "danger", priority: 126, detail: "资金低位会锁住工程和决议，恢复渠道需要提前布局。" });
+    else if (r.funds <= 25) add({ id: "funds_pressure", label: "恢复应急资金", metric: "funds", op: ">=", target: 30, tone: "warn", priority: 82, detail: "资金偏低时，工程选择会越来越窄。" });
+    if (m.economy <= 30 && m.infection < 75) add({ id: "economy_redline", label: "托住城市活力", metric: "economy", op: ">=", target: 35, tone: "warn", priority: 78, detail: "活力低位会拖慢保供、财政和后期恢复。" });
+    else if (m.economy <= 45 && state.day >= 8 && m.infection < 70) add({ id: "economy_window", label: "打开小复苏窗口", metric: "economy", op: ">=", target: 50, tone: "info", priority: 56, detail: "感染不高时，可以用低风险复业托住城市账本。" });
+    if (h.detectedRate <= 35) add({ id: "detected_blind", label: "缩小信息盲区", metric: "detectedRate", op: ">=", target: 45, tone: "warn", priority: 76, detail: "发现率过低会放大感染误差，也会增加复工代价。" });
+    else if (h.detectedRate <= 50 && state.day <= 36) add({ id: "detected_window", label: "补强监测能力", metric: "detectedRate", op: ">=", target: 55, tone: "info", priority: 48, detail: "发现率越早上来，后续复工和分区治理越可靠。" });
+
+    const stageObjective = getStageObjectives(state).find((objective) => !objective.done);
+    if (stageObjective) {
+      add({
+        id: `stage_${stageObjective.id}`,
+        label: stageObjective.label,
+        metric: stageObjective.metric,
+        op: stageObjective.op,
+        target: stageObjective.target,
+        tone: stageObjective.tone === "danger" ? "danger" : "info",
+        priority: 32,
+        detail: `阶段目标：${stageObjective.detail}`,
+      });
+    }
+
+    const selected = rows
+      .sort((a, b) => b.priority - a.priority)
+      .map(({ priority, ...item }) => item)[0];
+    return selected || null;
+  }
+
+  function getChoiceDirectiveFit(state, choiceId) {
+    if (!state || state.ended || !choiceId) return null;
+    const event = getCurrentEvent(state);
+    const choice = event && event.choices.find((item) => item.id === choiceId);
+    if (!choice || choice.available === false) return null;
+    const directive = getDailyDirective(state);
+    if (!directive) return null;
+
+    const beforeValue = getObjectiveValue(state, directive.metric);
+    const beforeDone = conditionByOperator(beforeValue, directive.op, directive.target);
+    const beforeScore = directiveProgressScore(state, directive);
+    const projected = clone(state);
+    resolveChoice(projected, choiceId);
+    const afterValue = getObjectiveValue(projected, directive.metric);
+    const afterDone = conditionByOperator(afterValue, directive.op, directive.target);
+    const afterScore = directive.op === "<=" ? directive.target - afterValue : afterValue - directive.target;
+    const progress = afterScore - beforeScore;
+    if (afterDone && !beforeDone) {
+      return {
+        tone: "good",
+        label: "完成今日目标",
+        detail: `${directive.label}：${beforeValue} → ${afterValue}，预计达成 ${directive.targetText}。`,
+      };
+    }
+    if (progress > 0) {
+      return {
+        tone: "good",
+        label: `推进目标 ${progress > 0 ? "+" : ""}${progress}`,
+        detail: `${directive.label}：${beforeValue} → ${afterValue}，正在靠近 ${directive.targetText}。`,
+      };
+    }
+    if (progress < 0) {
+      return {
+        tone: Math.abs(progress) >= 4 ? "danger" : "warn",
+        label: `偏离目标 ${progress}`,
+        detail: `${directive.label}：${beforeValue} → ${afterValue}，会远离 ${directive.targetText}。`,
+      };
+    }
+    if (beforeDone) {
+      return {
+        tone: "info",
+        label: "目标已稳",
+        detail: `${directive.label}已经达成，这项选择不会明显改变该目标。`,
+      };
+    }
+    return null;
+  }
+
   function getDailyPressureSummary(state) {
     if (!state || state.ended) return [];
     const m = state.metrics;
@@ -6457,10 +6588,12 @@
     getAvailableOperations,
     getAvailableResolutions,
     getRiskBand,
+    getDailyDirective,
     getDailyPressureSummary,
     getDailyTrendPreview,
     getChoiceOutcomePreview,
     getChoiceRiskPreview,
+    getChoiceDirectiveFit,
     getChoiceFit,
     getChoiceRouteTag,
     getEndingOutlook,
