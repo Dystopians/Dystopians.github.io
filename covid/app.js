@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v125";
+  const ASSET_VERSION = "v126";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -2511,11 +2511,22 @@
               <span>${escapeHtml(badge.category || "档案")} · ${escapeHtml(badge.status || "")}</span>
               <strong>${escapeHtml(badge.label)}</strong>
               <p>${escapeHtml(badge.detail || "")}</p>
+              ${renderCityBadgeGaps(badge)}
               ${badge.earned ? "" : `<i style="width:${Math.max(4, Math.min(100, badge.progress || 0))}%" aria-hidden="true"></i>`}
             </article>
           `).join("")}
         </div>
       ` : ""}
+    `;
+  }
+
+  function renderCityBadgeGaps(badge) {
+    const gaps = badge && !badge.earned ? (badge.gaps || []).slice(0, 3) : [];
+    if (!gaps.length) return "";
+    return `
+      <div class="city-badge-gaps" aria-label="${escapeHtml(badge.label || "城市档案")}缺口">
+        ${gaps.map((gap) => `<em>${escapeHtml(gap)}</em>`).join("")}
+      </div>
     `;
   }
 

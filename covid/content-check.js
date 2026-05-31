@@ -576,8 +576,12 @@ function validateCityBadges() {
   const report = core.getCityBadges(developed);
   assert(report.earned.length >= 6, `Developed state should earn several city badges, found ${report.earned.length}.`);
   assert(
-    [...report.earned, ...report.watch].every((item) => item.id && item.label && item.category && item.detail && item.status && item.tone),
-    "Every city badge needs id, label, category, detail, status, and tone.",
+    [...report.earned, ...report.watch].every((item) => item.id && item.label && item.category && item.detail && item.status && item.tone && Array.isArray(item.gaps)),
+    "Every city badge needs id, label, category, detail, status, tone, and gaps.",
+  );
+  assert(
+    report.watch.every((item) => item.gaps.length > 0),
+    "Watched city badges should expose concrete remaining gaps.",
   );
 }
 
@@ -1074,6 +1078,8 @@ function validateActionPreviewCoverage() {
   assert(appJs.includes("choiceButtonComparisonClass"), "Event choice buttons should inherit comparison tone classes.");
   assert(styles.includes(".choice-rank-badge"), "Choice recommendation badges need dedicated styling.");
   assert(styles.includes(".choice-button.choice-recommended"), "Recommended choice buttons should have a visible persistent state.");
+  assert(appJs.includes("renderCityBadgeGaps"), "City badge cards should render concrete remaining gaps.");
+  assert(styles.includes(".city-badge-gaps"), "City badge gap chips need dedicated styling.");
 }
 
 function run() {

@@ -1077,6 +1077,69 @@
     },
   ];
 
+  function cityBadgeGaps(id, state) {
+    const m = state.metrics;
+    const h = state.hidden;
+    const r = state.resources;
+    const operationUses = state.flags.operationUses || {};
+    const history = state.history || [];
+    const gaps = [];
+    const addAtLeast = (label, value, target) => {
+      if (value < target) gaps.push(`${label} +${target - value}`);
+    };
+    const addAtMost = (label, value, target) => {
+      if (value > target) gaps.push(`${label} -${value - target}`);
+    };
+    const addDay = (day) => {
+      if (state.day < day) gaps.push(`等到第${day}天`);
+    };
+    const hasMonitoringAsset = state.completedProjects.healthCode || (operationUses.campusSentinel || 0) > 0;
+    const hasMedicalAsset = state.completedProjects.shelterHospital
+      || state.completedProjects.triageNetwork
+      || state.completedProjects.communityClinic;
+    const hasSupplyAsset = state.completedProjects.supplyCorridor
+      || (operationUses.donationCoordination || 0) > 0
+      || (operationUses.microFreightPermit || 0) > 0;
+    const hasMemoryRepair = Boolean(state.flags.resolutions.publicReviewBrief)
+      || history.some((entry) => entry.routeLabel === "创伤修复" || entry.routeLabel === "公开修复");
+    const routeProfile = id === "mixed_governance" ? getStrategyProfile(state) : null;
+
+    if (id === "monitoring_net") {
+      addAtLeast("发现率", h.detectedRate, 70);
+      if (!hasMonitoringAsset) gaps.push("铺监测工程");
+    } else if (id === "medical_buffer") {
+      addAtMost("医疗负载", m.hospitalLoad, 55);
+      if (!hasMedicalAsset) gaps.push("建分流资产");
+    } else if (id === "supply_mesh") {
+      addAtLeast("物资", m.supplies, 75);
+      if (!hasSupplyAsset) gaps.push("铺保供资产");
+    } else if (id === "trusted_city") {
+      addAtLeast("信任", m.trust, 75);
+      addAtMost("创伤", h.publicMemory, 35);
+    } else if (id === "worker_breathing_room") {
+      addDay(13);
+      addAtMost("疲劳", m.staffFatigue, 45);
+    } else if (id === "fiscal_landing") {
+      addDay(37);
+      addAtLeast("活力", m.economy, 55);
+      addAtLeast("资金", r.funds, 35);
+    } else if (id === "low_spread_window") {
+      addDay(13);
+      addAtMost("感染", m.infection, 35);
+      addAtMost("医疗负载", m.hospitalLoad, 65);
+    } else if (id === "memory_repair") {
+      addDay(37);
+      addAtMost("创伤", h.publicMemory, 18);
+      if (!hasMemoryRepair) gaps.push("完成复盘修复");
+    } else if (id === "mixed_governance") {
+      const active = (routeProfile.routes || []).filter((route) => route.count > 0).length;
+      if (active < 4) gaps.push(`路线 +${4 - active}`);
+      if ((routeProfile.total || 0) < 6) gaps.push(`行动 +${6 - (routeProfile.total || 0)}`);
+    }
+
+    return gaps.slice(0, 3);
+  }
+
   const EVENT_IMAGE_BY_KEY = {
     notice: "news-health-code.png",
     market: "news-supply.png",
@@ -8051,6 +8114,7 @@
         tone: rule.tone || "info",
         detail: earned ? rule.detail : rule.hint,
         hint: rule.hint,
+        gaps: earned ? [] : cityBadgeGaps(rule.id, state),
         progress,
         earned,
         status: earned ? "已入档" : `接近 ${progress}%`,

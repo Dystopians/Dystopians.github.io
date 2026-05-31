@@ -5301,6 +5301,24 @@ label {
   line-height: 1.32;
 }
 
+.city-badge-gaps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 6px;
+}
+
+.city-badge-gaps em {
+  padding: 2px 4px;
+  border: 1px solid rgba(123, 76, 24, 0.55);
+  background: rgba(255, 246, 214, 0.76);
+  color: #6d4a1e;
+  font-size: 0.58rem;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
 .city-badge i {
   display: block;
   height: 4px;
