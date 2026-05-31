@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v61";
+  const ASSET_VERSION = "v62";
   const core = window.Linjiang72;
 
   let state = null;
@@ -251,6 +251,7 @@
     statusEffects: document.getElementById("statusEffects"),
     crisisList: document.getElementById("crisisList"),
     briefStrip: document.getElementById("briefStrip"),
+    recoveryLevers: document.getElementById("recoveryLevers"),
     pendingTimeline: document.getElementById("pendingTimeline"),
     strategyProfile: document.getElementById("strategyProfile"),
     cityMapWrap: document.getElementById("cityMapWrap"),
@@ -469,6 +470,7 @@
     renderStageInfo();
     renderMetrics();
     renderBriefs();
+    renderRecoveryLevers();
     renderPendingTimeline();
     renderStrategyProfile();
     renderMap();
@@ -698,6 +700,66 @@
       item.innerHTML = `<span>${["疾控", "医院", "社区"][index] || "简报"}</span><strong>${escapeHtml(line)}</strong>`;
       els.briefStrip.appendChild(item);
     });
+  }
+
+  function renderRecoveryLevers() {
+    if (!els.recoveryLevers || !core.getRecoveryLevers) return;
+    const report = core.getRecoveryLevers(state);
+    const items = (report.items || []).slice(0, 5);
+    const countText = `${report.availableCount || 0}/${report.totalCount || 0}`;
+    const headerTone = report.tone || "info";
+    if (!items.length) {
+      els.recoveryLevers.innerHTML = `
+        <div class="recovery-head">
+          <span>恢复渠道</span>
+          <strong class="${escapeHtml(headerTone)}">${escapeHtml(countText)}</strong>
+        </div>
+        <p class="recovery-empty">暂无明确资金或活力恢复窗口，先稳住感染、医疗和基层执行。</p>
+      `;
+      return;
+    }
+
+    els.recoveryLevers.innerHTML = `
+      <div class="recovery-head">
+        <span>恢复渠道</span>
+        <strong class="${escapeHtml(headerTone)}" title="${escapeHtml(report.detail || "")}">${escapeHtml(countText)}</strong>
+      </div>
+      <p class="recovery-summary">${escapeHtml(report.detail || "资金与城市活力会影响工程、供应恢复和最终归档。")}</p>
+      <div class="recovery-list">
+        ${items.map((item) => `
+          <button class="recovery-item ${escapeHtml(item.tone || "info")} ${escapeHtml(item.bucket || "locked")}" type="button"
+            data-recovery-point="${escapeHtml(item.pointId)}" data-recovery-mode="${escapeHtml(item.mode)}"
+            title="${escapeHtml(item.detail)}">
+            <span>${escapeHtml(item.status)} · ${escapeHtml(item.pointLabel)} · ${escapeHtml(item.route)}</span>
+            <strong>${escapeHtml(item.label)}</strong>
+            <em>${escapeHtml(item.impact)}</em>
+          </button>
+        `).join("")}
+      </div>
+    `;
+
+    els.recoveryLevers.querySelectorAll("[data-recovery-point]").forEach((button) => {
+      button.addEventListener("click", () => {
+        focusRecoveryLever(button.dataset.recoveryPoint, button.dataset.recoveryMode);
+      });
+    });
+  }
+
+  function focusRecoveryLever(pointId, preferredMode = "operations") {
+    if (!pointId) return;
+    core.selectMapPoint(state, pointId);
+    const point = core.getMapPoint(state, pointId);
+    actionMode = chooseCrisisActionMode(point, preferredMode);
+    save();
+    renderMap();
+    renderActionMode();
+    renderCityAssets();
+    renderCrisisBoard();
+    const pointLabel = point ? point.label : "恢复节点";
+    els.mapHint.textContent = `已定位：${pointLabel} · 查看${actionMode === "resolutions" ? "决议" : "工程"}恢复渠道`;
+    if (els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
+      els.operationsList.scrollIntoView({ block: "nearest" });
+    }
   }
 
   function renderPendingTimeline() {

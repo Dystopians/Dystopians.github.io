@@ -4923,6 +4923,201 @@
     if (!target[metric]) delete target[metric];
   }
 
+  const RECOVERY_FOCUS_IDS = new Set([
+    "specialFundingApplication",
+    "fiscalTransparencyLedger",
+    "donationCoordination",
+    "procurementCreditNegotiation",
+    "emergencyAccountClearing",
+    "factoryClosedLoop",
+    "livelihoodStaggeredReopen",
+    "essentialServicePermit",
+    "closedLoopSmallShift",
+    "contactlessServiceRegistry",
+    "microFreightPermit",
+    "rentDeferralCoordination",
+    "taxFeeDeferralDesk",
+    "remoteWorkGovServices",
+    "budgetReallocationMeeting",
+    "lowRiskWorkList",
+    "elasticTransit",
+    "enterpriseExemption",
+    "jobSubsidyAdvance",
+    "emergencyLevy",
+    "specialBondQuota",
+    "nightFreightWindow",
+  ]);
+
+  const EARLY_RECOVERY_IDS = new Set([
+    "fiscalTransparencyLedger",
+    "emergencyAccountClearing",
+    "essentialServicePermit",
+    "taxFeeDeferralDesk",
+    "remoteWorkGovServices",
+    "specialFundingApplication",
+    "donationCoordination",
+    "procurementCreditNegotiation",
+    "contactlessServiceRegistry",
+    "microFreightPermit",
+  ]);
+
+  const LAST_RESORT_RECOVERY_IDS = new Set([
+    "emergencyLevy",
+    "specialBondQuota",
+  ]);
+
+  function getRecoveryLevers(state) {
+    if (!state || state.ended) {
+      return { tone: "info", detail: "", items: [], availableCount: 0, totalCount: 0 };
+    }
+
+    const seen = new Set();
+    const rows = [];
+    MAP_POINTS.forEach((pointDef) => {
+      const point = getMapPoint(state, pointDef.id);
+      [
+        { mode: "operations", kind: "工程", items: point.operations },
+        { mode: "resolutions", kind: "决议", items: point.resolutions },
+      ].forEach((group) => {
+        group.items.forEach((item) => {
+          const key = `${group.mode}:${item.id}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          const value = recoveryLeverValue(item);
+          if (!value.relevant) return;
+          const bucket = recoveryLeverBucket(item);
+          rows.push({
+            id: item.id,
+            mode: group.mode,
+            kind: group.kind,
+            pointId: pointDef.id,
+            pointLabel: pointDef.label,
+            label: item.label,
+            route: value.route,
+            impact: recoveryLeverImpact(item),
+            status: recoveryLeverStatus(item, bucket),
+            detail: item.available ? item.description : item.lockedDetail || item.lockedReason || item.description,
+            bucket,
+            tone: recoveryLeverTone(item, bucket, value),
+            priority: recoveryLeverPriority(state, item, bucket, value),
+          });
+        });
+      });
+    });
+
+    const sorted = rows.sort((a, b) => {
+      if (b.priority !== a.priority) return b.priority - a.priority;
+      if (a.bucket !== b.bucket) return recoveryBucketRank(a.bucket) - recoveryBucketRank(b.bucket);
+      return a.label.localeCompare(b.label, "zh-Hans-CN");
+    });
+    const availableCount = sorted.filter((item) => item.bucket === "available").length;
+    const establishedCount = sorted.filter((item) => item.bucket === "established").length;
+    const pressure = Math.max(0, 55 - state.resources.funds) + Math.max(0, 58 - state.metrics.economy);
+    const tone = state.resources.funds <= 15 || state.metrics.economy <= 25
+      ? "danger"
+      : availableCount
+        ? "good"
+        : pressure > 24
+          ? "warn"
+          : "info";
+    const detail = availableCount
+      ? `当前有 ${availableCount} 条资金或活力恢复渠道可执行。`
+      : establishedCount
+        ? `已有 ${establishedCount} 条恢复铺垫生效，等待条件或次日调度。`
+        : "暂无立即可用恢复渠道，可先改善条件或处理今日事件。";
+
+    return {
+      tone,
+      detail,
+      items: sorted.slice(0, 5),
+      availableCount,
+      totalCount: sorted.length,
+    };
+  }
+
+  function recoveryLeverValue(item) {
+    const resources = item.resources || {};
+    const effects = item.effects || {};
+    const delayed = item.delayed || {};
+    const delayedResources = delayed.resources || {};
+    const delayedEffects = delayed.effects || {};
+    const immediateFunds = resources.funds || 0;
+    const delayedFunds = delayedResources.funds || 0;
+    const immediateEconomy = effects.economy || 0;
+    const delayedEconomy = delayedEffects.economy || 0;
+    const fundsGain = Math.max(0, immediateFunds) + Math.max(0, delayedFunds);
+    const economyGain = Math.max(0, immediateEconomy) + Math.max(0, delayedEconomy);
+    const relevant = fundsGain > 0 || economyGain > 0 || RECOVERY_FOCUS_IDS.has(item.id);
+    let route = "恢复";
+    if (fundsGain > 0 && economyGain > 0) route = "资金+活力";
+    else if (fundsGain > 0) route = "资金";
+    else if (economyGain > 0) route = "活力";
+    else if (RECOVERY_FOCUS_IDS.has(item.id)) route = "铺垫";
+    return { relevant, fundsGain, economyGain, route };
+  }
+
+  function recoveryLeverBucket(item) {
+    if (item.available) return "available";
+    if (item.lockedReason === "次数已用完" || item.lockedReason === "已通过") return "established";
+    return "locked";
+  }
+
+  function recoveryLeverTone(item, bucket, value) {
+    if (bucket === "available") return value.fundsGain && value.economyGain ? "good" : "info";
+    if (bucket === "established") return "good";
+    if (item.lockedReason === "资金不足" || item.lockedReason === "财政透支") return "danger";
+    if (item.lockedReason === "今日调度已满") return "warn";
+    return "mixed";
+  }
+
+  function recoveryLeverStatus(item, bucket) {
+    if (bucket === "available") return "可执行";
+    if (bucket === "established") return "已铺垫";
+    if (item.lockedReason === "今日调度已满") return "明日调度";
+    if (item.lockedReason === "资金不足" || item.lockedReason === "财政透支") return "等资金";
+    return "差条件";
+  }
+
+  function recoveryLeverImpact(item) {
+    const parts = [];
+    const resources = item.resources || {};
+    const effects = item.effects || {};
+    const delayed = item.delayed || {};
+    const delayedResources = delayed.resources || {};
+    const delayedEffects = delayed.effects || {};
+    const add = (label, value) => {
+      if (!value) return;
+      parts.push(`${label} ${value > 0 ? "+" : ""}${value}`);
+    };
+    add("资金", resources.funds);
+    add("活力", effects.economy);
+    if (delayedResources.funds) add(`${delayed.delay || "后续"}日后资金`, delayedResources.funds);
+    if (delayedEffects.economy) add(`${delayed.delay || "后续"}日后活力`, delayedEffects.economy);
+    return parts.length ? parts.slice(0, 3).join(" / ") : "形成恢复铺垫";
+  }
+
+  function recoveryLeverPriority(state, item, bucket, value) {
+    let score = 0;
+    if (bucket === "available") score += 70;
+    else if (bucket === "locked" && item.lockedReason === "今日调度已满") score += 54;
+    else if (bucket === "established") score += 38;
+    else score += 24;
+    score += value.fundsGain * (state.resources.funds <= 25 ? 6 : state.resources.funds <= 45 ? 4 : 2);
+    score += value.economyGain * (state.metrics.economy <= 35 ? 5 : state.metrics.economy <= 55 ? 3 : 1);
+    if (EARLY_RECOVERY_IDS.has(item.id)) score += state.day <= 18 ? 18 : 8;
+    if (LAST_RESORT_RECOVERY_IDS.has(item.id) && state.resources.funds > 30) score -= 35;
+    if (bucket === "locked" && item.lockedReason === "条件未满足") score -= 6;
+    if (item.lockedReason === "资金不足" || item.lockedReason === "财政透支") score -= 8;
+    if (RECOVERY_FOCUS_IDS.has(item.id)) score += 5;
+    return Math.round(score);
+  }
+
+  function recoveryBucketRank(bucket) {
+    if (bucket === "available") return 0;
+    if (bucket === "locked") return 1;
+    return 2;
+  }
+
   function getSystemReadouts(state) {
     const visible = getVisibleMetrics(state);
     const budget = getCityActionBudget(state);
@@ -4986,6 +5181,7 @@
     getChoiceRouteTag,
     getEndingOutlook,
     getCityActionOutcomePreview,
+    getRecoveryLevers,
     getSystemReadouts,
     getCityActionBudget,
     getStrategyProfile,

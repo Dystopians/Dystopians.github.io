@@ -2450,6 +2450,143 @@ label {
   font-size: 0.82rem;
 }
 
+.recovery-levers {
+  display: grid;
+  gap: 7px;
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 2px solid #b89752;
+}
+
+.recovery-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.recovery-head span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.recovery-head strong {
+  min-width: 34px;
+  padding: 3px 7px;
+  border: 2px solid var(--line-dark);
+  background: #bed0cf;
+  color: #273f49;
+  box-shadow: 2px 2px 0 rgba(45, 40, 31, 0.44);
+  font-size: 0.68rem;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.recovery-head strong.good {
+  background: #b9d98e;
+  color: #244d35;
+}
+
+.recovery-head strong.warn,
+.recovery-head strong.mixed {
+  background: #f1c45f;
+  color: #5b3715;
+}
+
+.recovery-head strong.danger {
+  background: #eaa07c;
+  color: #5b1f18;
+}
+
+.recovery-summary,
+.recovery-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.42;
+}
+
+.recovery-empty {
+  padding: 7px 8px;
+  border: 2px dashed #b89752;
+  background: rgba(255, 241, 200, 0.56);
+}
+
+.recovery-list {
+  display: grid;
+  gap: 6px;
+}
+
+.recovery-item {
+  min-width: 0;
+  padding: 7px 8px;
+  border: 2px solid #9b7134;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 244, 202, 0.3) 0 6px, transparent 6px 12px),
+    #fff1c8;
+  color: var(--deep);
+  box-shadow: 2px 2px 0 rgba(95, 75, 42, 0.38);
+  text-align: left;
+}
+
+.recovery-item:hover {
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 244, 202, 0.32) 0 6px, transparent 6px 12px),
+    #ffd86f;
+  transform: translate(-1px, -1px);
+}
+
+.recovery-item.available {
+  border-color: var(--good);
+}
+
+.recovery-item.locked {
+  border-color: #95723d;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 248, 215, 0.34) 0 6px, transparent 6px 12px),
+    #f7dfaa;
+}
+
+.recovery-item.established {
+  border-color: var(--blue);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 248, 215, 0.34) 0 6px, transparent 6px 12px),
+    #d3dfd6;
+}
+
+.recovery-item span {
+  display: block;
+  color: #6d4a1e;
+  font-size: 0.62rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.recovery-item strong {
+  display: block;
+  margin: 2px 0 4px;
+  font-size: 0.76rem;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
+.recovery-item em {
+  display: inline-flex;
+  max-width: 100%;
+  min-height: 20px;
+  align-items: center;
+  padding: 1px 5px;
+  border: 2px solid #b89752;
+  background: #ead19a;
+  color: var(--deep);
+  font-size: 0.62rem;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
 .pending-timeline {
   display: grid;
   gap: 7px;

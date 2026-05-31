@@ -231,12 +231,25 @@ function validateCacheVersions() {
   }
 }
 
+function validateRecoveryLevers() {
+  assert(typeof core.getRecoveryLevers === "function", "game-core.js must export getRecoveryLevers.");
+  const state = core.createGame({ difficulty: "normal", seed: 20260601 });
+  const report = core.getRecoveryLevers(state);
+  assert(report && Array.isArray(report.items), "getRecoveryLevers must return an object with items.");
+  assert(report.totalCount >= 8, `Expected at least 8 recovery levers, found ${report.totalCount}.`);
+  assert(
+    report.items.every((item) => item.pointId && item.mode && item.label && item.status && item.impact),
+    "Every recovery lever needs pointId, mode, label, status, and impact.",
+  );
+}
+
 function run() {
   const { eventIds, phaseCounts } = validateEventCorpus();
   validateSchedule(eventIds);
   validateMapAndCityActions();
   validateNewsAssets();
   validateCacheVersions();
+  validateRecoveryLevers();
 
   const summary = {
     ok: failures.length === 0,
