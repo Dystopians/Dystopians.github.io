@@ -2367,7 +2367,7 @@
       delayed: {
         delay: 2,
         label: "志愿者排班稳定",
-        effects: { staffFatigue: -2, supplies: 1 },
+        effects: { staffFatigue: -5, supplies: 1 },
         hidden: {},
       },
       maxUses: 1,

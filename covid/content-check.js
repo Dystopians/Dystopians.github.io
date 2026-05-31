@@ -225,6 +225,10 @@ function validateMapAndCityActions() {
       assert(operation.conditionText, `${id} operation has condition but no conditionText.`);
     }
   });
+  assert(
+    (core.OPERATIONS.volunteerDispatch.delayed.effects.staffFatigue || 0) <= -5,
+    "Volunteer dispatch should be a meaningful delayed fatigue-relief project.",
+  );
 
   Object.entries(core.RESOLUTIONS || {}).forEach(([id, resolution]) => {
     assert(resolution.label && resolution.description, `${id} resolution needs label and description.`);
@@ -252,6 +256,10 @@ function validateCacheVersions() {
 
   const assetVersion = appJs.match(/ASSET_VERSION\s*=\s*"v(\d+)"/);
   assert(Boolean(assetVersion), "app.js is missing ASSET_VERSION.");
+  assert(
+    appJs.includes("delayedEffectText") && /delayedEffectText\(delayed\)/.test(appJs),
+    "Action delayed chips should include readable delayed effect values.",
+  );
   if (uniqueScriptVersions.length === 1 && assetVersion) {
     assert(
       assetVersion[1] === uniqueScriptVersions[0],

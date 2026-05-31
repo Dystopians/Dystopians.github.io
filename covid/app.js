@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v104";
+  const ASSET_VERSION = "v105";
   const core = window.Linjiang72;
 
   let state = null;
@@ -1185,7 +1185,20 @@
 
   function delayedChipText(delayed) {
     const condition = delayed.condition ? `（条件：${conditionLabel(delayed.condition).replace("时触发", "")}）` : "";
-    return `${delayed.delay}日后：${delayed.label}${condition}`;
+    const effects = delayedEffectText(delayed);
+    return `${delayed.delay}日后：${delayed.label}${effects ? ` · ${effects}` : ""}${condition}`;
+  }
+
+  function delayedEffectText(delayed) {
+    const entries = [
+      ...Object.entries(delayed.resources || {}).map(([metric, delta]) => [metric, delta, core.RESOURCE_META[metric]]),
+      ...Object.entries(delayed.effects || {}).map(([metric, delta]) => [metric, delta, core.METRIC_META[metric]]),
+      ...Object.entries(delayed.hidden || {}).map(([metric, delta]) => [metric, delta, core.METRIC_META[metric]]),
+    ].filter(([, delta, meta]) => delta && meta);
+    return entries
+      .slice(0, 3)
+      .map(([, delta, meta]) => `${meta.short} ${delta > 0 ? "+" : ""}${delta}`)
+      .join("、");
   }
 
   function renderMap() {
