@@ -4381,6 +4381,66 @@ label {
   line-height: 1.45;
 }
 
+.strategy-inertia {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border: 2px solid var(--warn);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 241, 200, 0.46) 0 6px, rgba(232, 199, 121, 0.24) 6px 12px),
+    #f1cd7e;
+  box-shadow: inset 2px 2px 0 rgba(255, 247, 209, 0.66), 2px 2px 0 rgba(64, 47, 27, 0.2);
+}
+
+.strategy-inertia.danger {
+  border-color: var(--danger);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 241, 200, 0.36) 0 6px, rgba(208, 96, 70, 0.24) 6px 12px),
+    #edaa86;
+}
+
+.strategy-inertia.good {
+  border-color: var(--good);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 241, 200, 0.4) 0 6px, rgba(139, 176, 82, 0.22) 6px 12px),
+    #dcebac;
+}
+
+.strategy-inertia span,
+.strategy-inertia strong,
+.strategy-inertia em {
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.strategy-inertia span {
+  width: fit-content;
+  padding: 2px 6px;
+  border: 2px solid rgba(95, 71, 37, 0.58);
+  background: #fff1c8;
+  color: var(--muted);
+  font-size: 0.62rem;
+}
+
+.strategy-inertia strong {
+  color: var(--deep);
+  font-size: 0.78rem;
+}
+
+.strategy-inertia p {
+  margin: 0;
+  color: var(--deep);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.38;
+}
+
+.strategy-inertia em {
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-style: normal;
+}
+
 .strategy-route-list {
   display: grid;
   gap: 6px;

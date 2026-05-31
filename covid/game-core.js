@@ -675,6 +675,14 @@
     delay: { label: "口径压制", tone: "danger" },
     hard: { label: "高压止血", tone: "danger" },
     quietClose: { label: "高压止血", tone: "danger" },
+    expandTesting: { label: "监测治理", tone: "info" },
+    zoningControl: { label: "高压止血", tone: "danger" },
+    citywideSilence: { label: "高压止血", tone: "danger" },
+    supplyPriority: { label: "民生保供", tone: "good" },
+    medicalExpansion: { label: "医疗优先", tone: "good" },
+    transparency: { label: "公开修复", tone: "good" },
+    reopenPilot: { label: "恢复财政", tone: "mixed" },
+    restPolicy: { label: "基层减压", tone: "good" },
     rest: { label: "基层减压", tone: "good" },
     protectWorkers: { label: "基层减压", tone: "good" },
     volunteer: { label: "基层减压", tone: "good" },
@@ -827,6 +835,54 @@
       advice: "托底选择说明局势已进入补救段，后续要尽快回到更明确的长期路线。",
     },
   ];
+
+  const STRATEGY_COMPLEMENTS = {
+    control: {
+      routeIds: ["livelihood", "openRepair", "workerRelief"],
+      label: "建议补：民生保供 / 公开修复 / 基层减压",
+      detail: "高压止血越重，越需要把生活供应、解释口径和基层休整一起补上。",
+    },
+    recovery: {
+      routeIds: ["monitoring", "livelihood", "medical"],
+      label: "建议补：监测治理 / 民生保供 / 医疗优先",
+      detail: "恢复财政会带回流动和公平性质疑，需要用监测、保供和医疗缓冲接住反弹。",
+    },
+    medical: {
+      routeIds: ["recovery", "workerRelief", "livelihood"],
+      label: "建议补：恢复财政 / 基层减压 / 民生保供",
+      detail: "医疗优先会持续占用资金、物资和人手，需要财政与基层路线分担账单。",
+    },
+    monitoring: {
+      routeIds: ["medical", "recovery", "openRepair"],
+      label: "建议补：医疗优先 / 恢复财政 / 公开修复",
+      detail: "监测治理能看见问题，但复核、申诉和检测账单要靠医疗、财政与公开解释承接。",
+    },
+    livelihood: {
+      routeIds: ["medical", "monitoring", "recovery"],
+      label: "建议补：医疗优先 / 监测治理 / 恢复财政",
+      detail: "民生保供能稳住耐心，但不能替代医院分流、传播监测和长期现金流。",
+    },
+    workerRelief: {
+      routeIds: ["medical", "monitoring", "livelihood"],
+      label: "建议补：医疗优先 / 监测治理 / 民生保供",
+      detail: "基层减压能保执行力，但如果不处理医院、传播和供应，压力会换位置堆积。",
+    },
+    openRepair: {
+      routeIds: ["medical", "livelihood", "recovery"],
+      label: "建议补：医疗优先 / 民生保供 / 恢复财政",
+      detail: "公开修复能保信任，但必须配套看得见的医疗、供应和财政动作。",
+    },
+    memory: {
+      routeIds: ["recovery", "medical", "openRepair"],
+      label: "建议补：恢复财政 / 医疗优先 / 公开修复",
+      detail: "创伤修复改善恢复质感，但需要财政、医疗和可核验复盘把承诺落地。",
+    },
+    fallback: {
+      routeIds: ["medical", "livelihood", "recovery"],
+      label: "建议补：医疗优先 / 民生保供 / 恢复财政",
+      detail: "应急托底只能争取窗口，下一步要回到能改变结构的长期路线。",
+    },
+  };
 
   function badgeAtLeast(value, target) {
     return clamp(Math.round((value / target) * 100), 0, 100);
@@ -4232,6 +4288,7 @@
       label: "尚未成型",
       detail: "本局还没有形成稳定治理路线。处理几次事件或执行城市行动后，这里会显示你的策略倾向。",
       blindSpot: null,
+      inertia: null,
       debts: [],
       recommendations: getStrategyRecommendations(state, null, null),
       routes: [],
@@ -4250,6 +4307,7 @@
         label: "路线试探",
         detail: `本局刚开始出现${dominant.label}倾向。再处理几次事件或城市行动后，路线结构会更稳定。`,
         blindSpot: getStrategyBlindSpot(state, routeMap),
+        inertia: null,
         debts: getStrategyDebts(state, dominant, routeMap),
         recommendations: getStrategyRecommendations(state, getStrategyBlindSpot(state, routeMap), dominant),
         routes: routes.filter((route) => route.count > 0).slice(0, 5),
@@ -4275,9 +4333,26 @@
       label,
       detail,
       blindSpot,
+      inertia: getStrategyInertia(dominant),
       debts: getStrategyDebts(state, dominant, routeMap),
       recommendations: getStrategyRecommendations(state, blindSpot, dominant),
       routes: routes.filter((route) => route.count > 0).slice(0, 5),
+    };
+  }
+
+  function getStrategyInertia(dominant) {
+    if (!dominant || dominant.count < 3 || dominant.percent < 45) return null;
+    const complement = STRATEGY_COMPLEMENTS[dominant.id];
+    if (!complement) return null;
+    const tone = dominant.percent >= 60 || dominant.tone === "danger" ? "danger" : "warn";
+    return {
+      id: `inertia_${dominant.id}`,
+      tone,
+      status: dominant.percent >= 60 ? "单一路线过载" : "路线惯性提醒",
+      routeLabel: dominant.label,
+      percent: dominant.percent,
+      complementLabel: complement.label,
+      detail: `${dominant.label}已占本局路线 ${dominant.percent}%。${complement.detail}`,
     };
   }
 
@@ -4491,17 +4566,8 @@
     if (blindLabel.includes("创伤")) return ["memory", "openRepair"];
 
     if (dominant && dominant.percent >= 40) {
-      const complements = {
-        control: ["livelihood", "openRepair", "workerRelief"],
-        recovery: ["monitoring", "livelihood", "medical"],
-        medical: ["recovery", "workerRelief", "livelihood"],
-        monitoring: ["medical", "recovery", "openRepair"],
-        livelihood: ["medical", "monitoring", "recovery"],
-        workerRelief: ["medical", "monitoring", "livelihood"],
-        openRepair: ["medical", "livelihood", "recovery"],
-        memory: ["recovery", "medical", "openRepair"],
-      };
-      if (complements[dominant.id]) return complements[dominant.id];
+      const complement = STRATEGY_COMPLEMENTS[dominant.id];
+      if (complement) return complement.routeIds;
     }
 
     const m = state.metrics;

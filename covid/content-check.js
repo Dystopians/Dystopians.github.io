@@ -919,6 +919,7 @@ function validateEndingStrategyReview() {
   activeState.metrics.staffFatigue = 68;
   activeState.metrics.economy = 48;
   activeState.resources.funds = 38;
+  activeState.flags.actionUses.citywideSilence = 2;
   activeState.history.unshift({
     day: 8,
     phase: 1,
@@ -932,6 +933,9 @@ function validateEndingStrategyReview() {
     changes: {},
   });
   const profile = core.getStrategyProfile(activeState);
+  assert(core.getChoiceRouteTag({ actionKey: "citywideSilence" }).label === "高压止血", "Base hard-control actions should count toward strategy routes.");
+  assert(core.getChoiceRouteTag({ actionKey: "expandTesting" }).label === "监测治理", "Base testing actions should count toward strategy routes.");
+  assert(profile.inertia && profile.inertia.detail && profile.inertia.complementLabel, "Overused routes should expose a readable inertia warning with complements.");
   assert(Array.isArray(profile.recommendations), "Strategy profile should expose recommendations.");
   assert(profile.recommendations.length > 0, "Strategy recommendations should surface route complements under pressure.");
   assert(Array.isArray(profile.debts), "Strategy profile should expose route debt warnings.");
@@ -1015,6 +1019,8 @@ function validateActionPreviewCoverage() {
   assert(styles.includes(".pending-impact"), "Pending impact summaries need dedicated styling.");
   assert(appJs.includes("summarizeTrendItems"), "Trend preview should include a readable overall trend summary.");
   assert(styles.includes(".trend-summary"), "Trend preview summary needs dedicated styling.");
+  assert(appJs.includes("strategy-inertia"), "Strategy profile should render route inertia warnings.");
+  assert(styles.includes(".strategy-inertia"), "Route inertia warnings need dedicated styling.");
 }
 
 function run() {

@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v118";
+  const ASSET_VERSION = "v119";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -1081,6 +1081,16 @@
     const blindSpot = profile.blindSpot
       ? `<p class="strategy-blindspot ${escapeHtml(profile.blindSpot.tone || "warn")}"><strong>${escapeHtml(profile.blindSpot.label)}</strong>${escapeHtml(profile.blindSpot.detail)}</p>`
       : "";
+    const inertia = profile.inertia
+      ? `
+        <div class="strategy-inertia ${escapeHtml(profile.inertia.tone || "warn")}">
+          <span>${escapeHtml(profile.inertia.status || "路线惯性")}</span>
+          <strong>${escapeHtml(profile.inertia.routeLabel)} ${escapeHtml(String(profile.inertia.percent))}%</strong>
+          <p>${escapeHtml(profile.inertia.detail)}</p>
+          <em>${escapeHtml(profile.inertia.complementLabel)}</em>
+        </div>
+      `
+      : "";
     const debts = (profile.debts || []).slice(0, 3);
     const debtList = debts.length
       ? `
@@ -1117,6 +1127,7 @@
         <strong class="${escapeHtml(profile.tone || "info")}">${escapeHtml(profile.label)}</strong>
       </div>
       <p>${escapeHtml(profile.detail)}</p>
+      ${inertia}
       <div class="strategy-route-list">${routeList}</div>
       ${blindSpot}
       ${debtList}
