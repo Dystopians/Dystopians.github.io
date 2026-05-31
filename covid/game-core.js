@@ -1920,6 +1920,17 @@
     },
   };
 
+  const SCORE_COMPONENTS = [
+    { metric: "infection", source: "metrics", max: 17, label: "感染压力", advice: "更早用检测、分区管控和低传播窗口复工，避免感染把医疗拖上去。" },
+    { metric: "hospitalLoad", source: "metrics", max: 17, label: "医疗负载", advice: "优先铺分级诊疗、社区门诊或方舱，不要等到医疗红线后才救急。" },
+    { metric: "supplies", source: "metrics", max: 13, label: "物资供应", advice: "保供专线、捐助统筹和货运微循环要早于库存低位启动。" },
+    { metric: "trust", source: "metrics", max: 17, label: "市民信任", advice: "公开复盘、补偿和可核验流程能让强政策不至于越用越钝。" },
+    { metric: "economy", source: "metrics", max: 13, label: "城市活力", advice: "前期用远程办公、闭环小班和小微缓缴托住活力，不必只靠大复工。" },
+    { metric: "staffFatigue", source: "metrics", max: 11, label: "基层疲劳", advice: "轮休、志愿者调度和压缩流程要穿插使用，连续强压会吞掉后期收益。" },
+    { metric: "publicMemory", source: "hidden", max: 5, label: "公共创伤", advice: "减少强硬余波，利用公开复盘、药品直送和记忆修复类事件降创伤。" },
+    { metric: "funds", source: "resources", max: 7, label: "应急资金", advice: "专项资金、社会捐助和账期谈判可以补现金流，但别让资金路线压垮信任。" },
+  ];
+
   const TESTING_KEYS = ["expandTesting", "campusSentinel", "deployHealthCode", "triageNetwork", "communityClinic"];
   const CONTROL_KEYS = ["zoningControl", "citywideSilence", "suppressRumorLine", "deployHealthCode"];
   const SUPPLY_KEYS = ["supplyPriority", "supplyCorridor", "volunteerDispatch", "hardWarehouse", "elasticTransit", "outsourceDelivery", "donationCoordination", "closedLoopSmallShift", "contactlessServiceRegistry", "nightFreightWindow", "microFreightPermit"];
@@ -4005,19 +4016,80 @@
   }
 
   function calculateScore(state) {
-    const m = state.metrics;
-    const h = state.hidden;
-    const r = state.resources;
-    return (
-      (100 - m.infection) * 0.17
-      + (100 - m.hospitalLoad) * 0.17
-      + m.supplies * 0.13
-      + m.trust * 0.17
-      + m.economy * 0.13
-      + (100 - m.staffFatigue) * 0.11
-      + (100 - h.publicMemory) * 0.05
-      + Math.min(r.funds, 100) * 0.07
-    );
+    return SCORE_COMPONENTS.reduce((sum, component) => sum + scoreComponentPoints(state, component), 0);
+  }
+
+  function getScoreBreakdown(state) {
+    if (!state) return [];
+    return SCORE_COMPONENTS.map((component) => {
+      const rawValue = scoreMetricValue(state, component);
+      const value = boundedMetricValue(component.metric, rawValue);
+      const points = scoreComponentPoints(state, component);
+      const lost = component.max - points;
+      return {
+        metric: component.metric,
+        label: component.label,
+        short: (getObjectiveMeta(component.metric) || {}).short || component.label,
+        value,
+        points: roundScore(points),
+        lost: roundScore(lost),
+        max: component.max,
+        pct: Math.round((points / component.max) * 100),
+        tone: scoreTone(component.metric, value, lost, component.max),
+        advice: component.advice,
+      };
+    });
+  }
+
+  function scoreComponentPoints(state, component) {
+    const value = boundedMetricValue(component.metric, scoreMetricValue(state, component));
+    return (scoreHealthyValue(component.metric, value) / 100) * component.max;
+  }
+
+  function scoreMetricValue(state, component) {
+    if (component.source === "metrics") return state.metrics[component.metric];
+    if (component.source === "hidden") return state.hidden[component.metric];
+    if (component.source === "resources") return state.resources[component.metric];
+    return 0;
+  }
+
+  function scoreHealthyValue(metric, value) {
+    const meta = getObjectiveMeta(metric);
+    if (meta.direction === "danger") return 100 - value;
+    return Math.min(value, 100);
+  }
+
+  function scoreTone(metric, value, lost, max) {
+    if (lost >= max * 0.5) return "danger";
+    if (lost >= max * 0.28) return "warn";
+    const band = getRiskBand(metric, value);
+    return band === "danger" ? "warn" : "good";
+  }
+
+  function roundScore(value) {
+    return Math.round(value * 10) / 10;
+  }
+
+  function getEndingReview(state) {
+    if (!state) return null;
+    const breakdown = getScoreBreakdown(state)
+      .sort((a, b) => b.max - a.max || b.lost - a.lost);
+    const priorities = [...breakdown]
+      .sort((a, b) => b.lost - a.lost)
+      .slice(0, 3)
+      .map((item) => ({
+        metric: item.metric,
+        label: item.label,
+        lost: item.lost,
+        advice: item.advice,
+        tone: item.tone === "good" ? "warn" : item.tone,
+      }));
+    return {
+      score: roundScore(calculateScore(state)),
+      scoreText: `${Math.round(calculateScore(state))}/100`,
+      breakdown,
+      priorities,
+    };
   }
 
   function projectedEndingId(state, score) {
@@ -4621,6 +4693,7 @@
     executeOperation,
     executeResolution,
     calculateScore,
+    getEndingReview,
     phaseForDay,
     getStageInfo,
     getStageObjectives,

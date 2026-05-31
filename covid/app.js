@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v57";
+  const ASSET_VERSION = "v58";
   const core = window.Linjiang72;
 
   let state = null;
@@ -260,6 +260,7 @@
     endingSummary: document.getElementById("endingSummary"),
     endingScore: document.getElementById("endingScore"),
     endingMetrics: document.getElementById("endingMetrics"),
+    endingReview: document.getElementById("endingReview"),
   };
   const PREVIEW_METRIC_BY_SHORT = Object.fromEntries([
     ...Object.entries(core.METRIC_META).map(([metric, meta]) => [meta.short, metric]),
@@ -1640,6 +1641,50 @@
       item.innerHTML = `<span>${meta.label}</span><strong>${value}</strong>`;
       els.endingMetrics.appendChild(item);
     });
+    renderEndingReview();
+  }
+
+  function renderEndingReview() {
+    if (!els.endingReview || !core.getEndingReview) return;
+    const review = core.getEndingReview(state);
+    if (!review) {
+      els.endingReview.innerHTML = "";
+      return;
+    }
+    els.endingReview.innerHTML = `
+      <section class="ending-review-section">
+        <div class="ending-review-head">
+          <span>评分拆解</span>
+          <strong>${escapeHtml(review.scoreText)}</strong>
+        </div>
+        <div class="ending-score-grid">
+          ${review.breakdown.map((item) => `
+            <article class="ending-score-row ${escapeHtml(item.tone)}">
+              <div>
+                <strong>${escapeHtml(item.label)}</strong>
+                <span>${escapeHtml(String(item.value))} · ${escapeHtml(String(item.points))}/${escapeHtml(String(item.max))}</span>
+              </div>
+              <i aria-hidden="true"><b style="width:${Math.max(0, Math.min(100, item.pct))}%"></b></i>
+              <em>失分 ${escapeHtml(String(item.lost))}</em>
+            </article>
+          `).join("")}
+        </div>
+      </section>
+      <section class="ending-review-section">
+        <div class="ending-review-head">
+          <span>下一局重点</span>
+          <strong>${review.priorities.length}</strong>
+        </div>
+        <div class="ending-priority-list">
+          ${review.priorities.map((item) => `
+            <article class="ending-priority ${escapeHtml(item.tone)}">
+              <span>${escapeHtml(item.label)} · 失分 ${escapeHtml(String(item.lost))}</span>
+              <p>${escapeHtml(item.advice)}</p>
+            </article>
+          `).join("")}
+        </div>
+      </section>
+    `;
   }
 
   function changeClass(metric, delta) {
