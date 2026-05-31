@@ -6093,6 +6093,19 @@
       { id: "trust", label: "信任崩塌", streak: streaks.trust || 0 },
       { id: "staff", label: "执行失灵", streak: streaks.staff || 0 },
     ].sort((a, b) => b.streak - a.streak)[0];
+    const riskClocks = getEndingRiskClocks(state, limit);
+    const drivers = getScoreBreakdown(state)
+      .sort((a, b) => b.lost - a.lost || b.max - a.max)
+      .slice(0, 3)
+      .map((item) => ({
+        metric: item.metric,
+        label: item.short,
+        value: item.value,
+        lost: item.lost,
+        status: `扣 ${item.lost} 分`,
+        tone: item.tone,
+        detail: item.advice,
+      }));
 
     if (activeRisk && activeRisk.streak > 0) {
       return {
@@ -6103,6 +6116,8 @@
         title: `${activeRisk.label} ${activeRisk.streak}/${limit}`,
         detail: "失败倒计时会覆盖所有归档评分，优先拆除已经越线的红色压力槽。",
         nextText: "先保命，再追分",
+        drivers,
+        riskClocks,
       };
     }
 
@@ -6142,7 +6157,61 @@
       title: ending.title,
       detail,
       nextText,
+      drivers,
+      riskClocks,
     };
+  }
+
+  function getEndingRiskClocks(state, limit = getFailureLimit(state)) {
+    const m = state.metrics;
+    const streaks = state.flags.failureStreaks || {};
+    const clocks = [
+      {
+        id: "medical",
+        label: "医疗挤兑",
+        value: m.hospitalLoad,
+        threshold: "医疗≥95",
+        streak: streaks.medical || 0,
+        warn: m.hospitalLoad >= 85,
+        detail: "医疗连续越线会直接失败，医疗高位也会持续推高创伤和信任损失。",
+      },
+      {
+        id: "supply",
+        label: "供应断裂",
+        value: m.supplies,
+        threshold: "物资<15",
+        streak: streaks.supply || 0,
+        warn: m.supplies <= 25,
+        detail: "物资低位会同时伤害信任、疲劳和保供行动效率。",
+      },
+      {
+        id: "trust",
+        label: "信任崩塌",
+        value: m.trust,
+        threshold: "信任<20",
+        streak: streaks.trust || 0,
+        warn: m.trust <= 30,
+        detail: "低信任会削弱行动效率，牺牲信任的路线会更快反噬。",
+      },
+      {
+        id: "staff",
+        label: "执行失灵",
+        value: m.staffFatigue,
+        threshold: "疲劳>90",
+        streak: streaks.staff || 0,
+        warn: m.staffFatigue >= 80,
+        detail: "高疲劳会让所有行动变钝，并磨损发现率。",
+      },
+    ];
+    return clocks
+      .filter((item) => item.streak > 0 || item.warn)
+      .map((item) => ({
+        ...item,
+        status: item.streak > 0 ? `${item.streak}/${limit}` : "临近",
+        tone: item.streak > 0 ? "danger" : "warn",
+      }))
+      .sort((a, b) => b.streak - a.streak || (b.warn ? 1 : 0) - (a.warn ? 1 : 0))
+      .slice(0, 3);
   }
 
   function getRiskBand(metric, value) {

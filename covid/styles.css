@@ -1015,6 +1015,47 @@ label {
   color: #5c3d17;
 }
 
+.ending-driver-list,
+.ending-clock-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.ending-driver-list span,
+.ending-clock-list span {
+  max-width: 100%;
+  padding: 3px 5px;
+  border: 2px solid #9b7134;
+  background: #fff1c8;
+  color: #5c3d17;
+  line-height: 1.2;
+}
+
+.ending-driver-list span.good,
+.ending-clock-list span.good {
+  border-color: var(--good);
+  background: #d7e8ad;
+  color: #234522;
+}
+
+.ending-driver-list span.warn,
+.ending-clock-list span.warn,
+.ending-driver-list span.mixed,
+.ending-clock-list span.mixed {
+  border-color: var(--warn);
+  background: #f0c877;
+  color: #5c3d17;
+}
+
+.ending-driver-list span.danger,
+.ending-clock-list span.danger {
+  border-color: var(--danger);
+  background: #eaa07c;
+  color: #5b1f18;
+}
+
 .stage-schedule {
   display: grid;
   gap: 6px;

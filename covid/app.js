@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v94";
+  const ASSET_VERSION = "v95";
   const core = window.Linjiang72;
 
   let state = null;
@@ -836,6 +836,30 @@
       els.endingOutlook.innerHTML = "";
       return;
     }
+    const drivers = (outlook.drivers || []).slice(0, 3);
+    const driverList = drivers.length
+      ? `
+        <div class="ending-driver-list" aria-label="主要扣分项">
+          ${drivers.map((item) => `
+            <span class="${escapeHtml(item.tone || "warn")}" title="${escapeHtml(item.detail || "")}">
+              ${escapeHtml(item.label)} ${escapeHtml(String(item.value))} · ${escapeHtml(item.status)}
+            </span>
+          `).join("")}
+        </div>
+      `
+      : "";
+    const clocks = (outlook.riskClocks || []).slice(0, 3);
+    const clockList = clocks.length
+      ? `
+        <div class="ending-clock-list" aria-label="失败倒计时">
+          ${clocks.map((item) => `
+            <span class="${escapeHtml(item.tone || "warn")}" title="${escapeHtml(item.detail || "")}">
+              ${escapeHtml(item.label)} ${escapeHtml(item.status)} · ${escapeHtml(item.threshold)}
+            </span>
+          `).join("")}
+        </div>
+      `
+      : "";
     els.endingOutlook.innerHTML = `
       <article class="ending-outlook-card ${escapeHtml(outlook.tone)}">
         <div>
@@ -845,6 +869,8 @@
         <h3>${escapeHtml(outlook.title)}</h3>
         <p>${escapeHtml(outlook.detail)}</p>
         <em>${escapeHtml(outlook.nextText)}</em>
+        ${driverList}
+        ${clockList}
       </article>
     `;
   }

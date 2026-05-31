@@ -726,6 +726,29 @@ function validateEndingStrategyReview() {
   );
 }
 
+function validateEndingOutlook() {
+  const state = core.createGame({ difficulty: "normal", seed: 20260609 });
+  const opening = core.getEndingOutlook(state);
+  assert(opening && Array.isArray(opening.drivers), "Ending outlook should expose score drivers.");
+  assert(opening.drivers.length === 3, "Ending outlook should list the top 3 score drivers.");
+  assert(
+    opening.drivers.every((item) => item.metric && item.label && item.status && item.detail && item.tone),
+    "Every ending outlook score driver needs metric, label, status, detail, and tone.",
+  );
+
+  state.metrics.hospitalLoad = 96;
+  state.metrics.supplies = 22;
+  state.metrics.staffFatigue = 84;
+  state.flags.failureStreaks.medical = 2;
+  const pressured = core.getEndingOutlook(state);
+  assert(pressured && Array.isArray(pressured.riskClocks), "Ending outlook should expose failure risk clocks.");
+  assert(pressured.riskClocks.length > 0, "Pressured ending outlook should show at least one failure clock.");
+  assert(
+    pressured.riskClocks.some((item) => item.id === "medical" && item.status.includes("/")),
+    "Active medical failure countdown should appear in ending outlook risk clocks.",
+  );
+}
+
 function run() {
   const { eventIds, phaseCounts } = validateEventCorpus();
   validateSchedule(eventIds);
@@ -746,6 +769,7 @@ function run() {
   validateSettlementBreakdown();
   validateMetricTrends();
   validateEndingStrategyReview();
+  validateEndingOutlook();
 
   const summary = {
     ok: failures.length === 0,
