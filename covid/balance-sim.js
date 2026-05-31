@@ -10,6 +10,7 @@ const POLICIES = [
   "balancedNoProjects",
   "hardControl",
   "reopen",
+  "financeFirst",
   "trustSacrifice",
   "fatigueFirst",
 ];
@@ -94,10 +95,13 @@ function chooseMove(state, policy) {
     return prefer(["hard", "messageControl", "quietClose", "zoningControl", "citywideSilence", "suppressRumorLine"]) || moves[0];
   }
   if (policy === "reopen") {
-    return prefer(["reopen", "whiteList", "lowRiskWorkList", "elasticTransit", "enterpriseExemption", "factoryClosedLoop"]) || moves[0];
+    return prefer(["reopen", "whiteList", "livelihoodStaggeredReopen", "closedLoopSmallShift", "lowRiskWorkList", "elasticTransit", "nightFreightWindow", "jobSubsidyAdvance", "enterpriseExemption", "factoryClosedLoop"]) || moves[0];
+  }
+  if (policy === "financeFirst") {
+    return prefer(["specialFundingApplication", "donationCoordination", "specialBondQuota", "emergencyLevy", "fiscalDebt", "finance", "enterpriseExemption", "jobSubsidyAdvance"]) || moves[0];
   }
   if (policy === "trustSacrifice") {
-    return prefer(["messageControl", "delay", "hard", "outsource", "finance", "whiteList", "community", "hardWarehouse", "emergencyLevy", "delayBadNews", "communityAutonomy"]) || moves[0];
+    return prefer(["messageControl", "delay", "hard", "outsource", "finance", "whiteList", "community", "hardWarehouse", "emergencyLevy", "specialBondQuota", "delayBadNews", "communityAutonomy"]) || moves[0];
   }
   if (policy === "fatigueFirst") {
     return prefer(["rest", "compress", "volunteer", "supportTeam", "community", "mentalHealthLine", "staffRotationOrder", "communityAutonomy"]) || moves[0];
