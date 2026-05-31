@@ -3,7 +3,9 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v109";
+  const ASSET_VERSION = "v110";
+  const EVENT_IMAGE_FALLBACK = "news-hospital.png";
+  const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
 
   let state = null;
@@ -1533,10 +1535,15 @@
       els.eventSource.open = false;
       els.eventSourceNote.textContent = "";
     }
-    els.eventImage.src = `${ASSET_PATH + event.image}?${ASSET_VERSION}`;
-    els.eventImage.alt = `${event.title} 配图`;
     els.eventVisual.dataset.motion = motionForEventImage(event.image, event.imageKey);
     els.eventVisual.dataset.key = event.imageKey || "default";
+    setManagedImage(
+      els.eventImage,
+      event.image,
+      `${event.title} 配图`,
+      EVENT_IMAGE_FALLBACK,
+      els.eventVisual,
+    );
     els.choiceList.innerHTML = "";
     const comparison = renderChoiceComparison();
     if (comparison) {
@@ -2480,14 +2487,49 @@
       const card = document.createElement("article");
       card.className = "news-card";
       card.innerHTML = `
-        <img src="${ASSET_PATH + item.image}?${ASSET_VERSION}" alt="${escapeHtml(item.title)} 配图">
+        <img alt="${escapeHtml(item.title)} 配图">
         <div>
           <strong>${escapeHtml(item.title)}</strong>
           <p>${escapeHtml(item.body)}</p>
         </div>
       `;
+      setManagedImage(card.querySelector("img"), item.image, `${item.title} 配图`, NEWS_IMAGE_FALLBACK, card);
       els.newsList.appendChild(card);
     });
+  }
+
+  function setManagedImage(image, assetPath, altText, fallbackPath, frame) {
+    if (!image) return;
+    const source = `${ASSET_PATH + assetPath}?${ASSET_VERSION}`;
+    const fallback = fallbackPath ? `${ASSET_PATH + fallbackPath}?${ASSET_VERSION}` : "";
+    image.alt = altText || "";
+    image.dataset.fallbackSrc = fallback;
+    image.dataset.fallbackUsed = "false";
+    image.classList.add("is-loading");
+    image.classList.remove("is-error");
+    if (frame) {
+      frame.classList.add("image-loading");
+      frame.classList.remove("image-error");
+    }
+    image.onload = () => {
+      image.classList.remove("is-loading", "is-error");
+      if (frame) frame.classList.remove("image-loading", "image-error");
+    };
+    image.onerror = () => {
+      const fallbackSrc = image.dataset.fallbackSrc || "";
+      if (fallbackSrc && image.dataset.fallbackUsed !== "true") {
+        image.dataset.fallbackUsed = "true";
+        image.src = fallbackSrc;
+        return;
+      }
+      image.classList.remove("is-loading");
+      image.classList.add("is-error");
+      if (frame) {
+        frame.classList.remove("image-loading");
+        frame.classList.add("image-error");
+      }
+    };
+    image.src = source;
   }
 
   function renderHistory() {

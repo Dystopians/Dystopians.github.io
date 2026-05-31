@@ -309,6 +309,31 @@ function validateCacheVersions() {
   }
 }
 
+function validateRuntimeImageFallbacks() {
+  const appJs = fs.readFileSync(path.join(rootDir, "app.js"), "utf8");
+  const styles = fs.readFileSync(path.join(rootDir, "styles.css"), "utf8");
+  [
+    "setManagedImage",
+    "EVENT_IMAGE_FALLBACK",
+    "NEWS_IMAGE_FALLBACK",
+    "image.dataset.fallbackUsed",
+    "image.onerror",
+    "image-loading",
+    "image-error",
+  ].forEach((text) => {
+    assert(appJs.includes(text), `app.js should keep runtime image fallback support for ${text}.`);
+  });
+  [
+    ".event-image.is-loading",
+    ".event-image.is-error",
+    ".event-visual.image-error",
+    ".news-card.image-loading img",
+    ".news-card.image-error img",
+  ].forEach((text) => {
+    assert(styles.includes(text), `styles.css should style image loading/error state: ${text}.`);
+  });
+}
+
 function validateScenarios() {
   const indexHtml = fs.readFileSync(path.join(rootDir, "index.html"), "utf8");
   assert(core.SCENARIOS && typeof core.SCENARIOS === "object", "game-core.js must export SCENARIOS.");
@@ -959,6 +984,7 @@ function run() {
   validateMapAndCityActions();
   validateNewsAssets();
   validateCacheVersions();
+  validateRuntimeImageFallbacks();
   validateScenarios();
   validateTutorialCopy();
   validateRecoveryLevers();

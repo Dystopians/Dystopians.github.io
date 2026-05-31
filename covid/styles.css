@@ -2481,6 +2481,30 @@ label {
   object-position: center;
   filter: sepia(0.12) saturate(0.92) contrast(1.05);
   animation: eventImageBreath 8s steps(8) infinite;
+  transition: opacity 160ms steps(2), filter 160ms steps(2);
+}
+
+.event-image.is-loading {
+  opacity: 0.56;
+  filter: sepia(0.22) saturate(0.82) contrast(0.95);
+}
+
+.event-image.is-error {
+  opacity: 0.2;
+  filter: sepia(0.35) saturate(0.65) contrast(0.9);
+}
+
+.event-visual.image-loading {
+  background:
+    repeating-linear-gradient(90deg, rgba(95, 71, 37, 0.1) 0 8px, transparent 8px 16px),
+    repeating-linear-gradient(0deg, rgba(255, 241, 200, 0.14) 0 2px, transparent 2px 9px),
+    #c8aa68;
+}
+
+.event-visual.image-error {
+  background:
+    repeating-linear-gradient(45deg, rgba(95, 71, 37, 0.18) 0 8px, transparent 8px 16px),
+    #c8aa68;
 }
 
 .event-anim {
@@ -5221,6 +5245,17 @@ label {
   object-fit: cover;
   border: 2px solid var(--line);
   filter: sepia(0.1) saturate(0.95);
+  transition: opacity 120ms steps(2), filter 120ms steps(2);
+}
+
+.news-card.image-loading img {
+  opacity: 0.58;
+  filter: sepia(0.22) saturate(0.82) contrast(0.95);
+}
+
+.news-card.image-error img {
+  opacity: 0.28;
+  filter: sepia(0.35) saturate(0.65) contrast(0.9);
 }
 
 .alerts {
