@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v37";
+  const ASSET_VERSION = "v38";
   const core = window.Linjiang72;
 
   let state = null;
@@ -983,18 +983,25 @@
 
     state.history.forEach((entry) => {
       const li = document.createElement("li");
-      const changes = Object.entries(entry.changes)
+      const changes = Object.entries(entry.changes || {})
         .map(([metric, delta]) => {
           const meta = core.METRIC_META[metric] || core.RESOURCE_META[metric];
           if (!meta) return "";
           return `<span class="change ${changeClass(metric, delta)}" title="${escapeHtml(meta.description)}">${meta.short} ${delta > 0 ? "+" : ""}${delta}</span>`;
         })
+        .filter(Boolean)
+        .join("") || "<span class=\"change neutral\">无直接数值变化</span>";
+      const notes = (entry.notes || [])
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((note) => `<li>${escapeHtml(note)}</li>`)
         .join("");
       li.innerHTML = `
         <span class="history-meta">第 ${entry.day} 天 / 阶段 ${entry.phase}</span>
         <strong>${escapeHtml(entry.choice)}</strong>
         <p>${escapeHtml(entry.title)}</p>
         <div class="change-list">${changes}</div>
+        ${notes ? `<ul class="history-notes">${notes}</ul>` : ""}
       `;
       els.historyList.appendChild(li);
     });

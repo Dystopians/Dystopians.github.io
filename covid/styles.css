@@ -2120,20 +2120,67 @@ label {
 }
 
 .change {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 6px;
+  border: 2px solid #b89752;
+  background: #ead19a;
+  box-shadow: 1px 1px 0 rgba(95, 75, 42, 0.35);
   font-size: 0.72rem;
   font-weight: 900;
+  line-height: 1.1;
 }
 
 .change.good-change {
+  border-color: #3f7a54;
+  background: #b9d98e;
   color: var(--good);
 }
 
 .change.bad-change {
+  border-color: #a83f32;
+  background: #eaa07c;
   color: var(--danger);
 }
 
 .change.mixed-change {
+  border-color: #9b7134;
+  background: #f0ca75;
   color: #9b7134;
+}
+
+.change.neutral {
+  color: var(--deep);
+}
+
+.history-notes {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.history-notes li {
+  position: relative;
+  padding: 5px 6px 5px 18px;
+  border: 2px solid #b89752;
+  background: rgba(255, 241, 200, 0.56);
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.history-notes li::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 10px;
+  width: 5px;
+  height: 5px;
+  background: #bd7d24;
+  box-shadow: 1px 1px 0 rgba(45, 40, 31, 0.35);
 }
 
 .ending-screen {
