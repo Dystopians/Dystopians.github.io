@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v59";
+  const ASSET_VERSION = "v60";
   const core = window.Linjiang72;
 
   let state = null;
@@ -252,6 +252,7 @@
     crisisList: document.getElementById("crisisList"),
     briefStrip: document.getElementById("briefStrip"),
     pendingTimeline: document.getElementById("pendingTimeline"),
+    strategyProfile: document.getElementById("strategyProfile"),
     cityMapWrap: document.getElementById("cityMapWrap"),
     mapStage: document.getElementById("mapStage"),
     mapHighlightLayer: document.getElementById("mapHighlightLayer"),
@@ -469,6 +470,7 @@
     renderMetrics();
     renderBriefs();
     renderPendingTimeline();
+    renderStrategyProfile();
     renderMap();
     renderEvent();
     renderAlerts();
@@ -722,6 +724,39 @@
       <div class="pending-list">
         ${pending.map((item) => renderPendingItem(item)).join("")}
       </div>
+    `;
+  }
+
+  function renderStrategyProfile() {
+    if (!els.strategyProfile || !core.getStrategyProfile) return;
+    const profile = core.getStrategyProfile(state);
+    if (!profile) {
+      els.strategyProfile.innerHTML = "";
+      return;
+    }
+    const routes = (profile.routes || []).slice(0, 5);
+    const routeList = routes.length
+      ? routes.map((route) => `
+        <article class="strategy-route ${escapeHtml(route.tone || "neutral")}">
+          <div>
+            <strong>${escapeHtml(route.label)}</strong>
+            <span>${escapeHtml(String(route.count))}次 · ${escapeHtml(String(route.percent))}%</span>
+          </div>
+          <i aria-hidden="true"><b style="width:${Math.max(0, Math.min(100, route.percent || 0))}%"></b></i>
+        </article>
+      `).join("")
+      : "<p class=\"strategy-empty\">尚未形成路线。</p>";
+    const blindSpot = profile.blindSpot
+      ? `<p class="strategy-blindspot ${escapeHtml(profile.blindSpot.tone || "warn")}"><strong>${escapeHtml(profile.blindSpot.label)}</strong>${escapeHtml(profile.blindSpot.detail)}</p>`
+      : "";
+    els.strategyProfile.innerHTML = `
+      <div class="strategy-profile-head">
+        <span>治理路线</span>
+        <strong class="${escapeHtml(profile.tone || "info")}">${escapeHtml(profile.label)}</strong>
+      </div>
+      <p>${escapeHtml(profile.detail)}</p>
+      <div class="strategy-route-list">${routeList}</div>
+      ${blindSpot}
     `;
   }
 

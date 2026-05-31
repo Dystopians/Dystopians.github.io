@@ -631,27 +631,51 @@
     medical: { label: "医疗优先", tone: "good" },
     triage: { label: "医疗优先", tone: "good" },
     shelter: { label: "医疗优先", tone: "good" },
+    buildShelterHospital: { label: "医疗优先", tone: "good" },
+    triageNetwork: { label: "医疗优先", tone: "good" },
+    communityClinic: { label: "医疗优先", tone: "good" },
+    shelterAdmissionStandard: { label: "医疗优先", tone: "mixed" },
     testing: { label: "监测治理", tone: "info" },
     digital: { label: "监测治理", tone: "info" },
     code: { label: "监测治理", tone: "info" },
+    deployHealthCode: { label: "监测治理", tone: "info" },
+    campusSentinel: { label: "监测治理", tone: "info" },
     reopen: { label: "恢复财政", tone: "mixed" },
     whiteList: { label: "恢复财政", tone: "mixed" },
     finance: { label: "恢复财政", tone: "mixed" },
     fiscalTransparencyLedger: { label: "恢复财政", tone: "good" },
     procurementCreditNegotiation: { label: "恢复财政", tone: "mixed" },
+    emergencyAccountClearing: { label: "恢复财政", tone: "mixed" },
     specialFundingApplication: { label: "恢复财政", tone: "mixed" },
     donationCoordination: { label: "恢复财政", tone: "good" },
     rentDeferralCoordination: { label: "恢复财政", tone: "mixed" },
     microFreightPermit: { label: "民生保供", tone: "mixed" },
+    essentialServicePermit: { label: "民生保供", tone: "mixed" },
     factoryClosedLoop: { label: "恢复财政", tone: "mixed" },
     livelihoodStaggeredReopen: { label: "恢复财政", tone: "mixed" },
     closedLoopSmallShift: { label: "恢复财政", tone: "mixed" },
     contactlessServiceRegistry: { label: "恢复财政", tone: "mixed" },
     remoteWorkGovServices: { label: "恢复财政", tone: "good" },
+    taxFeeDeferralDesk: { label: "恢复财政", tone: "mixed" },
     budgetReallocationMeeting: { label: "恢复财政", tone: "danger" },
     specialBondQuota: { label: "恢复财政", tone: "danger" },
     jobSubsidyAdvance: { label: "恢复财政", tone: "mixed" },
+    lowRiskWorkList: { label: "恢复财政", tone: "mixed" },
+    elasticTransit: { label: "恢复财政", tone: "mixed" },
+    enterpriseExemption: { label: "恢复财政", tone: "mixed" },
+    emergencyLevy: { label: "恢复财政", tone: "danger" },
     nightFreightWindow: { label: "民生保供", tone: "mixed" },
+    supplyCorridor: { label: "民生保供", tone: "good" },
+    medicineRoute: { label: "民生保供", tone: "good" },
+    priorityMedicineRoute: { label: "民生保供", tone: "good" },
+    hardWarehouse: { label: "民生保供", tone: "danger" },
+    volunteerDispatch: { label: "基层减压", tone: "good" },
+    mentalHealthLine: { label: "基层减压", tone: "good" },
+    staffRotationOrder: { label: "基层减压", tone: "good" },
+    communityAutonomy: { label: "基层减压", tone: "mixed" },
+    suppressRumorLine: { label: "口径压制", tone: "danger" },
+    delayBadNews: { label: "口径压制", tone: "danger" },
+    publicReviewBrief: { label: "公开修复", tone: "good" },
     memory: { label: "创伤修复", tone: "good" },
     mutualAid: { label: "创伤修复", tone: "good" },
     dynamicRepair: { label: "应急托底", tone: "info" },
@@ -661,6 +685,72 @@
     fallback_control: { label: "高压止血", tone: "danger" },
     fallback_relief: { label: "基层减压", tone: "good" },
   };
+
+  const STRATEGY_ROUTES = [
+    {
+      id: "openRepair",
+      label: "公开修复",
+      tone: "good",
+      labels: ["公开修复"],
+      advice: "继续用可核验说明、审计和复盘保护信任，同时别让医疗与供应只停在口头修复。",
+    },
+    {
+      id: "control",
+      label: "管控止血",
+      tone: "danger",
+      labels: ["口径压制", "高压止血"],
+      advice: "压低传播很快，但信任、创伤、活力和疲劳都会还账，需要配套保供和公开修复。",
+    },
+    {
+      id: "livelihood",
+      label: "民生保供",
+      tone: "good",
+      labels: ["民生保供"],
+      advice: "民生路线能稳住耐心和库存，但不能直接替代医疗分流、检测和感染控制。",
+    },
+    {
+      id: "medical",
+      label: "医疗优先",
+      tone: "good",
+      labels: ["医疗优先"],
+      advice: "医疗路线能拆失败风险，但资金、物资和基层负荷会被持续占用。",
+    },
+    {
+      id: "monitoring",
+      label: "监测治理",
+      tone: "info",
+      labels: ["监测治理"],
+      advice: "监测让复工和分区更可靠，但在低信任或高疲劳时容易变成申诉与执行压力。",
+    },
+    {
+      id: "workerRelief",
+      label: "基层减压",
+      tone: "good",
+      labels: ["基层减压"],
+      advice: "减压能保住后期执行效率，但如果只减压不拆医疗和传播，压力会换地方堆积。",
+    },
+    {
+      id: "recovery",
+      label: "恢复财政",
+      tone: "mixed",
+      labels: ["恢复财政"],
+      advice: "财政与活力路线能扩大回旋余地，但感染反弹、公平性质疑和账期压力要提前兜住。",
+    },
+    {
+      id: "memory",
+      label: "创伤修复",
+      tone: "good",
+      labels: ["创伤修复"],
+      advice: "修复创伤能改善结局质感，但通常需要牺牲短期效率或资金。",
+    },
+    {
+      id: "fallback",
+      label: "应急托底",
+      tone: "info",
+      labels: ["应急托底"],
+      advice: "托底选择说明局势已进入补救段，后续要尽快回到更明确的长期路线。",
+    },
+  ];
 
   const EVENT_IMAGE_BY_KEY = {
     notice: "news-health-code.png",
@@ -2899,6 +2989,119 @@
     return ROUTE_TAGS[key] || { label: "综合调度", tone: "neutral" };
   }
 
+  function getStrategyRouteForKey(key) {
+    const tag = getChoiceRouteTag({ id: key });
+    return STRATEGY_ROUTES.find((route) => route.labels.includes(tag.label)) || null;
+  }
+
+  function getStrategyProfile(state) {
+    const routeMap = Object.fromEntries(STRATEGY_ROUTES.map((route) => [route.id, {
+      id: route.id,
+      label: route.label,
+      tone: route.tone,
+      advice: route.advice,
+      count: 0,
+      percent: 0,
+    }]));
+    const addRoute = (key, amount = 1) => {
+      const route = getStrategyRouteForKey(key);
+      if (!route || !routeMap[route.id] || amount <= 0) return;
+      routeMap[route.id].count += amount;
+    };
+
+    Object.entries(state.flags.actionUses || {}).forEach(([key, count]) => addRoute(key, count));
+    Object.entries(state.flags.operationUses || {}).forEach(([key, count]) => addRoute(key, count));
+    Object.keys(state.flags.resolutions || {}).forEach((key) => {
+      if (state.flags.resolutions[key]) addRoute(key, 1);
+    });
+    (state.history || []).forEach((entry) => {
+      if (entry.routeSource === "eventChoice" || entry.routeSource === "buffer" || entry.routeSource === "fallback") {
+        addRoute(entry.routeKey, 1);
+      }
+    });
+
+    const routes = Object.values(routeMap)
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "zh-Hans-CN"));
+    const total = routes.reduce((sum, route) => sum + route.count, 0);
+    if (!total) {
+      return {
+        total: 0,
+        tone: "info",
+        label: "尚未成型",
+        detail: "本局还没有形成稳定治理路线。处理几次事件或执行城市行动后，这里会显示你的策略倾向。",
+        blindSpot: null,
+        routes: [],
+      };
+    }
+
+    routes.forEach((route) => {
+      route.percent = Math.round((route.count / total) * 100);
+    });
+    const activeRoutes = routes.filter((route) => route.count > 0).length;
+    const dominant = routes[0];
+    if (total < 3) {
+      return {
+        total,
+        tone: "info",
+        label: "路线试探",
+        detail: `本局刚开始出现${dominant.label}倾向。再处理几次事件或城市行动后，路线结构会更稳定。`,
+        blindSpot: getStrategyBlindSpot(state, routeMap),
+        routes: routes.filter((route) => route.count > 0).slice(0, 5),
+      };
+    }
+    const dominantHeavy = dominant.percent >= 55;
+    const dominantLean = dominant.percent >= 40;
+    const label = dominantHeavy
+      ? `${dominant.label}过重`
+      : dominantLean
+        ? `${dominant.label}偏重`
+        : "组合调度";
+    const detail = dominantHeavy
+      ? `${dominant.label}已经占到 ${dominant.percent}%，路线单一会让对应代价集中爆发。${dominant.advice}`
+      : dominantLean
+        ? `当前明显偏向${dominant.label}，仍有调整空间。${dominant.advice}`
+        : `已动用 ${activeRoutes} 条路线，策略结构较分散；继续根据红线而不是惯性选择。`;
+    const blindSpot = getStrategyBlindSpot(state, routeMap);
+
+    return {
+      total,
+      tone: dominantHeavy && dominant.tone === "danger" ? "danger" : dominantHeavy ? "warn" : dominant.tone,
+      label,
+      detail,
+      blindSpot,
+      routes: routes.filter((route) => route.count > 0).slice(0, 5),
+    };
+  }
+
+  function getStrategyBlindSpot(state, routeMap) {
+    const pct = (id) => routeMap[id] ? routeMap[id].percent : 0;
+    const m = state.metrics;
+    const h = state.hidden;
+    const r = state.resources;
+    if (m.hospitalLoad >= 70 && pct("medical") < 15) {
+      return { tone: "danger", label: "医疗路线偏少", detail: "医疗负载已经高位，但医疗优先路线占比偏低，容易被连续越线击穿。" };
+    }
+    if (m.infection >= 70 && pct("monitoring") + pct("control") < 20) {
+      return { tone: "danger", label: "传播治理偏少", detail: "感染压力高位时，监测治理或管控止血至少要有一条路线承担主压。" };
+    }
+    if (m.staffFatigue >= 70 && pct("workerRelief") < 15) {
+      return { tone: "warn", label: "基层减压偏少", detail: "基层疲劳会削弱所有行动，减压路线不足会让后期操作越来越钝。" };
+    }
+    if (m.trust < 45 && pct("openRepair") + pct("memory") < 15) {
+      return { tone: "warn", label: "信任修复偏少", detail: "低信任会压低政策效率，公开修复或创伤修复需要补位。" };
+    }
+    if (m.supplies < 35 && pct("livelihood") < 15) {
+      return { tone: "warn", label: "民生保供偏少", detail: "物资低位会同时拉低信任和基层效率，保供路线不能只等随机事件。" };
+    }
+    if (r.funds <= 25 && pct("recovery") < 15) {
+      return { tone: "warn", label: "财政恢复偏少", detail: "资金低位会锁住工程和决议，恢复财政路线需要更早布局。" };
+    }
+    if (h.publicMemory >= 45 && pct("memory") < 12) {
+      return { tone: "warn", label: "创伤修复偏少", detail: "公共创伤已经进入结局权重区，记忆修复路线能改善恢复质感。" };
+    }
+    return null;
+  }
+
   function getChoiceCrisisImpacts(result = {}) {
     const effects = result.effects || {};
     const hidden = result.hidden || {};
@@ -3519,6 +3722,8 @@
     if (!choice) throw new Error(`Unknown choice: ${choiceId}`);
     if (choice.available === false) return state;
 
+    const routeKey = choice.strategyKey || choice.actionKey || choice.profile || choice.id || "";
+    const routeTag = getChoiceRouteTag(choice);
     const before = snapshotValues(state);
     const dailyDelta = Object.fromEntries(CORE_METRICS.map((metric) => [metric, 0]));
     const log = {
@@ -3526,6 +3731,16 @@
       phase: state.phase,
       title: event.title,
       choice: choice.label,
+      routeKey,
+      routeLabel: routeTag.label,
+      routeTone: routeTag.tone,
+      routeSource: choice.customChoice
+        ? "eventChoice"
+        : event.type === "buffer"
+          ? "buffer"
+          : event.type === "fallback"
+            ? "fallback"
+            : "actionChoice",
       notes: [],
       changes: {},
     };
@@ -3595,6 +3810,10 @@
       phase: state.phase,
       title: "城市主动工程",
       choice: status.label,
+      routeKey: operationId,
+      routeLabel: getChoiceRouteTag({ id: operationId }).label,
+      routeTone: getChoiceRouteTag({ id: operationId }).tone,
+      routeSource: "operation",
       notes: [`地图节点：${getMapPoint(state, status.location).label}`, "工程即时生效，今日事件仍需处理", `今日调度额度：${(state.flags.cityActionsToday || 0) + 1}/${CITY_ACTIONS_PER_DAY}`],
       changes: {},
     };
@@ -3626,6 +3845,10 @@
       phase: state.phase,
       title: "城市决议",
       choice: status.label,
+      routeKey: resolutionId,
+      routeLabel: getChoiceRouteTag({ id: resolutionId }).label,
+      routeTone: getChoiceRouteTag({ id: resolutionId }).tone,
+      routeSource: "resolution",
       notes: ["决议即时生效，今日事件仍需处理", `今日调度额度：${(state.flags.cityActionsToday || 0) + 1}/${CITY_ACTIONS_PER_DAY}`],
       changes: {},
     };
@@ -4765,6 +4988,7 @@
     getCityActionOutcomePreview,
     getSystemReadouts,
     getCityActionBudget,
+    getStrategyProfile,
     isConditionMet: conditionMet,
     resolveChoice,
     executeOperation,
