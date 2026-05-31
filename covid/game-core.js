@@ -4116,6 +4116,33 @@
     return rankTrendItems(rows);
   }
 
+  function getCityActionOutcomePreview(state, mode, actionId) {
+    if (!state || state.ended || !actionId) return [];
+    const normalizedMode = mode === "resolutions" ? "resolutions" : "operations";
+    const status = normalizedMode === "resolutions"
+      ? getResolutionStatus(state, actionId)
+      : getOperationStatus(state, actionId);
+    if (!status || !status.available) return [];
+
+    const projected = clone(state);
+    const before = snapshotValues(projected);
+    if (normalizedMode === "resolutions") executeResolution(projected, actionId);
+    else executeOperation(projected, actionId);
+
+    const settlement = calculateProjectedDailyDeltas(projected);
+    const after = {
+      ...settlement.values.metrics,
+      ...settlement.values.hidden,
+      ...settlement.values.resources,
+    };
+    const changes = diffSnapshots(before, after);
+    const rows = Object.entries(changes)
+      .map(([metric, delta]) => buildTrendItem(metric, delta, before[metric], after[metric], "action"))
+      .filter(Boolean);
+
+    return rankTrendItems(rows);
+  }
+
   function rankTrendItems(rows) {
     return rows
       .sort((a, b) => b.priority - a.priority)
@@ -4139,7 +4166,9 @@
       tone,
       detail: mode === "choice"
         ? `${meta.label}：若选择该策略，本日完整结算预计 ${before} → ${after}。`
-        : `${meta.label}：按当前状态且不计入即将选择的事件策略，今晚结算预计 ${before} → ${after}。`,
+        : mode === "action"
+          ? `${meta.label}：若先执行该城市行动，不含今日事件选择，今晚趋势预计 ${before} → ${after}。`
+          : `${meta.label}：按当前状态且不计入即将选择的事件策略，今晚结算预计 ${before} → ${after}。`,
       priority: (bad ? 80 : good ? 45 : 55) + abs * 8 + (["infection", "hospitalLoad", "staffFatigue", "funds"].includes(metric) ? 6 : 0),
     };
   }
@@ -4468,6 +4497,7 @@
     getChoiceOutcomePreview,
     getChoiceRouteTag,
     getEndingOutlook,
+    getCityActionOutcomePreview,
     getSystemReadouts,
     getCityActionBudget,
     isConditionMet: conditionMet,

@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v54";
+  const ASSET_VERSION = "v55";
   const core = window.Linjiang72;
 
   let state = null;
@@ -1209,6 +1209,7 @@
           <strong>${escapeHtml(item.label)}</strong>
           <p>${escapeHtml(item.description)}</p>
           <div class="chips">${preview}</div>
+          ${renderActionForecast(item, actionMode)}
         </div>
         <button class="small-action" type="button" ${item.available ? "" : "aria-disabled=\"true\""} ${lockDetail ? `title="${escapeHtml(lockDetail)}"` : ""}>
           ${item.available ? "执行" : escapeHtml(item.lockedReason)}
@@ -1224,6 +1225,22 @@
       });
       els.operationsList.appendChild(card);
     });
+  }
+
+  function renderActionForecast(item, mode) {
+    if (!item.available || !core.getCityActionOutcomePreview) return "";
+    const items = core.getCityActionOutcomePreview(state, mode, item.id).slice(0, 4);
+    if (!items.length) return "";
+    return `
+      <div class="action-forecast" aria-label="行动后趋势">
+        <span>行动后趋势</span>
+        ${items.map((forecast) => `
+          <em class="${forecast.tone || "neutral"}" title="${escapeHtml(forecast.detail)}">
+            ${escapeHtml(forecast.short)} ${forecast.delta > 0 ? "+" : ""}${forecast.delta}
+          </em>
+        `).join("")}
+      </div>
+    `;
   }
 
   function renderActionFinder() {

@@ -2146,7 +2146,8 @@ label {
   color: #583b15;
 }
 
-.choice-forecast {
+.choice-forecast,
+.action-forecast {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -2159,8 +2160,15 @@ label {
     rgba(255, 248, 220, 0.5);
 }
 
+.action-forecast {
+  margin: 6px 0 0;
+  padding: 4px;
+}
+
 .choice-forecast span,
-.choice-forecast em {
+.choice-forecast em,
+.action-forecast span,
+.action-forecast em {
   display: inline-flex;
   align-items: center;
   min-height: 20px;
@@ -2172,29 +2180,34 @@ label {
   line-height: 1;
 }
 
-.choice-forecast span {
+.choice-forecast span,
+.action-forecast span {
   background: #8e6330;
   color: #fff1bf;
 }
 
-.choice-forecast em {
+.choice-forecast em,
+.action-forecast em {
   background: #f4d68a;
   color: var(--deep);
 }
 
-.choice-forecast em.good {
+.choice-forecast em.good,
+.action-forecast em.good {
   border-color: var(--good);
   background: #c9dd91;
   color: #244d35;
 }
 
-.choice-forecast em.bad {
+.choice-forecast em.bad,
+.action-forecast em.bad {
   border-color: var(--danger);
   background: #e6a17c;
   color: #5b1f18;
 }
 
-.choice-forecast em.mixed {
+.choice-forecast em.mixed,
+.action-forecast em.mixed {
   border-color: var(--warn);
   background: #eec673;
   color: #583b15;
