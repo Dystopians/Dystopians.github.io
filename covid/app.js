@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v44";
+  const ASSET_VERSION = "v45";
   const core = window.Linjiang72;
 
   let state = null;
@@ -724,7 +724,7 @@
       `;
       const showHighlight = () => {
         setMapHighlight(point.id);
-        els.mapHint.textContent = `悬停：${point.label}${availableTotal ? ` · 可用行动 ${availableTotal}` : ""}`;
+        els.mapHint.textContent = `悬停：${point.label}${availableTotal ? ` · 可用行动 ${availableTotal}` : ""} · ${cityActionBudgetText()}`;
       };
       const hideHighlight = () => {
         setMapHighlight(null);
@@ -808,7 +808,12 @@
     const zoomLabel = `${Math.round(mapView.scale * 100)}%`;
     const availableTotal = point.operations.filter((item) => item.available).length
       + point.resolutions.filter((item) => item.available).length;
-    els.mapHint.textContent = `当前：${point.label} · 缩放 ${zoomLabel}${availableTotal ? ` · 可用行动 ${availableTotal}` : ""}`;
+    els.mapHint.textContent = `当前：${point.label} · 缩放 ${zoomLabel}${availableTotal ? ` · 可用行动 ${availableTotal}` : ""} · ${cityActionBudgetText()}`;
+  }
+
+  function cityActionBudgetText() {
+    const budget = core.getCityActionBudget(state);
+    return `今日调度 ${budget.remaining}/${budget.limit}`;
   }
 
   function getMapFootprint(point) {
@@ -1073,10 +1078,10 @@
     renderActionFinder();
     const point = core.getMapPoint(state, state.selectedMapPointId);
     const items = actionMode === "operations" ? point.operations : point.resolutions;
-    els.operationsList.innerHTML = "";
+    els.operationsList.innerHTML = renderCityActionBudget();
 
     if (!items.length) {
-      els.operationsList.innerHTML = "<p class=\"empty-state\">这个节点暂时没有对应行动。</p>";
+      els.operationsList.innerHTML += "<p class=\"empty-state\">这个节点暂时没有对应行动。</p>";
       return;
     }
 
@@ -1115,11 +1120,15 @@
   function renderActionFinder() {
     if (!els.actionFinder) return;
     const cityActions = collectCityActions();
+    const budget = core.getCityActionBudget(state);
+    const budgetClass = budget.exhausted ? "city-budget-pill exhausted" : "city-budget-pill";
+    const budgetText = `${budget.label} ${budget.remaining}/${budget.limit}`;
     if (!cityActions.length) {
       els.actionFinder.innerHTML = `
         <div class="action-finder-head">
           <span>全城可用</span>
           <strong>0</strong>
+          <em class="${budgetClass}" title="${escapeHtml(budget.detail)}">${escapeHtml(budgetText)}</em>
         </div>
         <p class="action-finder-empty">暂无立即可执行的工程或决议，先处理今日事件或改善条件。</p>
       `;
@@ -1130,6 +1139,7 @@
       <div class="action-finder-head">
         <span>全城可用</span>
         <strong>${cityActions.length}</strong>
+        <em class="${budgetClass}" title="${escapeHtml(budget.detail)}">${escapeHtml(budgetText)}</em>
       </div>
       <div class="action-finder-list">
         ${cityActions.slice(0, 6).map(({ point, item, mode, kind }) => `
@@ -1177,6 +1187,20 @@
       if (a.mode !== b.mode) return a.mode === "operations" ? -1 : 1;
       return a.item.label.localeCompare(b.item.label, "zh-Hans-CN");
     });
+  }
+
+  function renderCityActionBudget() {
+    const budget = core.getCityActionBudget(state);
+    const status = budget.exhausted ? "已用完" : `剩余 ${budget.remaining}`;
+    return `
+      <article class="city-action-budget ${budget.exhausted ? "exhausted" : ""}">
+        <div>
+          <span>${escapeHtml(budget.label)}</span>
+          <strong>${escapeHtml(status)} / ${budget.limit}</strong>
+        </div>
+        <p>${escapeHtml(budget.detail)}</p>
+      </article>
+    `;
   }
 
   function renderCityAssets() {

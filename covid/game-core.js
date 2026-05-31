@@ -3990,11 +3990,27 @@
 
   function getSystemReadouts(state) {
     const visible = getVisibleMetrics(state);
+    const budget = getCityActionBudget(state);
     return [
       `报告感染压力 ${visible.reportedInfection}，真实模型显示传播${state.metrics.infection >= 70 ? "仍在高位" : state.metrics.infection <= 35 ? "进入低位" : "处于波动区间"}。`,
       `医院负载 ${state.metrics.hospitalLoad}，${state.metrics.hospitalLoad >= 85 ? "已越过红线" : state.metrics.hospitalLoad >= 70 ? "接近高压区" : "仍有调度余地"}。`,
-      `物资 ${state.metrics.supplies}，信任 ${state.metrics.trust}，基层疲劳 ${state.metrics.staffFatigue}。`,
+      `物资 ${state.metrics.supplies}，信任 ${state.metrics.trust}，基层疲劳 ${state.metrics.staffFatigue}；今日城市调度 ${budget.remaining}/${budget.limit}。`,
     ];
+  }
+
+  function getCityActionBudget(state) {
+    const used = clamp(state.flags && state.flags.cityActionsToday ? state.flags.cityActionsToday : 0, 0, CITY_ACTIONS_PER_DAY);
+    const remaining = Math.max(0, CITY_ACTIONS_PER_DAY - used);
+    return {
+      used,
+      limit: CITY_ACTIONS_PER_DAY,
+      remaining,
+      exhausted: remaining <= 0,
+      label: "今日城市调度",
+      detail: remaining > 0
+        ? "工程和决议即时生效，但每天只能处理有限次城市调度。"
+        : "今日城市调度已用完，处理事件进入下一天后刷新。",
+    };
   }
 
   return {
@@ -4031,6 +4047,7 @@
     getDailyPressureSummary,
     getChoiceRouteTag,
     getSystemReadouts,
+    getCityActionBudget,
     resolveChoice,
     executeOperation,
     executeResolution,

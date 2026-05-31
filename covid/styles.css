@@ -2170,6 +2170,30 @@ label {
   font-size: 0.76rem;
 }
 
+.city-budget-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  margin-left: auto;
+  padding: 2px 6px;
+  border: 2px solid var(--good);
+  background: #cfe49a;
+  color: #254623;
+  font-size: 0.64rem;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: center;
+  box-shadow: 1px 1px 0 rgba(95, 75, 42, 0.34);
+}
+
+.city-budget-pill.exhausted {
+  border-color: var(--danger);
+  background: #eaa07c;
+  color: #5b1f18;
+}
+
 .action-finder-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2212,6 +2236,57 @@ label {
   color: var(--muted);
   font-size: 0.74rem;
   line-height: 1.45;
+}
+
+.city-action-budget {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 7px 8px;
+  border: 2px solid #8e9b58;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 241, 200, 0.32) 0 7px, transparent 7px 14px),
+    #dbe5a3;
+  box-shadow: inset 2px 2px 0 rgba(255, 247, 209, 0.68);
+}
+
+.city-action-budget.exhausted {
+  border-color: var(--danger);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 241, 200, 0.24) 0 7px, transparent 7px 14px),
+    #e8b392;
+}
+
+.city-action-budget div {
+  display: grid;
+  gap: 3px;
+  min-width: 92px;
+}
+
+.city-action-budget span {
+  color: #53631f;
+  font-size: 0.61rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.city-action-budget.exhausted span {
+  color: #6f291f;
+}
+
+.city-action-budget strong {
+  color: var(--deep);
+  font-size: 0.78rem;
+  line-height: 1.1;
+}
+
+.city-action-budget p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.38;
 }
 
 .asset-list {
