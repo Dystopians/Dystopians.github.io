@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v53";
+  const ASSET_VERSION = "v54";
   const core = window.Linjiang72;
 
   let state = null;
@@ -1229,10 +1229,13 @@
   function renderActionFinder() {
     if (!els.actionFinder) return;
     const cityActions = collectCityActions();
+    const lockedActions = collectLockedCityActions();
     const budget = core.getCityActionBudget(state);
     const budgetClass = budget.exhausted ? "city-budget-pill exhausted" : "city-budget-pill";
     const budgetText = `${budget.label} ${budget.remaining}/${budget.limit}`;
-    if (!cityActions.length) {
+    const availableLimit = lockedActions.length ? 4 : 6;
+    const lockedLimit = cityActions.length ? 3 : 5;
+    if (!cityActions.length && !lockedActions.length) {
       els.actionFinder.innerHTML = `
         <div class="action-finder-head">
           <span>全城可用</span>
@@ -1244,21 +1247,46 @@
       return;
     }
 
+    const availableList = cityActions.length
+      ? `
+        <div class="action-finder-list">
+          ${cityActions.slice(0, availableLimit).map(({ point, item, mode, kind, priority }) => `
+            <button class="action-finder-item" type="button" data-point-id="${point.id}" data-mode="${mode}">
+              <span>${escapeHtml(kind)} · ${escapeHtml(point.label)}${priority >= 24 ? " · 优先" : ""}</span>
+              <strong>${escapeHtml(item.label)}</strong>
+              <div class="action-finder-chips">${renderFinderChips(item)}</div>
+            </button>
+          `).join("")}
+        </div>
+      `
+      : "<p class=\"action-finder-empty\">暂无立即可执行的工程或决议，先处理今日事件或改善条件。</p>";
+    const lockedList = lockedActions.length
+      ? `
+        <div class="action-finder-subhead">
+          <span>临近解锁</span>
+          <strong>${Math.min(lockedActions.length, lockedLimit)}/${lockedActions.length}</strong>
+        </div>
+        <div class="action-finder-list locked">
+          ${lockedActions.slice(0, lockedLimit).map(({ point, item, mode, kind, unlockLabel, detail }) => `
+            <button class="action-finder-item locked-preview" type="button" data-point-id="${point.id}" data-mode="${mode}" title="${escapeHtml(detail)}">
+              <span>${escapeHtml(kind)} · ${escapeHtml(point.label)} · ${escapeHtml(unlockLabel)}</span>
+              <strong>${escapeHtml(item.label)}</strong>
+              <p>${escapeHtml(detail)}</p>
+              <div class="action-finder-chips">${renderFinderChips(item)}</div>
+            </button>
+          `).join("")}
+        </div>
+      `
+      : "";
+
     els.actionFinder.innerHTML = `
       <div class="action-finder-head">
         <span>全城可用</span>
         <strong>${cityActions.length}</strong>
         <em class="${budgetClass}" title="${escapeHtml(budget.detail)}">${escapeHtml(budgetText)}</em>
       </div>
-      <div class="action-finder-list">
-        ${cityActions.slice(0, 6).map(({ point, item, mode, kind, priority }) => `
-          <button class="action-finder-item" type="button" data-point-id="${point.id}" data-mode="${mode}">
-            <span>${escapeHtml(kind)} · ${escapeHtml(point.label)}${priority >= 24 ? " · 优先" : ""}</span>
-            <strong>${escapeHtml(item.label)}</strong>
-            <div class="action-finder-chips">${renderFinderChips(item)}</div>
-          </button>
-        `).join("")}
-      </div>
+      ${availableList}
+      ${lockedList}
     `;
 
     els.actionFinder.querySelectorAll(".action-finder-item").forEach((button) => {
@@ -1270,6 +1298,58 @@
         renderActionMode();
       });
     });
+  }
+
+  function collectLockedCityActions() {
+    const seen = new Set();
+    const actions = [];
+    const trackableReasons = new Set(["条件未满足", "资金不足", "财政透支", "今日调度已满"]);
+    core.MAP_POINTS.forEach((mapPoint) => {
+      const point = core.getMapPoint(state, mapPoint.id);
+      [
+        { mode: "operations", kind: "工程", items: point.operations },
+        { mode: "resolutions", kind: "决议", items: point.resolutions },
+      ].forEach((group) => {
+        group.items
+          .filter((item) => !item.available && trackableReasons.has(item.lockedReason))
+          .forEach((item) => {
+            const key = `${group.mode}:${item.id}`;
+            if (seen.has(key)) return;
+            seen.add(key);
+            const detail = item.lockedDetail || item.lockedReason || "当前条件不足。";
+            actions.push({
+              point,
+              item,
+              mode: group.mode,
+              kind: group.kind,
+              detail,
+              unlockLabel: unlockPreviewLabel(item.lockedReason),
+              priority: lockedActionPriority(item, mapPoint.id),
+            });
+          });
+      });
+    });
+    return actions.sort((a, b) => {
+      if (b.priority !== a.priority) return b.priority - a.priority;
+      if (a.mode !== b.mode) return a.mode === "operations" ? -1 : 1;
+      return a.item.label.localeCompare(b.item.label, "zh-Hans-CN");
+    });
+  }
+
+  function unlockPreviewLabel(reason) {
+    if (reason === "今日调度已满") return "明日可排";
+    if (reason === "资金不足" || reason === "财政透支") return "等资金";
+    return "差条件";
+  }
+
+  function lockedActionPriority(item, pointId) {
+    let score = Math.max(0, cityActionPriority(item, pointId));
+    if (item.lockedReason === "今日调度已满") score += 18;
+    if (item.lockedReason === "资金不足" || item.lockedReason === "财政透支") score += state.resources.funds <= 25 ? 14 : 7;
+    if (item.lockedReason === "条件未满足") score += 5;
+    const detail = item.lockedDetail || "";
+    if (/第\d+天后|进入第\d+天后/.test(detail)) score += 3;
+    return Math.round(score);
   }
 
   function collectCityActions() {

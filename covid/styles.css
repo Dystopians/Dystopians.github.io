@@ -2435,6 +2435,37 @@ label {
   gap: 6px;
 }
 
+.action-finder-list.locked {
+  grid-template-columns: 1fr;
+}
+
+.action-finder-subhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 2px;
+  padding-top: 6px;
+  border-top: 2px dashed rgba(95, 75, 42, 0.42);
+}
+
+.action-finder-subhead span {
+  color: #6d4a1e;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.action-finder-subhead strong {
+  min-width: 22px;
+  padding: 2px 5px;
+  border: 2px solid #95723d;
+  background: #fff1c8;
+  color: #5c3d17;
+  text-align: center;
+  font-size: 0.64rem;
+  line-height: 1.1;
+}
+
 .action-finder-item {
   min-height: 68px;
   padding: 5px 7px;
@@ -2448,6 +2479,20 @@ label {
 .action-finder-item:hover {
   background: #ffd86f;
   transform: translate(-1px, -1px);
+}
+
+.action-finder-item.locked-preview {
+  min-height: 84px;
+  border-color: #95723d;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 248, 215, 0.34) 0 6px, transparent 6px 12px),
+    #f7dfaa;
+}
+
+.action-finder-item.locked-preview:hover {
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 248, 215, 0.38) 0 6px, transparent 6px 12px),
+    #f4c86c;
 }
 
 .action-finder-item span {
@@ -2464,6 +2509,17 @@ label {
   font-size: 0.72rem;
   line-height: 1.18;
   overflow-wrap: anywhere;
+}
+
+.action-finder-item p {
+  display: -webkit-box;
+  margin: -1px 0 5px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.62rem;
+  line-height: 1.28;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .action-finder-chips {
