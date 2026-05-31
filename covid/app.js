@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v122";
+  const ASSET_VERSION = "v124";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -2226,6 +2226,7 @@
       card.innerHTML = `
         <div class="action-card-main">
           <strong>${escapeHtml(item.label)}</strong>
+          ${renderActionFinderRouteTag(item)}
           <p>${escapeHtml(item.description)}</p>
           <div class="chips">${preview}</div>
           ${renderActionDirectiveFit(item, actionMode)}
@@ -2394,7 +2395,11 @@
   }
 
   function renderActionFinderRouteTag(item) {
-    const tag = item && item.routeTag ? item.routeTag : null;
+    const tag = item && item.routeTag
+      ? item.routeTag
+      : item && core.getChoiceRouteTag
+        ? core.getChoiceRouteTag({ id: item.id })
+        : null;
     if (!tag || !tag.label) return "";
     return `<em class="action-finder-route ${escapeHtml(tag.tone || "neutral")}">${escapeHtml(tag.label)}</em>`;
   }

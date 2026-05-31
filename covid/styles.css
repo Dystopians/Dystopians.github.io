@@ -4931,6 +4931,10 @@ label {
   color: #244258;
 }
 
+.action-card .action-finder-route {
+  margin: 4px 0 5px;
+}
+
 .action-finder-item strong {
   display: block;
   margin: 2px 0 5px;

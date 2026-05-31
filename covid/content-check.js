@@ -405,6 +405,9 @@ function validateTutorialCopy() {
     "后续影响",
     "若触发",
     "财政与活力面板",
+    "筹措资金",
+    "低接触活力",
+    "财政透支",
     "治理路线",
   ].forEach((text) => {
     assert(indexHtml.includes(text), `Tutorial copy should explain "${text}".`);
@@ -418,8 +421,8 @@ function validateRecoveryLevers() {
   assert(report && Array.isArray(report.items), "getRecoveryLevers must return an object with items.");
   assert(report.totalCount >= 8, `Expected at least 8 recovery levers, found ${report.totalCount}.`);
   assert(
-    report.items.every((item) => item.pointId && item.mode && item.label && item.status && item.impact),
-    "Every recovery lever needs pointId, mode, label, status, and impact.",
+    report.items.every((item) => item.pointId && item.mode && item.label && item.status && item.impact && item.routeTag && item.routeTag.label),
+    "Every recovery lever needs pointId, mode, label, status, impact, and routeTag.",
   );
 }
 
@@ -620,10 +623,27 @@ function validateFiscalEconomyChannels() {
   const opening = core.createGame({ difficulty: "normal", seed: 20260608 });
   const openingReport = core.getRecoveryLevers(opening);
   const openingAvailable = openingReport.items.filter((item) => item.bucket === "available");
+  const routeExpectations = {
+    fiscalTransparencyLedger: "筹措资金",
+    emergencyGapLedger: "筹措资金",
+    publicDonationDrive: "筹措资金",
+    remoteApprovalDesk: "低接触活力",
+    essentialServicePermit: "低接触活力",
+    temporaryTurnoverPool: "财政透支",
+    emergencyLevy: "财政透支",
+  };
+  Object.entries(routeExpectations).forEach(([id, label]) => {
+    const tag = core.getChoiceRouteTag({ id });
+    assert(tag && tag.label === label, `${id} should use the ${label} route tag.`);
+  });
   assert(openingAvailable.length >= 3, `Normal opening should expose at least 3 fiscal/economy recovery choices, found ${openingAvailable.length}.`);
   assert(
     openingAvailable.some((item) => /资金/.test(item.impact)) && openingAvailable.some((item) => /活力/.test(item.impact)),
     "Normal opening recovery choices should include both fiscal and vitality routes.",
+  );
+  assert(
+    openingAvailable.some((item) => item.route === "筹措资金") && openingAvailable.some((item) => item.route === "低接触活力"),
+    "Normal opening recovery choices should label both fundraising and low-contact vitality routes.",
   );
   const state = core.createGame({ difficulty: "normal", seed: 20260607 });
   state.day = 9;
@@ -1047,7 +1067,9 @@ function validateActionPreviewCoverage() {
   assert(appJs.includes("strategy-inertia"), "Strategy profile should render route inertia warnings.");
   assert(styles.includes(".strategy-inertia"), "Route inertia warnings need dedicated styling.");
   assert(appJs.includes("renderActionFinderRouteTag"), "Action finder should render explicit strategy route tags.");
+  assert(appJs.includes("core.getChoiceRouteTag({ id: item.id })"), "City action cards should derive route tags from their action id.");
   assert(styles.includes(".action-finder-route"), "Action finder route tags need dedicated styling.");
+  assert(styles.includes(".action-card .action-finder-route"), "Map action cards should style route tags consistently.");
 }
 
 function run() {

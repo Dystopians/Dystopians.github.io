@@ -706,47 +706,48 @@
     campusSentinel: { label: "监测治理", tone: "info" },
     reopen: { label: "恢复财政", tone: "mixed" },
     whiteList: { label: "恢复财政", tone: "mixed" },
-    finance: { label: "恢复财政", tone: "mixed" },
-    fiscalTransparencyLedger: { label: "恢复财政", tone: "good" },
-    emergencyGapLedger: { label: "恢复财政", tone: "good" },
-    fastGrantReport: { label: "恢复财政", tone: "good" },
-    publicDonationDrive: { label: "恢复财政", tone: "good" },
-    donationClaimList: { label: "恢复财政", tone: "good" },
-    platformLogisticsShare: { label: "恢复财政", tone: "mixed" },
-    procurementCreditNegotiation: { label: "恢复财政", tone: "mixed" },
-    supplierPaymentExtension: { label: "恢复财政", tone: "mixed" },
-    emergencyAccountClearing: { label: "恢复财政", tone: "mixed" },
-    specialFundingApplication: { label: "恢复财政", tone: "mixed" },
-    donationCoordination: { label: "恢复财政", tone: "good" },
-    interProvinceSupport: { label: "恢复财政", tone: "good" },
-    rentDeferralCoordination: { label: "恢复财政", tone: "mixed" },
-    serviceVoucherPilot: { label: "恢复财政", tone: "mixed" },
-    contactlessLivelihoodStalls: { label: "恢复财政", tone: "mixed" },
-    neighborhoodPickupWindow: { label: "恢复财政", tone: "mixed" },
-    onlineGovOvertime: { label: "恢复财政", tone: "good" },
-    remoteApprovalDesk: { label: "恢复财政", tone: "good" },
-    communityRepairWhitelist: { label: "恢复财政", tone: "mixed" },
-    essentialMaintenanceRoster: { label: "恢复财政", tone: "mixed" },
-    microFreightPermit: { label: "民生保供", tone: "mixed" },
-    essentialServicePermit: { label: "民生保供", tone: "mixed" },
-    factoryClosedLoop: { label: "恢复财政", tone: "mixed" },
-    livelihoodStaggeredReopen: { label: "恢复财政", tone: "mixed" },
-    closedLoopSmallShift: { label: "恢复财政", tone: "mixed" },
-    contactlessServiceRegistry: { label: "恢复财政", tone: "mixed" },
-    remoteWorkGovServices: { label: "恢复财政", tone: "good" },
-    taxFeeDeferralDesk: { label: "恢复财政", tone: "mixed" },
-    budgetReallocationMeeting: { label: "恢复财政", tone: "danger" },
-    specialBondQuota: { label: "恢复财政", tone: "danger" },
-    jobSubsidyAdvance: { label: "恢复财政", tone: "mixed" },
-    mutualAidFund: { label: "恢复财政", tone: "good" },
-    temporaryTurnoverPool: { label: "恢复财政", tone: "mixed" },
-    lowContactBusinessPermit: { label: "恢复财政", tone: "mixed" },
+    finance: { label: "财政透支", tone: "danger" },
+    fiscalTransparencyLedger: { label: "筹措资金", tone: "good" },
+    emergencyGapLedger: { label: "筹措资金", tone: "good" },
+    fastGrantReport: { label: "筹措资金", tone: "good" },
+    publicDonationDrive: { label: "筹措资金", tone: "good" },
+    donationClaimList: { label: "筹措资金", tone: "good" },
+    platformLogisticsShare: { label: "筹措资金", tone: "mixed" },
+    procurementCreditNegotiation: { label: "筹措资金", tone: "mixed" },
+    supplierPaymentExtension: { label: "筹措资金", tone: "mixed" },
+    emergencyAccountClearing: { label: "筹措资金", tone: "mixed" },
+    specialFundingApplication: { label: "筹措资金", tone: "mixed" },
+    donationCoordination: { label: "筹措资金", tone: "good" },
+    interProvinceSupport: { label: "筹措资金", tone: "good" },
+    rentDeferralCoordination: { label: "低接触活力", tone: "mixed" },
+    serviceVoucherPilot: { label: "低接触活力", tone: "mixed" },
+    contactlessLivelihoodStalls: { label: "低接触活力", tone: "mixed" },
+    neighborhoodPickupWindow: { label: "低接触活力", tone: "mixed" },
+    onlineGovOvertime: { label: "低接触活力", tone: "good" },
+    remoteApprovalDesk: { label: "低接触活力", tone: "good" },
+    communityRepairWhitelist: { label: "低接触活力", tone: "mixed" },
+    essentialMaintenanceRoster: { label: "低接触活力", tone: "mixed" },
+    microFreightPermit: { label: "低接触活力", tone: "mixed" },
+    essentialServicePermit: { label: "低接触活力", tone: "mixed" },
+    factoryClosedLoop: { label: "低接触活力", tone: "mixed" },
+    livelihoodStaggeredReopen: { label: "低接触活力", tone: "mixed" },
+    closedLoopSmallShift: { label: "低接触活力", tone: "mixed" },
+    contactlessServiceRegistry: { label: "低接触活力", tone: "mixed" },
+    remoteWorkGovServices: { label: "低接触活力", tone: "good" },
+    taxFeeDeferralDesk: { label: "低接触活力", tone: "mixed" },
+    budgetReallocationMeeting: { label: "财政透支", tone: "danger" },
+    specialBondQuota: { label: "财政透支", tone: "danger" },
+    jobSubsidyAdvance: { label: "低接触活力", tone: "mixed" },
+    mutualAidFund: { label: "筹措资金", tone: "good" },
+    temporaryTurnoverPool: { label: "财政透支", tone: "mixed" },
+    lowContactBusinessPermit: { label: "低接触活力", tone: "mixed" },
     supplyOrderPrepaySwap: { label: "民生保供", tone: "mixed" },
-    deferProjectPayment: { label: "恢复财政", tone: "danger" },
-    lowRiskWorkList: { label: "恢复财政", tone: "mixed" },
-    elasticTransit: { label: "恢复财政", tone: "mixed" },
+    deferProjectPayment: { label: "财政透支", tone: "danger" },
+    lowRiskWorkList: { label: "低接触活力", tone: "mixed" },
+    elasticTransit: { label: "低接触活力", tone: "mixed" },
     enterpriseExemption: { label: "恢复财政", tone: "mixed" },
-    emergencyLevy: { label: "恢复财政", tone: "danger" },
+    emergencyLevy: { label: "财政透支", tone: "danger" },
+    fiscalDebt: { label: "财政透支", tone: "danger" },
     nightFreightWindow: { label: "民生保供", tone: "mixed" },
     supplyCorridor: { label: "民生保供", tone: "good" },
     medicineRoute: { label: "民生保供", tone: "good" },
@@ -817,7 +818,7 @@
       id: "recovery",
       label: "恢复财政",
       tone: "mixed",
-      labels: ["恢复财政"],
+      labels: ["恢复财政", "筹措资金", "低接触活力", "财政透支"],
       advice: "财政与活力路线能扩大回旋余地，但感染反弹、公平性质疑和账期压力要提前兜住。",
     },
     {
@@ -7821,6 +7822,7 @@
           const value = recoveryLeverValue(item);
           if (!value.relevant) return;
           const bucket = recoveryLeverBucket(item);
+          const routeTag = value.routeTag || getChoiceRouteTag({ id: item.id });
           rows.push({
             id: item.id,
             mode: group.mode,
@@ -7829,6 +7831,7 @@
             pointLabel: pointDef.label,
             label: item.label,
             route: value.route,
+            routeTag,
             impact: recoveryLeverImpact(item),
             status: recoveryLeverStatus(item, bucket),
             detail: item.available ? item.description : item.lockedDetail || item.lockedReason || item.description,
@@ -7883,12 +7886,17 @@
     const fundsGain = Math.max(0, immediateFunds) + Math.max(0, delayedFunds);
     const economyGain = Math.max(0, immediateEconomy) + Math.max(0, delayedEconomy);
     const relevant = fundsGain > 0 || economyGain > 0 || RECOVERY_FOCUS_IDS.has(item.id);
-    let route = "恢复";
-    if (fundsGain > 0 && economyGain > 0) route = "资金+活力";
-    else if (fundsGain > 0) route = "资金";
-    else if (economyGain > 0) route = "活力";
-    else if (RECOVERY_FOCUS_IDS.has(item.id)) route = "铺垫";
-    return { relevant, fundsGain, economyGain, route };
+    const routeTag = getChoiceRouteTag({ id: item.id });
+    let route = routeTag && routeTag.label && routeTag.label !== "综合调度"
+      ? routeTag.label
+      : "恢复";
+    if (route === "恢复财政") {
+      if (fundsGain > 0 && economyGain > 0) route = "资金+活力";
+      else if (fundsGain > 0) route = "筹措资金";
+      else if (economyGain > 0) route = "低接触活力";
+      else if (RECOVERY_FOCUS_IDS.has(item.id)) route = "铺垫";
+    }
+    return { relevant, fundsGain, economyGain, route, routeTag };
   }
 
   function recoveryLeverBucket(item) {
