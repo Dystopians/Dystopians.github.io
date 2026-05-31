@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v115";
+  const ASSET_VERSION = "v116";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -1172,9 +1172,28 @@
         </div>
         <strong>${escapeHtml(item.label)}</strong>
         <p>${escapeHtml(title)}</p>
+        <small class="pending-impact">${escapeHtml(pendingImpactSummary(item))}</small>
         <div class="chips">${chips}${complete}</div>
       </article>
     `;
+  }
+
+  function pendingImpactSummary(item) {
+    const parts = [];
+    const add = (source, metaMap) => {
+      Object.entries(source || {}).forEach(([metric, delta]) => {
+        const meta = metaMap[metric];
+        if (!meta || !delta) return;
+        parts.push(`${meta.short} ${delta > 0 ? "+" : ""}${delta}`);
+      });
+    };
+    add(item.resources, core.RESOURCE_META || {});
+    add(item.effects, core.METRIC_META || {});
+    add(item.hidden, core.METRIC_META || {});
+    if (item.completeProject) parts.push("项目完成");
+    return parts.length
+      ? `预计：${parts.slice(0, 5).join(" / ")}`
+      : "预计：仅记录后续叙事变化";
   }
 
   function conditionLabel(condition) {

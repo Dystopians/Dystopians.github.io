@@ -1010,6 +1010,8 @@ function validateActionPreviewCoverage() {
   assert(appJs.includes("renderRecoveryUnlockHint"), "Recovery lever UI should expose readable unlock hints for locked channels.");
   assert(appJs.includes("(report.items || []).slice(0, 7)"), "Recovery lever UI should render the expanded seven-item shortlist.");
   assert(styles.includes(".recovery-unlock"), "Recovery unlock hints need dedicated styling.");
+  assert(appJs.includes("pendingImpactSummary"), "Pending timeline should expose readable delayed-effect impact summaries.");
+  assert(styles.includes(".pending-impact"), "Pending impact summaries need dedicated styling.");
 }
 
 function run() {
