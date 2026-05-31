@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v50";
+  const ASSET_VERSION = "v51";
   const core = window.Linjiang72;
 
   let state = null;
@@ -1125,12 +1125,37 @@
 
   function renderAlerts() {
     els.alerts.innerHTML = "";
+    const recap = renderLatestSettlement();
+    if (recap) els.alerts.appendChild(recap);
     state.alerts.forEach((alert) => {
       const item = document.createElement("div");
       item.className = "alert";
       item.textContent = alert;
       els.alerts.appendChild(item);
     });
+  }
+
+  function renderLatestSettlement() {
+    const entry = state.history && state.history[0];
+    if (!entry) return null;
+    const card = document.createElement("article");
+    card.className = `settlement-recap ${settlementTone(entry)}`;
+    const changes = renderChangeChips(entry.changes, 7);
+    const notes = (entry.notes || [])
+      .filter(Boolean)
+      .slice(0, 3)
+      .map((note) => `<li>${escapeHtml(note)}</li>`)
+      .join("");
+    card.innerHTML = `
+      <div class="settlement-head">
+        <span>最新结算</span>
+        <strong>第 ${entry.day} 天</strong>
+      </div>
+      <p><b>${escapeHtml(entry.choice)}</b> / ${escapeHtml(entry.title)}</p>
+      <div class="change-list">${changes}</div>
+      ${notes ? `<ul class="settlement-notes">${notes}</ul>` : ""}
+    `;
+    return card;
   }
 
   function renderActionMode() {
@@ -1372,14 +1397,7 @@
 
     state.history.forEach((entry) => {
       const li = document.createElement("li");
-      const changes = Object.entries(entry.changes || {})
-        .map(([metric, delta]) => {
-          const meta = core.METRIC_META[metric] || core.RESOURCE_META[metric];
-          if (!meta) return "";
-          return `<span class="change ${changeClass(metric, delta)}" title="${escapeHtml(meta.description)}">${meta.short} ${delta > 0 ? "+" : ""}${delta}</span>`;
-        })
-        .filter(Boolean)
-        .join("") || "<span class=\"change neutral\">无直接数值变化</span>";
+      const changes = renderChangeChips(entry.changes, 8);
       const notes = (entry.notes || [])
         .filter(Boolean)
         .slice(0, 2)
@@ -1425,6 +1443,37 @@
     if (meta.direction === "good") return delta >= 0 ? "good-change" : "bad-change";
     if (meta.direction === "danger") return delta <= 0 ? "good-change" : "bad-change";
     return "mixed-change";
+  }
+
+  function renderChangeChips(changes = {}, limit = 8) {
+    return Object.entries(changes || {})
+      .sort(([metricA, deltaA], [metricB, deltaB]) => changePriority(metricB, deltaB) - changePriority(metricA, deltaA))
+      .slice(0, limit)
+      .map(([metric, delta]) => {
+        const meta = core.METRIC_META[metric] || core.RESOURCE_META[metric];
+        if (!meta) return "";
+        return `<span class="change ${changeClass(metric, delta)}" title="${escapeHtml(meta.description)}">${meta.short} ${delta > 0 ? "+" : ""}${delta}</span>`;
+      })
+      .filter(Boolean)
+      .join("") || "<span class=\"change neutral\">无直接数值变化</span>";
+  }
+
+  function changePriority(metric, delta) {
+    const dangerBoost = ["infection", "hospitalLoad", "staffFatigue", "trust", "funds"].includes(metric) ? 4 : 0;
+    const badBoost = changeClass(metric, delta) === "bad-change" ? 8 : 0;
+    return Math.abs(delta) + dangerBoost + badBoost;
+  }
+
+  function settlementTone(entry) {
+    const changes = Object.entries(entry.changes || {});
+    if (!changes.length) return "neutral";
+    const bad = changes.filter(([metric, delta]) => changeClass(metric, delta) === "bad-change")
+      .reduce((sum, [, delta]) => sum + Math.abs(delta), 0);
+    const good = changes.filter(([metric, delta]) => changeClass(metric, delta) === "good-change")
+      .reduce((sum, [, delta]) => sum + Math.abs(delta), 0);
+    if (bad >= good + 6) return "bad";
+    if (good >= bad + 6) return "good";
+    return "mixed";
   }
 
   function chipClassForPreview(text) {
