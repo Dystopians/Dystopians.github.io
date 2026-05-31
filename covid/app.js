@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v80";
+  const ASSET_VERSION = "v81";
   const core = window.Linjiang72;
 
   let state = null;
@@ -1667,6 +1667,7 @@
 
     if (!items.length) {
       els.operationsList.innerHTML += "<p class=\"empty-state\">这个节点暂时没有对应行动。</p>";
+      bindCityActionUndo();
       return;
     }
 
@@ -1702,6 +1703,7 @@
       });
       els.operationsList.appendChild(card);
     });
+    bindCityActionUndo();
   }
 
   function renderActionForecast(item, mode) {
@@ -1851,16 +1853,36 @@
 
   function renderCityActionBudget() {
     const budget = core.getCityActionBudget(state);
+    const undo = core.getCityActionUndo ? core.getCityActionUndo(state) : null;
     const status = budget.exhausted ? "已用完" : `剩余 ${budget.remaining}`;
     return `
-      <article class="city-action-budget ${budget.exhausted ? "exhausted" : ""}">
+      <article class="city-action-budget ${budget.exhausted ? "exhausted" : ""} ${undo ? "has-undo" : ""}">
         <div>
           <span>${escapeHtml(budget.label)}</span>
           <strong>${escapeHtml(status)} / ${budget.limit}</strong>
         </div>
         <p>${escapeHtml(budget.detail)}</p>
+        ${undo ? `
+          <button class="undo-city-action" type="button" data-undo-city-action title="${escapeHtml(undo.detail)}">
+            撤销：${escapeHtml(undo.label)}
+          </button>
+        ` : ""}
       </article>
     `;
+  }
+
+  function bindCityActionUndo() {
+    const button = els.operationsList.querySelector("[data-undo-city-action]");
+    if (!button || !core.undoCityAction) return;
+    button.addEventListener("click", () => {
+      const undone = core.undoCityAction(state);
+      if (!undone) {
+        renderActionMode();
+        return;
+      }
+      save();
+      render();
+    });
   }
 
   function renderCityAssets() {

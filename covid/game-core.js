@@ -2849,6 +2849,7 @@
         operationUses: {},
         resolutions: {},
         cityActionsToday: 0,
+        cityActionUndo: null,
         failureStreaks: {
           medical: 0,
           supply: 0,
@@ -2890,6 +2891,9 @@
     state.flags.operationUses = state.flags.operationUses || {};
     state.flags.resolutions = state.flags.resolutions || {};
     state.flags.cityActionsToday = state.flags.cityActionsToday || 0;
+    state.flags.cityActionUndo = validCityActionUndo(state, state.flags.cityActionUndo)
+      ? state.flags.cityActionUndo
+      : null;
     state.flags.failureStreaks = state.flags.failureStreaks || {
       medical: 0,
       supply: 0,
@@ -4723,6 +4727,7 @@
     state.history.unshift(log);
     state.history = state.history.slice(0, 24);
 
+    clearCityActionUndo(state);
     checkEnding(state);
     if (!state.ended) {
       state.day += 1;
@@ -4737,6 +4742,7 @@
   function executeOperation(state, operationId) {
     const status = getOperationStatus(state, operationId);
     if (!status.available) return state;
+    const undo = createCityActionUndo(state, "operations", status);
     const before = snapshotValues(state);
     const dailyDelta = Object.fromEntries(CORE_METRICS.map((metric) => [metric, 0]));
     const log = {
@@ -4760,6 +4766,7 @@
     applyHiddenEffects(state, hidden, log, "主动工程");
     state.flags.operationUses[operationId] = (state.flags.operationUses[operationId] || 0) + 1;
     state.flags.cityActionsToday = (state.flags.cityActionsToday || 0) + 1;
+    state.flags.cityActionUndo = undo;
     if (status.delayed) scheduleDelayedEffect(state, status.delayed, "城市主动工程", status.label);
 
     clampAll(state);
@@ -4774,6 +4781,7 @@
   function executeResolution(state, resolutionId) {
     const status = getResolutionStatus(state, resolutionId);
     if (!status.available) return state;
+    const undo = createCityActionUndo(state, "resolutions", status);
     const before = snapshotValues(state);
     const dailyDelta = Object.fromEntries(CORE_METRICS.map((metric) => [metric, 0]));
     const log = {
@@ -4795,6 +4803,7 @@
     applyHiddenEffects(state, status.hidden || {}, log, "城市决议");
     state.flags.resolutions[resolutionId] = true;
     state.flags.cityActionsToday = (state.flags.cityActionsToday || 0) + 1;
+    state.flags.cityActionUndo = undo;
     if (status.delayed) scheduleDelayedEffect(state, status.delayed, "城市决议", status.label);
 
     clampAll(state);
@@ -4804,6 +4813,72 @@
     state.history.unshift(log);
     state.history = state.history.slice(0, 24);
     return state;
+  }
+
+  function createCityActionUndo(state, mode, status) {
+    const snapshot = clone(state);
+    snapshot.flags = snapshot.flags || {};
+    snapshot.flags.cityActionUndo = null;
+    const pointId = status.location || state.selectedMapPointId || "hospital";
+    const point = MAP_POINTS.find((item) => item.id === pointId) || MAP_POINTS[0];
+    return {
+      day: state.day,
+      phase: state.phase,
+      currentEventId: state.currentEventId || null,
+      mode,
+      actionId: status.id,
+      label: status.label,
+      pointId: point.id,
+      pointLabel: point.label,
+      snapshot,
+    };
+  }
+
+  function validCityActionUndo(state, undo) {
+    return Boolean(
+      state
+      && undo
+      && undo.snapshot
+      && undo.day === state.day
+      && (undo.currentEventId || null) === (state.currentEventId || null)
+      && (state.flags && (state.flags.cityActionsToday || 0) > 0)
+      && !state.ended,
+    );
+  }
+
+  function getCityActionUndo(state) {
+    if (!validCityActionUndo(state, state && state.flags && state.flags.cityActionUndo)) return null;
+    const undo = state.flags.cityActionUndo;
+    return {
+      day: undo.day,
+      phase: undo.phase,
+      mode: undo.mode,
+      actionId: undo.actionId,
+      label: undo.label,
+      pointId: undo.pointId,
+      pointLabel: undo.pointLabel,
+      detail: `撤销“${undo.label}”，回到执行前的第 ${undo.day} 天状态。今日事件仍未处理。`,
+    };
+  }
+
+  function clearCityActionUndo(state) {
+    if (state && state.flags) state.flags.cityActionUndo = null;
+  }
+
+  function undoCityAction(state) {
+    const undo = validCityActionUndo(state, state && state.flags && state.flags.cityActionUndo)
+      ? state.flags.cityActionUndo
+      : null;
+    if (!undo) return false;
+    const restored = clone(undo.snapshot);
+    Object.keys(state).forEach((key) => {
+      delete state[key];
+    });
+    Object.assign(state, restored);
+    state.flags = state.flags || {};
+    state.flags.cityActionUndo = null;
+    refreshStatusEffects(state);
+    return true;
   }
 
   function snapshotValues(state) {
@@ -6855,6 +6930,8 @@
     getRecoveryLevers,
     getSystemReadouts,
     getCityActionBudget,
+    getCityActionUndo,
+    undoCityAction,
     getStrategyProfile,
     getStageReview,
     isConditionMet: conditionMet,

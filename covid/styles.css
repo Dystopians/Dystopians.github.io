@@ -4228,6 +4228,10 @@ label {
   box-shadow: inset 2px 2px 0 rgba(255, 247, 209, 0.68);
 }
 
+.city-action-budget.has-undo {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
 .city-action-budget.exhausted {
   border-color: var(--danger);
   background:
@@ -4264,6 +4268,27 @@ label {
   font-size: 0.72rem;
   font-weight: 800;
   line-height: 1.38;
+}
+
+.undo-city-action {
+  min-height: 30px;
+  max-width: 128px;
+  padding: 4px 8px;
+  border: 2px solid #76568a;
+  background: #d7c5e3;
+  color: #3a2748;
+  box-shadow: 2px 2px 0 rgba(95, 75, 42, 0.36);
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.undo-city-action:hover,
+.undo-city-action:focus-visible {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 rgba(95, 75, 42, 0.44);
 }
 
 .asset-list {

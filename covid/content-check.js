@@ -363,6 +363,35 @@ function validateCityActionOpportunities() {
   );
 }
 
+function validateCityActionUndo() {
+  assert(typeof core.getCityActionUndo === "function", "game-core.js must export getCityActionUndo.");
+  assert(typeof core.undoCityAction === "function", "game-core.js must export undoCityAction.");
+  const state = core.createGame({ difficulty: "normal", seed: 20260615 });
+  const before = core.exportState(state);
+  core.executeOperation(state, "campusSentinel");
+  const undo = core.getCityActionUndo(state);
+  assert(undo && undo.label === core.OPERATIONS.campusSentinel.label, "Executed city actions should expose an undo record.");
+  assert(state.flags.cityActionsToday === 1, "Executing a city action should consume today's city action budget.");
+  assert(state.history.length === 1, "Executing a city action should add one history row before undo.");
+  const imported = core.importState(core.exportState(state));
+  assert(core.getCityActionUndo(imported), "City action undo should survive save/import before the daily event is resolved.");
+  const undone = core.undoCityAction(state);
+  assert(undone === true, "undoCityAction should report success when an undo record is available.");
+  assert(state.day === before.day && state.currentEventId === before.currentEventId, "Undo should restore the same day and event.");
+  assert(state.resources.funds === before.resources.funds, "Undo should restore resources.");
+  assert(state.metrics.staffFatigue === before.metrics.staffFatigue, "Undo should restore metrics.");
+  assert((state.flags.operationUses.campusSentinel || 0) === 0, "Undo should remove operation use counts.");
+  assert(state.flags.cityActionsToday === 0, "Undo should restore today's city action budget.");
+  assert(!core.getCityActionUndo(state), "Undo record should clear after a successful undo.");
+
+  const afterChoice = core.createGame({ difficulty: "normal", seed: 20260616 });
+  core.executeOperation(afterChoice, "campusSentinel");
+  const event = core.getCurrentEvent(afterChoice);
+  const choice = event.choices.find((item) => item.available !== false);
+  core.resolveChoice(afterChoice, choice.id);
+  assert(!core.getCityActionUndo(afterChoice), "Resolving today's event should clear city action undo.");
+}
+
 function validateMapSignals() {
   assert(typeof core.getMapSignals === "function", "game-core.js must export getMapSignals.");
   const state = core.createGame({ difficulty: "normal", seed: 20260606 });
@@ -558,6 +587,7 @@ function run() {
   validateRecoveryLevers();
   validateFiscalEconomyChannels();
   validateCityActionOpportunities();
+  validateCityActionUndo();
   validateMapSignals();
   validateStageReview();
   validateChoiceRiskPreview();
