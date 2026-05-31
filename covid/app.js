@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v70";
+  const ASSET_VERSION = "v71";
   const core = window.Linjiang72;
 
   let state = null;
@@ -1492,9 +1492,10 @@
     const card = document.createElement("article");
     card.className = `settlement-recap ${settlementTone(entry)}`;
     const changes = renderChangeChips(entry.changes, 7);
+    const breakdown = renderBreakdownRows(entry.breakdown, 4);
     const notes = (entry.notes || [])
       .filter(Boolean)
-      .slice(0, 3)
+      .slice(0, breakdown ? 2 : 3)
       .map((note) => `<li>${escapeHtml(note)}</li>`)
       .join("");
     card.innerHTML = `
@@ -1504,6 +1505,7 @@
       </div>
       <p><b>${escapeHtml(entry.choice)}</b> / ${escapeHtml(entry.title)}</p>
       <div class="change-list">${changes}</div>
+      ${breakdown}
       ${notes ? `<ul class="settlement-notes">${notes}</ul>` : ""}
     `;
     return card;
@@ -1799,9 +1801,10 @@
     state.history.forEach((entry) => {
       const li = document.createElement("li");
       const changes = renderChangeChips(entry.changes, 8);
+      const breakdown = renderBreakdownRows(entry.breakdown, 2);
       const notes = (entry.notes || [])
         .filter(Boolean)
-        .slice(0, 2)
+        .slice(0, breakdown ? 1 : 2)
         .map((note) => `<li>${escapeHtml(note)}</li>`)
         .join("");
       li.innerHTML = `
@@ -1809,6 +1812,7 @@
         <strong>${escapeHtml(entry.choice)}</strong>
         <p>${escapeHtml(entry.title)}</p>
         <div class="change-list">${changes}</div>
+        ${breakdown}
         ${notes ? `<ul class="history-notes">${notes}</ul>` : ""}
       `;
       els.historyList.appendChild(li);
@@ -1938,6 +1942,24 @@
     if (meta.direction === "good") return delta >= 0 ? "good-change" : "bad-change";
     if (meta.direction === "danger") return delta <= 0 ? "good-change" : "bad-change";
     return "mixed-change";
+  }
+
+  function renderBreakdownRows(breakdown = [], limit = 4) {
+    const rows = (breakdown || [])
+      .filter((item) => item && item.source && item.deltas && Object.keys(item.deltas).length)
+      .slice(0, limit);
+    if (!rows.length) return "";
+    return `
+      <div class="settlement-breakdown" aria-label="结算拆解">
+        <span>结算拆解</span>
+        ${rows.map((item) => `
+          <article>
+            <strong>${escapeHtml(item.source)}</strong>
+            <div class="change-list">${renderChangeChips(item.deltas, 4)}</div>
+          </article>
+        `).join("")}
+      </div>
+    `;
   }
 
   function renderChangeChips(changes = {}, limit = 8) {

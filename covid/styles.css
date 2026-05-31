@@ -3955,6 +3955,40 @@ label {
   color: var(--deep);
 }
 
+.settlement-breakdown {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 7px;
+  border: 2px solid rgba(123, 76, 24, 0.42);
+  background: rgba(255, 246, 214, 0.5);
+}
+
+.settlement-breakdown > span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.settlement-breakdown article {
+  display: grid;
+  grid-template-columns: minmax(72px, 0.42fr) 1fr;
+  align-items: center;
+  gap: 6px;
+}
+
+.settlement-breakdown article strong {
+  overflow: hidden;
+  color: var(--deep);
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settlement-breakdown .change-list {
+  margin: 0;
+}
+
 .settlement-notes {
   display: grid;
   gap: 4px;

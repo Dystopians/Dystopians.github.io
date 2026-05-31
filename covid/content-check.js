@@ -351,6 +351,21 @@ function validateChoiceRiskPreview() {
   assert(fit && fit.label && fit.tone && fit.detail, "getChoiceFit should expose label, tone, and detail for event choices.");
 }
 
+function validateSettlementBreakdown() {
+  const state = core.createGame({ difficulty: "normal", seed: 20260609 });
+  const event = core.getCurrentEvent(state);
+  const choice = event.choices.find((item) => item.available !== false);
+  assert(Boolean(choice), "Expected an available opening choice for settlement breakdown validation.");
+  core.resolveChoice(state, choice.id);
+  const entry = state.history[0];
+  assert(entry && Array.isArray(entry.breakdown), "Resolved choices should write settlement breakdown rows.");
+  assert(entry.breakdown.length > 0, "Settlement breakdown should include at least one source row.");
+  assert(
+    entry.breakdown.every((item) => item.source && item.deltas && Object.keys(item.deltas).length),
+    "Every settlement breakdown row needs source and non-empty deltas.",
+  );
+}
+
 function validateEndingStrategyReview() {
   assert(typeof core.getStrategyProfile === "function", "game-core.js must export getStrategyProfile.");
   const state = core.createGame({ difficulty: "normal", seed: 20260603 });
@@ -423,6 +438,7 @@ function run() {
   validateMapSignals();
   validateStageReview();
   validateChoiceRiskPreview();
+  validateSettlementBreakdown();
   validateEndingStrategyReview();
 
   const summary = {

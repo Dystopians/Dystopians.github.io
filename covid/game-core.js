@@ -4269,6 +4269,7 @@
             : "actionChoice",
       notes: [],
       changes: {},
+      breakdown: [],
     };
     const modifiers = {
       medicalRelief: 0,
@@ -4312,6 +4313,7 @@
     updateFailureStreaks(state);
 
     log.changes = diffSnapshots(before, snapshotValues(state));
+    compactBreakdown(log);
     state.history.unshift(log);
     state.history = state.history.slice(0, 24);
 
@@ -4342,6 +4344,7 @@
       routeSource: "operation",
       notes: [`地图节点：${getMapPoint(state, status.location).label}`, "工程即时生效，今日事件仍需处理", `今日调度额度：${(state.flags.cityActionsToday || 0) + 1}/${CITY_ACTIONS_PER_DAY}`],
       changes: {},
+      breakdown: [],
     };
     const effects = status.effects || {};
     const hidden = status.hidden || {};
@@ -4356,6 +4359,7 @@
     clampAll(state);
     refreshStatusEffects(state);
     log.changes = diffSnapshots(before, snapshotValues(state));
+    compactBreakdown(log);
     state.history.unshift(log);
     state.history = state.history.slice(0, 24);
     return state;
@@ -4377,6 +4381,7 @@
       routeSource: "resolution",
       notes: ["决议即时生效，今日事件仍需处理", `今日调度额度：${(state.flags.cityActionsToday || 0) + 1}/${CITY_ACTIONS_PER_DAY}`],
       changes: {},
+      breakdown: [],
     };
 
     applyResourceEffects(state, status.resources, log, "城市决议");
@@ -4389,6 +4394,7 @@
     clampAll(state);
     refreshStatusEffects(state);
     log.changes = diffSnapshots(before, snapshotValues(state));
+    compactBreakdown(log);
     state.history.unshift(log);
     state.history = state.history.slice(0, 24);
     return state;
@@ -4409,6 +4415,39 @@
       if (delta) result[key] = delta;
     });
     return result;
+  }
+
+  function recordBreakdown(log, source, metric, delta) {
+    if (!log || !source || !metric || !delta) return;
+    log.breakdown = log.breakdown || [];
+    let row = log.breakdown.find((item) => item.source === source);
+    if (!row) {
+      row = { source, deltas: {}, weight: 0 };
+      log.breakdown.push(row);
+    }
+    row.deltas[metric] = (row.deltas[metric] || 0) + delta;
+    if (!row.deltas[metric]) delete row.deltas[metric];
+    row.weight += Math.abs(delta) + (changeIsBad(metric, delta) ? 2 : 0);
+  }
+
+  function changeIsBad(metric, delta) {
+    const meta = getObjectiveMeta(metric);
+    if (!meta || !delta) return false;
+    if (meta.direction === "good") return delta < 0;
+    if (meta.direction === "danger") return delta > 0;
+    return false;
+  }
+
+  function compactBreakdown(log) {
+    if (!log || !Array.isArray(log.breakdown)) return;
+    log.breakdown = log.breakdown
+      .map((item) => ({
+        source: item.source,
+        deltas: removeZeroes(item.deltas || {}),
+        weight: Math.round(item.weight || 0),
+      }))
+      .filter((item) => Object.keys(item.deltas).length)
+      .sort((a, b) => b.weight - a.weight || a.source.localeCompare(b.source, "zh-Hans-CN"));
   }
 
   function addModifiers(target, incoming = {}) {
@@ -4512,6 +4551,7 @@
       const actual = after - before;
       state.metrics[metric] = after;
       dailyDelta[metric] += actual;
+      recordBreakdown(log, source, metric, actual);
       if (actual !== delta) {
         log.notes.push(`${source}对${METRIC_META[metric].short}的影响被单日上限或边界吸收`);
       }
@@ -4523,6 +4563,7 @@
       if (!HIDDEN_METRICS.includes(metric) || !delta) return;
       const before = state.hidden[metric];
       state.hidden[metric] = boundedMetricValue(metric, before + delta);
+      recordBreakdown(log, source, metric, state.hidden[metric] - before);
       if (state.hidden[metric] !== before + delta) {
         log.notes.push(`${source}对${METRIC_META[metric].short}的影响被边界吸收`);
       }
@@ -4534,6 +4575,7 @@
       if (!RESOURCE_METRICS.includes(metric) || !delta) return;
       const before = state.resources[metric];
       state.resources[metric] = boundedMetricValue(metric, before + delta);
+      recordBreakdown(log, source, metric, state.resources[metric] - before);
       if (state.resources[metric] !== before + delta) {
         log.notes.push(`${source}对${RESOURCE_META[metric].short}的影响被边界吸收`);
       }
@@ -4708,11 +4750,16 @@
       const decay = state.hidden.policyStrictness > 70 ? -2 : -1;
       const before = state.hidden.policyStrictness;
       state.hidden.policyStrictness = boundedMetricValue("policyStrictness", before + decay);
+      recordBreakdown(log, "压力回落", "policyStrictness", state.hidden.policyStrictness - before);
     } else if (state.hidden.policyStrictness < 15) {
+      const before = state.hidden.policyStrictness;
       state.hidden.policyStrictness = boundedMetricValue("policyStrictness", state.hidden.policyStrictness + 1);
+      recordBreakdown(log, "流动回补", "policyStrictness", state.hidden.policyStrictness - before);
     }
     if (state.hidden.detectedRate >= 80 && state.metrics.staffFatigue >= 75 && state.metrics.staffFatigue < 80) {
+      const before = state.hidden.detectedRate;
       state.hidden.detectedRate = boundedMetricValue("detectedRate", state.hidden.detectedRate - 1);
+      recordBreakdown(log, "检测网络维护", "detectedRate", state.hidden.detectedRate - before);
       log.notes.push("检测网络在疲劳高位下轻微损耗");
     }
   }
