@@ -509,6 +509,26 @@ function validateMicroRecoveryPressure() {
     summary.some((item) => item.id === "micro_flow_pressure"),
     "Low-detection micro-recovery route should surface its extra flow risk in the daily pressure summary.",
   );
+
+  const inertiaState = core.createGame({ difficulty: "normal", seed: 20260626 });
+  inertiaState.flags.actionUses.citywideSilence = 2;
+  inertiaState.history.unshift({
+    day: 8,
+    phase: 1,
+    title: "路线惯性校验",
+    choice: "路线惯性校验",
+    routeKey: "hard",
+    routeLabel: "高压止血",
+    routeTone: "danger",
+    routeSource: "eventChoice",
+    notes: [],
+    changes: {},
+  });
+  const inertiaSummary = core.getDailyPressureSummary(inertiaState);
+  assert(
+    inertiaSummary.some((item) => item.id === "strategy_inertia" && /建议补/.test(item.detail)),
+    "Daily pressure summary should surface overused strategy-route inertia with complement advice.",
+  );
 }
 
 function validateCityBadges() {

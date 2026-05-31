@@ -6755,6 +6755,18 @@
     if (h.policyStrictness >= 80) add("hidden_policy_high", "warn", "高压管控", "感染压制增强，但活力和疲劳代价上升。", h.policyStrictness);
     if (h.publicMemory >= 60) add("hidden_memory_high", "danger", "长期伤痕", "信任恢复会变慢，结局更容易偏向沉重代价。", h.publicMemory);
 
+    const strategyProfile = getStrategyProfile(state);
+    if (strategyProfile && strategyProfile.inertia) {
+      const inertia = strategyProfile.inertia;
+      add(
+        "strategy_inertia",
+        inertia.tone === "danger" ? "danger" : "warn",
+        inertia.status,
+        `${inertia.routeLabel}占比 ${inertia.percent}%。${inertia.complementLabel}`,
+        inertia.tone === "danger" ? 96 : 84,
+      );
+    }
+
     const dueSoon = [...(state.pendingEffects || [])]
       .filter((item) => item.dueDay <= state.day + 1)
       .sort((a, b) => a.dueDay - b.dueDay)[0];
