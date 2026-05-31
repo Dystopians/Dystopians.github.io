@@ -1013,6 +1013,8 @@ function validateActionPreviewCoverage() {
   assert(appJs.includes("pendingImpactSummary"), "Pending timeline should expose readable delayed-effect impact summaries.");
   assert(appJs.includes("\"若触发\""), "Conditional pending effects should be labeled as conditional rather than certain.");
   assert(styles.includes(".pending-impact"), "Pending impact summaries need dedicated styling.");
+  assert(appJs.includes("summarizeTrendItems"), "Trend preview should include a readable overall trend summary.");
+  assert(styles.includes(".trend-summary"), "Trend preview summary needs dedicated styling.");
 }
 
 function run() {

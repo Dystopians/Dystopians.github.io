@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v117";
+  const ASSET_VERSION = "v118";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -1959,14 +1959,57 @@
     els.trendPreview.hidden = false;
     els.trendPreview.classList.toggle("is-choice", modeClass === "is-choice");
     els.trendPreview.classList.toggle("is-action", modeClass === "is-action");
+    const summary = summarizeTrendItems(items);
     els.trendPreview.innerHTML = `
       <span class="trend-label" title="${escapeHtml(title)}">${escapeHtml(label)}</span>
+      <span class="trend-summary ${escapeHtml(summary.tone)}" title="${escapeHtml(summary.detail)}">${escapeHtml(summary.text)}</span>
       ${items.map((item) => `
         <span class="trend-chip ${item.tone || "neutral"}" title="${escapeHtml(item.detail)}">
           ${escapeHtml(item.short)} ${item.delta > 0 ? "+" : ""}${item.delta}
         </span>
       `).join("")}
     `;
+  }
+
+  function summarizeTrendItems(items) {
+    const bad = items.filter((item) => item.tone === "bad");
+    const good = items.filter((item) => item.tone === "good");
+    const mixed = items.filter((item) => item.tone === "mixed");
+    const firstBad = bad[0];
+    const firstGood = good[0];
+    if (bad.length && good.length) {
+      return {
+        tone: "mixed",
+        text: `风险${bad.length}项 / 改善${good.length}项 · 盯住${firstBad.short}`,
+        detail: firstBad.detail,
+      };
+    }
+    if (bad.length) {
+      return {
+        tone: bad.length >= 2 ? "bad" : "mixed",
+        text: `风险${bad.length}项 · 主要压力：${firstBad.short}`,
+        detail: firstBad.detail,
+      };
+    }
+    if (good.length) {
+      return {
+        tone: "good",
+        text: `改善${good.length}项 · 主要收益：${firstGood.short}`,
+        detail: firstGood.detail,
+      };
+    }
+    if (mixed.length) {
+      return {
+        tone: "mixed",
+        text: `权衡${mixed.length}项 · 留意联动`,
+        detail: mixed[0].detail,
+      };
+    }
+    return {
+      tone: "neutral",
+      text: "变化温和",
+      detail: "今晚趋势没有明显单项波动。",
+    };
   }
 
   function handleMapTargetActivation(event) {

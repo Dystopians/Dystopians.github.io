@@ -2916,6 +2916,7 @@ label {
 }
 
 .trend-label,
+.trend-summary,
 .trend-chip {
   min-height: 24px;
   display: inline-flex;
@@ -2939,6 +2940,39 @@ label {
 .trend-preview.is-action .trend-label {
   background: #5e5482;
   color: #fff1bf;
+}
+
+.trend-summary {
+  flex: 1 1 190px;
+  min-width: 0;
+  padding: 0 7px;
+  overflow: hidden;
+  background: #fff1c8;
+  color: var(--deep);
+  box-shadow: inset 1px 1px 0 rgba(255, 251, 228, 0.6);
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trend-summary.good {
+  border-color: var(--good);
+  background: #dcebac;
+}
+
+.trend-summary.bad {
+  border-color: var(--danger);
+  background: #eaa07c;
+}
+
+.trend-summary.mixed {
+  border-color: var(--warn);
+  background: #f0ca75;
+}
+
+.trend-summary.neutral {
+  border-color: var(--blue);
+  background: #cbd7d0;
 }
 
 .trend-chip {
