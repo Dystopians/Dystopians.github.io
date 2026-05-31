@@ -1629,9 +1629,9 @@
         condition: "trustAtLeast55",
       },
       maxUses: 1,
-      conditionText: "需要第2天后，且资金≤72、信任≤70或公共创伤≥8。",
+      conditionText: "需要第1天后，且资金≤72、信任≤70或公共创伤≥8。",
       condition(state) {
-        return state.day >= 2
+        return state.day >= 1
           && (state.resources.funds <= 72
             || state.metrics.trust <= 70
           || state.hidden.publicMemory >= 8);
@@ -2000,11 +2000,11 @@
         condition: "detectedAtLeast50",
       },
       maxUses: 1,
-      conditionText: "需要第2天后，感染压力<65，且城市活力≤70或物资≤68。",
+      conditionText: "需要第1天后，感染压力<65，且城市活力≤74或物资≤68。",
       condition(state) {
-        return state.day >= 2
+        return state.day >= 1
           && state.metrics.infection < 65
-          && (state.metrics.economy <= 70 || state.metrics.supplies <= 68);
+          && (state.metrics.economy <= 74 || state.metrics.supplies <= 68);
       },
     },
     contactlessLivelihoodStalls: {
@@ -2114,11 +2114,11 @@
         condition: "trustAtLeast55",
       },
       maxUses: 1,
-      conditionText: "需要第1天后，且城市活力≤68、资金≤62或管控强度≥30。",
+      conditionText: "需要第1天后，且城市活力≤74、资金≤70或管控强度≥30。",
       condition(state) {
         return state.day >= 1
-          && (state.metrics.economy <= 68
-            || state.resources.funds <= 62
+          && (state.metrics.economy <= 74
+            || state.resources.funds <= 70
             || state.hidden.policyStrictness >= 30);
       },
     },

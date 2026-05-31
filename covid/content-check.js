@@ -407,6 +407,14 @@ function validateFiscalEconomyChannels() {
   requiredResolutions.forEach((id) => {
     assert(mappedResolutionIds.has(id), `Fiscal/economy resolution is not reachable from the city map: ${id}.`);
   });
+  const opening = core.createGame({ difficulty: "normal", seed: 20260608 });
+  const openingReport = core.getRecoveryLevers(opening);
+  const openingAvailable = openingReport.items.filter((item) => item.bucket === "available");
+  assert(openingAvailable.length >= 3, `Normal opening should expose at least 3 fiscal/economy recovery choices, found ${openingAvailable.length}.`);
+  assert(
+    openingAvailable.some((item) => /资金/.test(item.impact)) && openingAvailable.some((item) => /活力/.test(item.impact)),
+    "Normal opening recovery choices should include both fiscal and vitality routes.",
+  );
   const state = core.createGame({ difficulty: "normal", seed: 20260607 });
   state.day = 9;
   state.metrics.infection = 44;
