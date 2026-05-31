@@ -688,6 +688,102 @@ label {
   color: #6d4a1e;
 }
 
+.ending-outlook {
+  margin: 0 0 9px;
+}
+
+.ending-outlook-card {
+  position: relative;
+  padding: 8px 9px 8px 13px;
+  border: 2px solid #b89752;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 248, 215, 0.3) 0 2px, transparent 2px 4px),
+    #f8e9bd;
+  box-shadow: inset 2px 2px 0 rgba(255, 247, 209, 0.75), 2px 2px 0 rgba(95, 75, 42, 0.3);
+}
+
+.ending-outlook-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background: #bd7d24;
+}
+
+.ending-outlook-card.good::before {
+  background: var(--good);
+}
+
+.ending-outlook-card.warn::before {
+  background: var(--warn);
+}
+
+.ending-outlook-card.danger::before {
+  background: var(--danger);
+}
+
+.ending-outlook-card div {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.ending-outlook-card span,
+.ending-outlook-card strong,
+.ending-outlook-card em {
+  font-style: normal;
+  font-size: 0.64rem;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.ending-outlook-card span,
+.ending-outlook-card strong {
+  padding: 2px 5px;
+  border: 2px solid #b89752;
+  background: #ead19a;
+  color: var(--deep);
+}
+
+.ending-outlook-card.good strong {
+  border-color: var(--good);
+  background: #b9d98e;
+  color: #234522;
+}
+
+.ending-outlook-card.danger strong {
+  border-color: var(--danger);
+  background: #eaa07c;
+  color: #5b1f18;
+}
+
+.ending-outlook-card h3 {
+  margin: 6px 0 0;
+  color: var(--ink);
+  font-size: 0.86rem;
+  line-height: 1.2;
+}
+
+.ending-outlook-card p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.38;
+}
+
+.ending-outlook-card em {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 5px;
+  border: 2px solid #95723d;
+  background: #fff1c8;
+  color: #5c3d17;
+}
+
 .stage-challenges {
   display: grid;
   gap: 6px;

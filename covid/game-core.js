@@ -3905,6 +3905,80 @@
     );
   }
 
+  function projectedEndingId(state, score) {
+    if (score >= 78) return "hardWon";
+    if (score >= 62 && state.hidden.publicMemory >= 55) return "silentCost";
+    if (score >= 62 && state.metrics.trust >= 60) return "quietRecovery";
+    if (score >= 45) return "winterScars";
+    return "surfaceRecovery";
+  }
+
+  function getEndingOutlook(state) {
+    if (!state || state.ended) return null;
+    const score = calculateScore(state);
+    const roundedScore = Math.round(score);
+    const endingId = projectedEndingId(state, score);
+    const ending = ENDINGS[endingId];
+    const limit = getFailureLimit(state);
+    const streaks = state.flags.failureStreaks || {};
+    const activeRisk = [
+      { id: "medical", label: "医疗挤兑", streak: streaks.medical || 0 },
+      { id: "supply", label: "供应断裂", streak: streaks.supply || 0 },
+      { id: "trust", label: "信任崩塌", streak: streaks.trust || 0 },
+      { id: "staff", label: "执行失灵", streak: streaks.staff || 0 },
+    ].sort((a, b) => b.streak - a.streak)[0];
+
+    if (activeRisk && activeRisk.streak > 0) {
+      return {
+        score: roundedScore,
+        scoreText: `${roundedScore}/100`,
+        endingId,
+        tone: "danger",
+        title: `${activeRisk.label} ${activeRisk.streak}/${limit}`,
+        detail: "失败倒计时会覆盖所有归档评分，优先拆除已经越线的红色压力槽。",
+        nextText: "先保命，再追分",
+      };
+    }
+
+    const nextTarget = score < 45 ? 45 : score < 62 ? 62 : score < 78 ? 78 : null;
+    const tone = score >= 78
+      ? "good"
+      : score >= 62 && (state.metrics.trust >= 60 || state.hidden.publicMemory >= 55)
+        ? "good"
+        : score >= 45
+          ? "warn"
+          : "danger";
+    let detail = ending.summary;
+    if (score >= 62 && state.metrics.trust < 60 && state.hidden.publicMemory < 55) {
+      detail = "综合分已碰到恢复线，但信任不足会让恢复叙事失去支点，仍可能落入带伤收尾。";
+    } else if (score >= 62 && state.hidden.publicMemory >= 55) {
+      detail = "综合分足以过线，但公共创伤过高会把结局推向更沉重的代价叙事。";
+    } else if (score < 62 && state.metrics.economy <= 35) {
+      detail = "当前分数主要被城市活力和财政循环拖住，早期的小复苏动作能明显改变归档走势。";
+    } else if (score < 62 && state.resources.funds <= 20) {
+      detail = "资金偏低会限制后续工程选择，专项资金、捐助统筹或账期谈判会改变回旋余地。";
+    }
+
+    let nextText = nextTarget
+      ? `距 ${nextTarget} 分线还差 ${Math.max(0, Math.ceil(nextTarget - score))}`
+      : "已处在最高评分线";
+    if (score >= 62 && state.metrics.trust < 60 && state.hidden.publicMemory < 55) {
+      nextText = `信任距 60 还差 ${60 - state.metrics.trust}`;
+    } else if (score >= 62 && state.hidden.publicMemory >= 55) {
+      nextText = `创伤需降到 54 以下`;
+    }
+
+    return {
+      score: roundedScore,
+      scoreText: `${roundedScore}/100`,
+      endingId,
+      tone,
+      title: ending.title,
+      detail,
+      nextText,
+    };
+  }
+
   function getRiskBand(metric, value) {
     const direction = METRIC_META[metric].direction;
     if (direction === "good") {
@@ -4393,6 +4467,7 @@
     getDailyTrendPreview,
     getChoiceOutcomePreview,
     getChoiceRouteTag,
+    getEndingOutlook,
     getSystemReadouts,
     getCityActionBudget,
     isConditionMet: conditionMet,

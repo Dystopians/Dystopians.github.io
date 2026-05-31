@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v52";
+  const ASSET_VERSION = "v53";
   const core = window.Linjiang72;
 
   let state = null;
@@ -220,6 +220,7 @@
     stageSituation: document.getElementById("stageSituation"),
     stageFocus: document.getElementById("stageFocus"),
     stageObjectives: document.getElementById("stageObjectives"),
+    endingOutlook: document.getElementById("endingOutlook"),
     stageChallenges: document.getElementById("stageChallenges"),
     metricsList: document.getElementById("metricsList"),
     detectedRate: document.getElementById("detectedRate"),
@@ -589,6 +590,7 @@
     els.stageSituation.textContent = info.situation;
     els.stageFocus.textContent = info.focus;
     renderStageObjectives();
+    renderEndingOutlook();
     els.stageChallenges.innerHTML = "";
     info.challenges.forEach((challenge) => {
       const li = document.createElement("li");
@@ -616,6 +618,26 @@
         </article>
       `)
       .join("");
+  }
+
+  function renderEndingOutlook() {
+    if (!els.endingOutlook || !core.getEndingOutlook) return;
+    const outlook = core.getEndingOutlook(state);
+    if (!outlook) {
+      els.endingOutlook.innerHTML = "";
+      return;
+    }
+    els.endingOutlook.innerHTML = `
+      <article class="ending-outlook-card ${escapeHtml(outlook.tone)}">
+        <div>
+          <span>归档预估</span>
+          <strong>${escapeHtml(outlook.scoreText)}</strong>
+        </div>
+        <h3>${escapeHtml(outlook.title)}</h3>
+        <p>${escapeHtml(outlook.detail)}</p>
+        <em>${escapeHtml(outlook.nextText)}</em>
+      </article>
+    `;
   }
 
   function renderBriefs() {
