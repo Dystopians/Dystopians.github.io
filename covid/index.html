@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>临江72日</title>
-    <link rel="stylesheet" href="./styles.css?v=74">
+    <link rel="stylesheet" href="./styles.css?v=75">
   </head>
   <body>
     <main class="app-shell">
@@ -60,6 +60,44 @@
             <label>
               <input type="radio" name="difficulty" value="hard">
               <span>困难</span>
+            </label>
+          </fieldset>
+          <fieldset class="scenario-fieldset">
+            <legend>开局档案</legend>
+            <label class="scenario-option">
+              <input type="radio" name="scenario" value="standard" checked>
+              <span>
+                <strong>标准档案</strong>
+                <em>默认起点，适合第一次游玩。</em>
+              </span>
+            </label>
+            <label class="scenario-option">
+              <input type="radio" name="scenario" value="medicalFront">
+              <span>
+                <strong>医疗前线吃紧</strong>
+                <em>医院和基层更早承压，救急窗口更短。</em>
+              </span>
+            </label>
+            <label class="scenario-option">
+              <input type="radio" name="scenario" value="supplyStress">
+              <span>
+                <strong>保供链条紧绷</strong>
+                <em>物资和物流开局偏弱，民生路线更关键。</em>
+              </span>
+            </label>
+            <label class="scenario-option">
+              <input type="radio" name="scenario" value="fiscalSqueeze">
+              <span>
+                <strong>财政收缩</strong>
+                <em>资金和活力偏低，考验早期恢复布局。</em>
+              </span>
+            </label>
+            <label class="scenario-option">
+              <input type="radio" name="scenario" value="informationBlind">
+              <span>
+                <strong>信息盲区</strong>
+                <em>发现率更低，必须更早做监测与公开。</em>
+              </span>
             </label>
           </fieldset>
           <button class="primary-button" type="submit">开始第 1 天</button>
@@ -268,12 +306,16 @@
             <h3>6. 托住账本</h3>
             <p>资金不只靠举债。工厂、市场和道路节点有账款清分、专项资金、捐助统筹和小规模复业等早期恢复渠道。</p>
           </section>
+          <section>
+            <h3>7. 换档案重玩</h3>
+            <p>开局档案会改变第一阶段的压力结构。医疗、保供、财政和信息盲区档案会迫使你调整早期路线。</p>
+          </section>
         </div>
         <button id="tutorialStartBtn" class="primary-button" type="button">明白了</button>
       </article>
     </section>
 
-    <script src="./game-core.js?v=74"></script>
-    <script src="./app.js?v=74"></script>
+    <script src="./game-core.js?v=75"></script>
+    <script src="./app.js?v=75"></script>
   </body>
 </html>

@@ -231,6 +231,34 @@ function validateCacheVersions() {
   }
 }
 
+function validateScenarios() {
+  const indexHtml = fs.readFileSync(path.join(rootDir, "index.html"), "utf8");
+  assert(core.SCENARIOS && typeof core.SCENARIOS === "object", "game-core.js must export SCENARIOS.");
+  const scenarioIds = Object.keys(core.SCENARIOS || {});
+  assert(scenarioIds.length >= 5, `Expected at least 5 starting scenarios, found ${scenarioIds.length}.`);
+  assert(indexHtml.includes('name="scenario"'), "index.html must expose starting scenario radio options.");
+  scenarioIds.forEach((id) => {
+    const scenario = core.SCENARIOS[id];
+    assert(scenario.label && scenario.summary, `${id} scenario needs label and summary.`);
+    assert(scenario.adjustments && typeof scenario.adjustments === "object", `${id} scenario needs adjustments object.`);
+    assert(indexHtml.includes(`value="${id}"`), `${id} scenario is not selectable on the start screen.`);
+  });
+  const standard = core.createGame({ difficulty: "normal", scenario: "standard", seed: 20260613 });
+  assert(standard.scenario === "standard", "Standard scenario should be recorded on state.");
+  assert(standard.metrics.infection === 22 && standard.resources.funds === 68, "Standard scenario should preserve normal default opening values.");
+  const medical = core.createGame({ difficulty: "normal", scenario: "medicalFront", seed: 20260613 });
+  assert(medical.metrics.hospitalLoad > standard.metrics.hospitalLoad, "medicalFront should raise hospital load.");
+  assert(medical.metrics.staffFatigue > standard.metrics.staffFatigue, "medicalFront should raise staff fatigue.");
+  const supply = core.createGame({ difficulty: "normal", scenario: "supplyStress", seed: 20260613 });
+  assert(supply.metrics.supplies < standard.metrics.supplies, "supplyStress should lower opening supplies.");
+  const fiscal = core.createGame({ difficulty: "normal", scenario: "fiscalSqueeze", seed: 20260613 });
+  assert(fiscal.resources.funds < standard.resources.funds, "fiscalSqueeze should lower opening funds.");
+  const blind = core.createGame({ difficulty: "normal", scenario: "informationBlind", seed: 20260613 });
+  assert(blind.hidden.detectedRate < standard.hidden.detectedRate, "informationBlind should lower opening detectedRate.");
+  const imported = core.importState(core.exportState(blind));
+  assert(imported.scenario === "informationBlind", "Scenario id should survive export/import.");
+}
+
 function validateRecoveryLevers() {
   assert(typeof core.getRecoveryLevers === "function", "game-core.js must export getRecoveryLevers.");
   const state = core.createGame({ difficulty: "normal", seed: 20260601 });
@@ -463,6 +491,7 @@ function run() {
   validateMapAndCityActions();
   validateNewsAssets();
   validateCacheVersions();
+  validateScenarios();
   validateRecoveryLevers();
   validateFiscalEconomyChannels();
   validateCityActionOpportunities();

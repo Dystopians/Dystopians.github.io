@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v74";
+  const ASSET_VERSION = "v75";
   const core = window.Linjiang72;
 
   let state = null;
@@ -296,7 +296,7 @@
     els.startForm.addEventListener("submit", (event) => {
       event.preventDefault();
       const data = new FormData(els.startForm);
-      startNewGame(data.get("difficulty") || "normal");
+      startNewGame(data.get("difficulty") || "normal", data.get("scenario") || "standard");
     });
     els.newGameBtn.addEventListener("click", () => showStart());
     els.continueBtn.addEventListener("click", continueGame);
@@ -397,8 +397,8 @@
     timer.play = window.setTimeout(advance, MASCOT_ACTION_FRAME_MS);
   }
 
-  function startNewGame(difficulty) {
-    state = core.createGame({ difficulty });
+  function startNewGame(difficulty, scenario = "standard") {
+    state = core.createGame({ difficulty, scenario });
     resetMapView();
     save();
     render();
@@ -426,7 +426,7 @@
     els.endingScreen.hidden = true;
     els.dayLabel.textContent = "第 1 天";
     els.phaseLabel.textContent = "阶段 1 / 6";
-    els.difficultyLabel.textContent = "普通";
+    els.difficultyLabel.textContent = "普通 · 标准档案";
     els.fundsLabel.textContent = "资金 68";
     updateContinueButton();
   }
@@ -464,9 +464,10 @@
     els.endingScreen.hidden = true;
 
     const difficulty = core.DIFFICULTIES[state.difficulty] || core.DIFFICULTIES.normal;
+    const scenario = core.SCENARIOS && core.SCENARIOS[state.scenario] ? core.SCENARIOS[state.scenario] : null;
     els.dayLabel.textContent = `第 ${state.day} 天`;
     els.phaseLabel.textContent = `阶段 ${state.phase} / 6`;
-    els.difficultyLabel.textContent = difficulty.label;
+    els.difficultyLabel.textContent = scenario ? `${difficulty.label} · ${scenario.label}` : difficulty.label;
     els.fundsLabel.textContent = `资金 ${state.resources.funds}`;
 
     renderStageInfo();
@@ -1883,7 +1884,9 @@
 
     els.dayLabel.textContent = `第 ${state.day} 天`;
     els.phaseLabel.textContent = "归档";
-    els.difficultyLabel.textContent = (core.DIFFICULTIES[state.difficulty] || core.DIFFICULTIES.normal).label;
+    const difficulty = core.DIFFICULTIES[state.difficulty] || core.DIFFICULTIES.normal;
+    const scenario = core.SCENARIOS && core.SCENARIOS[state.scenario] ? core.SCENARIOS[state.scenario] : null;
+    els.difficultyLabel.textContent = scenario ? `${difficulty.label} · ${scenario.label}` : difficulty.label;
     els.fundsLabel.textContent = `资金 ${state.resources.funds}`;
 
     els.endingTitle.textContent = state.ending.title;

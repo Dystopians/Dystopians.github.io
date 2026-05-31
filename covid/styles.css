@@ -500,6 +500,43 @@ label {
   background: var(--panel-light);
 }
 
+.scenario-fieldset {
+  gap: 7px;
+}
+
+.scenario-option {
+  align-items: flex-start;
+  min-height: 54px;
+  padding: 8px 9px;
+}
+
+.scenario-option input {
+  margin-top: 3px;
+}
+
+.scenario-option span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.scenario-option strong,
+.scenario-option em {
+  font-style: normal;
+  line-height: 1.25;
+}
+
+.scenario-option strong {
+  color: var(--deep);
+  font-size: 0.84rem;
+}
+
+.scenario-option em {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
 .tilesheet-preview {
   width: 100%;
   max-height: 220px;

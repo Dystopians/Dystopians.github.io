@@ -133,6 +133,57 @@
     },
   };
 
+  const SCENARIOS = {
+    standard: {
+      label: "标准档案",
+      summary: "保持默认开局，适合第一次游玩和继续调参对照。",
+      adjustments: {},
+    },
+    medicalFront: {
+      label: "医疗前线吃紧",
+      summary: "开局医院与基层更紧，资金略多但救急窗口更短。",
+      adjustments: {
+        infection: 4,
+        hospitalLoad: 10,
+        supplies: -4,
+        staffFatigue: 6,
+        funds: 4,
+      },
+    },
+    supplyStress: {
+      label: "保供链条紧绷",
+      summary: "民生供应与物流开局偏弱，需要更早投入保供和信任修复。",
+      adjustments: {
+        supplies: -14,
+        trust: -3,
+        economy: -4,
+        staffFatigue: 3,
+        funds: 6,
+      },
+    },
+    fiscalSqueeze: {
+      label: "财政收缩",
+      summary: "资金和城市活力都偏低，但公众耐心略高，考验早期恢复路线。",
+      adjustments: {
+        funds: -16,
+        economy: -5,
+        trust: 3,
+        publicMemory: -2,
+      },
+    },
+    informationBlind: {
+      label: "信息盲区",
+      summary: "发现率更低、真实感染略高，早期必须更重视监测和公开。",
+      adjustments: {
+        infection: 5,
+        detectedRate: -12,
+        trust: -2,
+        staffFatigue: -2,
+        funds: 3,
+      },
+    },
+  };
+
   const STAGE_INFO = [
     {
       phase: 1,
@@ -2604,14 +2655,20 @@
   function createGame(options = {}) {
     const difficulty = options.difficulty || "normal";
     const diff = DIFFICULTIES[difficulty] || DIFFICULTIES.normal;
+    const scenario = options.scenario && SCENARIOS[options.scenario] ? options.scenario : "standard";
+    const scenarioDef = SCENARIOS[scenario] || SCENARIOS.standard;
     const all = { ...INITIAL_VALUES };
     Object.entries(diff.adjustments).forEach(([metric, delta]) => {
+      all[metric] = boundedMetricValue(metric, all[metric] + delta);
+    });
+    Object.entries(scenarioDef.adjustments).forEach(([metric, delta]) => {
       all[metric] = boundedMetricValue(metric, all[metric] + delta);
     });
 
     const state = {
       version: 2,
       difficulty,
+      scenario,
       seed: options.seed || createSeed(),
       day: 1,
       phase: 1,
@@ -2661,6 +2718,7 @@
     if (!raw || (raw.version !== 1 && raw.version !== 2)) return createGame();
     const state = clone(raw);
     state.version = 2;
+    state.scenario = state.scenario && SCENARIOS[state.scenario] ? state.scenario : "standard";
     state.resources = state.resources || { funds: INITIAL_VALUES.funds };
     state.news = state.news || generateNews(state);
     state.statusEffects = state.statusEffects || [];
@@ -6328,6 +6386,7 @@
     METRIC_META,
     RESOURCE_META,
     DIFFICULTIES,
+    SCENARIOS,
     STAGE_INFO,
     ACTIONS,
     OPERATIONS,
