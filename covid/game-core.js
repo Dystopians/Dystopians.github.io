@@ -2908,6 +2908,7 @@
         const isSeen = seen.has(schedule.eventId);
         const isMissed = missed.has(key) || (!isSeen && schedule.day < state.day);
         const conditionOk = scheduledConditionMet(state, schedule.condition);
+        const conditionHint = scheduledConditionHint(state, schedule.condition, conditionOk);
         let tone = "upcoming";
         let status = schedule.day === state.day ? "今日" : `第${schedule.day}天`;
         if (isCurrent) {
@@ -2939,8 +2940,61 @@
               ? `还有${schedule.day - state.day}天`
               : `${state.day - schedule.day}天前`,
           conditionMet: conditionOk,
+          conditionLabel: conditionHint.label,
+          conditionDetail: conditionHint.detail,
+          conditionTone: conditionHint.tone,
         };
       });
+  }
+
+  function scheduledConditionHint(state, condition, conditionOk = scheduledConditionMet(state, condition)) {
+    const m = state.metrics;
+    const h = state.hidden;
+    const r = state.resources;
+    const operationUses = state.flags.operationUses || {};
+    const resolutions = state.flags.resolutions || {};
+    const actionUses = state.flags.actionUses || {};
+    const noMedicalInfrastructure = !state.completedProjects.shelterHospital
+      && !state.completedProjects.triageNetwork
+      && !state.completedProjects.communityClinic;
+    const tone = conditionOk ? "ready" : "waiting";
+    const line = (label, detail) => ({ label, detail, tone });
+    if (!condition || condition === "always") return line("固定节点", "按日程必定出现。");
+    if (condition === "feverNightPressure") return line("门诊压力", `感染≥25或发现<45；当前感染${m.infection}、发现${h.detectedRate}。`);
+    if (condition === "labSupportWindow") return line("外部实验室", `发现≤60或感染≥30；当前发现${h.detectedRate}、感染${m.infection}。`);
+    if (condition === "protectiveDonationNeed") return line("防护缺口", `物资≤70或医疗≥35；当前物资${m.supplies}、医疗${m.hospitalLoad}。`);
+    if (condition === "warehouseDisputePressure") return line("仓储争议", `物资≤55或信任≤55；当前物资${m.supplies}、信任${m.trust}。`);
+    if (condition === "medicalTeamNeed") return line("支援需求", `医疗≥45或疲劳≥45；当前医疗${m.hospitalLoad}、疲劳${m.staffFatigue}。`);
+    if (condition === "shelterNeed") return line("方舱窗口", `医疗≥50或感染≥45；当前医疗${m.hospitalLoad}、感染${m.infection}。`);
+    if (condition === "transferNeed") return line("转运压力", `感染≥55或医疗≥60；当前感染${m.infection}、医疗${m.hospitalLoad}。`);
+    if (condition === "plasmaResearchWindow") return line("救治探索", `医疗≥45或感染≥40；当前医疗${m.hospitalLoad}、感染${m.infection}。`);
+    if (condition === "dischargeDebateWindow") return line("出舱争论", `医疗≤70且发现≥45；当前医疗${m.hospitalLoad}、发现${h.detectedRate}。`);
+    if (condition === "psychSupportNeed") return line("心理援助", `疲劳≥50、创伤≥25或信任≤60；当前疲劳${m.staffFatigue}、创伤${h.publicMemory}、信任${m.trust}。`);
+    if (condition === "healthCodeRisk") return line("健康码风险", `发现≥55或健康码已部署；当前发现${h.detectedRate}${state.completedProjects.healthCode ? "、已部署" : ""}。`);
+    if (condition === "onlineConsultNeed") {
+      return line("线上分流", `${noMedicalInfrastructure ? "未铺医疗工程时医疗≥40或感染≥35" : "有医疗工程时医疗≥72，或感染≥70且医疗≥58"}；当前医疗${m.hospitalLoad}、感染${m.infection}。`);
+    }
+    if (condition === "enterpriseWhiteListPressure") return line("白名单压力", `活力≤60或资金≤35；当前活力${m.economy}、资金${r.funds}。`);
+    if (condition === "silentControlWindow") return line("静默窗口", `感染≥45；当前感染${m.infection}。`);
+    if (condition === "massTestingNeed") return line("全员检测", `感染≥50或发现≤65；当前感染${m.infection}、发现${h.detectedRate}。`);
+    if (condition === "vegetableConvoyNeed") return line("外部保供", `物资≤70或管控≥50；当前物资${m.supplies}、管控${h.policyStrictness}。`);
+    if (condition === "groupBuyPressure") return line("团购压力", `物资≤60或管控≥60；当前物资${m.supplies}、管控${h.policyStrictness}。`);
+    if (condition === "groupBuyOrderNeed") return line("订货表窗口", `物资≤65或疲劳≥55；当前物资${m.supplies}、疲劳${m.staffFatigue}。`);
+    if (condition === "dataDelayPressure") return line("数据发布", `信任≤60、创伤≥30或医疗≥65；当前信任${m.trust}、创伤${h.publicMemory}、医疗${m.hospitalLoad}。`);
+    if (condition === "feverMedicinePressure") return line("药品压力", `感染≥45或医疗≥55；当前感染${m.infection}、医疗${m.hospitalLoad}。`);
+    if (condition === "procurementAuditPressure") {
+      const usedLargeProject = state.completedProjects.shelterHospital
+        || state.completedProjects.supplyCorridor
+        || (operationUses.buildShelterHospital || 0) > 0
+        || (operationUses.supplyCorridor || 0) > 0
+        || (actionUses.outsourceDelivery || 0) > 0
+        || Boolean(resolutions.hardWarehouse)
+        || Boolean(resolutions.emergencyLevy);
+      return line("采购审计", `资金≤45或有大额工程/征用记录；当前资金${r.funds}${usedLargeProject ? "、已有审计对象" : ""}。`);
+    }
+    if (condition === "recoveryGrantNeed") return line("恢复补助", `活力≤70或资金≤65；当前活力${m.economy}、资金${r.funds}。`);
+    if (condition === "memorialPressure") return line("公共记忆", `创伤≥35、医疗≥75或医疗曾越线；当前创伤${h.publicMemory}、医疗${m.hospitalLoad}。`);
+    return line("条件观察", "查看当前指标是否接近该公共节点的触发窗口。");
   }
 
   function getStageTransitionBrief(state) {

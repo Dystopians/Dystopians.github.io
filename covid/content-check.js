@@ -170,6 +170,20 @@ function validateSchedule(eventIds) {
   ].forEach((eventId) => {
     assert(core.SCHEDULED_EVENTS.some((item) => item.eventId === eventId), `Positive support event should have a fixed window: ${eventId}.`);
   });
+
+  const scheduleState = core.createGame({ difficulty: "normal", seed: 20260621 });
+  scheduleState.day = 41;
+  scheduleState.phase = core.phaseForDay(scheduleState.day);
+  const stageSchedule = core.getStageSchedule(scheduleState);
+  assert(
+    stageSchedule.every((item) => item.conditionLabel && item.conditionDetail && item.conditionTone),
+    "Every stage schedule item should expose readable condition hints.",
+  );
+  const onlineConsult = stageSchedule.find((item) => item.id === "p4_online_consultation_open");
+  assert(
+    onlineConsult && /线上分流/.test(onlineConsult.conditionLabel) && !String(onlineConsult.conditionDetail).includes("[object Object]"),
+    "Online consultation fixed window should explain its trigger condition.",
+  );
 }
 
 function validateMapAndCityActions() {

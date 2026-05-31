@@ -1087,6 +1087,25 @@ label {
   white-space: nowrap;
 }
 
+.stage-schedule-item p {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding-top: 2px;
+  border-top: 1px solid rgba(155, 113, 52, 0.35);
+  color: #6e4f24;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.stage-schedule-item p.ready {
+  color: #315c35;
+}
+
+.stage-schedule-item p.waiting {
+  color: #77501d;
+}
+
 .stage-schedule-item.today {
   border-color: var(--danger);
   background: #ffe0a4;

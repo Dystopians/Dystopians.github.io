@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v88";
+  const ASSET_VERSION = "v89";
   const core = window.Linjiang72;
 
   let state = null;
@@ -804,10 +804,11 @@
       </div>
       <div class="stage-schedule-list">
         ${items.map((item) => `
-          <article class="stage-schedule-item ${escapeHtml(item.tone)}" title="${escapeHtml(item.reason)}">
+          <article class="stage-schedule-item ${escapeHtml(item.tone)}" title="${escapeHtml(`${item.reason || ""} ${item.conditionDetail || ""}`.trim())}">
             <span>${escapeHtml(item.relative)}</span>
             <strong>${escapeHtml(item.title)}</strong>
             <em>${escapeHtml(item.status)}</em>
+            ${item.conditionDetail ? `<p class="${escapeHtml(item.conditionTone || "waiting")}">${escapeHtml(item.conditionLabel || "条件")} · ${escapeHtml(item.conditionDetail)}</p>` : ""}
           </article>
         `).join("")}
       </div>
