@@ -4048,6 +4048,7 @@
     getChoiceRouteTag,
     getSystemReadouts,
     getCityActionBudget,
+    isConditionMet: conditionMet,
     resolveChoice,
     executeOperation,
     executeResolution,

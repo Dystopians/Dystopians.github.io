@@ -2112,6 +2112,18 @@ label {
   color: #5b1f18;
 }
 
+.pending-condition.is-ready {
+  border-color: var(--good);
+  background: #b9d98e;
+  color: #244d35;
+}
+
+.pending-condition.is-waiting {
+  border-color: #a83f32;
+  background: #eaa07c;
+  color: #5b1f18;
+}
+
 .pending-item strong {
   display: block;
   margin-bottom: 3px;

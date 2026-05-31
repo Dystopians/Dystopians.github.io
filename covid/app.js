@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v45";
+  const ASSET_VERSION = "v46";
   const core = window.Linjiang72;
 
   let state = null;
@@ -663,7 +663,10 @@
       effects: item.effects || {},
       hidden: item.hidden || {},
     });
-    const condition = item.condition ? `<span class="pending-condition">${escapeHtml(conditionLabel(item.condition))}</span>` : "";
+    const conditionReady = item.condition ? core.isConditionMet(state, item.condition) : true;
+    const condition = item.condition
+      ? `<span class="pending-condition ${conditionReady ? "is-ready" : "is-waiting"}">${escapeHtml(conditionLabel(item.condition))} · ${conditionReady ? "当前满足" : "当前未满足"}</span>`
+      : "<span class=\"pending-condition is-ready\">必定触发</span>";
     const complete = item.completeProject ? "<span class=\"chip delay\">项目完成</span>" : "";
     return `
       <article class="pending-item">
@@ -684,11 +687,13 @@
       staffFatigueAbove75: "疲劳>75时触发",
       trustBelow40: "信任<40时触发",
       trustBelow45: "信任<45时触发",
+      trustAtLeast55: "信任≥55时触发",
       trustAtLeast60: "信任≥60时触发",
       hospitalAtLeast80: "医疗≥80时触发",
       hospitalAbove85: "医疗>85时触发",
       suppliesBelow25: "物资<25时触发",
       detectedBelow50: "发现率<50时触发",
+      detectedAtLeast50: "发现率≥50时触发",
       fundsBelow20: "资金<20时触发",
       economyBelow40: "活力<40时触发",
     };
