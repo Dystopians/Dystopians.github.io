@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v35";
+  const ASSET_VERSION = "v36";
   const core = window.Linjiang72;
 
   let state = null;
@@ -84,6 +84,7 @@
     publicMemory: document.getElementById("publicMemory"),
     statusEffects: document.getElementById("statusEffects"),
     briefStrip: document.getElementById("briefStrip"),
+    pendingTimeline: document.getElementById("pendingTimeline"),
     cityMapWrap: document.getElementById("cityMapWrap"),
     mapStage: document.getElementById("mapStage"),
     mapHighlightLayer: document.getElementById("mapHighlightLayer"),
@@ -297,6 +298,7 @@
     renderStageInfo();
     renderMetrics();
     renderBriefs();
+    renderPendingTimeline();
     renderMap();
     renderEvent();
     renderAlerts();
@@ -375,6 +377,74 @@
       item.innerHTML = `<span>${["疾控", "医院", "社区"][index] || "简报"}</span><strong>${escapeHtml(line)}</strong>`;
       els.briefStrip.appendChild(item);
     });
+  }
+
+  function renderPendingTimeline() {
+    if (!els.pendingTimeline) return;
+    const pending = [...(state.pendingEffects || [])]
+      .sort((a, b) => a.dueDay - b.dueDay || String(a.label).localeCompare(String(b.label), "zh-Hans-CN"))
+      .slice(0, 5);
+    if (!pending.length) {
+      els.pendingTimeline.innerHTML = `
+        <div class="pending-head">
+          <span>后续影响</span>
+          <strong>0</strong>
+        </div>
+        <p class="pending-empty">暂无排队中的延迟后果。</p>
+      `;
+      return;
+    }
+
+    els.pendingTimeline.innerHTML = `
+      <div class="pending-head">
+        <span>后续影响</span>
+        <strong>${state.pendingEffects.length}</strong>
+      </div>
+      <div class="pending-list">
+        ${pending.map((item) => renderPendingItem(item)).join("")}
+      </div>
+    `;
+  }
+
+  function renderPendingItem(item) {
+    const dayGap = item.dueDay - state.day;
+    const dueText = dayGap <= 0 ? "今日" : dayGap === 1 ? "明日" : `${dayGap}日后`;
+    const title = `${item.eventTitle || "后续"} · ${item.choiceLabel || item.label}`;
+    const chips = renderEffectChips({
+      resources: item.resources || {},
+      effects: item.effects || {},
+      hidden: item.hidden || {},
+    });
+    const condition = item.condition ? `<span class="pending-condition">${escapeHtml(conditionLabel(item.condition))}</span>` : "";
+    const complete = item.completeProject ? "<span class=\"chip delay\">项目完成</span>" : "";
+    return `
+      <article class="pending-item">
+        <div class="pending-item-top">
+          <span>${escapeHtml(dueText)}</span>
+          ${condition}
+        </div>
+        <strong>${escapeHtml(item.label)}</strong>
+        <p>${escapeHtml(title)}</p>
+        <div class="chips">${chips}${complete}</div>
+      </article>
+    `;
+  }
+
+  function conditionLabel(condition) {
+    const labels = {
+      staffFatigueAbove80: "疲劳>80时触发",
+      staffFatigueAbove75: "疲劳>75时触发",
+      trustBelow40: "信任<40时触发",
+      trustBelow45: "信任<45时触发",
+      trustAtLeast60: "信任≥60时触发",
+      hospitalAtLeast80: "医疗≥80时触发",
+      hospitalAbove85: "医疗>85时触发",
+      suppliesBelow25: "物资<25时触发",
+      detectedBelow50: "发现率<50时触发",
+      fundsBelow20: "资金<20时触发",
+      economyBelow40: "活力<40时触发",
+    };
+    return labels[condition] || "满足条件时触发";
   }
 
   function renderMap() {
