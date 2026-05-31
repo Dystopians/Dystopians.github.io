@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v34";
+  const ASSET_VERSION = "v35";
   const core = window.Linjiang72;
 
   let state = null;
@@ -103,6 +103,7 @@
     alerts: document.getElementById("alerts"),
     operationsTab: document.getElementById("operationsTab"),
     resolutionsTab: document.getElementById("resolutionsTab"),
+    actionFinder: document.getElementById("actionFinder"),
     operationsList: document.getElementById("operationsList"),
     newsList: document.getElementById("newsList"),
     historyList: document.getElementById("historyList"),
@@ -736,6 +737,7 @@
     if (!state) return;
     els.operationsTab.classList.toggle("active", actionMode === "operations");
     els.resolutionsTab.classList.toggle("active", actionMode === "resolutions");
+    renderActionFinder();
     const point = core.getMapPoint(state, state.selectedMapPointId);
     const items = actionMode === "operations" ? point.operations : point.resolutions;
     els.operationsList.innerHTML = "";
@@ -774,6 +776,73 @@
         render();
       });
       els.operationsList.appendChild(card);
+    });
+  }
+
+  function renderActionFinder() {
+    if (!els.actionFinder) return;
+    const cityActions = collectCityActions();
+    if (!cityActions.length) {
+      els.actionFinder.innerHTML = `
+        <div class="action-finder-head">
+          <span>全城可用</span>
+          <strong>0</strong>
+        </div>
+        <p class="action-finder-empty">暂无立即可执行的工程或决议，先处理今日事件或改善条件。</p>
+      `;
+      return;
+    }
+
+    els.actionFinder.innerHTML = `
+      <div class="action-finder-head">
+        <span>全城可用</span>
+        <strong>${cityActions.length}</strong>
+      </div>
+      <div class="action-finder-list">
+        ${cityActions.slice(0, 6).map(({ point, item, mode, kind }) => `
+          <button class="action-finder-item" type="button" data-point-id="${point.id}" data-mode="${mode}">
+            <span>${escapeHtml(kind)} · ${escapeHtml(point.label)}</span>
+            <strong>${escapeHtml(item.label)}</strong>
+          </button>
+        `).join("")}
+      </div>
+    `;
+
+    els.actionFinder.querySelectorAll(".action-finder-item").forEach((button) => {
+      button.addEventListener("click", () => {
+        core.selectMapPoint(state, button.dataset.pointId);
+        actionMode = button.dataset.mode === "resolutions" ? "resolutions" : "operations";
+        save();
+        renderMap();
+        renderActionMode();
+      });
+    });
+  }
+
+  function collectCityActions() {
+    const seen = new Set();
+    const actions = [];
+    core.MAP_POINTS.forEach((mapPoint) => {
+      const point = core.getMapPoint(state, mapPoint.id);
+      [
+        { mode: "operations", kind: "工程", items: point.operations },
+        { mode: "resolutions", kind: "决议", items: point.resolutions },
+      ].forEach((group) => {
+        group.items
+          .filter((item) => item.available)
+          .forEach((item) => {
+            const key = `${group.mode}:${item.id}`;
+            if (seen.has(key)) return;
+            seen.add(key);
+            actions.push({ point, item, mode: group.mode, kind: group.kind });
+          });
+      });
+    });
+    return actions.sort((a, b) => {
+      if (a.point.id === state.selectedMapPointId && b.point.id !== state.selectedMapPointId) return -1;
+      if (b.point.id === state.selectedMapPointId && a.point.id !== state.selectedMapPointId) return 1;
+      if (a.mode !== b.mode) return a.mode === "operations" ? -1 : 1;
+      return a.item.label.localeCompare(b.item.label, "zh-Hans-CN");
     });
   }
 
