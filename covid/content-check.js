@@ -532,6 +532,12 @@ function validateEndingStrategyReview() {
   const profile = core.getStrategyProfile(activeState);
   assert(Array.isArray(profile.recommendations), "Strategy profile should expose recommendations.");
   assert(profile.recommendations.length > 0, "Strategy recommendations should surface route complements under pressure.");
+  assert(Array.isArray(profile.debts), "Strategy profile should expose route debt warnings.");
+  assert(profile.debts.length > 0, "A dominant route under pressure should expose at least one route debt warning.");
+  assert(
+    profile.debts.every((item) => item.label && item.status && item.detail && item.tone),
+    "Every route debt warning needs label, status, detail, and tone.",
+  );
   assert(
     profile.recommendations.every((item) => item.kind && item.label && item.status && item.detail && item.routeLabel),
     "Every strategy recommendation needs kind, label, status, detail, and routeLabel.",

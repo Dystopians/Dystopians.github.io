@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v79";
+  const ASSET_VERSION = "v80";
   const core = window.Linjiang72;
 
   let state = null;
@@ -899,6 +899,19 @@
     const blindSpot = profile.blindSpot
       ? `<p class="strategy-blindspot ${escapeHtml(profile.blindSpot.tone || "warn")}"><strong>${escapeHtml(profile.blindSpot.label)}</strong>${escapeHtml(profile.blindSpot.detail)}</p>`
       : "";
+    const debts = (profile.debts || []).slice(0, 3);
+    const debtList = debts.length
+      ? `
+        <div class="strategy-debt-list" aria-label="路线债务">
+          ${debts.map((item) => `
+            <article class="strategy-debt ${escapeHtml(item.tone || "info")}" title="${escapeHtml(item.detail)}">
+              <span>${escapeHtml(item.status || "需要盯防")} · ${escapeHtml(item.label)} ${escapeHtml(String(item.value))}</span>
+              <strong>${escapeHtml(item.detail)}</strong>
+            </article>
+          `).join("")}
+        </div>
+      `
+      : "";
     const recommendations = (profile.recommendations || []).slice(0, 3);
     const recommendationList = recommendations.length
       ? `
@@ -923,6 +936,7 @@
       <p>${escapeHtml(profile.detail)}</p>
       <div class="strategy-route-list">${routeList}</div>
       ${blindSpot}
+      ${debtList}
       <div class="strategy-recommendations">
         <span>配套建议</span>
         ${recommendationList}

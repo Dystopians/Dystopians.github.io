@@ -3712,12 +3712,13 @@
       return {
         total: 0,
         tone: "info",
-        label: "尚未成型",
-        detail: "本局还没有形成稳定治理路线。处理几次事件或执行城市行动后，这里会显示你的策略倾向。",
-        blindSpot: null,
-        recommendations: getStrategyRecommendations(state, null, null),
-        routes: [],
-      };
+      label: "尚未成型",
+      detail: "本局还没有形成稳定治理路线。处理几次事件或执行城市行动后，这里会显示你的策略倾向。",
+      blindSpot: null,
+      debts: [],
+      recommendations: getStrategyRecommendations(state, null, null),
+      routes: [],
+    };
     }
 
     routes.forEach((route) => {
@@ -3732,6 +3733,7 @@
         label: "路线试探",
         detail: `本局刚开始出现${dominant.label}倾向。再处理几次事件或城市行动后，路线结构会更稳定。`,
         blindSpot: getStrategyBlindSpot(state, routeMap),
+        debts: getStrategyDebts(state, dominant, routeMap),
         recommendations: getStrategyRecommendations(state, getStrategyBlindSpot(state, routeMap), dominant),
         routes: routes.filter((route) => route.count > 0).slice(0, 5),
       };
@@ -3756,9 +3758,104 @@
       label,
       detail,
       blindSpot,
+      debts: getStrategyDebts(state, dominant, routeMap),
       recommendations: getStrategyRecommendations(state, blindSpot, dominant),
       routes: routes.filter((route) => route.count > 0).slice(0, 5),
     };
+  }
+
+  function getStrategyDebts(state, dominant, routeMap) {
+    if (!dominant || dominant.count <= 0) return [];
+    const exposure = dominant.percent || 0;
+    if (exposure < 35 && dominant.count < 3) return [];
+    const rules = {
+      control: [
+        ["trust", "高压止血会消耗政策耐心，低信任会让后续管控变钝。"],
+        ["economy", "流动被压得越久，供应恢复和财政回补越慢。"],
+        ["staffFatigue", "强执行会把成本转给基层排班。"],
+        ["publicMemory", "强硬处置会进入长期创伤账本。"],
+      ],
+      recovery: [
+        ["infection", "恢复财政会带回流动，感染压力会先吃到反弹。"],
+        ["detectedRate", "发现率不足时，复业收益容易掩盖真实传播。"],
+        ["trust", "豁免、展期和财政周转会放大公平性质疑。"],
+        ["staffFatigue", "恢复窗口需要额外核验和排班，基层会被牵动。"],
+      ],
+      medical: [
+        ["funds", "医疗扩容和分流会持续占用现金流。"],
+        ["supplies", "床位、药品和防护品会同时消耗库存。"],
+        ["staffFatigue", "医疗优先会把人手抽向医院端。"],
+        ["publicMemory", "征用和分级收治会留下解释成本。"],
+      ],
+      monitoring: [
+        ["staffFatigue", "监测治理依赖上报、复核和申诉，疲劳会回流。"],
+        ["trust", "低信任时，健康码、筛查和登记更容易变成争议。"],
+        ["funds", "检测、系统和哨点都会消耗周转资金。"],
+        ["publicMemory", "误判和申诉队列会转化为长期伤痕。"],
+      ],
+      livelihood: [
+        ["funds", "民生保供看似温和，但配送和补贴会压住现金流。"],
+        ["staffFatigue", "配送、药品和热线都要基层承接。"],
+        ["infection", "保供通行会带回有限流动风险。"],
+        ["supplies", "优先照护会加快库存消耗。"],
+      ],
+      workerRelief: [
+        ["hospitalLoad", "轮休和减压会让医院短期承接更多压力。"],
+        ["supplies", "换班、补贴和支援需要额外防护与物资。"],
+        ["funds", "外部支援和心理轮休都有预算账单。"],
+        ["infection", "执行降速时，传播压制会短时变松。"],
+      ],
+      openRepair: [
+        ["trust", "公开修复若遇到坏账，会先触发追问而不是立刻稳定。"],
+        ["funds", "审计、公示和补偿会吃掉现金流。"],
+        ["staffFatigue", "复盘材料和问答窗口需要人手。"],
+        ["publicMemory", "公开会让旧伤浮上来，创伤要靠后续行动修复。"],
+      ],
+      memory: [
+        ["funds", "创伤修复通常需要补偿、纪念和长期服务投入。"],
+        ["economy", "复盘与修复会挤占恢复期行政窗口。"],
+        ["trust", "若只做姿态不改流程，信任会反噬。"],
+        ["staffFatigue", "热线、回访和复盘也会成为基层任务。"],
+      ],
+    };
+    const candidates = (rules[dominant.id] || [])
+      .map(([metric, detail]) => buildStrategyDebt(state, metric, detail, exposure, routeMap))
+      .filter(Boolean)
+      .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label, "zh-Hans-CN"));
+    return candidates.slice(0, 3).map(({ score, ...item }) => item);
+  }
+
+  function buildStrategyDebt(state, metric, detail, exposure, routeMap) {
+    const value = getObjectiveValue(state, metric);
+    const meta = getObjectiveMeta(metric);
+    if (!meta) return null;
+    const pressure = strategyMetricDebtPressure(metric, value);
+    const score = pressure * 18 + exposure;
+    if (score < 54) return null;
+    return {
+      id: `debt_${metric}`,
+      metric,
+      label: meta.short,
+      value,
+      tone: pressure >= 4 ? "danger" : pressure >= 3 ? "warn" : "info",
+      detail,
+      percent: exposure,
+      status: pressure >= 4 ? "债务高位" : pressure >= 3 ? "正在积累" : "需要盯防",
+      score,
+    };
+  }
+
+  function strategyMetricDebtPressure(metric, value) {
+    if (metric === "infection") return value >= 80 ? 5 : value >= 65 ? 4 : value >= 52 ? 3 : value >= 42 ? 2 : 1;
+    if (metric === "hospitalLoad") return value >= 85 ? 5 : value >= 70 ? 4 : value >= 55 ? 3 : value >= 42 ? 2 : 1;
+    if (metric === "supplies") return value <= 25 ? 5 : value <= 40 ? 4 : value <= 55 ? 3 : value <= 66 ? 2 : 1;
+    if (metric === "trust") return value <= 30 ? 5 : value <= 45 ? 4 : value <= 58 ? 3 : value <= 68 ? 2 : 1;
+    if (metric === "economy") return value <= 25 ? 5 : value <= 40 ? 4 : value <= 55 ? 3 : value <= 66 ? 2 : 1;
+    if (metric === "staffFatigue") return value >= 80 ? 5 : value >= 65 ? 4 : value >= 52 ? 3 : value >= 40 ? 2 : 1;
+    if (metric === "funds") return value <= 15 ? 5 : value <= 30 ? 4 : value <= 45 ? 3 : value <= 60 ? 2 : 1;
+    if (metric === "detectedRate") return value <= 35 ? 5 : value <= 50 ? 4 : value <= 62 ? 3 : value <= 72 ? 2 : 1;
+    if (metric === "publicMemory") return value >= 60 ? 5 : value >= 45 ? 4 : value >= 30 ? 3 : value >= 18 ? 2 : 1;
+    return 1;
   }
 
   function getStrategyBlindSpot(state, routeMap) {

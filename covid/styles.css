@@ -3795,6 +3795,42 @@ label {
   color: var(--deep);
 }
 
+.strategy-debt-list {
+  display: grid;
+  gap: 6px;
+}
+
+.strategy-debt {
+  display: grid;
+  gap: 3px;
+  padding: 7px 8px;
+  border: 2px solid #9b7134;
+  background: rgba(255, 241, 200, 0.74);
+  box-shadow: inset 2px 2px 0 rgba(255, 247, 209, 0.62);
+}
+
+.strategy-debt.warn {
+  border-color: var(--warn);
+  background: #f3d58d;
+}
+
+.strategy-debt.danger {
+  border-color: var(--danger);
+  background: #efb38f;
+}
+
+.strategy-debt span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.strategy-debt strong {
+  color: var(--deep);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
 .strategy-recommendations {
   display: grid;
   gap: 7px;
