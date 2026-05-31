@@ -595,6 +595,96 @@ label {
   line-height: 1.42;
 }
 
+.stage-objectives {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 9px;
+}
+
+.stage-objective {
+  position: relative;
+  padding: 7px 8px 7px 12px;
+  border: 2px solid #b89752;
+  background: #f8e9bd;
+  box-shadow: inset 2px 2px 0 rgba(255, 247, 209, 0.78);
+}
+
+.stage-objective::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background: #bd7d24;
+}
+
+.stage-objective.good::before {
+  background: var(--good);
+}
+
+.stage-objective.warn::before {
+  background: var(--warn);
+}
+
+.stage-objective.danger::before {
+  background: var(--danger);
+}
+
+.stage-objective div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.stage-objective strong {
+  min-width: 0;
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.stage-objective span,
+.stage-objective em {
+  font-style: normal;
+  font-size: 0.66rem;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.stage-objective span {
+  padding: 2px 5px;
+  border: 2px solid #b89752;
+  background: #ead19a;
+  color: var(--deep);
+  text-align: right;
+}
+
+.stage-objective.good span {
+  border-color: var(--good);
+  background: #b9d98e;
+  color: #234522;
+}
+
+.stage-objective.danger span {
+  border-color: var(--danger);
+  background: #eaa07c;
+  color: #5b1f18;
+}
+
+.stage-objective p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.42;
+}
+
+.stage-objective em {
+  display: inline-block;
+  margin-top: 5px;
+  color: #6d4a1e;
+}
+
 .stage-challenges {
   display: grid;
   gap: 6px;

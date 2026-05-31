@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v36";
+  const ASSET_VERSION = "v37";
   const core = window.Linjiang72;
 
   let state = null;
@@ -77,6 +77,7 @@
     stageProgressFill: document.getElementById("stageProgressFill"),
     stageSituation: document.getElementById("stageSituation"),
     stageFocus: document.getElementById("stageFocus"),
+    stageObjectives: document.getElementById("stageObjectives"),
     stageChallenges: document.getElementById("stageChallenges"),
     metricsList: document.getElementById("metricsList"),
     detectedRate: document.getElementById("detectedRate"),
@@ -361,12 +362,34 @@
     els.stageProgressFill.style.width = `${info.phaseProgress}%`;
     els.stageSituation.textContent = info.situation;
     els.stageFocus.textContent = info.focus;
+    renderStageObjectives();
     els.stageChallenges.innerHTML = "";
     info.challenges.forEach((challenge) => {
       const li = document.createElement("li");
       li.textContent = challenge;
       els.stageChallenges.appendChild(li);
     });
+  }
+
+  function renderStageObjectives() {
+    if (!els.stageObjectives || !core.getStageObjectives) return;
+    const objectives = core.getStageObjectives(state);
+    if (!objectives.length) {
+      els.stageObjectives.innerHTML = "";
+      return;
+    }
+    els.stageObjectives.innerHTML = objectives
+      .map((objective) => `
+        <article class="stage-objective ${escapeHtml(objective.tone)}">
+          <div>
+            <strong>${escapeHtml(objective.label)}</strong>
+            <span>${escapeHtml(objective.done ? "已达成" : objective.targetText)}</span>
+          </div>
+          <p>${escapeHtml(objective.detail)}</p>
+          <em>${escapeHtml(objective.metricShort)} ${objective.value}</em>
+        </article>
+      `)
+      .join("");
   }
 
   function renderBriefs() {

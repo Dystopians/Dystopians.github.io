@@ -183,6 +183,39 @@
     },
   ];
 
+  const STAGE_OBJECTIVES = {
+    1: [
+      { id: "p1_detect", metric: "detectedRate", op: ">=", target: 50, label: "看清早期信号", detail: "把发现率拉到能支持判断的水平，避免报告数字长期失真。" },
+      { id: "p1_trust", metric: "trust", op: ">=", target: 55, label: "稳住第一轮信任", detail: "早期口径要经得起追问，避免低配合过早出现。" },
+      { id: "p1_fatigue", metric: "staffFatigue", op: "<=", target: 45, label: "保留基层余力", detail: "不要在疫情尚未明朗时把排班压到失灵边缘。" },
+    ],
+    2: [
+      { id: "p2_detect", metric: "detectedRate", op: ">=", target: 60, label: "形成监测底盘", detail: "扩散确认期需要足够发现率支撑转运和分区判断。" },
+      { id: "p2_hospital", metric: "hospitalLoad", op: "<=", target: 65, label: "压住医院上行", detail: "医疗负载不要带着高位进入方舱和筛查期。" },
+      { id: "p2_supplies", metric: "supplies", op: ">=", target: 45, label: "保供不断档", detail: "物资低位会同时拖累信任、疲劳和医疗效率。" },
+    ],
+    3: [
+      { id: "p3_supplies", metric: "supplies", op: ">=", target: 55, label: "维持封控民生", detail: "高管控能否执行，取决于配送和药品能否托住。" },
+      { id: "p3_trust", metric: "trust", op: ">=", target: 45, label: "避免低配合", detail: "信任跌破低位后，管控和检测都会变钝。" },
+      { id: "p3_fatigue", metric: "staffFatigue", op: "<=", target: 70, label: "别让排班透支", detail: "基层疲劳进入高位会削弱后续所有补救动作。" },
+    ],
+    4: [
+      { id: "p4_hospital", metric: "hospitalLoad", op: "<=", target: 80, label: "拆掉医疗高压", detail: "医疗负载越过红线会持续伤害信任并累积创伤。" },
+      { id: "p4_funds", metric: "funds", op: ">=", target: 15, label: "留出救急资金", detail: "医疗扩容、分诊和保供都需要最低现金流支撑。" },
+      { id: "p4_fatigue", metric: "staffFatigue", op: "<=", target: 75, label: "保护一线效率", detail: "医护和社区排班透支后，救急按钮也会变钝。" },
+    ],
+    5: [
+      { id: "p5_economy", metric: "economy", op: ">=", target: 40, label: "恢复城市活力", detail: "活力过低会限制财政、供应恢复和复工窗口。" },
+      { id: "p5_infection", metric: "infection", op: "<=", target: 75, label: "防止恢复反弹", detail: "复工和流动恢复不能把感染压力重新推上红线。" },
+      { id: "p5_trust", metric: "trust", op: ">=", target: 45, label: "留住执行配合", detail: "恢复期若信任不足，任何细颗粒治理都会变粗糙。" },
+    ],
+    6: [
+      { id: "p6_memory", metric: "publicMemory", op: "<=", target: 55, label: "处理公共创伤", detail: "创伤过高会压住最终结局，即使表面秩序恢复。" },
+      { id: "p6_economy", metric: "economy", op: ">=", target: 45, label: "让恢复落地", detail: "城市需要足够活力承接复课、复工和财政结算。" },
+      { id: "p6_hospital", metric: "hospitalLoad", op: "<=", target: 75, label: "避免收尾挤兑", detail: "最后阶段仍要守住普通门诊和发热门诊的分流。" },
+    ],
+  };
+
   const ACTIONS = {
     expandTesting: {
       label: "扩大检测",
@@ -1748,6 +1781,46 @@
       ...info,
       dayInPhase,
       phaseProgress: Math.round((dayInPhase / PHASE_SIZE) * 100),
+    };
+  }
+
+  function getStageObjectives(state) {
+    const phase = phaseForDay(state.day);
+    const specs = STAGE_OBJECTIVES[phase] || [];
+    return specs.map((spec) => {
+      const value = getObjectiveValue(state, spec.metric);
+      const meta = getObjectiveMeta(spec.metric);
+      const done = spec.op === "<=" ? value <= spec.target : value >= spec.target;
+      const danger = spec.op === "<="
+        ? value > spec.target + 15
+        : value < spec.target - 15;
+      return {
+        id: spec.id,
+        label: spec.label,
+        detail: spec.detail,
+        metric: spec.metric,
+        metricLabel: meta.label,
+        metricShort: meta.short,
+        value,
+        target: spec.target,
+        targetText: `${meta.short} ${spec.op} ${spec.target}`,
+        done,
+        tone: done ? "good" : danger ? "danger" : "warn",
+      };
+    });
+  }
+
+  function getObjectiveValue(state, metric) {
+    if (CORE_METRICS.includes(metric)) return state.metrics[metric];
+    if (HIDDEN_METRICS.includes(metric)) return state.hidden[metric];
+    if (RESOURCE_METRICS.includes(metric)) return state.resources[metric];
+    return 0;
+  }
+
+  function getObjectiveMeta(metric) {
+    return METRIC_META[metric] || RESOURCE_META[metric] || {
+      label: metric,
+      short: metric,
     };
   }
 
@@ -3513,5 +3586,6 @@
     calculateScore,
     phaseForDay,
     getStageInfo,
+    getStageObjectives,
   };
 });
