@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v77";
+  const ASSET_VERSION = "v79";
   const core = window.Linjiang72;
 
   let state = null;
@@ -1671,6 +1671,7 @@
           <strong>${escapeHtml(item.label)}</strong>
           <p>${escapeHtml(item.description)}</p>
           <div class="chips">${preview}</div>
+          ${renderActionDirectiveFit(item, actionMode)}
           ${renderActionForecast(item, actionMode)}
         </div>
         <button class="small-action" type="button" ${item.available ? "" : "aria-disabled=\"true\""} ${lockDetail ? `title="${escapeHtml(lockDetail)}"` : ""}>
@@ -1701,6 +1702,18 @@
             ${escapeHtml(forecast.short)} ${forecast.delta > 0 ? "+" : ""}${forecast.delta}
           </em>
         `).join("")}
+      </div>
+    `;
+  }
+
+  function renderActionDirectiveFit(item, mode) {
+    if (!item.available || !core.getCityActionDirectiveFit) return "";
+    const fit = core.getCityActionDirectiveFit(state, mode, item.id);
+    if (!fit) return "";
+    return `
+      <div class="action-directive ${escapeHtml(fit.tone || "info")}" title="${escapeHtml(fit.detail || "")}">
+        <span>今日目标</span>
+        <strong>${escapeHtml(fit.label || "目标影响")}</strong>
       </div>
     `;
   }
@@ -1739,6 +1752,7 @@
               <span>${escapeHtml(item.kind)} · ${escapeHtml(item.pointLabel)} · ${escapeHtml((item.routeTag && item.routeTag.label) || "综合调度")}</span>
               <strong>${escapeHtml(item.label)}</strong>
               <p>${escapeHtml(item.reason || item.impact || "根据当前压力推荐。")}</p>
+              ${renderActionFinderDirective(item)}
               <div class="action-finder-chips">${renderOpportunityChips(item)}</div>
             </button>
           `).join("")}
@@ -1801,6 +1815,17 @@
     return item.impact
       ? `<em class="mixed-change" title="${escapeHtml(item.detail || item.reason || "")}">${escapeHtml(item.impact)}</em>`
       : "";
+  }
+
+  function renderActionFinderDirective(item) {
+    if (!item || !item.id || !item.available || !core.getCityActionDirectiveFit) return "";
+    const fit = core.getCityActionDirectiveFit(state, item.mode, item.id);
+    if (!fit) return "";
+    return `
+      <em class="action-finder-directive ${escapeHtml(fit.tone || "info")}" title="${escapeHtml(fit.detail || "")}">
+        今日目标 · ${escapeHtml(fit.label)}
+      </em>
+    `;
   }
 
   function forecastChipClass(entry) {

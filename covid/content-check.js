@@ -291,12 +291,27 @@ function validateFiscalEconomyChannels() {
     "onlineGovOvertime",
     "communityRepairWhitelist",
   ];
+  const requiredResolutions = [
+    "mutualAidFund",
+    "temporaryTurnoverPool",
+    "lowContactBusinessPermit",
+    "supplyOrderPrepaySwap",
+    "deferProjectPayment",
+  ];
   required.forEach((id) => {
     assert(core.OPERATIONS[id], `Missing fiscal/economy recovery operation: ${id}.`);
+  });
+  requiredResolutions.forEach((id) => {
+    assert(core.RESOLUTIONS[id], `Missing fiscal/economy recovery resolution: ${id}.`);
+    assert(core.RESOLUTIONS[id].once === true, `Fiscal/economy recovery resolution should be one-time: ${id}.`);
   });
   const mappedOperationIds = new Set(core.MAP_POINTS.flatMap((point) => point.operations || []));
   required.forEach((id) => {
     assert(mappedOperationIds.has(id), `Fiscal/economy operation is not reachable from the city map: ${id}.`);
+  });
+  const mappedResolutionIds = new Set(core.MAP_POINTS.flatMap((point) => point.resolutions || []));
+  requiredResolutions.forEach((id) => {
+    assert(mappedResolutionIds.has(id), `Fiscal/economy resolution is not reachable from the city map: ${id}.`);
   });
   const state = core.createGame({ difficulty: "normal", seed: 20260607 });
   state.day = 9;
@@ -306,14 +321,18 @@ function validateFiscalEconomyChannels() {
   state.metrics.trust = 58;
   state.metrics.economy = 58;
   state.metrics.staffFatigue = 46;
-  state.resources.funds = 48;
+  state.resources.funds = 44;
   state.hidden.detectedRate = 58;
   const statuses = core.getAvailableOperations(state).filter((item) => required.includes(item.id));
   const available = statuses.filter((item) => item.available);
+  const resolutionStatuses = core.getAvailableResolutions(state).filter((item) => requiredResolutions.includes(item.id));
+  const availableResolutions = resolutionStatuses.filter((item) => item.available);
   assert(statuses.length === required.length, "All new fiscal/economy operations should produce operation statuses.");
   assert(available.length >= 4, `Expected at least 4 early fiscal/economy channels available, found ${available.length}.`);
+  assert(resolutionStatuses.length === requiredResolutions.length, "All fiscal/economy recovery resolutions should produce resolution statuses.");
+  assert(availableResolutions.length >= 4, `Expected at least 4 early fiscal/economy recovery resolutions available, found ${availableResolutions.length}.`);
   const report = core.getRecoveryLevers(state);
-  assert(report.totalCount >= 29, `Recovery lever report should recognize expanded fiscal/economy channels, found ${report.totalCount}.`);
+  assert(report.totalCount >= 34, `Recovery lever report should recognize expanded fiscal/economy channels, found ${report.totalCount}.`);
 }
 
 function validateCityActionOpportunities() {
@@ -337,6 +356,10 @@ function validateCityActionOpportunities() {
   assert(
     report.items.every((item) => item.routeTag && item.routeTag.label),
     "Every action opportunity should expose a routeTag label.",
+  );
+  assert(
+    report.items.every((item) => item.available === true),
+    "Available action opportunities should expose available=true for UI badges.",
   );
 }
 
@@ -406,6 +429,7 @@ function validateChoiceRiskPreview() {
 function validateDailyDirective() {
   assert(typeof core.getDailyDirective === "function", "game-core.js must export getDailyDirective.");
   assert(typeof core.getChoiceDirectiveFit === "function", "game-core.js must export getChoiceDirectiveFit.");
+  assert(typeof core.getCityActionDirectiveFit === "function", "game-core.js must export getCityActionDirectiveFit.");
   const state = core.createGame({ difficulty: "normal", seed: 20260614 });
   const directive = core.getDailyDirective(state);
   assert(directive && directive.label && directive.detail, "getDailyDirective should return a readable daily target.");
@@ -420,6 +444,9 @@ function validateDailyDirective() {
   const pressureDirective = core.getDailyDirective(pressured);
   assert(pressureDirective.metric === "hospitalLoad", "Hospital redline should become the daily directive under medical pressure.");
   assert(pressureDirective.tone === "danger", "Redline daily directive should use danger tone.");
+  const healthCodeFit = core.getCityActionDirectiveFit(state, "operations", "deployHealthCode");
+  assert(healthCodeFit && healthCodeFit.tone === "good", "Health code operation should advance the opening detectedRate directive.");
+  assert(/主动行动即时生效/.test(healthCodeFit.detail), "City action directive fit should clarify that actions do not advance the day.");
 }
 
 function validateSettlementBreakdown() {

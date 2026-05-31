@@ -722,6 +722,11 @@
     budgetReallocationMeeting: { label: "恢复财政", tone: "danger" },
     specialBondQuota: { label: "恢复财政", tone: "danger" },
     jobSubsidyAdvance: { label: "恢复财政", tone: "mixed" },
+    mutualAidFund: { label: "恢复财政", tone: "good" },
+    temporaryTurnoverPool: { label: "恢复财政", tone: "mixed" },
+    lowContactBusinessPermit: { label: "恢复财政", tone: "mixed" },
+    supplyOrderPrepaySwap: { label: "民生保供", tone: "mixed" },
+    deferProjectPayment: { label: "恢复财政", tone: "danger" },
     lowRiskWorkList: { label: "恢复财政", tone: "mixed" },
     elasticTransit: { label: "恢复财政", tone: "mixed" },
     enterpriseExemption: { label: "恢复财政", tone: "mixed" },
@@ -1257,7 +1262,7 @@
       y: 81,
       description: "保供网络的关键节点。保障这里能明显改善物资，但会挤占财政和配送人手。",
       operations: ["supplyCorridor", "essentialServicePermit", "contactlessLivelihoodStalls", "donationCoordination", "interProvinceSupport", "procurementCreditNegotiation", "supplierPaymentExtension", "rentDeferralCoordination", "livelihoodStaggeredReopen", "contactlessServiceRegistry"],
-      resolutions: ["priorityMedicineRoute", "hardWarehouse", "emergencyLevy", "nightFreightWindow"],
+      resolutions: ["priorityMedicineRoute", "mutualAidFund", "supplyOrderPrepaySwap", "lowContactBusinessPermit", "hardWarehouse", "emergencyLevy", "nightFreightWindow"],
     },
     {
       id: "road",
@@ -1267,7 +1272,7 @@
       y: 70,
       description: "道路通行决定物资和复工效率。健康码和货运白名单都会在这里体现代价。",
       operations: ["deployHealthCode", "supplyCorridor", "microFreightPermit", "remoteWorkGovServices", "onlineGovOvertime"],
-      resolutions: ["elasticTransit", "lowRiskWorkList", "suppressRumorLine", "nightFreightWindow"],
+      resolutions: ["elasticTransit", "lowRiskWorkList", "lowContactBusinessPermit", "suppressRumorLine", "nightFreightWindow"],
     },
     {
       id: "school",
@@ -1287,7 +1292,7 @@
       y: 19,
       description: "城市活力和财政恢复来源。复工需要足够发现率和通行秩序支撑。",
       operations: ["factoryClosedLoop", "taxFeeDeferralDesk", "fiscalTransparencyLedger", "fastGrantReport", "emergencyAccountClearing", "specialFundingApplication", "closedLoopSmallShift", "budgetReallocationMeeting"],
-      resolutions: ["lowRiskWorkList", "elasticTransit", "enterpriseExemption", "jobSubsidyAdvance", "specialBondQuota"],
+      resolutions: ["lowRiskWorkList", "elasticTransit", "temporaryTurnoverPool", "enterpriseExemption", "jobSubsidyAdvance", "specialBondQuota", "deferProjectPayment"],
     },
     {
       id: "residents",
@@ -2137,6 +2142,98 @@
         return state.hidden.policyStrictness >= 35 && state.metrics.infection < 75;
       },
     },
+    mutualAidFund: {
+      label: "临江互助基金",
+      description: "把社会捐款、平台运力和社区互助资金汇入公开专户。信任足够时，它能把善意转成现金流和物资；信任不足时，基金会先变成新的质疑点。",
+      resources(state) {
+        return { funds: state.metrics.trust >= 70 ? 6 : 4 };
+      },
+      effects: { supplies: 2, trust: 2, staffFatigue: 3 },
+      hidden: { publicMemory: -1 },
+      delayed: {
+        delay: 3,
+        label: "互助基金公示",
+        resources: { funds: 2 },
+        effects: { trust: -1 },
+        condition: "trustBelow45",
+      },
+      once: true,
+      conditionText: "需要第6天后，信任≥55，且资金≤60、物资≤62或公共创伤≥10。",
+      condition(state) {
+        return state.day >= 6
+          && state.metrics.trust >= 55
+          && (state.resources.funds <= 60
+            || state.metrics.supplies <= 62
+            || state.hidden.publicMemory >= 10);
+      },
+    },
+    temporaryTurnoverPool: {
+      label: "应急财政周转池",
+      description: "把可延期拨付和短账期工程款做成临时周转池。它能补上现金流空洞，但会把恢复期预算压薄，并要求后续还账。",
+      resources: { funds: 8 },
+      effects: { economy: -2, trust: -2, staffFatigue: 1 },
+      hidden: { publicMemory: 1 },
+      delayed: {
+        delay: 4,
+        label: "周转池回补",
+        resources: { funds: -5 },
+        effects: { economy: -1 },
+      },
+      once: true,
+      conditionText: "需要第5天后，资金≤45，且信任≥35。",
+      condition(state) {
+        return state.day >= 5 && state.resources.funds <= 45 && state.metrics.trust >= 35;
+      },
+    },
+    lowContactBusinessPermit: {
+      label: "低接触复业许可",
+      description: "给药房、维修、线上取货和必要服务网点发放低接触许可。它恢复的是细小但真实的城市循环，前提是发现率足够承接漏检风险。",
+      resources: { funds: 2 },
+      effects(state) {
+        return {
+          economy: 6,
+          infection: state.hidden.detectedRate >= 60 ? 2 : 3,
+          trust: 1,
+          staffFatigue: 3,
+        };
+      },
+      hidden: { policyStrictness: -3 },
+      delayed: {
+        delay: 2,
+        label: "低接触许可复核",
+        effects: { economy: 1 },
+        condition: "detectedAtLeast50",
+      },
+      once: true,
+      conditionText: "需要第6天后，发现率≥50、感染压力<62，且活力≤66或资金≤45。",
+      condition(state) {
+        return state.day >= 6
+          && state.hidden.detectedRate >= 50
+          && state.metrics.infection < 62
+          && (state.metrics.economy <= 66 || state.resources.funds <= 45);
+      },
+    },
+    supplyOrderPrepaySwap: {
+      label: "保供订单预付置换",
+      description: "用小额预付款换取药品、生鲜和保供工厂的优先排产。它先花钱稳供应和活力，若执行顺利，几天后会回收一部分财政周转。",
+      resources: { funds: -6 },
+      effects: { supplies: 5, economy: 3, trust: 1, staffFatigue: 3 },
+      hidden: { publicMemory: -1 },
+      delayed: {
+        delay: 3,
+        label: "保供订单回款",
+        resources: { funds: 2 },
+        effects: { economy: 1 },
+        condition: "trustAtLeast55",
+      },
+      once: true,
+      conditionText: "需要第5天后，资金≥18，且物资≤60或活力≤62。",
+      condition(state) {
+        return state.day >= 5
+          && state.resources.funds >= 18
+          && (state.metrics.supplies <= 60 || state.metrics.economy <= 62);
+      },
+    },
     hardWarehouse: {
       label: "硬性征用仓储",
       description: "临时征用仓储与冷链空间，快速补上库存。物资会稳定，但信任和公共创伤要付账。",
@@ -2230,6 +2327,24 @@
       conditionText: "需要应急资金≤20，且城市活力≥35。",
       condition(state) {
         return state.resources.funds <= 20 && state.metrics.economy >= 35;
+      },
+    },
+    deferProjectPayment: {
+      label: "延期支付工程款",
+      description: "把非急迫工程和采购尾款延后支付，给医疗、保供和检测留下现金。它是明显的信用透支，会损伤供应商信任并在数日后回到财政账本。",
+      resources: { funds: 10 },
+      effects: { trust: -5, supplies: -2, economy: -1 },
+      hidden: { publicMemory: 2 },
+      delayed: {
+        delay: 4,
+        label: "延期工程款到期",
+        resources: { funds: -5 },
+        effects: { trust: -2 },
+      },
+      once: true,
+      conditionText: "需要资金≤20，且公共创伤≤55。",
+      condition(state) {
+        return state.resources.funds <= 20 && state.hidden.publicMemory <= 55;
       },
     },
     jobSubsidyAdvance: {
@@ -5409,6 +5524,35 @@
     const projected = clone(state);
     resolveChoice(projected, choiceId);
     const afterValue = getObjectiveValue(projected, directive.metric);
+    return buildDirectiveFit(directive, beforeValue, afterValue, beforeDone, beforeScore);
+  }
+
+  function getCityActionDirectiveFit(state, mode, actionId) {
+    if (!state || state.ended || !actionId) return null;
+    const normalizedMode = mode === "resolutions" ? "resolutions" : "operations";
+    const status = normalizedMode === "resolutions"
+      ? getResolutionStatus(state, actionId)
+      : getOperationStatus(state, actionId);
+    if (!status || !status.available) return null;
+    const directive = getDailyDirective(state);
+    if (!directive) return null;
+
+    const beforeValue = getObjectiveValue(state, directive.metric);
+    const beforeDone = conditionByOperator(beforeValue, directive.op, directive.target);
+    const beforeScore = directiveProgressScore(state, directive);
+    const projected = clone(state);
+    if (normalizedMode === "resolutions") executeResolution(projected, actionId);
+    else executeOperation(projected, actionId);
+    const afterValue = getObjectiveValue(projected, directive.metric);
+    const fit = buildDirectiveFit(directive, beforeValue, afterValue, beforeDone, beforeScore);
+    if (!fit) return null;
+    return {
+      ...fit,
+      detail: `${fit.detail} 主动行动即时生效，今日事件仍需另行处理。`,
+    };
+  }
+
+  function buildDirectiveFit(directive, beforeValue, afterValue, beforeDone, beforeScore) {
     const afterDone = conditionByOperator(afterValue, directive.op, directive.target);
     const afterScore = directive.op === "<=" ? directive.target - afterValue : afterValue - directive.target;
     const progress = afterScore - beforeScore;
@@ -6079,6 +6223,11 @@
     "taxFeeDeferralDesk",
     "remoteWorkGovServices",
     "budgetReallocationMeeting",
+    "mutualAidFund",
+    "temporaryTurnoverPool",
+    "lowContactBusinessPermit",
+    "supplyOrderPrepaySwap",
+    "deferProjectPayment",
     "lowRiskWorkList",
     "elasticTransit",
     "enterpriseExemption",
@@ -6102,6 +6251,10 @@
     "interProvinceSupport",
     "procurementCreditNegotiation",
     "supplierPaymentExtension",
+    "mutualAidFund",
+    "temporaryTurnoverPool",
+    "lowContactBusinessPermit",
+    "supplyOrderPrepaySwap",
     "communityRepairWhitelist",
     "contactlessServiceRegistry",
     "microFreightPermit",
@@ -6110,6 +6263,7 @@
   const LAST_RESORT_RECOVERY_IDS = new Set([
     "emergencyLevy",
     "specialBondQuota",
+    "deferProjectPayment",
   ]);
 
   const ACTION_OPPORTUNITY_LOCKS = new Set(["条件未满足", "资金不足", "财政透支", "今日调度已满"]);
@@ -6206,6 +6360,7 @@
       forecast,
       lockedReason: item.lockedReason || "",
       detail: item.available ? item.description : item.lockedDetail || item.lockedReason || item.description,
+      available: bucket === "available",
       priority,
     };
   }
@@ -6598,6 +6753,7 @@
     getChoiceRouteTag,
     getEndingOutlook,
     getCityActionOutcomePreview,
+    getCityActionDirectiveFit,
     getCityActionOpportunities,
     getRecoveryLevers,
     getSystemReadouts,
