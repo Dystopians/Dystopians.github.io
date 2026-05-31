@@ -784,6 +784,111 @@ label {
   color: #5c3d17;
 }
 
+.stage-schedule {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 9px;
+  padding: 7px;
+  border: 2px solid #9b7134;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 241, 200, 0.34) 0 7px, transparent 7px 14px),
+    #ead19a;
+  box-shadow: inset 2px 2px 0 rgba(255, 247, 209, 0.7);
+}
+
+.stage-schedule-head,
+.stage-schedule-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.stage-schedule-head span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.stage-schedule-head strong {
+  min-width: 22px;
+  padding: 2px 5px;
+  border: 2px solid var(--line-dark);
+  background: #f6c957;
+  color: #4a2516;
+  text-align: center;
+  font-size: 0.64rem;
+  line-height: 1.1;
+}
+
+.stage-schedule-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(235px, 1fr));
+  gap: 4px;
+}
+
+.stage-schedule-item {
+  padding: 5px 6px;
+  border: 2px solid #b89752;
+  background: #fff1c8;
+  color: var(--deep);
+  box-shadow: 1px 1px 0 rgba(95, 75, 42, 0.24);
+}
+
+.stage-schedule-item span,
+.stage-schedule-item em {
+  padding: 2px 4px;
+  border: 2px solid #b89752;
+  background: #ead19a;
+  font-size: 0.58rem;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.stage-schedule-item strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.68rem;
+  line-height: 1.18;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-schedule-item.today {
+  border-color: var(--danger);
+  background: #ffe0a4;
+}
+
+.stage-schedule-item.today em {
+  border-color: var(--danger);
+  background: #eaa07c;
+  color: #5b1f18;
+}
+
+.stage-schedule-item.done em {
+  border-color: var(--good);
+  background: #b9d98e;
+  color: #244d35;
+}
+
+.stage-schedule-item.conditional em {
+  border-color: var(--warn);
+  background: #eec673;
+  color: #583b15;
+}
+
+.stage-schedule-item.missed {
+  opacity: 0.72;
+}
+
+.stage-schedule-item.missed em {
+  border-color: #8b7458;
+  background: #d4bd91;
+  color: #5f4b2a;
+}
+
 .stage-challenges {
   display: grid;
   gap: 6px;

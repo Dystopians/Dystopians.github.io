@@ -1988,6 +1988,59 @@
     });
   }
 
+  function getStageSchedule(state) {
+    if (!state) return [];
+    ensureEventScheduleFlags(state);
+    const phase = phaseForDay(state.day);
+    const stageStart = (phase - 1) * PHASE_SIZE + 1;
+    const stageEnd = phase * PHASE_SIZE;
+    const seen = new Set(state.flags.seenEventIds || []);
+    const missed = new Set((state.flags.missedScheduledEvents || []).map((item) => item.key));
+    return SCHEDULED_EVENTS
+      .filter((schedule) => schedule.day >= stageStart && schedule.day <= stageEnd)
+      .sort((a, b) => a.day - b.day || (b.priority || 0) - (a.priority || 0))
+      .map((schedule) => {
+        const event = EVENTS.find((item) => item.id === schedule.eventId);
+        const key = `${schedule.day}:${schedule.eventId}`;
+        const isCurrent = state.currentEventId === schedule.eventId && schedule.day === state.day;
+        const isSeen = seen.has(schedule.eventId);
+        const isMissed = missed.has(key) || (!isSeen && schedule.day < state.day);
+        const conditionOk = scheduledConditionMet(state, schedule.condition);
+        let tone = "upcoming";
+        let status = schedule.day === state.day ? "今日" : `第${schedule.day}天`;
+        if (isCurrent) {
+          tone = "today";
+          status = "今日处理";
+        } else if (isSeen) {
+          tone = "done";
+          status = "已发生";
+        } else if (isMissed) {
+          tone = "missed";
+          status = "未触发";
+        } else if (schedule.day === state.day && conditionOk) {
+          tone = "today";
+          status = "今日可触发";
+        } else if (!conditionOk && schedule.condition !== "always") {
+          tone = "conditional";
+          status = "条件观察";
+        }
+        return {
+          id: schedule.eventId,
+          day: schedule.day,
+          title: event ? event.title : schedule.eventId,
+          reason: schedule.reason,
+          status,
+          tone,
+          relative: schedule.day === state.day
+            ? "今天"
+            : schedule.day > state.day
+              ? `还有${schedule.day - state.day}天`
+              : `${state.day - schedule.day}天前`,
+          conditionMet: conditionOk,
+        };
+      });
+  }
+
   function getObjectiveValue(state, metric) {
     if (CORE_METRICS.includes(metric)) return state.metrics[metric];
     if (HIDDEN_METRICS.includes(metric)) return state.hidden[metric];
@@ -4508,5 +4561,6 @@
     phaseForDay,
     getStageInfo,
     getStageObjectives,
+    getStageSchedule,
   };
 });

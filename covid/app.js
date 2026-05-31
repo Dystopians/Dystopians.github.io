@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v55";
+  const ASSET_VERSION = "v56";
   const core = window.Linjiang72;
 
   let state = null;
@@ -221,6 +221,7 @@
     stageFocus: document.getElementById("stageFocus"),
     stageObjectives: document.getElementById("stageObjectives"),
     endingOutlook: document.getElementById("endingOutlook"),
+    stageSchedule: document.getElementById("stageSchedule"),
     stageChallenges: document.getElementById("stageChallenges"),
     metricsList: document.getElementById("metricsList"),
     detectedRate: document.getElementById("detectedRate"),
@@ -591,6 +592,7 @@
     els.stageFocus.textContent = info.focus;
     renderStageObjectives();
     renderEndingOutlook();
+    renderStageSchedule();
     els.stageChallenges.innerHTML = "";
     info.challenges.forEach((challenge) => {
       const li = document.createElement("li");
@@ -637,6 +639,30 @@
         <p>${escapeHtml(outlook.detail)}</p>
         <em>${escapeHtml(outlook.nextText)}</em>
       </article>
+    `;
+  }
+
+  function renderStageSchedule() {
+    if (!els.stageSchedule || !core.getStageSchedule) return;
+    const items = core.getStageSchedule(state);
+    if (!items.length) {
+      els.stageSchedule.innerHTML = "";
+      return;
+    }
+    els.stageSchedule.innerHTML = `
+      <div class="stage-schedule-head">
+        <span>本阶段公共节点</span>
+        <strong>${items.length}</strong>
+      </div>
+      <div class="stage-schedule-list">
+        ${items.map((item) => `
+          <article class="stage-schedule-item ${escapeHtml(item.tone)}" title="${escapeHtml(item.reason)}">
+            <span>${escapeHtml(item.relative)}</span>
+            <strong>${escapeHtml(item.title)}</strong>
+            <em>${escapeHtml(item.status)}</em>
+          </article>
+        `).join("")}
+      </div>
     `;
   }
 
