@@ -4349,6 +4349,131 @@ label {
   gap: 7px;
 }
 
+.city-badges {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 9px;
+  border: 2px solid #9b7134;
+  background:
+    linear-gradient(90deg, rgba(255, 247, 209, 0.7), rgba(238, 207, 136, 0.38)),
+    #f8e9bd;
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 247, 209, 0.82),
+    2px 2px 0 rgba(45, 40, 31, 0.28);
+}
+
+.city-badges-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.city-badges-head span {
+  display: block;
+  color: var(--deep);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.city-badges-head p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.city-badges-head strong {
+  flex: 0 0 auto;
+  min-width: 36px;
+  padding: 3px 7px;
+  border: 2px solid var(--line-dark);
+  background: #bed0cf;
+  color: #273f49;
+  box-shadow: 2px 2px 0 rgba(45, 40, 31, 0.36);
+  font-size: 0.68rem;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.city-badges-head strong.good {
+  background: #b9d98e;
+  color: #244d35;
+}
+
+.city-badges-head strong.mixed,
+.city-badges-head strong.warn {
+  background: #f1c45f;
+  color: #5b3715;
+}
+
+.city-badge-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 7px;
+}
+
+.city-badge {
+  position: relative;
+  min-width: 0;
+  padding: 7px;
+  border: 2px solid #b89752;
+  background: rgba(255, 241, 200, 0.7);
+  box-shadow: inset 1px 1px 0 rgba(255, 247, 209, 0.88);
+  overflow: hidden;
+}
+
+.city-badge.earned {
+  border-color: var(--good);
+  background: #e3efbd;
+}
+
+.city-badge.watch {
+  border-style: dashed;
+}
+
+.city-badge.info {
+  border-color: var(--blue);
+}
+
+.city-badge.mixed {
+  border-color: #bd7d24;
+}
+
+.city-badge span {
+  display: block;
+  color: #5c3d17;
+  font-size: 0.6rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.city-badge strong {
+  display: block;
+  margin: 3px 0;
+  font-size: 0.74rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.city-badge p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.64rem;
+  font-weight: 800;
+  line-height: 1.32;
+}
+
+.city-badge i {
+  display: block;
+  height: 4px;
+  margin-top: 6px;
+  border: 1px solid #9b7134;
+  background: #bd7d24;
+}
+
 .asset-card {
   position: relative;
   min-width: 0;

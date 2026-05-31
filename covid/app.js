@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v82";
+  const ASSET_VERSION = "v83";
   const core = window.Linjiang72;
 
   let state = null;
@@ -279,6 +279,7 @@
     resolutionsTab: document.getElementById("resolutionsTab"),
     actionFinder: document.getElementById("actionFinder"),
     operationsList: document.getElementById("operationsList"),
+    cityBadges: document.getElementById("cityBadges"),
     assetList: document.getElementById("assetList"),
     newsList: document.getElementById("newsList"),
     historyList: document.getElementById("historyList"),
@@ -518,6 +519,7 @@
     renderEvent();
     renderAlerts();
     renderActionMode();
+    renderCityBadges();
     renderCityAssets();
     renderNews();
     renderHistory();
@@ -677,6 +679,7 @@
     save();
     renderMap();
     renderActionMode();
+    renderCityBadges();
     renderCityAssets();
     renderCrisisBoard();
     const pointLabel = point ? point.label : "补救节点";
@@ -1883,6 +1886,37 @@
       save();
       render();
     });
+  }
+
+  function renderCityBadges() {
+    if (!els.cityBadges || !core.getCityBadges) return;
+    const report = core.getCityBadges(state);
+    const badges = [
+      ...(report.earned || []).slice(0, 5),
+      ...(report.watch || []).slice(0, Math.max(0, 5 - (report.earned || []).slice(0, 5).length)),
+    ];
+    els.cityBadges.innerHTML = `
+      <div class="city-badges-head">
+        <div>
+          <span>${escapeHtml(report.label || "城市档案")}</span>
+          <p>${escapeHtml(report.detail || "")}</p>
+        </div>
+        <strong class="${escapeHtml(report.tone || "info")}">${(report.earned || []).length}/${report.total || 0}</strong>
+      </div>
+      ${badges.length ? `
+        <div class="city-badge-list">
+          ${badges.map((badge) => `
+            <article class="city-badge ${escapeHtml(badge.tone || "info")} ${badge.earned ? "earned" : "watch"}"
+              title="${escapeHtml(badge.hint || badge.detail || "")}">
+              <span>${escapeHtml(badge.category || "档案")} · ${escapeHtml(badge.status || "")}</span>
+              <strong>${escapeHtml(badge.label)}</strong>
+              <p>${escapeHtml(badge.detail || "")}</p>
+              ${badge.earned ? "" : `<i style="width:${Math.max(4, Math.min(100, badge.progress || 0))}%" aria-hidden="true"></i>`}
+            </article>
+          `).join("")}
+        </div>
+      ` : ""}
+    `;
   }
 
   function renderCityAssets() {

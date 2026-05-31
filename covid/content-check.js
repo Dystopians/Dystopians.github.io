@@ -282,6 +282,48 @@ function validateRecoveryLevers() {
   );
 }
 
+function validateCityBadges() {
+  assert(typeof core.getCityBadges === "function", "game-core.js must export getCityBadges.");
+  const state = core.createGame({ difficulty: "normal", seed: 20260617 });
+  const opening = core.getCityBadges(state);
+  assert(opening && Array.isArray(opening.earned) && Array.isArray(opening.watch), "getCityBadges must return earned and watch arrays.");
+  assert(opening.total >= 8, `Expected at least 8 city badge rules, found ${opening.total}.`);
+  const developed = core.createGame({ difficulty: "normal", seed: 20260618 });
+  developed.day = 40;
+  developed.metrics.infection = 28;
+  developed.metrics.hospitalLoad = 42;
+  developed.metrics.supplies = 80;
+  developed.metrics.trust = 78;
+  developed.metrics.economy = 62;
+  developed.metrics.staffFatigue = 34;
+  developed.resources.funds = 46;
+  developed.hidden.detectedRate = 76;
+  developed.hidden.publicMemory = 12;
+  developed.completedProjects.healthCode = true;
+  developed.completedProjects.supplyCorridor = true;
+  developed.completedProjects.triageNetwork = true;
+  developed.flags.operationUses = {
+    campusSentinel: 1,
+    donationCoordination: 1,
+    microFreightPermit: 1,
+  };
+  developed.flags.resolutions.publicReviewBrief = true;
+  developed.history.unshift(
+    { routeLabel: "公开修复", routeKey: "open", routeTone: "good", routeSource: "eventChoice" },
+    { routeLabel: "恢复财政", routeKey: "fastGrantReport", routeTone: "mixed", routeSource: "operation" },
+    { routeLabel: "民生保供", routeKey: "supply", routeTone: "good", routeSource: "eventChoice" },
+    { routeLabel: "医疗优先", routeKey: "triage", routeTone: "good", routeSource: "eventChoice" },
+    { routeLabel: "基层减压", routeKey: "volunteer", routeTone: "good", routeSource: "eventChoice" },
+    { routeLabel: "监测治理", routeKey: "testing", routeTone: "info", routeSource: "eventChoice" },
+  );
+  const report = core.getCityBadges(developed);
+  assert(report.earned.length >= 6, `Developed state should earn several city badges, found ${report.earned.length}.`);
+  assert(
+    [...report.earned, ...report.watch].every((item) => item.id && item.label && item.category && item.detail && item.status && item.tone),
+    "Every city badge needs id, label, category, detail, status, and tone.",
+  );
+}
+
 function validateFiscalEconomyChannels() {
   const required = [
     "fastGrantReport",
@@ -593,6 +635,7 @@ function run() {
   validateCacheVersions();
   validateScenarios();
   validateRecoveryLevers();
+  validateCityBadges();
   validateFiscalEconomyChannels();
   validateCityActionOpportunities();
   validateCityActionUndo();

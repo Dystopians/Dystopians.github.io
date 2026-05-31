@@ -820,6 +820,198 @@
     },
   ];
 
+  function badgeAtLeast(value, target) {
+    return clamp(Math.round((value / target) * 100), 0, 100);
+  }
+
+  function badgeAtMost(value, target) {
+    if (value <= target) return 100;
+    return clamp(Math.round(((100 - value) / (100 - target)) * 100), 0, 100);
+  }
+
+  function badgeWeighted(parts) {
+    const totalWeight = parts.reduce((sum, part) => sum + part.weight, 0) || 1;
+    return clamp(Math.round(parts.reduce((sum, part) => sum + part.value * part.weight, 0) / totalWeight), 0, 100);
+  }
+
+  const CITY_BADGE_RULES = [
+    {
+      id: "monitoring_net",
+      label: "监测成网",
+      category: "监测",
+      tone: "info",
+      detail: "发现率达到 70，且健康码、校园哨点或其他监测工程已经铺开。",
+      hint: "提高发现率并部署健康码或校园哨点。",
+      condition(state) {
+        return state.hidden.detectedRate >= 70
+          && (state.completedProjects.healthCode || (state.flags.operationUses.campusSentinel || 0) > 0);
+      },
+      progress(state) {
+        const asset = state.completedProjects.healthCode || (state.flags.operationUses.campusSentinel || 0) > 0 ? 100 : 0;
+        return badgeWeighted([
+          { value: badgeAtLeast(state.hidden.detectedRate, 70), weight: 7 },
+          { value: asset, weight: 3 },
+        ]);
+      },
+    },
+    {
+      id: "medical_buffer",
+      label: "医疗缓冲带",
+      category: "医疗",
+      tone: "good",
+      detail: "医疗负载保持在 55 以下，并形成方舱、分诊或社区门诊等分流资产。",
+      hint: "降低医疗负载，并完成至少一个分流工程。",
+      condition(state) {
+        return state.metrics.hospitalLoad <= 55
+          && (state.completedProjects.shelterHospital
+            || state.completedProjects.triageNetwork
+            || state.completedProjects.communityClinic);
+      },
+      progress(state) {
+        const asset = state.completedProjects.shelterHospital || state.completedProjects.triageNetwork || state.completedProjects.communityClinic ? 100 : 0;
+        return badgeWeighted([
+          { value: badgeAtMost(state.metrics.hospitalLoad, 55), weight: 6 },
+          { value: asset, weight: 4 },
+        ]);
+      },
+    },
+    {
+      id: "supply_mesh",
+      label: "保供网格",
+      category: "民生",
+      tone: "good",
+      detail: "物资供应达到 75，并有保供专线、捐助统筹或微循环类行动支撑。",
+      hint: "把物资推到 75，并铺设保供或捐助协作渠道。",
+      condition(state) {
+        return state.metrics.supplies >= 75
+          && (state.completedProjects.supplyCorridor
+            || (state.flags.operationUses.donationCoordination || 0) > 0
+            || (state.flags.operationUses.microFreightPermit || 0) > 0);
+      },
+      progress(state) {
+        const asset = state.completedProjects.supplyCorridor
+          || (state.flags.operationUses.donationCoordination || 0) > 0
+          || (state.flags.operationUses.microFreightPermit || 0) > 0 ? 100 : 0;
+        return badgeWeighted([
+          { value: badgeAtLeast(state.metrics.supplies, 75), weight: 7 },
+          { value: asset, weight: 3 },
+        ]);
+      },
+    },
+    {
+      id: "trusted_city",
+      label: "高配合城市",
+      category: "信任",
+      tone: "good",
+      detail: "市民信任达到 75，且公共创伤未进入高位。",
+      hint: "提高信任，并避免公共创伤持续积累。",
+      condition(state) {
+        return state.metrics.trust >= 75 && state.hidden.publicMemory <= 35;
+      },
+      progress(state) {
+        const memoryPenalty = state.hidden.publicMemory > 35 ? 18 : 0;
+        return clamp(Math.round((state.metrics.trust / 75) * 100 - memoryPenalty), 0, 100);
+      },
+    },
+    {
+      id: "worker_breathing_room",
+      label: "基层喘息",
+      category: "执行",
+      tone: "good",
+      detail: "进入第二阶段后，基层疲劳仍低于 45，说明轮换、支援或减压机制有效。",
+      hint: "在第 13 天后把基层疲劳压到 45 以下。",
+      condition(state) {
+        return state.day >= 13 && state.metrics.staffFatigue <= 45;
+      },
+      progress(state) {
+        const dayPart = state.day >= 13 ? 35 : Math.round((state.day / 13) * 35);
+        return badgeWeighted([
+          { value: Math.round((dayPart / 35) * 100), weight: 5 },
+          { value: badgeAtMost(state.metrics.staffFatigue, 45), weight: 5 },
+        ]);
+      },
+    },
+    {
+      id: "fiscal_landing",
+      label: "恢复落地",
+      category: "财政",
+      tone: "mixed",
+      detail: "进入第四阶段后，城市活力达到 55 且资金不低于 35，恢复不只停在口号里。",
+      hint: "第 37 天后，让活力达到 55，并保留 35 以上资金。",
+      condition(state) {
+        return state.day >= 37 && state.metrics.economy >= 55 && state.resources.funds >= 35;
+      },
+      progress(state) {
+        const dayPart = state.day >= 37 ? 100 : Math.round((state.day / 37) * 100);
+        return badgeWeighted([
+          { value: dayPart, weight: 5 },
+          { value: badgeAtLeast(state.metrics.economy, 55), weight: 3 },
+          { value: badgeAtLeast(state.resources.funds, 35), weight: 2 },
+        ]);
+      },
+    },
+    {
+      id: "low_spread_window",
+      label: "低传播窗口",
+      category: "疫情",
+      tone: "info",
+      detail: "进入第二阶段后，感染压力低于 35 且医疗负载未被推上高位。",
+      hint: "第 13 天后，把感染压到 35 以下，并让医疗负载低于 65。",
+      condition(state) {
+        return state.day >= 13 && state.metrics.infection <= 35 && state.metrics.hospitalLoad <= 65;
+      },
+      progress(state) {
+        const dayPart = state.day >= 13 ? 100 : Math.round((state.day / 13) * 100);
+        return badgeWeighted([
+          { value: dayPart, weight: 5 },
+          { value: badgeAtMost(state.metrics.infection, 35), weight: 3 },
+          { value: badgeAtMost(state.metrics.hospitalLoad, 65), weight: 2 },
+        ]);
+      },
+    },
+    {
+      id: "memory_repair",
+      label: "记忆修复",
+      category: "创伤",
+      tone: "good",
+      detail: "进入后半程后，公共创伤仍低于 18，且通过公开复盘或创伤修复路线做过解释。",
+      hint: "第 37 天后控制公共创伤，并通过复盘或创伤修复行动。",
+      condition(state) {
+        return state.day >= 37
+          && state.hidden.publicMemory <= 18
+          && (Boolean(state.flags.resolutions.publicReviewBrief)
+            || (state.history || []).some((entry) => entry.routeLabel === "创伤修复" || entry.routeLabel === "公开修复"));
+      },
+      progress(state) {
+        const dayPart = state.day >= 37 ? 100 : Math.round((state.day / 37) * 100);
+        const routePart = Boolean(state.flags.resolutions.publicReviewBrief)
+          || (state.history || []).some((entry) => entry.routeLabel === "创伤修复" || entry.routeLabel === "公开修复") ? 25 : 0;
+        return badgeWeighted([
+          { value: dayPart, weight: 5 },
+          { value: routePart ? 100 : 0, weight: 2 },
+          { value: badgeAtMost(state.hidden.publicMemory, 18), weight: 3 },
+        ]);
+      },
+    },
+    {
+      id: "mixed_governance",
+      label: "组合治理",
+      category: "路线",
+      tone: "info",
+      detail: "本局已经使用至少 4 条治理路线，避免单一路线把代价堆到同一处。",
+      hint: "在事件、工程和决议里使用至少 4 种不同治理路线。",
+      condition(state) {
+        const profile = getStrategyProfile(state);
+        return (profile.routes || []).filter((route) => route.count > 0).length >= 4 && profile.total >= 6;
+      },
+      progress(state) {
+        const profile = getStrategyProfile(state);
+        const active = (profile.routes || []).filter((route) => route.count > 0).length;
+        return clamp(active * 18 + Math.min(profile.total || 0, 6) * 5, 0, 100);
+      },
+    },
+  ];
+
   const EVENT_IMAGE_BY_KEY = {
     notice: "news-health-code.png",
     market: "news-supply.png",
@@ -6854,6 +7046,49 @@
     return 2;
   }
 
+  function getCityBadges(state) {
+    const badges = CITY_BADGE_RULES.map((rule) => {
+      const earned = Boolean(rule.condition(state));
+      const progress = earned
+        ? 100
+        : clamp(Math.round(rule.progress(state) || 0), 0, 100);
+      return {
+        id: rule.id,
+        label: rule.label,
+        category: rule.category,
+        tone: rule.tone || "info",
+        detail: earned ? rule.detail : rule.hint,
+        hint: rule.hint,
+        progress,
+        earned,
+        status: earned ? "已入档" : `接近 ${progress}%`,
+      };
+    });
+    const earned = badges.filter((item) => item.earned);
+    const watch = badges
+      .filter((item) => !item.earned && item.progress >= 52)
+      .sort((a, b) => b.progress - a.progress || a.label.localeCompare(b.label, "zh-Hans-CN"))
+      .slice(0, 4);
+    const tone = earned.length >= 5
+      ? "good"
+      : earned.length || watch.length
+        ? "info"
+        : "mixed";
+    const detail = earned.length
+      ? `已入档 ${earned.length} 项；继续把接近完成的城市能力补成稳定资产。`
+      : watch.length
+        ? "已有若干能力接近入档，完成对应工程或指标即可点亮。"
+        : "尚未形成稳定城市档案，先铺设监测、保供、医疗或财政节点。";
+    return {
+      label: "城市档案",
+      tone,
+      detail,
+      earned,
+      watch,
+      total: CITY_BADGE_RULES.length,
+    };
+  }
+
   function getSystemReadouts(state) {
     const visible = getVisibleMetrics(state);
     const budget = getCityActionBudget(state);
@@ -6928,6 +7163,7 @@
     getCityActionDirectiveFit,
     getCityActionOpportunities,
     getRecoveryLevers,
+    getCityBadges,
     getSystemReadouts,
     getCityActionBudget,
     getCityActionUndo,
