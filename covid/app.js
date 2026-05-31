@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v114";
+  const ASSET_VERSION = "v115";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -966,7 +966,7 @@
   function renderRecoveryLevers() {
     if (!els.recoveryLevers || !core.getRecoveryLevers) return;
     const report = core.getRecoveryLevers(state);
-    const items = (report.items || []).slice(0, 5);
+    const items = (report.items || []).slice(0, 7);
     const countText = `${report.availableCount || 0}/${report.totalCount || 0}`;
     const headerTone = report.tone || "info";
     if (!items.length) {
@@ -994,6 +994,7 @@
             <span>${escapeHtml(item.status)} · ${escapeHtml(item.pointLabel)} · ${escapeHtml(item.route)}</span>
             <strong>${escapeHtml(item.label)}</strong>
             <em>${escapeHtml(item.impact)}</em>
+            ${renderRecoveryUnlockHint(item)}
           </button>
         `).join("")}
       </div>
@@ -1004,6 +1005,14 @@
         focusRecoveryLever(button.dataset.recoveryPoint, button.dataset.recoveryMode);
       });
     });
+  }
+
+  function renderRecoveryUnlockHint(item) {
+    if (!item || item.bucket === "available") return "";
+    const prefix = item.bucket === "established" ? "已铺垫" : "解锁";
+    const detail = item.detail || item.lockedReason || "";
+    if (!detail) return "";
+    return `<small class="recovery-unlock">${escapeHtml(prefix)}：${escapeHtml(detail)}</small>`;
   }
 
   function focusRecoveryLever(pointId, preferredMode = "operations") {

@@ -996,6 +996,7 @@ function validateBalanceSimCheckMode() {
 function validateActionPreviewCoverage() {
   const appJs = fs.readFileSync(path.join(rootDir, "app.js"), "utf8");
   const coreJs = fs.readFileSync(path.join(rootDir, "game-core.js"), "utf8");
+  const styles = fs.readFileSync(path.join(rootDir, "styles.css"), "utf8");
   [
     "data-crisis-action",
     "data-action-id",
@@ -1006,6 +1007,9 @@ function validateActionPreviewCoverage() {
     assert(appJs.includes(text), `app.js should keep city action preview coverage for ${text}.`);
   });
   assert(coreJs.includes("focusActionId"), "Crisis dashboard should expose focusActionId for previewing primary relief.");
+  assert(appJs.includes("renderRecoveryUnlockHint"), "Recovery lever UI should expose readable unlock hints for locked channels.");
+  assert(appJs.includes("(report.items || []).slice(0, 7)"), "Recovery lever UI should render the expanded seven-item shortlist.");
+  assert(styles.includes(".recovery-unlock"), "Recovery unlock hints need dedicated styling.");
 }
 
 function run() {

@@ -4154,6 +4154,26 @@ label {
   overflow-wrap: anywhere;
 }
 
+.recovery-unlock {
+  display: block;
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px dashed rgba(110, 80, 32, 0.52);
+  color: #75552b;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.32;
+  overflow-wrap: anywhere;
+}
+
+.recovery-item.locked .recovery-unlock {
+  color: #7c3d24;
+}
+
+.recovery-item.established .recovery-unlock {
+  color: #315b4c;
+}
+
 .pending-timeline {
   display: grid;
   gap: 7px;
