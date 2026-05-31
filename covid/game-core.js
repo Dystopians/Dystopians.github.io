@@ -6335,6 +6335,126 @@
     };
   }
 
+  function getChoiceComparison(state) {
+    if (!state || state.ended) return null;
+    const event = getCurrentEvent(state);
+    const choices = event && event.choices ? event.choices : [];
+    if (!choices.length) return null;
+    const rows = choices.map((choice) => buildChoiceComparisonItem(state, choice));
+    const ranked = rows
+      .filter((item) => item.available)
+      .sort((a, b) => b.score - a.score || a.order - b.order);
+    ranked.forEach((item, index) => {
+      item.rank = index + 1;
+      item.recommended = index === 0 && item.tone !== "danger";
+      if (item.recommended && item.tone === "info") {
+        item.tone = "good";
+        item.label = "优先考虑";
+      }
+    });
+    const items = [
+      ...ranked,
+      ...rows.filter((item) => !item.available),
+    ];
+    const recommended = ranked.find((item) => item.recommended);
+    const dangerCount = rows.filter((item) => item.tone === "danger").length;
+    return {
+      label: "三案对比",
+      tone: dangerCount >= 2 ? "warn" : recommended ? "good" : "info",
+      detail: recommended
+        ? `当前最值得先看的方案是“${recommended.choiceLabel}”。`
+        : "三个方案各有明显代价，先看红线和今日目标再取舍。",
+      items,
+    };
+  }
+
+  function buildChoiceComparisonItem(state, choice) {
+    const routeTag = choice.routeTag || getChoiceRouteTag(choice);
+    if (!choice || choice.available === false) {
+      return {
+        choiceId: choice ? choice.id : "",
+        choiceLabel: choice ? choice.label : "不可用选项",
+        routeLabel: routeTag ? routeTag.label : "综合路线",
+        order: 99,
+        score: -999,
+        available: false,
+        tone: "danger",
+        label: "暂不可用",
+        detail: choice ? choice.lockedReason || "当前条件不足。" : "当前条件不足。",
+      };
+    }
+    const trends = getChoiceOutcomePreview(state, choice.id);
+    const risks = getChoiceRiskPreview(state, choice.id);
+    const directiveFit = getChoiceDirectiveFit(state, choice.id);
+    const trendScore = trends.reduce((sum, item) => sum + scoreActionDelta(state, item.metric, item.delta), 0);
+    const riskScore = risks.reduce((sum, item) => {
+      if (item.tone === "danger") return sum - 36;
+      if (item.tone === "warn") return sum - 14;
+      if (item.tone === "good") return sum + 18;
+      return sum;
+    }, 0);
+    const directiveScore = directiveFit
+      ? directiveFit.tone === "good"
+        ? 20
+        : directiveFit.tone === "danger"
+          ? -20
+          : directiveFit.tone === "warn"
+            ? -8
+            : 5
+      : 0;
+    const delayedPenalty = choice.delayed || (choice.effectPreview || []).some((item) => String(item).includes("后")) ? -5 : 0;
+    const score = Math.round(trendScore + riskScore + directiveScore + delayedPenalty);
+    const worstRisk = risks.find((item) => item.tone === "danger") || risks.find((item) => item.tone === "warn");
+    const bestTrend = trends
+      .map((item) => ({ ...item, value: scoreActionDelta(state, item.metric, item.delta) }))
+      .filter((item) => item.value > 0)
+      .sort((a, b) => b.value - a.value)[0];
+    const worstTrend = trends
+      .map((item) => ({ ...item, value: scoreActionDelta(state, item.metric, item.delta) }))
+      .filter((item) => item.value < 0)
+      .sort((a, b) => a.value - b.value)[0];
+    let tone = "info";
+    let label = "备选路线";
+    if (worstRisk && worstRisk.tone === "danger") {
+      tone = "danger";
+      label = "红线风险";
+    } else if (directiveFit && directiveFit.tone === "good") {
+      tone = "good";
+      label = "救今日目标";
+    } else if (score >= 24 && bestTrend) {
+      tone = "good";
+      label = "优先考虑";
+    } else if (score <= -16 || (worstRisk && worstRisk.tone === "warn")) {
+      tone = "warn";
+      label = "代价偏高";
+    } else if (delayedPenalty) {
+      tone = "warn";
+      label = "后续账单";
+    }
+    const details = [];
+    if (directiveFit) details.push(directiveFit.label);
+    if (bestTrend) details.push(`${bestTrend.short} ${signedDelta(bestTrend.delta)}`);
+    if (worstTrend) details.push(`代价 ${worstTrend.short} ${signedDelta(worstTrend.delta)}`);
+    if (worstRisk) details.push(worstRisk.label);
+    return {
+      choiceId: choice.id,
+      choiceLabel: choice.label,
+      routeLabel: routeTag ? routeTag.label : "综合路线",
+      order: choicesOrderHint(choice),
+      score,
+      available: true,
+      tone,
+      label,
+      detail: details.join(" / ") || "这是一条较中性的策略路线。",
+    };
+  }
+
+  function choicesOrderHint(choice) {
+    const id = String(choice && choice.id ? choice.id : "");
+    const match = id.match(/c(\d+)$/);
+    return match ? Number(match[1]) : 50;
+  }
+
   function choiceFitDetail(bestGood, worstBad, fallback) {
     const parts = [];
     if (bestGood) parts.push(`主要收益：${bestGood.label} ${bestGood.delta > 0 ? "+" : ""}${bestGood.delta}`);
@@ -7291,6 +7411,7 @@
     getChoiceRiskPreview,
     getChoiceDirectiveFit,
     getChoiceFit,
+    getChoiceComparison,
     getChoiceRouteTag,
     getEndingOutlook,
     getCityActionOutcomePreview,

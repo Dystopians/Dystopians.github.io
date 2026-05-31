@@ -518,6 +518,7 @@ function validateStageReview() {
 function validateChoiceRiskPreview() {
   assert(typeof core.getChoiceRiskPreview === "function", "game-core.js must export getChoiceRiskPreview.");
   assert(typeof core.getChoiceFit === "function", "game-core.js must export getChoiceFit.");
+  assert(typeof core.getChoiceComparison === "function", "game-core.js must export getChoiceComparison.");
   const state = core.createGame({ difficulty: "normal", seed: 20260602 });
   state.metrics.hospitalLoad = 96;
   state.flags.failureStreaks.medical = 1;
@@ -528,6 +529,17 @@ function validateChoiceRiskPreview() {
   assert(preview.some((item) => item.label && item.tone && item.detail), "Choice risk preview should expose label, tone, and detail under redline pressure.");
   const fit = core.getChoiceFit(state, choice.id);
   assert(fit && fit.label && fit.tone && fit.detail, "getChoiceFit should expose label, tone, and detail for event choices.");
+  const comparison = core.getChoiceComparison(state);
+  assert(comparison && Array.isArray(comparison.items), "getChoiceComparison should return a comparison item list.");
+  assert(comparison.items.length === core.getCurrentEvent(state).choices.length, "Choice comparison should include every current event choice.");
+  assert(
+    comparison.items.every((item) => item.choiceId && item.choiceLabel && item.routeLabel && item.label && item.detail && item.tone),
+    "Every choice comparison item needs choiceId, choiceLabel, routeLabel, label, detail, and tone.",
+  );
+  assert(
+    comparison.items.filter((item) => item.available).some((item) => item.rank === 1),
+    "Choice comparison should rank available choices.",
+  );
 }
 
 function validateDailyDirective() {

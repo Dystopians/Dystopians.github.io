@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v85";
+  const ASSET_VERSION = "v86";
   const core = window.Linjiang72;
 
   let state = null;
@@ -1386,6 +1386,11 @@
     els.eventVisual.dataset.motion = motionForEventImage(event.image, event.imageKey);
     els.eventVisual.dataset.key = event.imageKey || "default";
     els.choiceList.innerHTML = "";
+    const comparison = renderChoiceComparison();
+    if (comparison) {
+      els.choiceList.insertAdjacentHTML("beforeend", comparison);
+      bindChoiceComparison();
+    }
 
     event.choices.forEach((choice) => {
       const button = document.createElement("button");
@@ -1423,6 +1428,48 @@
       button.addEventListener("pointerleave", () => renderTrendPreview());
       button.addEventListener("blur", () => renderTrendPreview());
       els.choiceList.appendChild(button);
+    });
+  }
+
+  function renderChoiceComparison() {
+    if (!core.getChoiceComparison) return "";
+    const comparison = core.getChoiceComparison(state);
+    const items = comparison && comparison.items ? comparison.items : [];
+    if (!items.length) return "";
+    return `
+      <section class="choice-comparison ${escapeHtml(comparison.tone || "info")}" aria-label="三案对比">
+        <div class="choice-comparison-head">
+          <span>${escapeHtml(comparison.label || "三案对比")}</span>
+          <strong>${escapeHtml(comparison.detail || "")}</strong>
+        </div>
+        <div class="choice-comparison-list">
+          ${items.map((item) => `
+            <button class="choice-compare-item ${escapeHtml(item.tone || "info")}${item.recommended ? " recommended" : ""}" type="button"
+              data-compare-choice="${escapeHtml(item.choiceId || "")}" title="${escapeHtml(item.detail || "")}">
+              <span>${escapeHtml(item.recommended ? "建议" : item.rank ? `#${item.rank}` : "锁定")} · ${escapeHtml(item.routeLabel || "综合路线")}</span>
+              <strong>${escapeHtml(item.label || "策略取舍")}</strong>
+              <em>${escapeHtml(item.detail || "")}</em>
+            </button>
+          `).join("")}
+        </div>
+      </section>
+    `;
+  }
+
+  function bindChoiceComparison() {
+    els.choiceList.querySelectorAll("[data-compare-choice]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const choiceId = button.dataset.compareChoice;
+        const target = [...els.choiceList.querySelectorAll(".choice-button")]
+          .find((item) => item.dataset.choiceId === choiceId);
+        if (!target) return;
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        target.classList.add("is-recommended");
+        const event = core.getCurrentEvent(state);
+        const choice = event && event.choices.find((item) => item.id === choiceId);
+        if (choice) renderTrendPreview(choice);
+        setTimeout(() => target.classList.remove("is-recommended"), 1600);
+      });
     });
   }
 
