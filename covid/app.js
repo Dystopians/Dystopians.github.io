@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v48";
+  const ASSET_VERSION = "v50";
   const core = window.Linjiang72;
 
   let state = null;
@@ -999,6 +999,7 @@
         <div class="choice-title"><strong>${escapeHtml(choice.label)}</strong>${tag}</div>
         <p>${escapeHtml(choice.available === false ? choice.lockedReason : choice.description)}</p>
         ${renderChoiceImpacts(choice)}
+        ${renderChoiceForecast(choice)}
         <div class="chips">${chips}</div>
       `;
       button.addEventListener("click", () => {
@@ -1007,6 +1008,12 @@
         save();
         render();
       });
+      button.addEventListener("mouseenter", () => renderTrendPreview(choice));
+      button.addEventListener("pointerenter", () => renderTrendPreview(choice));
+      button.addEventListener("focus", () => renderTrendPreview(choice));
+      button.addEventListener("mouseleave", () => renderTrendPreview());
+      button.addEventListener("pointerleave", () => renderTrendPreview());
+      button.addEventListener("blur", () => renderTrendPreview());
       els.choiceList.appendChild(button);
     });
   }
@@ -1020,6 +1027,22 @@
           <span class="choice-impact ${escapeHtml(impact.tone)}" title="${escapeHtml(impact.detail)}">
             ${escapeHtml(impact.label)}
           </span>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function renderChoiceForecast(choice) {
+    if (choice.available === false || !core.getChoiceOutcomePreview) return "";
+    const items = core.getChoiceOutcomePreview(state, choice.id).slice(0, 4);
+    if (!items.length) return "";
+    return `
+      <div class="choice-forecast" aria-label="结算后预估">
+        <span>结算后</span>
+        ${items.map((item) => `
+          <em class="${item.tone || "neutral"}" title="${escapeHtml(item.detail)}">
+            ${escapeHtml(item.short)} ${item.delta > 0 ? "+" : ""}${item.delta}
+          </em>
         `).join("")}
       </div>
     `;
@@ -1044,17 +1067,25 @@
       .join("");
   }
 
-  function renderTrendPreview() {
+  function renderTrendPreview(choice = null) {
     if (!els.trendPreview || !core.getDailyTrendPreview) return;
-    const items = core.getDailyTrendPreview(state);
+    const useChoice = choice && choice.available !== false && core.getChoiceOutcomePreview;
+    const items = useChoice
+      ? core.getChoiceOutcomePreview(state, choice.id)
+      : core.getDailyTrendPreview(state);
     if (!items.length) {
       els.trendPreview.hidden = true;
       els.trendPreview.innerHTML = "";
       return;
     }
     els.trendPreview.hidden = false;
+    els.trendPreview.classList.toggle("is-choice", Boolean(useChoice));
+    const label = useChoice ? "选后结算" : "今晚趋势";
+    const title = useChoice
+      ? `若选择“${choice.label}”，估算本日完整结算后的主要变化。`
+      : "按当前状态估算今晚自然联动和已到期后续影响，不含你接下来选择的事件策略。";
     els.trendPreview.innerHTML = `
-      <span class="trend-label" title="按当前状态估算今晚自然联动和已到期后续影响，不含你接下来选择的事件策略。">今晚趋势</span>
+      <span class="trend-label" title="${escapeHtml(title)}">${escapeHtml(label)}</span>
       ${items.map((item) => `
         <span class="trend-chip ${item.tone || "neutral"}" title="${escapeHtml(item.detail)}">
           ${escapeHtml(item.short)} ${item.delta > 0 ? "+" : ""}${item.delta}

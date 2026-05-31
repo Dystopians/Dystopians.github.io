@@ -1795,6 +1795,13 @@ label {
   display: none;
 }
 
+.trend-preview.is-choice {
+  border-color: rgba(68, 113, 83, 0.72);
+  background:
+    repeating-linear-gradient(0deg, rgba(238, 246, 203, 0.42) 0 2px, rgba(203, 222, 159, 0.3) 2px 4px),
+    rgba(244, 229, 169, 0.72);
+}
+
 .trend-label,
 .trend-chip {
   min-height: 24px;
@@ -1809,6 +1816,11 @@ label {
   padding: 0 7px;
   background: #8e6330;
   color: #fff1bf;
+}
+
+.trend-preview.is-choice .trend-label {
+  background: #467653;
+  color: #f5ffd6;
 }
 
 .trend-chip {
@@ -2035,6 +2047,60 @@ label {
 .choice-impact.warn {
   border-color: var(--warn);
   background: #f0ca75;
+  color: #583b15;
+}
+
+.choice-forecast {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 7px;
+  padding: 5px;
+  border: 2px solid rgba(123, 76, 24, 0.28);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 245, 210, 0.42) 0 3px, rgba(230, 205, 149, 0.2) 3px 6px),
+    rgba(255, 248, 220, 0.5);
+}
+
+.choice-forecast span,
+.choice-forecast em {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 1px 5px;
+  border: 2px solid rgba(119, 82, 33, 0.48);
+  font-size: 0.62rem;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.choice-forecast span {
+  background: #8e6330;
+  color: #fff1bf;
+}
+
+.choice-forecast em {
+  background: #f4d68a;
+  color: var(--deep);
+}
+
+.choice-forecast em.good {
+  border-color: var(--good);
+  background: #c9dd91;
+  color: #244d35;
+}
+
+.choice-forecast em.bad {
+  border-color: var(--danger);
+  background: #e6a17c;
+  color: #5b1f18;
+}
+
+.choice-forecast em.mixed {
+  border-color: var(--warn);
+  background: #eec673;
   color: #583b15;
 }
 

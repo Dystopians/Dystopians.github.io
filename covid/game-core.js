@@ -4016,18 +4016,40 @@
     if (!state || state.ended) return [];
     const projection = calculateProjectedDailyDeltas(state);
     const rows = [
-      ...Object.entries(projection.metrics).map(([metric, delta]) => buildTrendItem(metric, delta, state.metrics[metric], projection.values.metrics[metric])),
-      ...Object.entries(projection.hidden).map(([metric, delta]) => buildTrendItem(metric, delta, state.hidden[metric], projection.values.hidden[metric])),
-      ...Object.entries(projection.resources).map(([metric, delta]) => buildTrendItem(metric, delta, state.resources[metric], projection.values.resources[metric])),
+      ...Object.entries(projection.metrics).map(([metric, delta]) => buildTrendItem(metric, delta, state.metrics[metric], projection.values.metrics[metric], "baseline")),
+      ...Object.entries(projection.hidden).map(([metric, delta]) => buildTrendItem(metric, delta, state.hidden[metric], projection.values.hidden[metric], "baseline")),
+      ...Object.entries(projection.resources).map(([metric, delta]) => buildTrendItem(metric, delta, state.resources[metric], projection.values.resources[metric], "baseline")),
     ].filter(Boolean);
 
+    return rankTrendItems(rows);
+  }
+
+  function getChoiceOutcomePreview(state, choiceId) {
+    if (!state || state.ended || !choiceId) return [];
+    const event = getCurrentEvent(state);
+    const choice = event && event.choices.find((item) => item.id === choiceId);
+    if (!choice || choice.available === false) return [];
+
+    const projected = clone(state);
+    const before = snapshotValues(projected);
+    resolveChoice(projected, choiceId);
+    const after = snapshotValues(projected);
+    const changes = diffSnapshots(before, after);
+    const rows = Object.entries(changes)
+      .map(([metric, delta]) => buildTrendItem(metric, delta, before[metric], after[metric], "choice"))
+      .filter(Boolean);
+
+    return rankTrendItems(rows);
+  }
+
+  function rankTrendItems(rows) {
     return rows
       .sort((a, b) => b.priority - a.priority)
       .slice(0, 6)
       .map(({ priority, ...item }) => item);
   }
 
-  function buildTrendItem(metric, delta, before, after) {
+  function buildTrendItem(metric, delta, before, after, mode = "baseline") {
     if (!delta) return null;
     const meta = METRIC_META[metric] || RESOURCE_META[metric];
     if (!meta) return null;
@@ -4041,7 +4063,9 @@
       short: meta.short,
       delta,
       tone,
-      detail: `${meta.label}：按当前状态且不计入即将选择的事件策略，今晚结算预计 ${before} → ${after}。`,
+      detail: mode === "choice"
+        ? `${meta.label}：若选择该策略，本日完整结算预计 ${before} → ${after}。`
+        : `${meta.label}：按当前状态且不计入即将选择的事件策略，今晚结算预计 ${before} → ${after}。`,
       priority: (bad ? 80 : good ? 45 : 55) + abs * 8 + (["infection", "hospitalLoad", "staffFatigue", "funds"].includes(metric) ? 6 : 0),
     };
   }
@@ -4367,6 +4391,7 @@
     getRiskBand,
     getDailyPressureSummary,
     getDailyTrendPreview,
+    getChoiceOutcomePreview,
     getChoiceRouteTag,
     getSystemReadouts,
     getCityActionBudget,
