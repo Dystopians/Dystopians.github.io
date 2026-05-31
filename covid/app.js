@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v51";
+  const ASSET_VERSION = "v52";
   const core = window.Linjiang72;
 
   let state = null;
@@ -1229,10 +1229,11 @@
         <em class="${budgetClass}" title="${escapeHtml(budget.detail)}">${escapeHtml(budgetText)}</em>
       </div>
       <div class="action-finder-list">
-        ${cityActions.slice(0, 6).map(({ point, item, mode, kind }) => `
+        ${cityActions.slice(0, 6).map(({ point, item, mode, kind, priority }) => `
           <button class="action-finder-item" type="button" data-point-id="${point.id}" data-mode="${mode}">
-            <span>${escapeHtml(kind)} · ${escapeHtml(point.label)}</span>
+            <span>${escapeHtml(kind)} · ${escapeHtml(point.label)}${priority >= 24 ? " · 优先" : ""}</span>
             <strong>${escapeHtml(item.label)}</strong>
+            <div class="action-finder-chips">${renderFinderChips(item)}</div>
           </button>
         `).join("")}
       </div>
@@ -1264,16 +1265,67 @@
             const key = `${group.mode}:${item.id}`;
             if (seen.has(key)) return;
             seen.add(key);
-            actions.push({ point, item, mode: group.mode, kind: group.kind });
+            actions.push({
+              point,
+              item,
+              mode: group.mode,
+              kind: group.kind,
+              priority: cityActionPriority(item, mapPoint.id),
+            });
           });
       });
     });
     return actions.sort((a, b) => {
-      if (a.point.id === state.selectedMapPointId && b.point.id !== state.selectedMapPointId) return -1;
-      if (b.point.id === state.selectedMapPointId && a.point.id !== state.selectedMapPointId) return 1;
+      if (b.priority !== a.priority) return b.priority - a.priority;
       if (a.mode !== b.mode) return a.mode === "operations" ? -1 : 1;
       return a.item.label.localeCompare(b.item.label, "zh-Hans-CN");
     });
+  }
+
+  function cityActionPriority(item, pointId) {
+    const effects = typeof item.effects === "function" ? item.effects(state) : item.effects || {};
+    const hidden = typeof item.hidden === "function" ? item.hidden(state) : item.hidden || {};
+    const resources = item.resources || {};
+    const m = state.metrics;
+    const h = state.hidden;
+    const r = state.resources;
+    let score = pointId === state.selectedMapPointId ? 2 : 0;
+    const addRelief = (metric, delta, pressure, weight = 1) => {
+      if (!delta) return;
+      const meta = core.METRIC_META[metric] || core.RESOURCE_META[metric];
+      if (!meta) return;
+      const good = meta.direction === "good" ? delta > 0 : meta.direction === "danger" ? delta < 0 : false;
+      const bad = meta.direction === "good" ? delta < 0 : meta.direction === "danger" ? delta > 0 : false;
+      if (good) score += Math.abs(delta) * pressure * weight;
+      if (bad) score -= Math.abs(delta) * Math.max(1, 5 - pressure);
+    };
+    addRelief("infection", effects.infection, m.infection >= 75 ? 5 : m.infection >= 55 ? 3 : 1, 1.15);
+    addRelief("hospitalLoad", effects.hospitalLoad, m.hospitalLoad >= 80 ? 5 : m.hospitalLoad >= 65 ? 3 : 1, 1.2);
+    addRelief("supplies", effects.supplies, m.supplies <= 30 ? 5 : m.supplies <= 45 ? 3 : 1, 1.05);
+    addRelief("trust", effects.trust, m.trust <= 35 ? 5 : m.trust <= 55 ? 3 : 1, 1.05);
+    addRelief("economy", effects.economy, m.economy <= 35 ? 5 : m.economy <= 55 ? 3 : 1, 1);
+    addRelief("staffFatigue", effects.staffFatigue, m.staffFatigue >= 75 ? 5 : m.staffFatigue >= 60 ? 3 : 1, 1.15);
+    addRelief("detectedRate", hidden.detectedRate, h.detectedRate <= 45 ? 4 : 1, 0.9);
+    addRelief("publicMemory", hidden.publicMemory, h.publicMemory >= 45 ? 4 : 1, 0.7);
+    addRelief("funds", resources.funds, r.funds <= 20 ? 5 : r.funds <= 40 ? 3 : 1, 1.15);
+    return Math.round(score);
+  }
+
+  function renderFinderChips(item) {
+    const effects = typeof item.effects === "function" ? item.effects(state) : item.effects || {};
+    const hidden = typeof item.hidden === "function" ? item.hidden(state) : item.hidden || {};
+    const resources = item.resources || {};
+    const all = [
+      ...Object.entries(resources).map(([metric, delta]) => [metric, delta, core.RESOURCE_META[metric]]),
+      ...Object.entries(effects).map(([metric, delta]) => [metric, delta, core.METRIC_META[metric]]),
+      ...Object.entries(hidden).map(([metric, delta]) => [metric, delta, core.METRIC_META[metric]]),
+    ];
+    return all
+      .filter(([, delta, meta]) => delta && meta)
+      .sort(([metricA, deltaA], [metricB, deltaB]) => changePriority(metricB, deltaB) - changePriority(metricA, deltaA))
+      .slice(0, 4)
+      .map(([metric, delta, meta]) => `<em class="${changeClass(metric, delta)}" title="${escapeHtml(meta.description)}">${meta.short} ${delta > 0 ? "+" : ""}${delta}</em>`)
+      .join("");
   }
 
   function renderCityActionBudget() {
