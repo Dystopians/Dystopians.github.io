@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v106";
+  const ASSET_VERSION = "v107";
   const core = window.Linjiang72;
 
   let state = null;
@@ -701,15 +701,16 @@
           <p>${escapeHtml(risk.metricShort)} ${risk.value} · ${escapeHtml(risk.thresholdText)}</p>
           <em title="${escapeHtml(risk.detail)}">${escapeHtml(risk.hint)}</em>
           ${renderCrisisReliefActions(risk)}
-          ${risk.tone === "good" ? "" : `<button class="crisis-jump" type="button" data-crisis-target="${escapeHtml(risk.focusPointId)}" data-crisis-mode="${escapeHtml(risk.focusMode)}">
+          ${risk.tone === "good" ? "" : `<button class="crisis-jump" type="button" data-crisis-target="${escapeHtml(risk.focusPointId)}" data-crisis-mode="${escapeHtml(risk.focusMode)}" data-crisis-action="${escapeHtml(risk.focusActionId || "")}">
             ${escapeHtml(risk.focusLabel || "定位补救")}
           </button>`}
         </article>
       `)
       .join("");
     els.crisisList.querySelectorAll("[data-crisis-target]").forEach((button) => {
+      bindCityActionPreview(button, () => button.dataset.crisisMode, () => button.dataset.crisisAction);
       button.addEventListener("click", () => {
-        focusCrisisTarget(button.dataset.crisisTarget, button.dataset.crisisMode);
+        focusCrisisTarget(button.dataset.crisisTarget, button.dataset.crisisMode, button.dataset.crisisAction);
       });
     });
   }
@@ -723,7 +724,7 @@
     return `
       <div class="crisis-relief-list" aria-label="${escapeHtml(risk.label)}候选补救">
         ${actions.map((action) => `
-          <button class="crisis-relief" type="button" data-crisis-target="${escapeHtml(action.pointId)}" data-crisis-mode="${escapeHtml(action.mode)}">
+          <button class="crisis-relief" type="button" data-crisis-target="${escapeHtml(action.pointId)}" data-crisis-mode="${escapeHtml(action.mode)}" data-crisis-action="${escapeHtml(action.id)}">
             <span>${escapeHtml(action.kind)} · ${escapeHtml(action.pointLabel)}</span>
             <strong>${escapeHtml(action.label)}</strong>
             <em>${escapeHtml(action.effectText)}</em>
@@ -733,7 +734,7 @@
     `;
   }
 
-  function focusCrisisTarget(pointId, preferredMode = "operations") {
+  function focusCrisisTarget(pointId, preferredMode = "operations", actionId = "") {
     if (!pointId) return;
     core.selectMapPoint(state, pointId);
     const point = core.getMapPoint(state, pointId);
@@ -744,6 +745,7 @@
     renderCityBadges();
     renderCityAssets();
     renderCrisisBoard();
+    previewCityAction(actionMode, actionId);
     const pointLabel = point ? point.label : "补救节点";
     els.mapHint.textContent = `已定位：${pointLabel} · 查看${actionMode === "resolutions" ? "决议" : "工程"}`;
     if (els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
@@ -1335,7 +1337,7 @@
       ? `
         <div class="map-ready-list" aria-label="当前节点可用行动">
           ${availableItems.slice(0, 4).map((item) => `
-            <button class="map-ready-item" type="button" data-mode="${item.kind === "工程" ? "operations" : "resolutions"}">
+            <button class="map-ready-item" type="button" data-mode="${item.kind === "工程" ? "operations" : "resolutions"}" data-action-id="${escapeHtml(item.id)}">
               <span>${escapeHtml(item.kind)}</span>
               <strong>${escapeHtml(item.label)}</strong>
             </button>
@@ -1356,9 +1358,11 @@
       </div>
     `;
     els.mapInspector.querySelectorAll(".map-ready-item").forEach((button) => {
+      bindCityActionPreview(button, () => button.dataset.mode, () => button.dataset.actionId);
       button.addEventListener("click", () => {
         actionMode = button.dataset.mode === "resolutions" ? "resolutions" : "operations";
         renderActionMode();
+        previewCityAction(actionMode, button.dataset.actionId);
       });
     });
   }

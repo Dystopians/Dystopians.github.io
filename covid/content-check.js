@@ -836,6 +836,21 @@ function validateBalanceSimCheckMode() {
   });
 }
 
+function validateActionPreviewCoverage() {
+  const appJs = fs.readFileSync(path.join(rootDir, "app.js"), "utf8");
+  const coreJs = fs.readFileSync(path.join(rootDir, "game-core.js"), "utf8");
+  [
+    "data-crisis-action",
+    "data-action-id",
+    "bindCityActionPreview(button, () => button.dataset.crisisMode",
+    "bindCityActionPreview(button, () => button.dataset.mode, () => button.dataset.actionId)",
+    "previewCityAction(actionMode, button.dataset.actionId)",
+  ].forEach((text) => {
+    assert(appJs.includes(text), `app.js should keep city action preview coverage for ${text}.`);
+  });
+  assert(coreJs.includes("focusActionId"), "Crisis dashboard should expose focusActionId for previewing primary relief.");
+}
+
 function run() {
   const { eventIds, phaseCounts } = validateEventCorpus();
   validateSchedule(eventIds);
@@ -859,6 +874,7 @@ function run() {
   validateEndingStrategyReview();
   validateEndingOutlook();
   validateBalanceSimCheckMode();
+  validateActionPreviewCoverage();
 
   const summary = {
     ok: failures.length === 0,

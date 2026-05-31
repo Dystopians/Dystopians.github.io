@@ -3540,6 +3540,7 @@
         reliefActions,
         focusPointId: primaryRelief ? primaryRelief.pointId : item.focusPointId,
         focusMode: primaryRelief ? primaryRelief.mode : item.focusMode,
+        focusActionId: primaryRelief ? primaryRelief.id : "",
         focusLabel: primaryRelief ? `定位：${primaryRelief.label}` : item.focusLabel,
       };
     });
