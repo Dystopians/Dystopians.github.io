@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v31";
+  const ASSET_VERSION = "v32";
   const core = window.Linjiang72;
 
   let state = null;
@@ -93,6 +93,7 @@
     mapHint: document.getElementById("mapHint"),
     eventType: document.getElementById("eventType"),
     eventTitle: document.getElementById("eventTitle"),
+    pressureSummary: document.getElementById("pressureSummary"),
     eventBody: document.getElementById("eventBody"),
     eventSource: document.getElementById("eventSource"),
     eventSourceNote: document.getElementById("eventSourceNote"),
@@ -596,6 +597,7 @@
     const event = core.getCurrentEvent(state);
     els.eventType.textContent = event.type === "buffer" ? "阶段缓冲" : "今日事件";
     els.eventTitle.textContent = event.title;
+    renderPressureSummary();
     els.eventBody.textContent = event.description || event.body;
     if (event.sourceNote) {
       els.eventSource.hidden = false;
@@ -620,8 +622,12 @@
       const chips = choice.effectPreview
         .map((item) => `<span class="chip ${chipClassForPreview(item)}" title="${escapeHtml(previewChipTitle(item))}">${escapeHtml(item)}</span>`)
         .join("");
+      const routeTag = choice.routeTag || (core.getChoiceRouteTag ? core.getChoiceRouteTag(choice) : null);
+      const tag = routeTag
+        ? `<span class="route-tag ${routeTag.tone || "neutral"}">${escapeHtml(routeTag.label)}</span>`
+        : "";
       button.innerHTML = `
-        <strong>${escapeHtml(choice.label)}</strong>
+        <div class="choice-title"><strong>${escapeHtml(choice.label)}</strong>${tag}</div>
         <p>${escapeHtml(choice.available === false ? choice.lockedReason : choice.description)}</p>
         <div class="chips">${chips}</div>
       `;
@@ -633,6 +639,25 @@
       });
       els.choiceList.appendChild(button);
     });
+  }
+
+  function renderPressureSummary() {
+    if (!els.pressureSummary || !core.getDailyPressureSummary) return;
+    const items = core.getDailyPressureSummary(state);
+    if (!items.length) {
+      els.pressureSummary.hidden = true;
+      els.pressureSummary.innerHTML = "";
+      return;
+    }
+    els.pressureSummary.hidden = false;
+    els.pressureSummary.innerHTML = items
+      .map((item) => `
+        <span class="pressure-chip ${item.tone || "info"}" title="${escapeHtml(item.detail)}">
+          <strong>${escapeHtml(item.label)}</strong>
+          <em>${escapeHtml(item.detail)}</em>
+        </span>
+      `)
+      .join("");
   }
 
   function handleMapTargetActivation(event) {

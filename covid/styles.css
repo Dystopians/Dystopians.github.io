@@ -1328,6 +1328,64 @@ label {
   animation: eventBlink 1.8s steps(3) infinite;
 }
 
+.pressure-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 10px;
+}
+
+.pressure-chip {
+  display: inline-grid;
+  max-width: min(100%, 260px);
+  min-height: 30px;
+  padding: 4px 7px;
+  border: 2px solid #b89752;
+  background:
+    linear-gradient(90deg, rgba(255, 242, 201, 0.78), rgba(234, 209, 154, 0.86));
+  color: var(--deep);
+  box-shadow: 2px 2px 0 rgba(95, 75, 42, 0.32);
+}
+
+.pressure-chip strong,
+.pressure-chip em {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pressure-chip strong {
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.pressure-chip em {
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-style: normal;
+  line-height: 1.25;
+}
+
+.pressure-chip.danger {
+  border-color: var(--danger);
+  background: #eaa07c;
+}
+
+.pressure-chip.warn {
+  border-color: var(--warn);
+  background: #f0ca75;
+}
+
+.pressure-chip.good {
+  border-color: var(--good);
+  background: #b9d98e;
+}
+
+.pressure-chip.info {
+  border-color: var(--blue);
+  background: #bed0cf;
+}
+
 #eventBody {
   margin: 0;
   color: var(--deep);
@@ -1415,6 +1473,58 @@ label {
 
 .choice-button:disabled::before {
   background: #766d5d;
+}
+
+.choice-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.choice-title strong {
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.route-tag {
+  flex: 0 0 auto;
+  max-width: 96px;
+  padding: 2px 5px;
+  border: 2px solid #b89752;
+  background: #ead19a;
+  color: var(--deep);
+  font-size: 0.66rem;
+  font-weight: 900;
+  line-height: 1.2;
+  text-align: center;
+  box-shadow: 1px 1px 0 rgba(95, 75, 42, 0.35);
+  overflow-wrap: anywhere;
+}
+
+.route-tag.good {
+  border-color: var(--good);
+  background: #b9d98e;
+  color: #234522;
+}
+
+.route-tag.danger {
+  border-color: var(--danger);
+  background: #eaa07c;
+  color: #5b1f18;
+}
+
+.route-tag.mixed {
+  border-color: var(--warn);
+  background: #f0ca75;
+  color: #583b15;
+}
+
+.route-tag.info {
+  border-color: var(--blue);
+  background: #bed0cf;
+  color: #273f49;
 }
 
 .choice-button strong,
@@ -2052,6 +2162,14 @@ label {
 
   .choice-button {
     min-height: 0;
+  }
+
+  .pressure-chip {
+    max-width: 100%;
+  }
+
+  .choice-title {
+    flex-wrap: wrap;
   }
 
   .city-map {

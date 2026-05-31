@@ -418,7 +418,7 @@
       icon: "scissors",
       intent: "用行政命令砍掉流程层级",
       summary: "快速降低疲劳，但显著损害信任、发现率和公共记忆。",
-      maxUses: 2,
+      maxUses: 1,
       compute() {
         return {
           effects: { staffFatigue: -7, trust: -6 },
@@ -451,10 +451,10 @@
   }
 
   const CHOICE_PROFILES = {
-    open: p({}, { trust: 3, infection: 1 }, { detectedRate: 3, publicMemory: -1 }, { transparencyBonus: 1 }, {
+    open: p({}, { trust: 1, infection: 1 }, { detectedRate: 2, publicMemory: -1 }, { transparencyBonus: 1 }, {
       axis: "公开沟通",
       risk: "追问与短期恐慌",
-      delayed: { delay: 2, label: "公开后的追问", effects: { trust: -1 }, condition: "hospitalAtLeast80" },
+      delayed: { delay: 2, label: "公开后的追问", effects: { trust: -2 }, condition: "hospitalAtLeast80" },
     }),
     hard: p({}, { infection: -2, trust: -5, staffFatigue: 2 }, { policyStrictness: 5, publicMemory: 2 }, {}, {
       axis: "强制秩序",
@@ -466,17 +466,17 @@
       risk: "采样与复核挤压",
       delayed: { delay: 2, label: "检测排队压力", effects: { staffFatigue: 1 }, condition: "staffFatigueAbove75" },
     }),
-    medical: p({ funds: -5 }, { hospitalLoad: -4, supplies: -3, staffFatigue: 2 }, { publicMemory: 1 }, { medicalRelief: 1 }, {
+    medical: p({ funds: -5 }, { hospitalLoad: -7, supplies: -3, staffFatigue: 2 }, { publicMemory: 1 }, { medicalRelief: 1 }, {
       axis: "医疗救急",
       risk: "物资和人手透支",
       delayed: { delay: 2, label: "医疗扩容账单", resources: { funds: -2 }, effects: { staffFatigue: 1 } },
     }),
-    triage: p({ funds: -3 }, { hospitalLoad: -3, trust: 2, staffFatigue: 1 }, { detectedRate: 1 }, { medicalRelief: 1 }, {
+    triage: p({ funds: -3 }, { hospitalLoad: -6, trust: 2, staffFatigue: 1 }, { detectedRate: 1 }, { medicalRelief: 1 }, {
       axis: "分级调度",
       risk: "标准争议",
       delayed: { delay: 3, label: "分诊标准被复盘", effects: { trust: -1 }, condition: "trustBelow45" },
     }),
-    supply: p({ funds: -4 }, { supplies: 5, trust: 1, staffFatigue: 2, economy: -1 }, {}, { supplyRecovery: 1 }, {
+    supply: p({ funds: -4 }, { supplies: 4, trust: 1, staffFatigue: 2, economy: -1 }, {}, { supplyRecovery: 1 }, {
       axis: "保供补位",
       risk: "配送和仓储消耗",
       delayed: { delay: 2, label: "配送队疲劳回流", effects: { staffFatigue: 1 }, condition: "staffFatigueAbove75" },
@@ -486,7 +486,7 @@
       risk: "公平性质疑",
       delayed: { delay: 3, label: "外包合同争议", effects: { trust: -2 }, condition: "trustBelow45" },
     }),
-    rest: p({ funds: -3 }, { staffFatigue: -9, hospitalLoad: 2, supplies: -2, trust: 1 }, {}, { restPolicyBonus: 1 }, {
+    rest: p({ funds: -3 }, { staffFatigue: -8, hospitalLoad: 2, supplies: -2, trust: 1 }, {}, { restPolicyBonus: 1 }, {
       axis: "轮换减压",
       risk: "服务窗口变薄",
       delayed: { delay: 2, label: "轮休稳定生效", effects: { staffFatigue: -2 }, condition: "trustAtLeast60" },
@@ -511,7 +511,7 @@
       risk: "误判和申诉积压",
       delayed: { delay: 3, label: "申诉队列堆积", effects: { trust: -2 }, condition: "trustBelow45" },
     }),
-    audit: p({ funds: -2 }, { trust: 3, economy: -2 }, { publicMemory: -1 }, { transparencyBonus: 1 }, {
+    audit: p({ funds: -2 }, { trust: 1, economy: -2 }, { publicMemory: -1 }, { transparencyBonus: 1 }, {
       axis: "审计留痕",
       risk: "一线速度放慢",
       delayed: { delay: 2, label: "审计材料补交", effects: { staffFatigue: 1 } },
@@ -526,7 +526,7 @@
       risk: "公平性争议",
       delayed: { delay: 3, label: "白名单外泄", effects: { trust: -2 }, condition: "trustBelow45" },
     }),
-    compensate: p({ funds: -7 }, { trust: 4, economy: -1, staffFatigue: 1 }, { publicMemory: -2 }, { transparencyBonus: 1 }, {
+    compensate: p({ funds: -7 }, { trust: 3, economy: -1, staffFatigue: 1 }, { publicMemory: -2 }, { transparencyBonus: 1 }, {
       axis: "补偿安抚",
       risk: "资金消耗",
       delayed: { delay: 3, label: "补偿缺口", resources: { funds: -2 }, condition: "fundsBelow20" },
@@ -541,7 +541,7 @@
       risk: "培训和补贴压力",
       delayed: { delay: 2, label: "志愿者磨合", effects: { staffFatigue: 1 } },
     }),
-    supportTeam: p({ funds: -5 }, { staffFatigue: -9, supplies: -2, trust: -3 }, { publicMemory: 1 }, { restPolicyBonus: 1 }, {
+    supportTeam: p({ funds: -5 }, { staffFatigue: -8, supplies: -2, trust: -3 }, { publicMemory: 1 }, { restPolicyBonus: 1 }, {
       axis: "外部支援",
       risk: "磨合和信任代价",
       delayed: { delay: 2, label: "支援队磨合", effects: { trust: -1 }, condition: "trustBelow45" },
@@ -551,7 +551,7 @@
       risk: "信任伤痕",
       delayed: { delay: 3, label: "口径冲突回流", effects: { trust: -2 }, condition: "trustBelow40" },
     }),
-    medicine: p({ funds: -4 }, { hospitalLoad: -2, supplies: -5, trust: 3, staffFatigue: 3 }, {}, { medicalRelief: 1 }, {
+    medicine: p({ funds: -4 }, { hospitalLoad: -4, supplies: -5, trust: 3, staffFatigue: 3 }, {}, { medicalRelief: 1 }, {
       axis: "重点救治",
       risk: "药品与配送消耗",
       delayed: { delay: 2, label: "慢病药库存告急", effects: { supplies: -2 }, condition: "suppliesBelow25" },
@@ -576,6 +576,41 @@
       risk: "复盘牵动旧伤",
       delayed: { delay: 3, label: "复盘后的释压", effects: { trust: 1, staffFatigue: -1 } },
     }),
+  };
+
+  const ROUTE_TAGS = {
+    open: { label: "公开修复", tone: "good" },
+    audit: { label: "公开修复", tone: "good" },
+    messageControl: { label: "口径压制", tone: "danger" },
+    delay: { label: "口径压制", tone: "danger" },
+    hard: { label: "高压止血", tone: "danger" },
+    quietClose: { label: "高压止血", tone: "danger" },
+    rest: { label: "基层减压", tone: "good" },
+    protectWorkers: { label: "基层减压", tone: "good" },
+    volunteer: { label: "基层减压", tone: "good" },
+    community: { label: "基层减压", tone: "mixed" },
+    compress: { label: "基层减压", tone: "mixed" },
+    supply: { label: "民生保供", tone: "good" },
+    medicine: { label: "民生保供", tone: "good" },
+    compensate: { label: "民生保供", tone: "good" },
+    outsource: { label: "民生保供", tone: "mixed" },
+    medical: { label: "医疗优先", tone: "good" },
+    triage: { label: "医疗优先", tone: "good" },
+    shelter: { label: "医疗优先", tone: "good" },
+    testing: { label: "监测治理", tone: "info" },
+    digital: { label: "监测治理", tone: "info" },
+    code: { label: "监测治理", tone: "info" },
+    reopen: { label: "恢复财政", tone: "mixed" },
+    whiteList: { label: "恢复财政", tone: "mixed" },
+    finance: { label: "恢复财政", tone: "mixed" },
+    memory: { label: "创伤修复", tone: "good" },
+    mutualAid: { label: "创伤修复", tone: "good" },
+    dynamicRepair: { label: "应急托底", tone: "info" },
+    dynamicRelease: { label: "基层减压", tone: "good" },
+    dynamicConcentrate: { label: "高压止血", tone: "danger" },
+    fallback_livelihood: { label: "民生保供", tone: "good" },
+    fallback_control: { label: "高压止血", tone: "danger" },
+    fallback_relief: { label: "基层减压", tone: "good" },
   };
 
   const EVENT_IMAGE_BY_KEY = {
@@ -639,6 +674,7 @@
       strategyKey: choice.profile,
       label: choice.label,
       description,
+      routeTag: getChoiceRouteTag({ strategyKey: choice.profile }),
       resources: removeZeroes(mergeEffects(profile.resources, choice.resources)),
       effects: removeZeroes(mergeEffects(profile.effects, choice.effects)),
       hidden: removeZeroes(mergeEffects(profile.hidden, choice.hidden)),
@@ -1078,13 +1114,13 @@
       label: "方舱医院建设",
       location: "stadium",
       description: "征用体育馆建设临时收治空间，4 天后启用。强力缓解医疗负载，但会消耗资金、物资和基层力量。",
-      resources: { funds: -18 },
-      effects: { supplies: -8, economy: -3, staffFatigue: 7 },
+      resources: { funds: -20 },
+      effects: { supplies: -9, economy: -4, staffFatigue: 8 },
       hidden: { publicMemory: 2, policyStrictness: 2 },
       delayed: {
         delay: 4,
         label: "方舱启用",
-        effects: { hospitalLoad: -18, trust: 2 },
+        effects: { hospitalLoad: -14, trust: 1 },
         hidden: { publicMemory: 1 },
         completeProject: "shelterHospital",
       },
@@ -1098,12 +1134,12 @@
       label: "健康码部署",
       location: "road",
       description: "部署数字通行与申诉系统，3 天后提高发现率和分区治理能力。会带来短期信任争议和活力损耗。",
-      resources: { funds: -12 },
+      resources: { funds: -15 },
       effects(state) {
         return {
-          trust: state.metrics.trust < 45 ? -5 : -2,
+          trust: state.metrics.trust < 45 ? -6 : -3,
           economy: -3,
-          staffFatigue: 3,
+          staffFatigue: 4,
         };
       },
       hidden(state) {
@@ -1116,8 +1152,8 @@
       delayed: {
         delay: 3,
         label: "健康码试运行",
-        effects: { infection: -3, trust: 1 },
-        hidden: { detectedRate: 12 },
+        effects: { infection: -2, trust: 1 },
+        hidden: { detectedRate: 8 },
         completeProject: "healthCode",
       },
       maxUses: 1,
@@ -1131,32 +1167,38 @@
       location: "market",
       description: "用资金换取货运白名单和稳定配送线路。能补物资和活力，但增加短期流动风险。",
       resources: { funds: -14 },
-      effects: { supplies: 12, economy: 4, trust: 2, infection: 1, staffFatigue: 2 },
+      effects: { supplies: 9, economy: 3, trust: 1, infection: 1, staffFatigue: 3 },
       hidden: { policyStrictness: -2 },
       delayed: {
         delay: 2,
         label: "保供专线稳定",
-        effects: { supplies: 5, trust: 2 },
+        effects: { supplies: 3, trust: 1 },
         hidden: {},
         completeProject: "supplyCorridor",
       },
-      maxUses: 2,
+      maxUses: 1,
+      conditionText: "需要物资≤55、管控≥45，或进入第18天后。",
+      condition(state) {
+        return state.metrics.supplies <= 55
+          || state.hidden.policyStrictness >= 45
+          || state.day >= 18;
+      },
     },
     triageNetwork: {
       label: "分级诊疗网络",
       location: "hospital",
       description: "建立社区转诊与分级分流。适合医院或感染压力已经抬头时使用，能降低医院负载，但需要医护培训和信息沟通。",
       resources: { funds: -10 },
-      effects: { hospitalLoad: -7, trust: 2, staffFatigue: 4, supplies: -3 },
+      effects: { hospitalLoad: -4, trust: 1, staffFatigue: 5, supplies: -3 },
       hidden: { detectedRate: 3 },
       delayed: {
         delay: 2,
         label: "分诊流程磨合",
-        effects: { hospitalLoad: -4, staffFatigue: -1 },
+        effects: { hospitalLoad: -2, staffFatigue: -1 },
         hidden: {},
         completeProject: "triageNetwork",
       },
-      maxUses: 2,
+      maxUses: 1,
       conditionText: "需要医疗负载≥38，或感染压力≥45，或进入第25天后。",
       condition(state) {
         return state.metrics.hospitalLoad >= 38 || state.metrics.infection >= 45 || state.day >= 25;
@@ -1166,7 +1208,7 @@
       label: "慢病药品直送",
       location: "residents",
       description: "面向独居老人和慢病患者建立药品配送清单。提升信任、降低创伤，但消耗物资和配送人手。",
-      resources: { funds: -7 },
+      resources: { funds: -8 },
       effects: { trust: 7, supplies: -6, staffFatigue: 4 },
       hidden: { publicMemory: -3 },
       delayed: {
@@ -1182,15 +1224,15 @@
       location: "volunteers",
       description: "为基层、医护和居民开通减压热线与轮换支持。适合疲劳、医疗或创伤已经显形时使用；过早铺设会被闲置，不能当成开局白拿的减压按钮。",
       resources: { funds: -7 },
-      effects: { staffFatigue: -8, trust: 3, hospitalLoad: 1 },
+      effects: { staffFatigue: -6, trust: 2, hospitalLoad: 2 },
       hidden: { publicMemory: -2 },
       delayed: {
         delay: 2,
         label: "减压机制生效",
-        effects: { staffFatigue: -4, trust: 1 },
+        effects: { staffFatigue: -3, trust: 1 },
         hidden: {},
       },
-      maxUses: 2,
+      maxUses: 1,
       conditionText: "需要基层疲劳≥42、医疗负载≥65、信任≤45，或公共创伤≥18。",
       condition(state) {
         return state.metrics.staffFatigue >= 42
@@ -1212,17 +1254,17 @@
         effects: { infection: -2 },
         hidden: { detectedRate: 2 },
       },
-      maxUses: 2,
+      maxUses: 1,
     },
     factoryClosedLoop: {
       label: "工厂闭环复工",
       location: "factory",
       description: "以闭环通勤和厂区检测恢复部分产能。恢复活力和资金，但若发现率不足会推高感染。",
-      resources: { funds: -6 },
+      resources: { funds: -8 },
       effects(state) {
         return {
-          economy: 10,
-          infection: state.hidden.detectedRate < 55 ? 4 : 2,
+          economy: 9,
+          infection: state.hidden.detectedRate < 55 ? 5 : 3,
           trust: 1,
           staffFatigue: 3,
         };
@@ -1231,26 +1273,33 @@
       delayed: {
         delay: 2,
         label: "产能恢复",
-        resources: { funds: 8 },
-        effects: { economy: 4, supplies: 2 },
+        resources: { funds: 5 },
+        effects: { economy: 3, supplies: 1 },
         hidden: {},
       },
-      maxUses: 3,
+      maxUses: 1,
+      conditionText: "需要发现率≥55，且活力≤60或资金≤35；第37天后可放宽执行。",
+      condition(state) {
+        return (state.hidden.detectedRate >= 55
+          && (state.metrics.economy <= 60 || state.resources.funds <= 35)
+          && state.metrics.infection < 70)
+          || state.day >= 37;
+      },
     },
     volunteerDispatch: {
       label: "志愿者调度站",
       location: "volunteers",
       description: "把志愿者纳入统一排班和物资登记。适合保供或基层排班出现缺口后启用；若城市还没有明显压力，提前扩站只会消耗预算。",
-      resources: { funds: -6 },
-      effects: { supplies: 6, trust: 4, staffFatigue: 1 },
+      resources: { funds: -7 },
+      effects: { supplies: 4, trust: 2, staffFatigue: 1 },
       hidden: { publicMemory: -1 },
       delayed: {
         delay: 2,
         label: "志愿者排班稳定",
-        effects: { staffFatigue: -5, supplies: 2 },
+        effects: { staffFatigue: -2, supplies: 1 },
         hidden: {},
       },
-      maxUses: 3,
+      maxUses: 1,
       conditionText: "需要物资≤55、基层疲劳≥42、信任≤52、管控≥45，或进入第18天后。",
       condition(state) {
         return state.metrics.supplies <= 55
@@ -1264,13 +1313,13 @@
       label: "社区临时门诊",
       location: "hospital",
       description: "把轻症咨询和慢病续方前移到社区。适合医院压力或感染压力进入高位后分流；压力太低时改造门诊会变成低效消耗。",
-      resources: { funds: -11 },
-      effects: { hospitalLoad: -8, supplies: -4, staffFatigue: 5, trust: 3 },
+      resources: { funds: -12 },
+      effects: { hospitalLoad: -6, supplies: -4, staffFatigue: 6, trust: 2 },
       hidden: { detectedRate: 2 },
       delayed: {
         delay: 3,
         label: "社区门诊分流",
-        effects: { hospitalLoad: -5, trust: 1 },
+        effects: { hospitalLoad: -3, trust: 1 },
         hidden: {},
         completeProject: "communityClinic",
       },
@@ -1288,7 +1337,7 @@
       label: "启动方舱收治标准",
       description: "统一轻症转运、分区和出舱标准。需要方舱已启用或医疗负载越过高压线。",
       resources: { funds: -5 },
-      effects: { hospitalLoad: -10, trust: -2, staffFatigue: 3 },
+      effects: { hospitalLoad: -7, trust: -2, staffFatigue: 5 },
       hidden: { publicMemory: 2 },
       once: true,
       conditionText: "需要方舱已启用，或医疗负载≥78。",
@@ -1302,36 +1351,41 @@
       resources: { funds: -4 },
       effects(state) {
         return {
-          economy: 12,
-          infection: state.hidden.detectedRate >= 75 ? 1 : 2,
-          trust: 3,
-          staffFatigue: 2,
+          economy: 9,
+          infection: state.hidden.detectedRate >= 75 ? 3 : 4,
+          trust: 2,
+          staffFatigue: 3,
         };
       },
       hidden: { policyStrictness: -6 },
       once: true,
-      conditionText: "需要发现率≥60，且感染压力<62。",
+      conditionText: "需要发现率≥65，感染压力<55，且活力≤58或进入第37天后。",
       condition(state) {
-        return state.hidden.detectedRate >= 60 && state.metrics.infection < 62;
+        return state.hidden.detectedRate >= 65
+          && state.metrics.infection < 55
+          && (state.metrics.economy <= 58 || state.day >= 37);
       },
     },
     publicReviewBrief: {
       label: "公开阶段复盘简报",
       description: "公开误差、延误与改进清单。修复长期信任，但短期会把压力重新带到台前。",
       resources: { funds: -3 },
-      effects: { trust: 7, economy: -2, staffFatigue: -1 },
-      hidden: { publicMemory: -5, detectedRate: 2 },
+      effects: { trust: 2, economy: -2, staffFatigue: -1 },
+      hidden: { publicMemory: -3, detectedRate: 1 },
       once: true,
-      conditionText: "需要第18天后，或信任<40，或公共创伤>30。",
+      conditionText: "需要第30天后，或信任<55，或公共创伤>20，或发现率<55。",
       condition(state) {
-        return state.day >= 18 || state.metrics.trust < 40 || state.hidden.publicMemory > 30;
+        return state.day >= 30
+          || state.metrics.trust < 55
+          || state.hidden.publicMemory > 20
+          || state.hidden.detectedRate < 55;
       },
     },
     staffRotationOrder: {
       label: "基层轮换令",
       description: "强制把一线排班从硬撑改成轮换。疲劳显著下降，但医疗和保供短期变紧。",
-      resources: { funds: -8 },
-      effects: { staffFatigue: -14, hospitalLoad: 2, supplies: -3, trust: -4 },
+      resources: { funds: -9 },
+      effects: { staffFatigue: -11, hospitalLoad: 3, supplies: -4, trust: -5 },
       hidden: {},
       once: true,
       conditionText: "需要基层疲劳≥62。",
@@ -1343,19 +1397,23 @@
       label: "重点人群药品直送",
       description: "把有限药品优先发给高风险人群。能明显修复信任和创伤，但会消耗库存。",
       resources: { funds: -6 },
-      effects: { supplies: -8, trust: 8, staffFatigue: 3 },
-      hidden: { publicMemory: -4 },
+      effects: { supplies: -8, trust: 6, staffFatigue: 4 },
+      hidden: { publicMemory: -3 },
       once: true,
-      conditionText: "需要物资供应≥32。",
+      conditionText: "需要物资供应≥32，且信任≤65、公共创伤≥12、医疗负载≥55，或进入第40天后。",
       condition(state) {
-        return state.metrics.supplies >= 32;
+        return state.metrics.supplies >= 32
+          && (state.metrics.trust <= 65
+            || state.hidden.publicMemory >= 12
+            || state.metrics.hospitalLoad >= 55
+            || state.day >= 40);
       },
     },
     elasticTransit: {
       label: "全市弹性交通",
       description: "用错峰通勤和货运通道恢复城市流动。适合经济低迷时使用，感染会承压。",
       resources: { funds: -5 },
-      effects: { economy: 9, supplies: 3, infection: 2, trust: 1 },
+      effects: { economy: 7, supplies: 2, infection: 4, trust: 1 },
       hidden: { policyStrictness: -5 },
       once: true,
       conditionText: "需要城市活力<55，且感染压力<70。",
@@ -1382,9 +1440,11 @@
       effects: { trust: -6, infection: -2 },
       hidden: { detectedRate: -3, policyStrictness: 5 },
       once: true,
-      conditionText: "需要市民信任≥45，且公共创伤≤40。",
+      conditionText: "需要市民信任≥45、公共创伤≤40，且感染≥60或信任≤55。",
       condition(state) {
-        return state.metrics.trust >= 45 && state.hidden.publicMemory <= 40;
+        return state.metrics.trust >= 45
+          && state.hidden.publicMemory <= 40
+          && (state.metrics.infection >= 60 || state.metrics.trust <= 55);
       },
     },
     delayBadNews: {
@@ -1409,22 +1469,22 @@
     enterpriseExemption: {
       label: "企业定向豁免",
       description: "给关键企业定向通勤豁免，换取产能和税源恢复。只在活力或资金承压时值得冒险；名单公平性会损伤信任。",
-      resources: { funds: 8 },
-      effects: { economy: 12, infection: 3, trust: -5 },
+      resources: { funds: 5 },
+      effects: { economy: 8, infection: 4, trust: -6 },
       hidden: {},
       once: true,
-      conditionText: "需要发现率≥55、感染压力<70，且城市活力≤65或资金≤35。",
+      conditionText: "需要发现率≥60、感染压力<65，且城市活力≤55或资金≤25。",
       condition(state) {
-        return state.hidden.detectedRate >= 55
-          && state.metrics.infection < 70
-          && (state.metrics.economy <= 65 || state.resources.funds <= 35);
+        return state.hidden.detectedRate >= 60
+          && state.metrics.infection < 65
+          && (state.metrics.economy <= 55 || state.resources.funds <= 25);
       },
     },
     communityAutonomy: {
       label: "社区自治包干",
       description: "把部分任务交给小区自组织承接。基层疲劳下降，但标准不一会损伤信任和库存。",
       resources: {},
-      effects: { staffFatigue: -8, trust: -7, supplies: -3 },
+      effects: { staffFatigue: -7, trust: -8, supplies: -4 },
       hidden: { publicMemory: 2 },
       once: true,
       conditionText: "需要基层疲劳≥70。",
@@ -2043,6 +2103,11 @@
     return (event.choices || []).map((choice) => choice.strategyKey || choice.profile || choice.id);
   }
 
+  function getChoiceRouteTag(choice = {}) {
+    const key = choice.strategyKey || choice.actionKey || choice.profile || choice.id || "";
+    return ROUTE_TAGS[key] || { label: "综合调度", tone: "neutral" };
+  }
+
   function getCurrentEvent(state) {
     if (state.ended) return null;
     if (String(state.currentEventId || "").startsWith("buffer_")) {
@@ -2113,6 +2178,7 @@
           label: "托底最危险短板",
           actionKey: "dynamicRepair",
           description: "修复当前最接近崩溃的指标，同时牺牲一个仍有余量的系统。",
+          routeTag: getChoiceRouteTag({ actionKey: "dynamicRepair" }),
           effectPreview: ["最差指标 +10/-10", "次要系统付出代价", "公共创伤 +1"],
         },
         {
@@ -2120,6 +2186,7 @@
           label: "释放社会压力",
           actionKey: "dynamicRelease",
           description: "降低管控与疲劳，修复信任和活力，但承担轻微感染反弹。",
+          routeTag: getChoiceRouteTag({ actionKey: "dynamicRelease" }),
           effectPreview: ["信任 +6", "疲劳 -6", "感染 +2"],
         },
         {
@@ -2127,6 +2194,7 @@
           label: "集中防疫资源",
           actionKey: "dynamicConcentrate",
           description: "继续压低感染和医疗压力，消耗物资、活力与基层状态。",
+          routeTag: getChoiceRouteTag({ actionKey: "dynamicConcentrate" }),
           effectPreview: ["感染 -5", "医疗负载 -4", "物资/活力/疲劳承压"],
         },
       ],
@@ -2175,6 +2243,7 @@
         customChoice: true,
         strategyKey: choice.id,
         actionKey: choice.id,
+        routeTag: getChoiceRouteTag(choice),
         eventResources: {},
         eventEffects: choice.effects,
         eventHidden: choice.hidden,
@@ -2251,6 +2320,7 @@
       actionKey,
       label: action.label,
       description: `${action.intent}。${eventMod.text}`,
+      routeTag: getChoiceRouteTag({ actionKey }),
       effectPreview: preview,
       eventEffects: eventMod.effects,
       eventHidden: eventMod.hidden,
@@ -2276,6 +2346,7 @@
       actionKey: choice.strategyKey,
       label: choice.label,
       description: choice.description,
+      routeTag: getChoiceRouteTag(choice),
       effectPreview: previewEventChoiceEffects(result),
       eventResources: result.resources,
       eventEffects: result.effects,
@@ -2977,8 +3048,8 @@
       const sacrifice = findSacrificeMetric(state, worst.metric);
       const repair = {};
       const cost = {};
-      repair[worst.metric] = METRIC_META[worst.metric].direction === "danger" ? -10 : 10;
-      cost[sacrifice] = METRIC_META[sacrifice].direction === "danger" ? 5 : -5;
+      repair[worst.metric] = METRIC_META[worst.metric].direction === "danger" ? -8 : 8;
+      cost[sacrifice] = METRIC_META[sacrifice].direction === "danger" ? 6 : -6;
       applyEffects(state, repair, dailyDelta, log, "阶段托底");
       applyEffects(state, cost, dailyDelta, log, "阶段托底代价");
       applyHiddenEffects(state, { publicMemory: 1 }, log, "阶段复盘");
@@ -2988,10 +3059,10 @@
 
     if (choiceId === "releasePressure") {
       applyEffects(state, {
-        trust: 6,
-        staffFatigue: -6,
+        trust: 5,
+        staffFatigue: -5,
         economy: 2,
-        infection: 2,
+        infection: 3,
       }, dailyDelta, log, "释放压力");
       applyHiddenEffects(state, { policyStrictness: -8, publicMemory: -1 }, log, "释放压力");
       log.notes.push("城市用更可解释的节奏换取恢复空间");
@@ -3000,11 +3071,11 @@
 
     if (choiceId === "concentrateResources") {
       applyEffects(state, {
-        infection: -5,
-        hospitalLoad: -4,
+        infection: -4,
+        hospitalLoad: -3,
         supplies: -5,
         economy: -4,
-        staffFatigue: 4,
+        staffFatigue: 5,
       }, dailyDelta, log, "集中资源");
       applyHiddenEffects(state, { policyStrictness: 6, publicMemory: 1 }, log, "集中资源");
       log.notes.push("防疫资源重新集中，其他系统继续承压");
@@ -3131,6 +3202,94 @@
     return "danger";
   }
 
+  function getDailyPressureSummary(state) {
+    if (!state || state.ended) return [];
+    const m = state.metrics;
+    const h = state.hidden;
+    const r = state.resources;
+    const limit = getFailureLimit(state);
+    const streaks = state.flags.failureStreaks || {};
+    const entries = [];
+    const add = (id, tone, label, detail, score) => {
+      if (entries.some((item) => item.id === id || item.label === label)) return;
+      entries.push({ id, tone, label, detail, score });
+    };
+
+    [
+      ["medical", "医疗挤兑", streaks.medical || 0, "医疗负载已越过失败红线"],
+      ["supply", "供应断裂", streaks.supply || 0, "物资供应已低于安全底线"],
+      ["trust", "信任崩塌", streaks.trust || 0, "市民信任已低于执行底线"],
+      ["staff", "执行失灵", streaks.staff || 0, "基层疲劳已进入失灵区"],
+    ].forEach(([key, label, streak, detail]) => {
+      if (streak > 0) add(`failure_${key}`, "danger", `${label} ${streak}/${limit}`, `${detail}，仍有补救窗口。`, 120 + streak);
+    });
+
+    if (m.hospitalLoad >= 85) add("metric_hospital_high", "danger", "医疗红线", "医院负载高位会持续伤害信任并推高公共创伤。", m.hospitalLoad);
+    else if (m.hospitalLoad >= 75) add("metric_hospital_warn", "warn", "医疗接近高压", "急救、床位和转运需要优先分流。", m.hospitalLoad);
+    if (m.infection >= 80) add("metric_infection_high", "danger", "社区扩散", "感染压力会额外推高医疗负载。", m.infection);
+    else if (m.infection >= 70) add("metric_infection_warn", "warn", "传播高位", "检测和局部管控会更有价值。", m.infection);
+    if (m.supplies <= 25) add("metric_supply_low", "danger", "物资低位", "供应不足会同时伤害信任和基层疲劳。", 100 - m.supplies);
+    else if (m.supplies <= 35) add("metric_supply_warn", "warn", "供应偏紧", "保供链条开始限制医疗和社区执行。", 100 - m.supplies);
+    if (m.trust <= 30) add("metric_trust_low", "danger", "低配合", "行动效率下降，谣言和拒检事件更容易出现。", 100 - m.trust);
+    else if (m.trust <= 40) add("metric_trust_warn", "warn", "信任承压", "公开解释和可核验流程会更重要。", 100 - m.trust);
+    if (m.staffFatigue >= 80) add("metric_fatigue_high", "danger", "执行透支", "所有行动收益打折，发现率会被疲劳磨损。", m.staffFatigue);
+    else if (m.staffFatigue >= 70) add("metric_fatigue_warn", "warn", "排班偏紧", "继续加压会让后续政策变钝。", m.staffFatigue);
+    if (m.economy <= 25) add("metric_economy_low", "warn", "财政吃紧", "活力低位会拖慢保供恢复和医疗扩容。", 100 - m.economy);
+    if (r.funds <= 10) add("resource_funds_low", "danger", "财政透支", "高价工程和决议会被锁定。", 105 - r.funds);
+    else if (r.funds <= 20) add("resource_funds_warn", "warn", "资金偏低", "工程选择需要更克制。", 100 - r.funds);
+    if (h.detectedRate <= 35) add("hidden_detected_low", "warn", "信息盲区", "报告感染压力误差扩大，复工代价更高。", 100 - h.detectedRate);
+    if (h.policyStrictness >= 80) add("hidden_policy_high", "warn", "高压管控", "感染压制增强，但活力和疲劳代价上升。", h.policyStrictness);
+    if (h.publicMemory >= 60) add("hidden_memory_high", "danger", "长期伤痕", "信任恢复会变慢，结局更容易偏向沉重代价。", h.publicMemory);
+
+    const dueSoon = [...(state.pendingEffects || [])]
+      .filter((item) => item.dueDay <= state.day + 1)
+      .sort((a, b) => a.dueDay - b.dueDay)[0];
+    if (dueSoon) {
+      add(
+        "pending_due",
+        "warn",
+        dueSoon.dueDay <= state.day ? "今日后续影响" : "明日后续影响",
+        `${dueSoon.eventTitle}：${dueSoon.label}`,
+        82 - Math.max(0, dueSoon.dueDay - state.day),
+      );
+    }
+
+    const upcoming = SCHEDULED_EVENTS
+      .filter((item) => (
+        item.day > state.day
+        && item.day <= state.day + 2
+        && !(state.flags.seenEventIds || []).includes(item.eventId)
+        && scheduledConditionMet(state, item.condition)
+      ))
+      .sort((a, b) => a.day - b.day || (b.priority || 0) - (a.priority || 0))[0];
+    if (upcoming) {
+      const event = EVENTS.find((item) => item.id === upcoming.eventId);
+      add(
+        "scheduled_soon",
+        "info",
+        upcoming.day === state.day + 1 ? "明日固定事件" : `第${upcoming.day}天固定事件`,
+        event ? event.title : upcoming.reason,
+        70 - (upcoming.day - state.day),
+      );
+    }
+
+    getStatusEffects(state).forEach((effect, index) => {
+      const tone = effect.tone === "danger" ? "danger" : effect.tone === "good" ? "good" : "warn";
+      add(`status_${effect.id}`, tone, effect.label, effect.description, tone === "danger" ? 58 - index : 34 - index);
+    });
+
+    if (m.infection <= 25) add("good_infection_low", "good", "低传播窗口", "复工类行动的感染反弹代价降低。", 30);
+    if (m.supplies >= 75) add("good_supplies_high", "good", "库存缓冲", "高管控带来的信任损失降低。", 29);
+    if (m.trust >= 75) add("good_trust_high", "good", "高配合", "检测、管控和轮休收益更稳定。", 28);
+    if (m.staffFatigue <= 35) add("good_fatigue_low", "good", "执行余裕", "检测、保供、医疗和志愿者类行动更有效。", 27);
+    if (h.detectedRate >= 80) add("good_detected_high", "good", "监测清晰", "复工感染代价降低，城市更接近真实态势。", 26);
+
+    return entries
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+      .map(({ score, ...item }) => item);
+  }
+
   function getSystemReadouts(state) {
     const visible = getVisibleMetrics(state);
     return [
@@ -3170,6 +3329,8 @@
     getAvailableOperations,
     getAvailableResolutions,
     getRiskBand,
+    getDailyPressureSummary,
+    getChoiceRouteTag,
     getSystemReadouts,
     resolveChoice,
     executeOperation,
