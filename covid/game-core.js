@@ -5255,6 +5255,89 @@
     });
   }
 
+  function signedDelta(value) {
+    return value > 0 ? `+${value}` : String(value);
+  }
+
+  function componentTone(value, zeroTone = "info") {
+    if (value > 0) return "good";
+    if (value < 0) return "warn";
+    return zeroTone;
+  }
+
+  function calculateEconomyOutlook(state, modifiers = {}) {
+    const m = state.metrics;
+    const h = state.hidden;
+    const components = [];
+    const add = (id, label, value, detail) => {
+      if (!value) return;
+      components.push({ id, label, value, tone: componentTone(value), detail });
+    };
+    const controlledRecovery = m.infection < 45 && h.policyStrictness <= 45 && m.economy < 55 ? 1 : 0;
+    const highTrustRecovery = m.trust >= 75 && m.infection < 60 && h.policyStrictness <= 55 && m.economy < 65 ? 1 : 0;
+    add("reopenBonus", "复工动能", modifiers.reopenBonus || 0, "今日选择或工程带来的恢复加成。");
+    add("controlledRecovery", "低传播微复苏", controlledRecovery, "感染和管控都不高时，城市会自然找回少量活力。");
+    add("highTrustRecovery", "高信任协作", highTrustRecovery, "信任高位时，恢复安排更容易落地。");
+    add("policyDrag", "管控拖慢", -Math.round(h.policyStrictness / 25), "管控越强，物流、就业和消费越难自然恢复。");
+    add("infectionDrag", "感染拖慢", m.infection >= 55 ? -1 : 0, "感染压力高位会压住复业与出行。");
+    add("hospitalDrag", "医疗挤压", m.hospitalLoad >= 80 ? -1 : 0, "医疗高压会挤占城市恢复资源。");
+    add("trustDrag", "低信任摩擦", m.trust < 30 ? -1 : 0, "低信任会让恢复安排产生额外执行摩擦。");
+    add("hardControlDrag", "高压管控", h.policyStrictness >= 80 ? -1 : 0, "高压管控能止血，但会继续损伤活力。");
+    add("openFlow", "流动恢复", h.policyStrictness <= 15 ? 1 : 0, "管控低位时，城市流动自然回升。");
+    const delta = components.reduce((sum, item) => sum + item.value, 0);
+    return { delta, components };
+  }
+
+  function calculateFiscalOutlook(state) {
+    const m = state.metrics;
+    const h = state.hidden;
+    const r = state.resources;
+    const operationUses = state.flags.operationUses || {};
+    const completed = state.completedProjects || {};
+    const components = [];
+    const add = (id, label, value, detail) => {
+      if (!value) return;
+      components.push({ id, label, value, tone: componentTone(value), detail });
+    };
+    const fiscalBase = m.economy >= 75 && r.funds <= 65
+      ? 1
+      : m.economy >= 60 && r.funds <= 45
+        ? 1
+        : m.economy >= 50 && r.funds <= 40
+          ? 1
+          : 0;
+    const trustPremium = m.trust >= 72 && m.economy >= 60 && r.funds <= 50 ? 1 : 0;
+    const assetSources = [
+      [operationUses.fiscalTransparencyLedger && m.trust >= 55 && r.funds <= 55, "财政透明台账"],
+      [operationUses.fastGrantReport && m.trust >= 50 && r.funds <= 55, "专项资金快报"],
+      [operationUses.donationCoordination && m.trust >= 50 && r.funds <= 55, "社会捐助统筹"],
+      [operationUses.interProvinceSupport && m.supplies >= 55 && r.funds <= 55, "省际支援协调"],
+      [operationUses.factoryClosedLoop && m.economy >= 58 && r.funds <= 60, "工厂闭环复工"],
+      [operationUses.emergencyAccountClearing && m.trust >= 50 && r.funds <= 50, "小额账款清分"],
+      [operationUses.essentialServicePermit && m.economy >= 55 && r.funds <= 45, "民生服务保留名录"],
+      [operationUses.contactlessLivelihoodStalls && m.economy >= 52 && r.funds <= 45, "无接触民生摊点"],
+      [operationUses.onlineGovOvertime && m.economy >= 52 && r.funds <= 50, "线上政务加班窗口"],
+      [operationUses.communityRepairWhitelist && m.trust >= 55 && r.funds <= 45, "社区维修白名单"],
+      [operationUses.remoteWorkGovServices && m.economy >= 55 && r.funds <= 45, "线上政务与远程办公"],
+      [completed.supplyCorridor && m.supplies >= 60 && r.funds <= 55, "保供专线"],
+    ];
+    const activeAssets = assetSources.filter(([active]) => active).map(([, label]) => label);
+    const assetYield = clamp(activeAssets.length, 0, 2);
+    const rawGain = fiscalBase + trustPremium + assetYield;
+    const cappedGain = clamp(rawGain, 0, 2);
+    add("fiscalBase", "活力税基", fiscalBase, "活力足够且资金偏低时，会产生少量自然回流。");
+    add("trustPremium", "信任协作", trustPremium, "高信任能降低协调成本，形成小额现金流。");
+    add("assetYield", "恢复资产", assetYield, activeAssets.length ? `生效资产：${activeAssets.slice(0, 3).join("、")}。` : "财政、捐助和微复苏资产尚未形成回流。");
+    add("dailyCap", "每日回流上限", cappedGain - rawGain, "财政自然回流每日最多计入 2 点，避免资金滚雪球。");
+    add("economyLeak", "活力低位漏损", m.economy <= 25 ? -1 : 0, "活力过低会让财政自我修复能力下降。");
+    add("hospitalLeak", "医疗高压账单", m.hospitalLoad >= 85 ? -1 : 0, "医疗红线会持续占用现金流。");
+    add("controlLeak", "高压管控账单", h.policyStrictness >= 80 ? -1 : 0, "高压管控会带来额外组织成本。");
+    add("trustLeak", "信任崩裂摩擦", m.trust < 25 ? -1 : 0, "低信任会让财政协作和执行成本变高。");
+    add("reserveLeak", "储备占用", r.funds > 85 ? -1 : 0, "资金过高时会被未结账项和库存占用吸收。");
+    const delta = components.reduce((sum, item) => sum + item.value, 0);
+    return { delta, components, activeAssets };
+  }
+
   function canPay(state, resources = {}) {
     return Object.entries(resources || {}).every(([metric, delta]) => {
       if (!RESOURCE_METRICS.includes(metric) || delta >= 0) return true;
@@ -5324,26 +5407,7 @@
       - (state.hidden.publicMemory >= 60 ? 1 : 0);
     applyEffects(state, { trust: trustDelta }, dailyDelta, log, "信任联动");
 
-    const controlledRecovery = state.metrics.infection < 45
-      && state.hidden.policyStrictness <= 45
-      && state.metrics.economy < 55
-      ? 1
-      : 0;
-    const highTrustRecovery = state.metrics.trust >= 75
-      && state.metrics.infection < 60
-      && state.hidden.policyStrictness <= 55
-      && state.metrics.economy < 65
-      ? 1
-      : 0;
-    const economyDelta = modifiers.reopenBonus
-      + controlledRecovery
-      + highTrustRecovery
-      - Math.round(state.hidden.policyStrictness / 25)
-      - (state.metrics.infection >= 55 ? 1 : 0)
-      - (state.metrics.hospitalLoad >= 80 ? 1 : 0)
-      - (state.metrics.trust < 30 ? 1 : 0)
-      - (state.hidden.policyStrictness >= 80 ? 1 : 0)
-      + (state.hidden.policyStrictness <= 15 ? 1 : 0);
+    const economyDelta = calculateEconomyOutlook(state, modifiers).delta;
     applyEffects(state, { economy: economyDelta }, dailyDelta, log, "活力联动");
 
     const fatigueBase = state.metrics.staffFatigue >= 70 ? 1 : 2;
@@ -5369,34 +5433,7 @@
       log.notes.push("执行熔断：基层系统自动降速，疲劳得到短暂缓冲，但服务能力和公众耐心被转移消耗");
     }
 
-    const operationUses = state.flags.operationUses || {};
-    const fiscalBase = state.metrics.economy >= 75 && state.resources.funds <= 65
-      ? 1
-      : state.metrics.economy >= 60 && state.resources.funds <= 45
-        ? 1
-        : state.metrics.economy >= 50 && state.resources.funds <= 40
-          ? 1
-          : 0;
-    const trustPremium = state.metrics.trust >= 72 && state.metrics.economy >= 60 && state.resources.funds <= 50 ? 1 : 0;
-    const assetYield = (operationUses.fiscalTransparencyLedger && state.metrics.trust >= 55 && state.resources.funds <= 55 ? 1 : 0)
-      + (operationUses.fastGrantReport && state.metrics.trust >= 50 && state.resources.funds <= 55 ? 1 : 0)
-      + (operationUses.donationCoordination && state.metrics.trust >= 50 && state.resources.funds <= 55 ? 1 : 0)
-      + (operationUses.interProvinceSupport && state.metrics.supplies >= 55 && state.resources.funds <= 55 ? 1 : 0)
-      + (operationUses.factoryClosedLoop && state.metrics.economy >= 58 && state.resources.funds <= 60 ? 1 : 0)
-      + (operationUses.emergencyAccountClearing && state.metrics.trust >= 50 && state.resources.funds <= 50 ? 1 : 0)
-      + (operationUses.essentialServicePermit && state.metrics.economy >= 55 && state.resources.funds <= 45 ? 1 : 0)
-      + (operationUses.contactlessLivelihoodStalls && state.metrics.economy >= 52 && state.resources.funds <= 45 ? 1 : 0)
-      + (operationUses.onlineGovOvertime && state.metrics.economy >= 52 && state.resources.funds <= 50 ? 1 : 0)
-      + (operationUses.communityRepairWhitelist && state.metrics.trust >= 55 && state.resources.funds <= 45 ? 1 : 0)
-      + (operationUses.remoteWorkGovServices && state.metrics.economy >= 55 && state.resources.funds <= 45 ? 1 : 0)
-      + (state.completedProjects.supplyCorridor && state.metrics.supplies >= 60 && state.resources.funds <= 55 ? 1 : 0);
-    const passiveFundsGain = fiscalBase + trustPremium + clamp(assetYield, 0, 2);
-    const passiveFundsLoss = (state.metrics.economy <= 25 ? 1 : 0)
-      + (state.metrics.hospitalLoad >= 85 ? 1 : 0)
-      + (state.hidden.policyStrictness >= 80 ? 1 : 0)
-      + (state.metrics.trust < 25 ? 1 : 0)
-      + (state.resources.funds > 85 ? 1 : 0);
-    const fundsDelta = clamp(passiveFundsGain, 0, 2) - passiveFundsLoss;
+    const fundsDelta = calculateFiscalOutlook(state).delta;
     applyResourceEffects(state, { funds: fundsDelta }, log, "财政联动");
 
     if (state.metrics.hospitalLoad >= 85) {
@@ -6399,26 +6436,7 @@
       - (projection.hidden.publicMemory >= 60 ? 1 : 0);
     applyProjectedCoreDelta(projection, { trust: trustDelta });
 
-    const controlledRecovery = projection.metrics.infection < 45
-      && projection.hidden.policyStrictness <= 45
-      && projection.metrics.economy < 55
-      ? 1
-      : 0;
-    const highTrustRecovery = projection.metrics.trust >= 75
-      && projection.metrics.infection < 60
-      && projection.hidden.policyStrictness <= 55
-      && projection.metrics.economy < 65
-      ? 1
-      : 0;
-    const economyDelta = modifiers.reopenBonus
-      + controlledRecovery
-      + highTrustRecovery
-      - Math.round(projection.hidden.policyStrictness / 25)
-      - (projection.metrics.infection >= 55 ? 1 : 0)
-      - (projection.metrics.hospitalLoad >= 80 ? 1 : 0)
-      - (projection.metrics.trust < 30 ? 1 : 0)
-      - (projection.hidden.policyStrictness >= 80 ? 1 : 0)
-      + (projection.hidden.policyStrictness <= 15 ? 1 : 0);
+    const economyDelta = calculateEconomyOutlook(projection, modifiers).delta;
     applyProjectedCoreDelta(projection, { economy: economyDelta });
 
     const fatigueBase = projection.metrics.staffFatigue >= 70 ? 1 : 2;
@@ -6443,34 +6461,7 @@
       applyProjectedHiddenDelta(projection, { publicMemory: 1 });
     }
 
-    const operationUses = projection.flags.operationUses || {};
-    const fiscalBase = projection.metrics.economy >= 75 && projection.resources.funds <= 65
-      ? 1
-      : projection.metrics.economy >= 60 && projection.resources.funds <= 45
-        ? 1
-        : projection.metrics.economy >= 50 && projection.resources.funds <= 40
-          ? 1
-          : 0;
-    const trustPremium = projection.metrics.trust >= 72 && projection.metrics.economy >= 60 && projection.resources.funds <= 50 ? 1 : 0;
-    const assetYield = (operationUses.fiscalTransparencyLedger && projection.metrics.trust >= 55 && projection.resources.funds <= 55 ? 1 : 0)
-      + (operationUses.fastGrantReport && projection.metrics.trust >= 50 && projection.resources.funds <= 55 ? 1 : 0)
-      + (operationUses.donationCoordination && projection.metrics.trust >= 50 && projection.resources.funds <= 55 ? 1 : 0)
-      + (operationUses.interProvinceSupport && projection.metrics.supplies >= 55 && projection.resources.funds <= 55 ? 1 : 0)
-      + (operationUses.factoryClosedLoop && projection.metrics.economy >= 58 && projection.resources.funds <= 60 ? 1 : 0)
-      + (operationUses.emergencyAccountClearing && projection.metrics.trust >= 50 && projection.resources.funds <= 50 ? 1 : 0)
-      + (operationUses.essentialServicePermit && projection.metrics.economy >= 55 && projection.resources.funds <= 45 ? 1 : 0)
-      + (operationUses.contactlessLivelihoodStalls && projection.metrics.economy >= 52 && projection.resources.funds <= 45 ? 1 : 0)
-      + (operationUses.onlineGovOvertime && projection.metrics.economy >= 52 && projection.resources.funds <= 50 ? 1 : 0)
-      + (operationUses.communityRepairWhitelist && projection.metrics.trust >= 55 && projection.resources.funds <= 45 ? 1 : 0)
-      + (operationUses.remoteWorkGovServices && projection.metrics.economy >= 55 && projection.resources.funds <= 45 ? 1 : 0)
-      + (projection.completedProjects.supplyCorridor && projection.metrics.supplies >= 60 && projection.resources.funds <= 55 ? 1 : 0);
-    const passiveFundsGain = fiscalBase + trustPremium + clamp(assetYield, 0, 2);
-    const passiveFundsLoss = (projection.metrics.economy <= 25 ? 1 : 0)
-      + (projection.metrics.hospitalLoad >= 85 ? 1 : 0)
-      + (projection.hidden.policyStrictness >= 80 ? 1 : 0)
-      + (projection.metrics.trust < 25 ? 1 : 0)
-      + (projection.resources.funds > 85 ? 1 : 0);
-    const fundsDelta = clamp(passiveFundsGain, 0, 2) - passiveFundsLoss;
+    const fundsDelta = calculateFiscalOutlook(projection).delta;
     applyProjectedResourceDelta(projection, { funds: fundsDelta });
 
     if (projection.metrics.hospitalLoad >= 85) {
@@ -7046,6 +7037,81 @@
     return 2;
   }
 
+  function summarizeOutlookComponents(components) {
+    const visible = [...(components || [])]
+      .filter((item) => item.value)
+      .sort((a, b) => Math.abs(b.value) - Math.abs(a.value) || a.label.localeCompare(b.label, "zh-Hans-CN"))
+      .slice(0, 4);
+    if (!visible.length) return "暂无明显联动。";
+    return visible.map((item) => `${item.label} ${signedDelta(item.value)}`).join("；");
+  }
+
+  function deltaOutlookTone(delta, danger = false) {
+    if (danger) return "danger";
+    if (delta > 0) return "good";
+    if (delta < 0) return "warn";
+    return "info";
+  }
+
+  function getFiscalOutlook(state) {
+    const fiscal = calculateFiscalOutlook(state);
+    const economy = calculateEconomyOutlook(state, {});
+    const lockedByFunds = [
+      ...getAvailableOperations(state),
+      ...getAvailableResolutions(state),
+    ].filter((item) => item.lockedReason === "资金不足" || item.lockedReason === "财政透支").length;
+    const severe = state.resources.funds <= 10 || (state.resources.funds <= 18 && fiscal.delta < 0);
+    const tone = severe
+      ? "danger"
+      : lockedByFunds > 0 || state.resources.funds <= 25 || economy.delta < 0
+        ? "warn"
+        : fiscal.delta > 0 || economy.delta > 0
+          ? "good"
+          : "info";
+    const detail = lockedByFunds > 0
+      ? `有 ${lockedByFunds} 项工程或决议受资金限制，优先寻找恢复渠道或降低现金消耗。`
+      : fiscal.delta > 0
+        ? "当前账本能产生少量自然回流，适合把资金转成长期资产。"
+        : economy.delta < 0
+          ? "活力联动偏负，继续强管控或高感染会拖慢后续资金恢复。"
+          : "资金和活力暂时稳定，后续变化主要取决于今日事件与主动行动。";
+    return {
+      label: "财政与活力",
+      tone,
+      detail,
+      lockedByFunds,
+      items: [
+        {
+          id: "funds",
+          label: "资金联动",
+          value: signedDelta(fiscal.delta),
+          delta: fiscal.delta,
+          tone: deltaOutlookTone(fiscal.delta, severe),
+          detail: summarizeOutlookComponents(fiscal.components),
+          components: fiscal.components,
+        },
+        {
+          id: "economy",
+          label: "活力倾向",
+          value: signedDelta(economy.delta),
+          delta: economy.delta,
+          tone: deltaOutlookTone(economy.delta),
+          detail: summarizeOutlookComponents(economy.components),
+          components: economy.components,
+        },
+        {
+          id: "locks",
+          label: "资金锁定",
+          value: String(lockedByFunds),
+          delta: lockedByFunds,
+          tone: lockedByFunds > 0 ? "warn" : "good",
+          detail: lockedByFunds > 0 ? "这些行动已经出现资金不足或财政透支限制。" : "当前没有行动因为资金不足被锁住。",
+          components: [],
+        },
+      ],
+    };
+  }
+
   function getCityBadges(state) {
     const badges = CITY_BADGE_RULES.map((rule) => {
       const earned = Boolean(rule.condition(state));
@@ -7163,6 +7229,7 @@
     getCityActionDirectiveFit,
     getCityActionOpportunities,
     getRecoveryLevers,
+    getFiscalOutlook,
     getCityBadges,
     getSystemReadouts,
     getCityActionBudget,

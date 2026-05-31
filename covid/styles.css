@@ -3453,6 +3453,123 @@ label {
   font-size: 0.82rem;
 }
 
+.fiscal-outlook {
+  display: grid;
+  gap: 8px;
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 2px solid #b89752;
+}
+
+.fiscal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fiscal-head span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.fiscal-head p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.38;
+}
+
+.fiscal-head strong {
+  flex: 0 0 auto;
+  min-width: 38px;
+  padding: 3px 7px;
+  border: 2px solid var(--line-dark);
+  background: #bed0cf;
+  color: #273f49;
+  box-shadow: 2px 2px 0 rgba(45, 40, 31, 0.44);
+  font-size: 0.66rem;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.fiscal-head strong.good {
+  background: #b9d98e;
+  color: #244d35;
+}
+
+.fiscal-head strong.warn,
+.fiscal-head strong.mixed {
+  background: #f1c45f;
+  color: #5b3715;
+}
+
+.fiscal-head strong.danger {
+  background: #eaa07c;
+  color: #5b1f18;
+}
+
+.fiscal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.fiscal-item {
+  min-width: 0;
+  padding: 7px;
+  border: 2px solid #b89752;
+  background: rgba(255, 241, 200, 0.7);
+  box-shadow: inset 1px 1px 0 rgba(255, 247, 209, 0.82);
+}
+
+.fiscal-item.good {
+  border-color: var(--good);
+  background: #e3efbd;
+}
+
+.fiscal-item.warn,
+.fiscal-item.mixed {
+  border-color: var(--warn);
+  background: #f2d48b;
+}
+
+.fiscal-item.danger {
+  border-color: var(--danger);
+  background: #eaa07c;
+}
+
+.fiscal-item.info {
+  border-color: var(--blue);
+  background: #dde5d9;
+}
+
+.fiscal-item span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.6rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.fiscal-item strong {
+  display: block;
+  margin: 3px 0;
+  font-size: 0.96rem;
+  line-height: 1;
+}
+
+.fiscal-item p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.26;
+  overflow-wrap: anywhere;
+}
+
 .recovery-levers {
   display: grid;
   gap: 7px;
@@ -5581,7 +5698,8 @@ label {
 
   .tutorial-grid,
   .ending-metrics,
-  .ending-score-grid {
+  .ending-score-grid,
+  .fiscal-grid {
     grid-template-columns: 1fr;
   }
 }

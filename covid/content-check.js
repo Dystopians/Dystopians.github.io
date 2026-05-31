@@ -282,6 +282,31 @@ function validateRecoveryLevers() {
   );
 }
 
+function validateFiscalOutlook() {
+  assert(typeof core.getFiscalOutlook === "function", "game-core.js must export getFiscalOutlook.");
+  const state = core.createGame({ difficulty: "normal", seed: 20260619 });
+  const opening = core.getFiscalOutlook(state);
+  assert(opening && Array.isArray(opening.items), "getFiscalOutlook must return an object with items.");
+  assert(opening.items.length === 3, "Fiscal outlook should expose funds, economy, and locked-action readouts.");
+  assert(
+    opening.items.every((item) => item.id && item.label && item.value !== undefined && item.detail && item.tone),
+    "Every fiscal outlook item needs id, label, value, detail, and tone.",
+  );
+  assert(
+    opening.items.every((item) => !String(item.detail).includes("[object Object]")),
+    "Fiscal outlook details must be readable text.",
+  );
+  const pressured = core.createGame({ difficulty: "normal", seed: 20260620 });
+  pressured.metrics.economy = 20;
+  pressured.metrics.hospitalLoad = 88;
+  pressured.metrics.trust = 22;
+  pressured.hidden.policyStrictness = 82;
+  pressured.resources.funds = 9;
+  const report = core.getFiscalOutlook(pressured);
+  assert(report.tone === "danger", "Fiscal outlook should flag severe cashflow states as danger.");
+  assert(report.items.some((item) => item.id === "locks"), "Fiscal outlook should include funding lock count.");
+}
+
 function validateCityBadges() {
   assert(typeof core.getCityBadges === "function", "game-core.js must export getCityBadges.");
   const state = core.createGame({ difficulty: "normal", seed: 20260617 });
@@ -635,6 +660,7 @@ function run() {
   validateCacheVersions();
   validateScenarios();
   validateRecoveryLevers();
+  validateFiscalOutlook();
   validateCityBadges();
   validateFiscalEconomyChannels();
   validateCityActionOpportunities();

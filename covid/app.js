@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v83";
+  const ASSET_VERSION = "v84";
   const core = window.Linjiang72;
 
   let state = null;
@@ -251,6 +251,7 @@
     statusEffects: document.getElementById("statusEffects"),
     crisisList: document.getElementById("crisisList"),
     briefStrip: document.getElementById("briefStrip"),
+    fiscalOutlook: document.getElementById("fiscalOutlook"),
     recoveryLevers: document.getElementById("recoveryLevers"),
     pendingTimeline: document.getElementById("pendingTimeline"),
     strategyProfile: document.getElementById("strategyProfile"),
@@ -512,6 +513,7 @@
     renderStageInfo();
     renderMetrics();
     renderBriefs();
+    renderFiscalOutlook();
     renderRecoveryLevers();
     renderPendingTimeline();
     renderStrategyProfile();
@@ -791,6 +793,30 @@
       item.innerHTML = `<span>${["疾控", "医院", "社区"][index] || "简报"}</span><strong>${escapeHtml(line)}</strong>`;
       els.briefStrip.appendChild(item);
     });
+  }
+
+  function renderFiscalOutlook() {
+    if (!els.fiscalOutlook || !core.getFiscalOutlook) return;
+    const report = core.getFiscalOutlook(state);
+    const items = (report.items || []).slice(0, 3);
+    els.fiscalOutlook.innerHTML = `
+      <div class="fiscal-head">
+        <div>
+          <span>${escapeHtml(report.label || "财政与活力")}</span>
+          <p>${escapeHtml(report.detail || "")}</p>
+        </div>
+        <strong class="${escapeHtml(report.tone || "info")}">${escapeHtml(report.lockedByFunds ? `${report.lockedByFunds}锁` : "账本")}</strong>
+      </div>
+      <div class="fiscal-grid">
+        ${items.map((item) => `
+          <article class="fiscal-item ${escapeHtml(item.tone || "info")}" title="${escapeHtml(item.detail || "")}">
+            <span>${escapeHtml(item.label)}</span>
+            <strong>${escapeHtml(item.value)}</strong>
+            <p>${escapeHtml(item.detail || "")}</p>
+          </article>
+        `).join("")}
+      </div>
+    `;
   }
 
   function renderRecoveryLevers() {
