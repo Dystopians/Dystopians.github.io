@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v89";
+  const ASSET_VERSION = "v90";
   const core = window.Linjiang72;
 
   let state = null;
@@ -131,6 +131,13 @@
       operation: "fiscalTransparencyLedger",
     },
     {
+      id: "emergencyGapLedger",
+      label: "应急缺口清单",
+      kind: "财政",
+      detail: "医院、保供、社区和企业缺口被整理成可核验清单，早期拨付有了抓手。",
+      operation: "emergencyGapLedger",
+    },
+    {
       id: "emergencyAccountClearing",
       label: "小额账款清分",
       kind: "财政",
@@ -166,6 +173,13 @@
       operation: "contactlessServiceRegistry",
     },
     {
+      id: "neighborhoodPickupWindow",
+      label: "社区预约取货窗口",
+      kind: "节点",
+      detail: "菜店、药店和团购点转为分时预约，城市微循环被更早托住。",
+      operation: "neighborhoodPickupWindow",
+    },
+    {
       id: "microFreightPermit",
       label: "货运微循环许可",
       kind: "节点",
@@ -187,11 +201,39 @@
       operation: "remoteWorkGovServices",
     },
     {
+      id: "remoteApprovalDesk",
+      label: "线上预审窗口",
+      kind: "节点",
+      detail: "采购报销、通行材料和小微申报先在线预审，街面不动但后台开始恢复。",
+      operation: "remoteApprovalDesk",
+    },
+    {
+      id: "essentialMaintenanceRoster",
+      label: "必要维修预约窗",
+      kind: "节点",
+      detail: "水电、燃气、药房设备和必要维修进入预约白单，城市机能少掉一些断点。",
+      operation: "essentialMaintenanceRoster",
+    },
+    {
       id: "donationCoordination",
       label: "社会捐助统筹",
       kind: "财政",
       detail: "捐助专户和缺口清单开始对齐，资金与物资能够更快转成实际补位。",
       operation: "donationCoordination",
+    },
+    {
+      id: "donationClaimList",
+      label: "捐助认领清单",
+      kind: "财政",
+      detail: "社会捐助被拆成可认领的小缺口，善意更容易转成现金流和物资补位。",
+      operation: "donationClaimList",
+    },
+    {
+      id: "platformLogisticsShare",
+      label: "平台运力共担协议",
+      kind: "财政",
+      detail: "配送平台、药店和商超接入临时共担协议，保供末端和活力都获得缓冲。",
+      operation: "platformLogisticsShare",
     },
     {
       id: "procurementCreditNegotiation",

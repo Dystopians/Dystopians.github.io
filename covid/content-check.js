@@ -372,11 +372,17 @@ function validateCityBadges() {
 
 function validateFiscalEconomyChannels() {
   const required = [
+    "emergencyGapLedger",
     "fastGrantReport",
+    "donationClaimList",
+    "platformLogisticsShare",
     "interProvinceSupport",
     "supplierPaymentExtension",
     "contactlessLivelihoodStalls",
+    "neighborhoodPickupWindow",
     "onlineGovOvertime",
+    "remoteApprovalDesk",
+    "essentialMaintenanceRoster",
     "communityRepairWhitelist",
   ];
   const requiredResolutions = [
@@ -420,7 +426,7 @@ function validateFiscalEconomyChannels() {
   assert(resolutionStatuses.length === requiredResolutions.length, "All fiscal/economy recovery resolutions should produce resolution statuses.");
   assert(availableResolutions.length >= 4, `Expected at least 4 early fiscal/economy recovery resolutions available, found ${availableResolutions.length}.`);
   const report = core.getRecoveryLevers(state);
-  assert(report.totalCount >= 34, `Recovery lever report should recognize expanded fiscal/economy channels, found ${report.totalCount}.`);
+  assert(report.totalCount >= 40, `Recovery lever report should recognize expanded fiscal/economy channels, found ${report.totalCount}.`);
 }
 
 function validateCityActionOpportunities() {
