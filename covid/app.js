@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v100";
+  const ASSET_VERSION = "v101";
   const core = window.Linjiang72;
 
   let state = null;
@@ -1890,6 +1890,7 @@
       item.textContent = alert;
       els.alerts.appendChild(item);
     });
+    bindLatestSettlementActions();
   }
 
   function renderLatestSettlement() {
@@ -1901,6 +1902,7 @@
     const changes = renderChangeChips(entry.changes, 7);
     const highlights = renderSettlementHighlights(entry);
     const breakdown = renderBreakdownRows(entry.breakdown, 4);
+    const nextStep = renderSettlementNextStep(meta);
     const notes = (entry.notes || [])
       .filter(Boolean)
       .slice(0, breakdown ? 2 : 3)
@@ -1917,6 +1919,7 @@
       <div class="change-list">${changes}</div>
       ${breakdown}
       ${notes ? `<ul class="settlement-notes">${notes}</ul>` : ""}
+      ${nextStep}
     `;
     return card;
   }
@@ -1950,6 +1953,69 @@
         `).join("")}
       </div>
     `;
+  }
+
+  function renderSettlementNextStep(meta) {
+    if (!core.getDailyDirectiveOptions) return "";
+    const report = core.getDailyDirectiveOptions(state);
+    const directive = report && report.directive;
+    if (!directive) return "";
+    const items = (report.items || []).slice(0, 2);
+    const prompt = meta && meta.status === "即时生效"
+      ? "今日事件仍未处理，先用事件选项收束当天结算。"
+      : "新一天已经刷新，先看最能推进当前目标的候选。";
+    const buttons = items.length
+      ? `
+        <div class="settlement-next-actions">
+          ${items.map((item) => `
+            <button type="button" class="settlement-next-action ${escapeHtml(item.tone || "info")}"
+              data-next-choice="${escapeHtml(item.choiceId || "")}"
+              data-next-point="${escapeHtml(item.pointId || "")}"
+              data-next-mode="${escapeHtml(item.mode || "")}"
+              title="${escapeHtml(item.detail || "")}">
+              <strong>${escapeHtml(item.label)}</strong>
+              <em>${escapeHtml(item.kind)} · ${escapeHtml(item.status || item.routeLabel || "候选")}</em>
+            </button>
+          `).join("")}
+        </div>
+      `
+      : "";
+    return `
+      <div class="settlement-next-step ${escapeHtml(directive.tone || "info")}">
+        <span>下一步</span>
+        <strong>${escapeHtml(directive.label)}</strong>
+        <p>${escapeHtml(prompt)}</p>
+        ${buttons}
+      </div>
+    `;
+  }
+
+  function bindLatestSettlementActions() {
+    if (!els.alerts) return;
+    els.alerts.querySelectorAll(".settlement-next-action").forEach((button) => {
+      button.addEventListener("click", () => {
+        const choiceId = button.dataset.nextChoice;
+        if (choiceId) {
+          focusChoiceOption(choiceId);
+          return;
+        }
+        const pointId = button.dataset.nextPoint;
+        if (!pointId) return;
+        core.selectMapPoint(state, pointId);
+        if (button.dataset.nextMode) {
+          actionMode = button.dataset.nextMode === "resolutions" ? "resolutions" : "operations";
+        }
+        save();
+        renderMap();
+        renderActionMode();
+        renderCityAssets();
+        const point = core.getMapPoint(state, pointId);
+        els.mapHint.textContent = `已定位下一步候选：${point ? point.label : "城市节点"}`;
+        if (els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
+          els.operationsList.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      });
+    });
   }
 
   function renderActionMode() {
