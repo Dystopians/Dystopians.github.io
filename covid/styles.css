@@ -733,6 +733,102 @@ label {
   line-height: 1.42;
 }
 
+.stage-transition-brief {
+  display: grid;
+  gap: 7px;
+  margin: 0 0 9px;
+  padding: 9px;
+  border: 2px solid #9b7134;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 241, 200, 0.42) 0 8px, rgba(244, 218, 155, 0.24) 8px 16px),
+    #ead19a;
+  box-shadow: inset 2px 2px 0 rgba(255, 247, 209, 0.76);
+}
+
+.stage-transition-brief[hidden] {
+  display: none;
+}
+
+.stage-transition-brief.warn {
+  border-color: var(--warn);
+}
+
+.stage-transition-brief.danger {
+  border-color: var(--danger);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 229, 198, 0.48) 0 8px, rgba(232, 161, 124, 0.26) 8px 16px),
+    #e8b184;
+}
+
+.stage-transition-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 7px;
+  align-items: center;
+}
+
+.stage-transition-head span {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 900;
+}
+
+.stage-transition-head strong {
+  min-width: 0;
+  font-size: 0.82rem;
+  line-height: 1.18;
+}
+
+.stage-transition-head em {
+  padding: 2px 6px;
+  border: 2px solid #7b4c18;
+  background: #f2d48b;
+  color: #583b15;
+  font-size: 0.62rem;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.stage-transition-brief p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.stage-transition-objectives {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.stage-transition-objectives span {
+  max-width: 100%;
+  padding: 2px 5px;
+  border: 2px solid #b89752;
+  background: rgba(255, 246, 214, 0.7);
+  color: var(--deep);
+  font-size: 0.6rem;
+  font-weight: 900;
+  line-height: 1.14;
+  overflow-wrap: anywhere;
+}
+
+.stage-transition-objectives span.good {
+  border-color: var(--good);
+  background: #b9d98e;
+  color: #234522;
+}
+
+.stage-transition-objectives span.danger {
+  border-color: var(--danger);
+  background: #eaa07c;
+  color: #5b1f18;
+}
+
 .stage-objectives {
   display: grid;
   gap: 6px;

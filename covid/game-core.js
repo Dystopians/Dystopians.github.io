@@ -2941,6 +2941,35 @@
       });
   }
 
+  function getStageTransitionBrief(state) {
+    if (!state || state.ended) return null;
+    const info = getStageInfo(state);
+    const dayInPhase = info.dayInPhase || 1;
+    if (dayInPhase > 2) return null;
+    const previous = info.phase > 1 ? getStageInfo(info.phase - 1) : null;
+    const objectives = getStageObjectives(state).slice(0, 3);
+    const phasePressure = PHASE_PRESSURE[info.phase - 1] || 1;
+    const tone = phasePressure >= 4
+      ? "danger"
+      : phasePressure >= 3
+        ? "warn"
+        : "info";
+    return {
+      id: `stage_transition_${info.phase}`,
+      phase: info.phase,
+      dayInPhase,
+      title: info.phase === 1 ? "开局阶段简报" : `进入${info.name}`,
+      subtitle: previous ? `从“${previous.name}”转入“${info.name}”` : info.days,
+      tone,
+      pressureLabel: `阶段压力 +${phasePressure}`,
+      focus: info.focus,
+      situation: info.situation,
+      objectiveText: objectives.map((item) => `${item.label}：${item.targetText}`).join(" / "),
+      objectives,
+      challenges: info.challenges || [],
+    };
+  }
+
   function getObjectiveValue(state, metric) {
     if (CORE_METRICS.includes(metric)) return state.metrics[metric];
     if (HIDDEN_METRICS.includes(metric)) return state.hidden[metric];
@@ -7437,5 +7466,6 @@
     getStageInfo,
     getStageObjectives,
     getStageSchedule,
+    getStageTransitionBrief,
   };
 });

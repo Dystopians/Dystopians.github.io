@@ -485,6 +485,7 @@ function validateMapSignals() {
 
 function validateStageReview() {
   assert(typeof core.getStageReview === "function", "game-core.js must export getStageReview.");
+  assert(typeof core.getStageTransitionBrief === "function", "game-core.js must export getStageTransitionBrief.");
   const state = core.createGame({ difficulty: "normal", seed: 20260605 });
   state.day = 12;
   state.phase = 1;
@@ -513,6 +514,12 @@ function validateStageReview() {
     goodEvent.choices.some((choice) => choice.id === "claimStageMomentum" && choice.effectPreview.length >= 3),
     "Buffer event should add a momentum reward choice when enough stage objectives are complete.",
   );
+  const transition = core.getStageTransitionBrief(core.createGame({ difficulty: "normal", seed: 20260622 }));
+  assert(transition && transition.title && transition.pressureLabel && transition.objectiveText, "Stage transition brief should expose title, pressure label, and objectives on phase entry.");
+  const midStage = core.createGame({ difficulty: "normal", seed: 20260623 });
+  midStage.day = 15;
+  midStage.phase = core.phaseForDay(midStage.day);
+  assert(core.getStageTransitionBrief(midStage) === null, "Stage transition brief should not stay visible deep into a phase.");
 }
 
 function validateChoiceRiskPreview() {

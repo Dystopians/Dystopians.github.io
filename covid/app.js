@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v86";
+  const ASSET_VERSION = "v87";
   const core = window.Linjiang72;
 
   let state = null;
@@ -240,6 +240,7 @@
     stageProgressFill: document.getElementById("stageProgressFill"),
     stageSituation: document.getElementById("stageSituation"),
     stageFocus: document.getElementById("stageFocus"),
+    stageTransitionBrief: document.getElementById("stageTransitionBrief"),
     stageObjectives: document.getElementById("stageObjectives"),
     endingOutlook: document.getElementById("endingOutlook"),
     stageSchedule: document.getElementById("stageSchedule"),
@@ -709,6 +710,7 @@
     els.stageProgressFill.style.width = `${info.phaseProgress}%`;
     els.stageSituation.textContent = info.situation;
     els.stageFocus.textContent = info.focus;
+    renderStageTransitionBrief();
     renderStageObjectives();
     renderEndingOutlook();
     renderStageSchedule();
@@ -718,6 +720,33 @@
       li.textContent = challenge;
       els.stageChallenges.appendChild(li);
     });
+  }
+
+  function renderStageTransitionBrief() {
+    if (!els.stageTransitionBrief || !core.getStageTransitionBrief) return;
+    const brief = core.getStageTransitionBrief(state);
+    if (!brief) {
+      els.stageTransitionBrief.hidden = true;
+      els.stageTransitionBrief.innerHTML = "";
+      return;
+    }
+    els.stageTransitionBrief.hidden = false;
+    els.stageTransitionBrief.className = `stage-transition-brief ${escapeHtml(brief.tone || "info")}`;
+    els.stageTransitionBrief.innerHTML = `
+      <div class="stage-transition-head">
+        <span>${escapeHtml(brief.subtitle || "")}</span>
+        <strong>${escapeHtml(brief.title || "阶段交接")}</strong>
+        <em>${escapeHtml(brief.pressureLabel || "")}</em>
+      </div>
+      <p>${escapeHtml(brief.focus || brief.situation || "")}</p>
+      <div class="stage-transition-objectives">
+        ${(brief.objectives || []).map((item) => `
+          <span class="${escapeHtml(item.tone || "warn")}" title="${escapeHtml(item.detail || "")}">
+            ${escapeHtml(item.label)} · ${escapeHtml(item.done ? "已达成" : item.targetText)}
+          </span>
+        `).join("")}
+      </div>
+    `;
   }
 
   function renderStageObjectives() {
