@@ -1014,6 +1014,65 @@ label {
   background: var(--danger);
 }
 
+.metric-trend {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 30px;
+  padding: 4px 5px;
+  border: 1px solid rgba(115, 79, 34, 0.38);
+  background: rgba(255, 248, 212, 0.62);
+}
+
+.metric-trend span {
+  flex: 0 0 auto;
+  font-size: 0.68rem;
+  line-height: 1;
+  font-weight: 900;
+  color: var(--muted);
+}
+
+.metric-trend div {
+  display: flex;
+  align-items: end;
+  justify-content: flex-end;
+  gap: 3px;
+  min-width: 48px;
+  min-height: 28px;
+}
+
+.metric-trend i {
+  display: block;
+  width: 5px;
+  min-height: 4px;
+  border: 1px solid rgba(86, 58, 25, 0.35);
+  background: #9b8050;
+  box-shadow: inset 1px 1px 0 rgba(255, 248, 212, 0.55);
+}
+
+.metric-trend.good i,
+.metric-trend.good span {
+  color: #2f6d43;
+}
+
+.metric-trend.good i {
+  background: var(--good);
+}
+
+.metric-trend.bad i,
+.metric-trend.bad span {
+  color: #9b332b;
+}
+
+.metric-trend.bad i {
+  background: var(--danger);
+}
+
+.metric-trend.neutral i {
+  background: #b89752;
+}
+
 .metric p {
   margin: 0;
   color: var(--muted);

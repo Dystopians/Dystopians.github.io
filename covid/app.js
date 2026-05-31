@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v72";
+  const ASSET_VERSION = "v73";
   const core = window.Linjiang72;
 
   let state = null;
@@ -501,6 +501,7 @@
         <div class="meter" aria-hidden="true">
           <div class="meter-fill" style="width:${value}%"></div>
         </div>
+        ${renderMetricTrend(metric)}
         <p>${metric === "infection" ? `报告值 ${visible.reportedInfection}；` : ""}${meta.description}</p>
       `;
       els.metricsList.appendChild(article);
@@ -512,6 +513,24 @@
     els.publicMemory.textContent = state.hidden.publicMemory;
     renderStatusEffects();
     renderCrisisBoard();
+  }
+
+  function renderMetricTrend(metric) {
+    if (!core.getMetricTrend) return "";
+    const trend = core.getMetricTrend(state, metric, 6);
+    if (!trend || !Array.isArray(trend.values)) return "";
+    const bars = trend.values
+      .map((value) => {
+        const height = Math.max(4, Math.min(28, Math.round(value * 0.28)));
+        return `<i style="height:${height}px" title="${escapeHtml(String(value))}" aria-hidden="true"></i>`;
+      })
+      .join("");
+    return `
+      <div class="metric-trend ${escapeHtml(trend.tone)}" title="${escapeHtml(trend.detail)}">
+        <span>${escapeHtml(trend.summary)}</span>
+        <div>${bars}</div>
+      </div>
+    `;
   }
 
   function renderStatusEffects() {

@@ -379,6 +379,19 @@ function validateSettlementBreakdown() {
   );
 }
 
+function validateMetricTrends() {
+  assert(typeof core.getMetricTrend === "function", "game-core.js must export getMetricTrend.");
+  const state = core.createGame({ difficulty: "normal", seed: 20260611 });
+  const event = core.getCurrentEvent(state);
+  const choice = event.choices.find((item) => item.available !== false);
+  assert(Boolean(choice), "Expected an available opening choice for metric trend validation.");
+  core.resolveChoice(state, choice.id);
+  const trend = core.getMetricTrend(state, "infection", 6);
+  assert(trend && Array.isArray(trend.values), "getMetricTrend should return values.");
+  assert(trend.values.length >= 2, "Metric trend should reconstruct at least one historical step after a choice.");
+  assert(trend.summary && trend.detail && trend.tone, "Metric trend needs summary, detail, and tone.");
+}
+
 function validateEndingStrategyReview() {
   assert(typeof core.getStrategyProfile === "function", "game-core.js must export getStrategyProfile.");
   const state = core.createGame({ difficulty: "normal", seed: 20260603 });
@@ -452,6 +465,7 @@ function run() {
   validateStageReview();
   validateChoiceRiskPreview();
   validateSettlementBreakdown();
+  validateMetricTrends();
   validateEndingStrategyReview();
 
   const summary = {

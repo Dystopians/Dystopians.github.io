@@ -2698,6 +2698,36 @@
     };
   }
 
+  function getMetricTrend(state, metric, span = 6) {
+    if (!state || !metric) return null;
+    const meta = getObjectiveMeta(metric);
+    const current = getObjectiveValue(state, metric);
+    const history = Array.isArray(state.history) ? state.history.slice(0, Math.max(1, span - 1)) : [];
+    let cursor = current;
+    const values = [current];
+    history.forEach((entry) => {
+      const delta = entry && entry.changes ? entry.changes[metric] || 0 : 0;
+      cursor = boundedMetricValue(metric, cursor - delta);
+      values.unshift(cursor);
+    });
+    const start = values[0];
+    const end = values[values.length - 1];
+    const delta = end - start;
+    const tone = delta === 0 ? "neutral" : isGoodDelta(metric, delta) ? "good" : "bad";
+    return {
+      metric,
+      label: meta.label,
+      short: meta.short,
+      values,
+      delta,
+      tone,
+      summary: values.length > 1 ? `近${values.length - 1}次 ${delta > 0 ? "+" : ""}${delta}` : "暂无走势",
+      detail: values.length > 1
+        ? `${meta.label}近期走势：${start} → ${end}。${tone === "good" ? "方向有利" : tone === "bad" ? "正在承压" : "基本持平"}。`
+        : `${meta.label}还没有足够历史记录形成走势。`,
+    };
+  }
+
   function refreshStatusEffects(state) {
     state.statusEffects = getStatusEffects(state);
     return state.statusEffects;
@@ -6308,6 +6338,7 @@
     getStatusEffects,
     getCrisisDashboard,
     getVisibleMetrics,
+    getMetricTrend,
     getEventImage,
     getMapSignals,
     getMapPoint,
