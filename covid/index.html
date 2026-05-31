@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>临江72日</title>
-    <link rel="stylesheet" href="./styles.css?v=73">
+    <link rel="stylesheet" href="./styles.css?v=74">
   </head>
   <body>
     <main class="app-shell">
@@ -75,19 +75,19 @@
           </div>
           <div id="metricsList" class="metrics-list"></div>
           <div class="resource-readouts">
-            <div tabindex="0" data-tooltip="应急资金：财政、专项拨款和社会协作额度。主动工程和城市决议会消耗资金，资金也会影响最终评分。">
+            <div tabindex="0" data-resource-metric="funds" data-tooltip="应急资金：财政、专项拨款和社会协作额度。主动工程和城市决议会消耗资金，资金也会影响最终评分。">
               <span>应急资金</span>
               <strong id="fundsReadout">68</strong>
             </div>
-            <div tabindex="0" data-tooltip="发现率：病例发现和监测能力。越高，报告感染压力越接近真实状况，也能让复工、分区治理等行动更可靠。">
+            <div tabindex="0" data-resource-metric="detectedRate" data-tooltip="发现率：病例发现和监测能力。越高，报告感染压力越接近真实状况，也能让复工、分区治理等行动更可靠。">
               <span>发现率</span>
               <strong id="detectedRate">35</strong>
             </div>
-            <div tabindex="0" data-tooltip="管控：限制流动和组织执行的强度。能压低感染传播，但会消耗城市活力、信任、物资和基层状态。">
+            <div tabindex="0" data-resource-metric="policyStrictness" data-tooltip="管控：限制流动和组织执行的强度。能压低感染传播，但会消耗城市活力、信任、物资和基层状态。">
               <span>管控</span>
               <strong id="policyStrictness">20</strong>
             </div>
-            <div tabindex="0" data-tooltip="创伤：医疗、民生、沟通和强硬处置留下的长期公共记忆。数值越高，最终结局越沉重。">
+            <div tabindex="0" data-resource-metric="publicMemory" data-tooltip="创伤：医疗、民生、沟通和强硬处置留下的长期公共记忆。数值越高，最终结局越沉重。">
               <span>创伤</span>
               <strong id="publicMemory">0</strong>
             </div>
@@ -273,7 +273,7 @@
       </article>
     </section>
 
-    <script src="./game-core.js?v=73"></script>
-    <script src="./app.js?v=73"></script>
+    <script src="./game-core.js?v=74"></script>
+    <script src="./app.js?v=74"></script>
   </body>
 </html>

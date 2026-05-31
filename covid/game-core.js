@@ -2713,7 +2713,13 @@
     const start = values[0];
     const end = values[values.length - 1];
     const delta = end - start;
-    const tone = delta === 0 ? "neutral" : isGoodDelta(metric, delta) ? "good" : "bad";
+    const tone = delta === 0
+      ? "neutral"
+      : isGoodDelta(metric, delta)
+        ? "good"
+        : isBadDelta(metric, delta)
+          ? "bad"
+          : "mixed";
     return {
       metric,
       label: meta.label,
@@ -2723,7 +2729,7 @@
       tone,
       summary: values.length > 1 ? `近${values.length - 1}次 ${delta > 0 ? "+" : ""}${delta}` : "暂无走势",
       detail: values.length > 1
-        ? `${meta.label}近期走势：${start} → ${end}。${tone === "good" ? "方向有利" : tone === "bad" ? "正在承压" : "基本持平"}。`
+        ? `${meta.label}近期走势：${start} → ${end}。${tone === "good" ? "方向有利" : tone === "bad" ? "正在承压" : tone === "mixed" ? "方向需权衡" : "基本持平"}。`
         : `${meta.label}还没有足够历史记录形成走势。`,
     };
   }

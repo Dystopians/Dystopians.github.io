@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v73";
+  const ASSET_VERSION = "v74";
   const core = window.Linjiang72;
 
   let state = null;
@@ -511,6 +511,7 @@
     els.detectedRate.textContent = state.hidden.detectedRate;
     els.policyStrictness.textContent = state.hidden.policyStrictness;
     els.publicMemory.textContent = state.hidden.publicMemory;
+    renderResourceReadoutTrends();
     renderStatusEffects();
     renderCrisisBoard();
   }
@@ -531,6 +532,33 @@
         <div>${bars}</div>
       </div>
     `;
+  }
+
+  function renderResourceReadoutTrends() {
+    if (!core.getMetricTrend) return;
+    document.querySelectorAll("[data-resource-metric]").forEach((node) => {
+      const metric = node.dataset.resourceMetric;
+      const trend = core.getMetricTrend(state, metric, 6);
+      if (!trend || !Array.isArray(trend.values)) return;
+      let trendNode = node.querySelector(".readout-trend");
+      if (!trendNode) {
+        trendNode = document.createElement("div");
+        trendNode.className = "readout-trend";
+        node.appendChild(trendNode);
+      }
+      const bars = trend.values
+        .map((value) => {
+          const height = Math.max(3, Math.min(18, Math.round(value * 0.18)));
+          return `<i style="height:${height}px" title="${escapeHtml(String(value))}" aria-hidden="true"></i>`;
+        })
+        .join("");
+      trendNode.className = `readout-trend ${escapeHtml(trend.tone || "neutral")}`;
+      trendNode.title = trend.detail;
+      trendNode.innerHTML = `
+        <span>${escapeHtml(trend.summary)}</span>
+        <div class="readout-trend-bars">${bars}</div>
+      `;
+    });
   }
 
   function renderStatusEffects() {

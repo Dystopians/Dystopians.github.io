@@ -390,6 +390,11 @@ function validateMetricTrends() {
   assert(trend && Array.isArray(trend.values), "getMetricTrend should return values.");
   assert(trend.values.length >= 2, "Metric trend should reconstruct at least one historical step after a choice.");
   assert(trend.summary && trend.detail && trend.tone, "Metric trend needs summary, detail, and tone.");
+  const mixedState = core.createGame({ difficulty: "normal", seed: 20260612 });
+  mixedState.hidden.policyStrictness = 30;
+  mixedState.history.unshift({ changes: { policyStrictness: 5 } });
+  const mixedTrend = core.getMetricTrend(mixedState, "policyStrictness", 6);
+  assert(mixedTrend && mixedTrend.tone === "mixed", "Mixed-direction metrics such as policyStrictness should not be colored as purely good or bad.");
 }
 
 function validateEndingStrategyReview() {

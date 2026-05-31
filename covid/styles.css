@@ -1069,6 +1069,15 @@ label {
   background: var(--danger);
 }
 
+.metric-trend.mixed i,
+.metric-trend.mixed span {
+  color: #3d6684;
+}
+
+.metric-trend.mixed i {
+  background: #6f91a8;
+}
+
 .metric-trend.neutral i {
   background: #b89752;
 }
@@ -1159,6 +1168,66 @@ label {
   display: block;
   margin-top: 3px;
   font-size: 1.05rem;
+}
+
+.readout-trend {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(115, 79, 34, 0.35);
+}
+
+.readout-trend span {
+  display: inline;
+  flex: 0 0 auto;
+  font-size: 0.62rem;
+  line-height: 1;
+  font-weight: 900;
+  color: var(--muted);
+}
+
+.readout-trend-bars {
+  display: flex;
+  align-items: end;
+  justify-content: flex-end;
+  gap: 2px;
+  min-height: 18px;
+}
+
+.readout-trend i {
+  display: block;
+  width: 4px;
+  min-height: 3px;
+  border: 1px solid rgba(86, 58, 25, 0.3);
+  background: #b89752;
+  box-shadow: inset 1px 1px 0 rgba(255, 248, 212, 0.55);
+}
+
+.readout-trend.good span {
+  color: #2f6d43;
+}
+
+.readout-trend.good i {
+  background: var(--good);
+}
+
+.readout-trend.bad span {
+  color: #9b332b;
+}
+
+.readout-trend.bad i {
+  background: var(--danger);
+}
+
+.readout-trend.mixed span {
+  color: #3d6684;
+}
+
+.readout-trend.mixed i {
+  background: #6f91a8;
 }
 
 .status-effects {
