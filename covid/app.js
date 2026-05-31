@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v43";
+  const ASSET_VERSION = "v44";
   const core = window.Linjiang72;
 
   let state = null;
@@ -117,6 +117,13 @@
       operation: "factoryClosedLoop",
     },
     {
+      id: "fiscalTransparencyLedger",
+      label: "财政透明台账",
+      kind: "财政",
+      detail: "应急采购、捐赠和拨付开始可追踪，信任能更稳定地转成协作资金。",
+      operation: "fiscalTransparencyLedger",
+    },
+    {
       id: "livelihoodStaggeredReopen",
       label: "民生网点分时复业",
       kind: "节点",
@@ -138,6 +145,20 @@
       operation: "contactlessServiceRegistry",
     },
     {
+      id: "microFreightPermit",
+      label: "货运微循环许可",
+      kind: "节点",
+      detail: "药品、生鲜和工业原料车辆获得短时段许可，城市微循环被谨慎托住。",
+      operation: "microFreightPermit",
+    },
+    {
+      id: "rentDeferralCoordination",
+      label: "小微租金缓缴协调",
+      kind: "财政",
+      detail: "小微主体的租金和服务费获得缓冲，城市活力有了低速恢复空间。",
+      operation: "rentDeferralCoordination",
+    },
+    {
       id: "remoteWorkGovServices",
       label: "线上政务与远程办公",
       kind: "节点",
@@ -150,6 +171,13 @@
       kind: "财政",
       detail: "捐助专户和缺口清单开始对齐，资金与物资能够更快转成实际补位。",
       operation: "donationCoordination",
+    },
+    {
+      id: "procurementCreditNegotiation",
+      label: "采购账期谈判",
+      kind: "财政",
+      detail: "部分采购付款被后移，短期现金流得到缓冲，但后续账期仍会回来。",
+      operation: "procurementCreditNegotiation",
     },
     {
       id: "specialFundingApplication",

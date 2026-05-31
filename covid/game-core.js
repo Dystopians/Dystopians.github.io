@@ -10,6 +10,7 @@
   const TOTAL_DAYS = 72;
   const PHASE_SIZE = 12;
   const DAILY_CORE_CAP = 12;
+  const CITY_ACTIONS_PER_DAY = 1;
   const PHASE_PRESSURE = [2, 3, 4, 3, 2, 1];
 
   const CORE_METRICS = [
@@ -636,10 +637,18 @@
     reopen: { label: "恢复财政", tone: "mixed" },
     whiteList: { label: "恢复财政", tone: "mixed" },
     finance: { label: "恢复财政", tone: "mixed" },
+    fiscalTransparencyLedger: { label: "恢复财政", tone: "good" },
+    procurementCreditNegotiation: { label: "恢复财政", tone: "mixed" },
     specialFundingApplication: { label: "恢复财政", tone: "mixed" },
     donationCoordination: { label: "恢复财政", tone: "good" },
+    rentDeferralCoordination: { label: "恢复财政", tone: "mixed" },
+    microFreightPermit: { label: "民生保供", tone: "mixed" },
+    factoryClosedLoop: { label: "恢复财政", tone: "mixed" },
     livelihoodStaggeredReopen: { label: "恢复财政", tone: "mixed" },
     closedLoopSmallShift: { label: "恢复财政", tone: "mixed" },
+    contactlessServiceRegistry: { label: "恢复财政", tone: "mixed" },
+    remoteWorkGovServices: { label: "恢复财政", tone: "good" },
+    budgetReallocationMeeting: { label: "恢复财政", tone: "danger" },
     specialBondQuota: { label: "恢复财政", tone: "danger" },
     jobSubsidyAdvance: { label: "恢复财政", tone: "mixed" },
     nightFreightWindow: { label: "民生保供", tone: "mixed" },
@@ -1094,7 +1103,7 @@
       x: 39,
       y: 81,
       description: "保供网络的关键节点。保障这里能明显改善物资，但会挤占财政和配送人手。",
-      operations: ["supplyCorridor", "donationCoordination", "livelihoodStaggeredReopen", "contactlessServiceRegistry"],
+      operations: ["supplyCorridor", "donationCoordination", "procurementCreditNegotiation", "rentDeferralCoordination", "livelihoodStaggeredReopen", "contactlessServiceRegistry"],
       resolutions: ["priorityMedicineRoute", "hardWarehouse", "emergencyLevy", "nightFreightWindow"],
     },
     {
@@ -1104,7 +1113,7 @@
       x: 78,
       y: 70,
       description: "道路通行决定物资和复工效率。健康码和货运白名单都会在这里体现代价。",
-      operations: ["deployHealthCode", "supplyCorridor", "remoteWorkGovServices"],
+      operations: ["deployHealthCode", "supplyCorridor", "microFreightPermit", "remoteWorkGovServices"],
       resolutions: ["elasticTransit", "lowRiskWorkList", "suppressRumorLine", "nightFreightWindow"],
     },
     {
@@ -1124,7 +1133,7 @@
       x: 86,
       y: 19,
       description: "城市活力和财政恢复来源。复工需要足够发现率和通行秩序支撑。",
-      operations: ["factoryClosedLoop", "specialFundingApplication", "closedLoopSmallShift", "budgetReallocationMeeting"],
+      operations: ["factoryClosedLoop", "fiscalTransparencyLedger", "specialFundingApplication", "closedLoopSmallShift", "budgetReallocationMeeting"],
       resolutions: ["lowRiskWorkList", "elasticTransit", "enterpriseExemption", "jobSubsidyAdvance", "specialBondQuota"],
     },
     {
@@ -1234,25 +1243,50 @@
       delayed: {
         delay: 2,
         label: "专项资金到账",
-        resources: { funds: 10 },
+        resources: { funds: 8 },
         effects: {},
         hidden: {},
       },
       maxUses: 1,
-      conditionText: "需要第7天后，且资金≤50、医疗负载≥65或物资≤45。",
+      conditionText: "需要第5天后，且资金≤55、医疗负载≥55或物资≤50。",
       condition(state) {
-        return state.day >= 7
-          && (state.resources.funds <= 50
-            || state.metrics.hospitalLoad >= 65
-            || state.metrics.supplies <= 45);
+        return state.day >= 5
+          && (state.resources.funds <= 55
+            || state.metrics.hospitalLoad >= 55
+            || state.metrics.supplies <= 50);
+      },
+    },
+    fiscalTransparencyLedger: {
+      label: "财政透明台账",
+      location: "factory",
+      description: "把应急采购、捐赠、拨付和工程缺口做成可追踪台账。它不能凭空造钱，但能较早修复信任并撬动小额协作资金。",
+      resources: { funds: 3 },
+      effects: { trust: 1, staffFatigue: 2 },
+      hidden: { publicMemory: -1 },
+      delayed: {
+        delay: 2,
+        label: "台账带来协作拨付",
+        resources: { funds: 2 },
+        effects: { trust: 1 },
+        condition: "trustAtLeast55",
+      },
+      maxUses: 1,
+      conditionText: "需要第2天后，且资金≤72、信任≤70或公共创伤≥8。",
+      condition(state) {
+        return state.day >= 2
+          && (state.resources.funds <= 72
+            || state.metrics.trust <= 70
+            || state.hidden.publicMemory >= 8);
       },
     },
     donationCoordination: {
       label: "社会捐助统筹",
       location: "market",
       description: "开设可追踪捐助清单，把社会捐赠转成防护、药品和配送缺口。能补资金和物资，但需要基层登记与后续复核。",
-      resources: { funds: 5 },
-      effects: { supplies: 2, trust: 1, staffFatigue: 1 },
+      resources(state) {
+        return { funds: state.metrics.trust < 40 ? 1 : 4 };
+      },
+      effects: { supplies: 1, trust: 1, staffFatigue: 2 },
       hidden: { publicMemory: -1 },
       delayed: {
         delay: 3,
@@ -1262,13 +1296,33 @@
         condition: "trustBelow45",
       },
       maxUses: 1,
-      conditionText: "需要第10天后，且资金≤55、物资≤65、信任≤65或公共创伤≥15。",
+      conditionText: "需要第6天后，且资金≤55、物资≤65、信任≤65或公共创伤≥15。",
       condition(state) {
-        return state.day >= 10
+        return state.day >= 6
           && (state.resources.funds <= 55
             || state.metrics.supplies <= 65
             || state.metrics.trust <= 65
             || state.hidden.publicMemory >= 15);
+      },
+    },
+    procurementCreditNegotiation: {
+      label: "采购账期谈判",
+      location: "market",
+      description: "与药品、防护和生鲜供应商谈判延期结算，先把现金流留给急迫工程。账期会回来，且供应商会要求更清楚的付款口径。",
+      resources: { funds: 5 },
+      effects: { supplies: -1, trust: -2, staffFatigue: 1 },
+      hidden: { publicMemory: 1 },
+      delayed: {
+        delay: 4,
+        label: "采购账期到期",
+        resources: { funds: -5 },
+        effects: { trust: -1 },
+        condition: "trustBelow45",
+      },
+      maxUses: 1,
+      conditionText: "需要第3天后，且资金≤56、物资≥28。",
+      condition(state) {
+        return state.day >= 3 && state.resources.funds <= 56 && state.metrics.supplies >= 28;
       },
     },
     triageNetwork: {
@@ -1424,9 +1478,9 @@
         hidden: {},
       },
       maxUses: 1,
-      conditionText: "需要第8天后，物资≤65或城市活力≤60，且感染压力<75。",
+      conditionText: "需要第6天后，物资≤65或城市活力≤60，且感染压力<75。",
       condition(state) {
-        return state.day >= 8
+        return state.day >= 6
           && state.metrics.infection < 75
           && (state.metrics.supplies <= 65 || state.metrics.economy <= 60);
       },
@@ -1438,11 +1492,11 @@
       resources: { funds: -4 },
       effects(state) {
         return {
-          economy: 4,
-          supplies: 2,
-          trust: 2,
-          infection: state.hidden.detectedRate < 50 ? 3 : 1,
-          staffFatigue: 2,
+          economy: 3,
+          supplies: 1,
+          trust: 1,
+          infection: state.hidden.detectedRate < 45 ? 2 : 1,
+          staffFatigue: 3,
         };
       },
       hidden: { policyStrictness: -1 },
@@ -1454,11 +1508,57 @@
         condition: "trustAtLeast60",
       },
       maxUses: 1,
-      conditionText: "需要第6天后，感染压力<70，且城市活力≤68或物资≤68。",
+      conditionText: "需要第4天后，感染压力<70，且城市活力≤68或物资≤68。",
       condition(state) {
-        return state.day >= 6
+        return state.day >= 4
           && state.metrics.infection < 70
           && (state.metrics.economy <= 68 || state.metrics.supplies <= 68);
+      },
+    },
+    microFreightPermit: {
+      label: "货运微循环许可",
+      location: "road",
+      description: "给药品、生鲜和工业原料车辆设置短时段、短路线许可。它恢复的是城市微循环，收益不大，但能在全面复工前托住供应和活力。",
+      resources: { funds: -3 },
+      effects(state) {
+        return {
+          supplies: 3,
+          economy: 2,
+          infection: state.completedProjects.healthCode ? 1 : 2,
+          staffFatigue: 3,
+        };
+      },
+      hidden: { policyStrictness: -1 },
+      delayed: {
+        delay: 2,
+        label: "货运点位复核",
+        effects: { economy: 1 },
+        hidden: {},
+        condition: "detectedAtLeast50",
+      },
+      maxUses: 1,
+      conditionText: "需要第4天后，管控强度≥30，且感染压力<75。",
+      condition(state) {
+        return state.day >= 4 && state.hidden.policyStrictness >= 30 && state.metrics.infection < 75;
+      },
+    },
+    rentDeferralCoordination: {
+      label: "小微租金缓缴协调",
+      location: "market",
+      description: "协调商铺、房东和平台把租金与服务费往后缓一缓。它能保住小微主体和居民日常服务，但会占用财政信用。",
+      resources: { funds: -4 },
+      effects: { economy: 4, trust: 2, staffFatigue: 1 },
+      hidden: { publicMemory: -1 },
+      delayed: {
+        delay: 3,
+        label: "缓缴缺口复核",
+        resources: { funds: -2 },
+        condition: "economyBelow40",
+      },
+      maxUses: 1,
+      conditionText: "需要第5天后，城市活力≤66，且应急资金≥12。",
+      condition(state) {
+        return state.day >= 5 && state.metrics.economy <= 66 && state.resources.funds >= 12;
       },
     },
     remoteWorkGovServices: {
@@ -1468,7 +1568,7 @@
       resources: { funds: -4 },
       effects(state) {
         return {
-          economy: state.metrics.trust >= 65 ? 5 : 4,
+          economy: state.metrics.trust >= 65 ? 3 : 2,
           trust: 1,
           staffFatigue: 1,
         };
@@ -1481,12 +1581,12 @@
         hidden: { detectedRate: 1 },
       },
       maxUses: 1,
-      conditionText: "需要第6天后，且城市活力≤68、管控强度≥35或资金≤45。",
+      conditionText: "需要第2天后，且城市活力≤70、管控强度≥30或资金≤55。",
       condition(state) {
-        return state.day >= 6
-          && (state.metrics.economy <= 68
-            || state.hidden.policyStrictness >= 35
-            || state.resources.funds <= 45);
+        return state.day >= 2
+          && (state.metrics.economy <= 70
+            || state.hidden.policyStrictness >= 30
+            || state.resources.funds <= 55);
       },
     },
     budgetReallocationMeeting: {
@@ -1822,10 +1922,10 @@
 
   const TESTING_KEYS = ["expandTesting", "campusSentinel", "deployHealthCode", "triageNetwork", "communityClinic"];
   const CONTROL_KEYS = ["zoningControl", "citywideSilence", "suppressRumorLine", "deployHealthCode"];
-  const SUPPLY_KEYS = ["supplyPriority", "supplyCorridor", "volunteerDispatch", "hardWarehouse", "elasticTransit", "outsourceDelivery", "donationCoordination", "closedLoopSmallShift", "contactlessServiceRegistry", "nightFreightWindow"];
+  const SUPPLY_KEYS = ["supplyPriority", "supplyCorridor", "volunteerDispatch", "hardWarehouse", "elasticTransit", "outsourceDelivery", "donationCoordination", "closedLoopSmallShift", "contactlessServiceRegistry", "nightFreightWindow", "microFreightPermit"];
   const MEDICAL_KEYS = ["medicalExpansion", "buildShelterHospital", "triageNetwork", "communityClinic", "shelterAdmissionStandard"];
   const REST_KEYS = ["restPolicy", "mentalHealthLine", "staffRotationOrder", "communityAutonomy", "supportTeam", "compressAdmin", "forceSimplify"];
-  const REOPEN_KEYS = ["reopenPilot", "lowRiskWorkList", "factoryClosedLoop", "elasticTransit", "enterpriseExemption", "livelihoodStaggeredReopen", "closedLoopSmallShift", "contactlessServiceRegistry", "remoteWorkGovServices", "nightFreightWindow", "jobSubsidyAdvance"];
+  const REOPEN_KEYS = ["reopenPilot", "lowRiskWorkList", "factoryClosedLoop", "elasticTransit", "enterpriseExemption", "livelihoodStaggeredReopen", "closedLoopSmallShift", "contactlessServiceRegistry", "remoteWorkGovServices", "nightFreightWindow", "jobSubsidyAdvance", "microFreightPermit", "rentDeferralCoordination"];
   const VOLUNTEER_KEYS = ["volunteerDispatch", "mentalHealthLine", "supportTeam", "communityAutonomy"];
   const PUBLIC_REPAIR_KEYS = ["transparency", "publicReviewBrief"];
 
@@ -1944,6 +2044,7 @@
         missedScheduledEvents: [],
         operationUses: {},
         resolutions: {},
+        cityActionsToday: 0,
         failureStreaks: {
           medical: 0,
           supply: 0,
@@ -1983,6 +2084,7 @@
     state.flags.missedScheduledEvents = state.flags.missedScheduledEvents || [];
     state.flags.operationUses = state.flags.operationUses || {};
     state.flags.resolutions = state.flags.resolutions || {};
+    state.flags.cityActionsToday = state.flags.cityActionsToday || 0;
     state.flags.failureStreaks = state.flags.failureStreaks || {
       medical: 0,
       supply: 0,
@@ -2348,9 +2450,11 @@
     const resources = adjustedResourcesForItem(state, operationId, resolveResources(state, operation));
     const affordable = canPay(state, resources);
     const fiscalLocked = isFiscalLock(state, resources);
+    const dailyLimitReached = (state.flags.cityActionsToday || 0) >= CITY_ACTIONS_PER_DAY;
     let lockedReason = "";
     if (maxed) lockedReason = "次数已用完";
     else if (!conditionOk) lockedReason = "条件未满足";
+    else if (dailyLimitReached) lockedReason = "今日调度已满";
     else if (fiscalLocked) lockedReason = "财政透支";
     else if (!affordable) lockedReason = "资金不足";
     const lockedDetail = !conditionOk
@@ -2364,7 +2468,7 @@
       resources,
       effects,
       hidden,
-      available: !maxed && conditionOk && !fiscalLocked && affordable,
+      available: !maxed && conditionOk && !dailyLimitReached && !fiscalLocked && affordable,
       lockedReason,
       lockedDetail,
       uses,
@@ -2378,9 +2482,11 @@
     const resources = adjustedResourcesForItem(state, resolutionId, resolveResources(state, resolution));
     const affordable = canPay(state, resources);
     const fiscalLocked = isFiscalLock(state, resources);
+    const dailyLimitReached = (state.flags.cityActionsToday || 0) >= CITY_ACTIONS_PER_DAY;
     let lockedReason = "";
     if (resolution.once && used) lockedReason = "已通过";
     else if (!conditionOk) lockedReason = "条件未满足";
+    else if (dailyLimitReached) lockedReason = "今日调度已满";
     else if (fiscalLocked) lockedReason = "财政透支";
     else if (!affordable) lockedReason = "资金不足";
     const lockedDetail = lockedReason === "已通过"
@@ -2396,7 +2502,7 @@
       resources,
       effects,
       hidden,
-      available: !(resolution.once && used) && conditionOk && !fiscalLocked && affordable,
+      available: !(resolution.once && used) && conditionOk && !dailyLimitReached && !fiscalLocked && affordable,
       lockedReason,
       lockedDetail,
       used,
@@ -3273,6 +3379,7 @@
     if (!state.ended) {
       state.day += 1;
       state.news = generateNews(state);
+      state.flags.cityActionsToday = 0;
       chooseNextEvent(state);
     }
 
@@ -3289,7 +3396,7 @@
       phase: state.phase,
       title: "城市主动工程",
       choice: status.label,
-      notes: [`地图节点：${getMapPoint(state, status.location).label}`, "工程即时生效，今日事件仍需处理"],
+      notes: [`地图节点：${getMapPoint(state, status.location).label}`, "工程即时生效，今日事件仍需处理", `今日调度额度：${(state.flags.cityActionsToday || 0) + 1}/${CITY_ACTIONS_PER_DAY}`],
       changes: {},
     };
     const effects = status.effects || {};
@@ -3299,6 +3406,7 @@
     applyEffects(state, effects, dailyDelta, log, "主动工程");
     applyHiddenEffects(state, hidden, log, "主动工程");
     state.flags.operationUses[operationId] = (state.flags.operationUses[operationId] || 0) + 1;
+    state.flags.cityActionsToday = (state.flags.cityActionsToday || 0) + 1;
     if (status.delayed) scheduleDelayedEffect(state, status.delayed, "城市主动工程", status.label);
 
     clampAll(state);
@@ -3319,7 +3427,7 @@
       phase: state.phase,
       title: "城市决议",
       choice: status.label,
-      notes: ["决议即时生效，今日事件仍需处理"],
+      notes: ["决议即时生效，今日事件仍需处理", `今日调度额度：${(state.flags.cityActionsToday || 0) + 1}/${CITY_ACTIONS_PER_DAY}`],
       changes: {},
     };
 
@@ -3327,6 +3435,7 @@
     applyEffects(state, status.effects || {}, dailyDelta, log, "城市决议");
     applyHiddenEffects(state, status.hidden || {}, log, "城市决议");
     state.flags.resolutions[resolutionId] = true;
+    state.flags.cityActionsToday = (state.flags.cityActionsToday || 0) + 1;
     if (status.delayed) scheduleDelayedEffect(state, status.delayed, "城市决议", status.label);
 
     clampAll(state);
@@ -3407,11 +3516,13 @@
     if (condition === "staffFatigueAbove75") return state.metrics.staffFatigue > 75;
     if (condition === "trustBelow40") return state.metrics.trust < 40;
     if (condition === "trustBelow45") return state.metrics.trust < 45;
+    if (condition === "trustAtLeast55") return state.metrics.trust >= 55;
     if (condition === "trustAtLeast60") return state.metrics.trust >= 60;
     if (condition === "hospitalAtLeast80") return state.metrics.hospitalLoad >= 80;
     if (condition === "hospitalAbove85") return state.metrics.hospitalLoad > 85;
     if (condition === "suppliesBelow25") return state.metrics.supplies < 25;
     if (condition === "detectedBelow50") return state.hidden.detectedRate < 50;
+    if (condition === "detectedAtLeast50") return state.hidden.detectedRate >= 50;
     if (condition === "fundsBelow20") return state.resources.funds < 20;
     if (condition === "economyBelow40") return state.metrics.economy < 40;
     return true;
@@ -3548,7 +3659,8 @@
       + (state.hidden.policyStrictness <= 15 ? 1 : 0);
     applyEffects(state, { economy: economyDelta }, dailyDelta, log, "活力联动");
 
-    const fatigueDelta = 2
+    const fatigueBase = state.metrics.staffFatigue >= 70 ? 1 : 2;
+    const fatigueDelta = fatigueBase
       + Math.round(state.hidden.policyStrictness / 25)
       + (state.metrics.hospitalLoad >= 75 ? 1 : 0)
       + (state.metrics.supplies < 30 ? 1 : 0)
@@ -3570,12 +3682,27 @@
       log.notes.push("执行熔断：基层系统自动降速，疲劳得到短暂缓冲，但服务能力和公众耐心被转移消耗");
     }
 
-    const passiveFundsGain = (state.metrics.economy >= 70 && state.resources.funds <= 60 ? 1 : state.metrics.economy >= 50 && state.resources.funds <= 40 ? 1 : 0)
-      + (state.metrics.trust >= 70 && state.metrics.economy >= 50 && state.resources.funds <= 35 ? 1 : 0);
+    const operationUses = state.flags.operationUses || {};
+    const fiscalBase = state.metrics.economy >= 75 && state.resources.funds <= 65
+      ? 1
+      : state.metrics.economy >= 60 && state.resources.funds <= 45
+        ? 1
+        : state.metrics.economy >= 50 && state.resources.funds <= 40
+          ? 1
+          : 0;
+    const trustPremium = state.metrics.trust >= 72 && state.metrics.economy >= 60 && state.resources.funds <= 50 ? 1 : 0;
+    const assetYield = (operationUses.fiscalTransparencyLedger && state.metrics.trust >= 55 && state.resources.funds <= 55 ? 1 : 0)
+      + (operationUses.donationCoordination && state.metrics.trust >= 50 && state.resources.funds <= 55 ? 1 : 0)
+      + (operationUses.factoryClosedLoop && state.metrics.economy >= 58 && state.resources.funds <= 60 ? 1 : 0)
+      + (operationUses.remoteWorkGovServices && state.metrics.economy >= 55 && state.resources.funds <= 45 ? 1 : 0)
+      + (state.completedProjects.supplyCorridor && state.metrics.supplies >= 60 && state.resources.funds <= 55 ? 1 : 0);
+    const passiveFundsGain = fiscalBase + trustPremium + clamp(assetYield, 0, 2);
     const passiveFundsLoss = (state.metrics.economy <= 25 ? 1 : 0)
       + (state.metrics.hospitalLoad >= 85 ? 1 : 0)
-      + (state.hidden.policyStrictness >= 80 ? 1 : 0);
-    const fundsDelta = clamp(passiveFundsGain, 0, 3) - passiveFundsLoss;
+      + (state.hidden.policyStrictness >= 80 ? 1 : 0)
+      + (state.metrics.trust < 25 ? 1 : 0)
+      + (state.resources.funds > 85 ? 1 : 0);
+    const fundsDelta = clamp(passiveFundsGain, 0, 2) - passiveFundsLoss;
     applyResourceEffects(state, { funds: fundsDelta }, log, "财政联动");
 
     if (state.metrics.hospitalLoad >= 85) {
