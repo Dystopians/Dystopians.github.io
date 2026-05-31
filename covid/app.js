@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v33";
+  const ASSET_VERSION = "v34";
   const core = window.Linjiang72;
 
   let state = null;
@@ -380,9 +380,13 @@
     els.mapHotspots.innerHTML = "";
     renderMapHighlights();
     core.MAP_POINTS.forEach((point) => {
+      const pointState = core.getMapPoint(state, point.id);
+      const availableOps = pointState.operations.filter((item) => item.available).length;
+      const availableRes = pointState.resolutions.filter((item) => item.available).length;
+      const availableTotal = availableOps + availableRes;
       const footprint = getMapFootprint(point);
       const button = document.createElement("button");
-      button.className = `map-hotspot ${point.type}${state.selectedMapPointId === point.id ? " active" : ""}`;
+      button.className = `map-hotspot ${point.type}${state.selectedMapPointId === point.id ? " active" : ""}${availableTotal ? " has-actions" : ""}`;
       button.type = "button";
       button.style.left = `${point.x}%`;
       button.style.top = `${point.y}%`;
@@ -390,14 +394,18 @@
       button.style.setProperty("--hit-h", `${footprint.h}%`);
       button.style.setProperty("--marker-x", `${footprint.markerX || 50}%`);
       button.style.setProperty("--marker-y", `${footprint.markerY || 50}%`);
-      button.title = point.label;
-      button.setAttribute("aria-label", point.label);
+      const actionHint = availableTotal
+        ? `，可用${availableOps ? `${availableOps}项工程` : ""}${availableOps && availableRes ? "、" : ""}${availableRes ? `${availableRes}项决议` : ""}`
+        : "";
+      button.title = `${point.label}${actionHint}`;
+      button.setAttribute("aria-label", `${point.label}${actionHint}`);
       button.innerHTML = `
         <span class="map-hotspot-label">${escapeHtml(point.label)}</span>
+        ${availableTotal ? `<span class="map-hotspot-badge" aria-hidden="true">${availableTotal}</span>` : ""}
       `;
       const showHighlight = () => {
         setMapHighlight(point.id);
-        els.mapHint.textContent = `悬停：${point.label}`;
+        els.mapHint.textContent = `悬停：${point.label}${availableTotal ? ` · 可用行动 ${availableTotal}` : ""}`;
       };
       const hideHighlight = () => {
         setMapHighlight(null);
@@ -439,24 +447,49 @@
     renderMapHint();
     const availableOps = point.operations.filter((item) => item.available).length;
     const availableRes = point.resolutions.filter((item) => item.available).length;
+    const availableItems = [
+      ...point.operations.filter((item) => item.available).map((item) => ({ ...item, kind: "工程" })),
+      ...point.resolutions.filter((item) => item.available).map((item) => ({ ...item, kind: "决议" })),
+    ];
+    const availableList = availableItems.length
+      ? `
+        <div class="map-ready-list" aria-label="当前节点可用行动">
+          ${availableItems.slice(0, 4).map((item) => `
+            <button class="map-ready-item" type="button" data-mode="${item.kind === "工程" ? "operations" : "resolutions"}">
+              <span>${escapeHtml(item.kind)}</span>
+              <strong>${escapeHtml(item.label)}</strong>
+            </button>
+          `).join("")}
+        </div>
+      `
+      : "<p class=\"map-ready-empty\">当前节点暂无可立即执行的行动。</p>";
     els.mapInspector.innerHTML = `
       <div>
         <p class="eyebrow">${point.type === "road" ? "道路节点" : point.type === "people" ? "人群节点" : "建筑节点"}</p>
         <h3>${escapeHtml(point.label)}</h3>
         <p>${escapeHtml(point.description)}</p>
+        ${availableList}
       </div>
       <div class="map-stats">
         <span>可执行工程 <strong>${availableOps}</strong></span>
         <span>可通过决议 <strong>${availableRes}</strong></span>
       </div>
     `;
+    els.mapInspector.querySelectorAll(".map-ready-item").forEach((button) => {
+      button.addEventListener("click", () => {
+        actionMode = button.dataset.mode === "resolutions" ? "resolutions" : "operations";
+        renderActionMode();
+      });
+    });
   }
 
   function renderMapHint() {
     if (!state) return;
     const point = core.getMapPoint(state, state.selectedMapPointId);
     const zoomLabel = `${Math.round(mapView.scale * 100)}%`;
-    els.mapHint.textContent = `当前：${point.label} · 缩放 ${zoomLabel}`;
+    const availableTotal = point.operations.filter((item) => item.available).length
+      + point.resolutions.filter((item) => item.available).length;
+    els.mapHint.textContent = `当前：${point.label} · 缩放 ${zoomLabel}${availableTotal ? ` · 可用行动 ${availableTotal}` : ""}`;
   }
 
   function getMapFootprint(point) {

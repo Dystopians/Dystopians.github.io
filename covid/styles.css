@@ -1024,6 +1024,21 @@ label {
   animation: hotspotActive 1.1s steps(4) infinite;
 }
 
+.map-hotspot.has-actions::after {
+  border-color: #fff6d6;
+  background:
+    linear-gradient(90deg, transparent 0 5px, rgba(255, 241, 200, 0.9) 5px 9px, transparent 9px),
+    #d79b2c;
+  box-shadow: 2px 2px 0 rgba(45, 40, 31, 0.62), 0 0 0 4px rgba(255, 214, 111, 0.22);
+}
+
+.map-hotspot.has-actions.active::after,
+.map-hotspot.has-actions:hover::after {
+  background:
+    linear-gradient(90deg, transparent 0 5px, rgba(255, 241, 200, 0.9) 5px 8px, transparent 8px),
+    #c14d32;
+}
+
 .map-hotspot .map-hotspot-label {
   position: absolute;
   left: 50%;
@@ -1038,6 +1053,26 @@ label {
   color: var(--ink);
   font-size: 0.72rem;
   box-shadow: 2px 2px 0 rgba(45, 40, 31, 0.55);
+}
+
+.map-hotspot-badge {
+  position: absolute;
+  left: calc(var(--marker-x, 50%) + 10px);
+  top: calc(var(--marker-y, 50%) - 20px);
+  z-index: 4;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--line-dark);
+  background: #f6c957;
+  color: #4a2516;
+  box-shadow: 2px 2px 0 rgba(45, 40, 31, 0.58), inset 1px 1px 0 rgba(255, 244, 202, 0.78);
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 14px;
+  text-align: center;
+  animation: actionBadgePulse 1.8s steps(2) infinite;
 }
 
 .map-hotspot:hover .map-hotspot-label,
@@ -1065,6 +1100,51 @@ label {
   margin: 0;
   color: var(--muted);
   line-height: 1.5;
+}
+
+.map-ready-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.map-ready-item {
+  min-height: 30px;
+  padding: 4px 7px;
+  border: 2px solid #9b7134;
+  background: #f0ca75;
+  color: var(--deep);
+  box-shadow: 2px 2px 0 rgba(95, 75, 42, 0.38);
+  line-height: 1.15;
+  text-align: left;
+}
+
+.map-ready-item:hover {
+  background: #ffd86f;
+  transform: translate(-1px, -1px);
+}
+
+.map-ready-item span {
+  display: block;
+  color: #6d4a1e;
+  font-size: 0.62rem;
+  font-weight: 900;
+}
+
+.map-ready-item strong {
+  display: block;
+  margin: 1px 0 0;
+  font-size: 0.72rem;
+  overflow-wrap: anywhere;
+}
+
+.map-ready-empty {
+  margin-top: 8px !important;
+  padding: 6px 8px;
+  border: 2px dashed #b89752;
+  background: rgba(255, 241, 200, 0.55);
+  font-size: 0.76rem;
 }
 
 .map-stats {
@@ -1915,6 +1995,15 @@ label {
   }
   50% {
     box-shadow: 3px 3px 0 rgba(45, 40, 31, 0.65), 0 0 0 10px rgba(168, 63, 50, 0.28);
+  }
+}
+
+@keyframes actionBadgePulse {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.12);
   }
 }
 
