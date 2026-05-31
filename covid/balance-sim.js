@@ -10,6 +10,10 @@ const BALANCE_TARGETS = {
   balancedPassMax: 65,
   balancedFatigueMin: 45,
   balancedFatigueMax: 75,
+  balancedDistinctEndingMin: 3,
+  balancedNonCollapseEndingMin: 2,
+  balancedDominantEndingMax: 70,
+  balancedMedicalCollapseMax: 45,
   noProjectPassMax: 15,
   singleStrategyPassMax: 10,
 };
@@ -153,6 +157,10 @@ function summarize(results) {
     .sort()
     .map((ending) => [ending, results.filter((result) => result.ending === ending).length]));
   const passes = results.filter((result) => !String(result.ending).includes("Collapse")).length;
+  const endingCounts = Object.values(endings);
+  const dominantEndingCount = endingCounts.length ? Math.max(...endingCounts) : 0;
+  const dominantEnding = Object.entries(endings).find(([, count]) => count === dominantEndingCount)?.[0] || "";
+  const nonCollapseEndings = Object.keys(endings).filter((ending) => !String(ending).includes("Collapse"));
   return {
     passRate: `${passes}/${results.length}`,
     passPct: Number((passes / results.length * 100).toFixed(1)),
@@ -165,6 +173,11 @@ function summarize(results) {
     avgEconomy: avg((result) => result.metrics.economy),
     avgFatigue: avg((result) => result.metrics.staffFatigue),
     avgFunds: avg((result) => result.resources.funds),
+    distinctEndings: Object.keys(endings).length,
+    nonCollapseEndings: nonCollapseEndings.length,
+    dominantEnding,
+    dominantEndingPct: Number((dominantEndingCount / results.length * 100).toFixed(1)),
+    medicalCollapsePct: Number(((endings.medicalCollapse || 0) / results.length * 100).toFixed(1)),
     endings,
   };
 }
@@ -224,6 +237,18 @@ function validateBalanceTargets(report) {
   }
   if (!within(balanced.avgFatigue, BALANCE_TARGETS.balancedFatigueMin, BALANCE_TARGETS.balancedFatigueMax)) {
     failures.push(`balanced avgFatigue ${balanced.avgFatigue} should stay ${BALANCE_TARGETS.balancedFatigueMin}-${BALANCE_TARGETS.balancedFatigueMax}.`);
+  }
+  if (Number(balanced.distinctEndings) < BALANCE_TARGETS.balancedDistinctEndingMin) {
+    failures.push(`balanced distinctEndings ${balanced.distinctEndings} should stay >= ${BALANCE_TARGETS.balancedDistinctEndingMin}.`);
+  }
+  if (Number(balanced.nonCollapseEndings) < BALANCE_TARGETS.balancedNonCollapseEndingMin) {
+    failures.push(`balanced nonCollapseEndings ${balanced.nonCollapseEndings} should stay >= ${BALANCE_TARGETS.balancedNonCollapseEndingMin}.`);
+  }
+  if (Number(balanced.dominantEndingPct) > BALANCE_TARGETS.balancedDominantEndingMax) {
+    failures.push(`balanced dominantEnding ${balanced.dominantEnding || "unknown"} at ${balanced.dominantEndingPct}% should stay <= ${BALANCE_TARGETS.balancedDominantEndingMax}%.`);
+  }
+  if (Number(balanced.medicalCollapsePct) > BALANCE_TARGETS.balancedMedicalCollapseMax) {
+    failures.push(`balanced medicalCollapsePct ${balanced.medicalCollapsePct}% should stay <= ${BALANCE_TARGETS.balancedMedicalCollapseMax}%.`);
   }
   if (Number(noProjects.passPct) > BALANCE_TARGETS.noProjectPassMax) {
     failures.push(`balancedNoProjects passPct ${noProjects.passPct}% should stay <= ${BALANCE_TARGETS.noProjectPassMax}%.`);

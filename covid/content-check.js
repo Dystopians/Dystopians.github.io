@@ -878,6 +878,12 @@ function validateBalanceSimCheckMode() {
     "validateBalanceTargets",
     "balancedPassMin",
     "balancedFatigueMax",
+    "balancedDistinctEndingMin",
+    "balancedNonCollapseEndingMin",
+    "balancedDominantEndingMax",
+    "balancedMedicalCollapseMax",
+    "dominantEndingPct",
+    "medicalCollapsePct",
     "singleStrategyPassMax",
   ].forEach((text) => {
     assert(balanceSim.includes(text), `balance-sim.js should expose ${text}.`);
