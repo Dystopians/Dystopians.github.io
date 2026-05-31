@@ -3677,6 +3677,126 @@ label {
   line-height: 1.4;
 }
 
+.ending-strategy-detail,
+.ending-route-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.ending-route-list,
+.ending-next-plan-list {
+  display: grid;
+  gap: 7px;
+}
+
+.ending-route {
+  display: grid;
+  gap: 5px;
+  padding: 7px;
+  border: 2px solid #9b7134;
+  background: #fff1c8;
+}
+
+.ending-route div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ending-route strong,
+.ending-route span {
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.ending-route span {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.ending-route i {
+  display: block;
+  height: 9px;
+  border: 2px solid #9b7134;
+  background: #cfb070;
+  overflow: hidden;
+}
+
+.ending-route i b {
+  display: block;
+  height: 100%;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 244, 202, 0.25) 0 4px, transparent 4px 8px),
+    #bd7d24;
+}
+
+.ending-route.good i b {
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 244, 202, 0.25) 0 4px, transparent 4px 8px),
+    var(--good);
+}
+
+.ending-route.info i b {
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 244, 202, 0.25) 0 4px, transparent 4px 8px),
+    #5894ad;
+}
+
+.ending-route.danger i b {
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 244, 202, 0.25) 0 4px, transparent 4px 8px),
+    var(--danger);
+}
+
+.ending-route-blindspot,
+.ending-next-plan {
+  margin: 0;
+  padding: 8px;
+  border: 2px solid var(--warn);
+  background: #f3d58d;
+}
+
+.ending-route-blindspot.danger,
+.ending-next-plan.danger {
+  border-color: var(--danger);
+  background: #efb38f;
+}
+
+.ending-next-plan.good {
+  border-color: var(--good);
+  background: #d4e4a8;
+}
+
+.ending-next-plan span,
+.ending-next-plan em,
+.ending-route-blindspot strong {
+  display: block;
+  color: var(--deep);
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.ending-next-plan p,
+.ending-route-blindspot {
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.ending-next-plan p {
+  margin: 4px 0;
+}
+
+.ending-next-plan em {
+  color: #5c3d17;
+}
+
 .tutorial-overlay {
   position: fixed;
   inset: 0;

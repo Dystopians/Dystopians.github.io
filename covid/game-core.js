@@ -2094,6 +2094,49 @@
     { metric: "funds", source: "resources", max: 7, label: "应急资金", advice: "专项资金、社会捐助和账期谈判可以补现金流，但别让资金路线压垮信任。" },
   ];
 
+  const NEXT_RUN_ROUTE_PLANS = {
+    infection: {
+      route: "监测治理 + 管控止血",
+      detail: "下一局更早把发现率推上去，再用分区或短时管控压峰，避免感染把医疗一并拖穿。",
+      examples: "扩大检测、健康码部署、分区管控、低传播窗口复工",
+    },
+    hospitalLoad: {
+      route: "医疗优先",
+      detail: "医疗失分高通常说明救急按钮用得太晚。下一局把分级诊疗和临时收治当作前置建设，而不是红线后补锅。",
+      examples: "分级诊疗网络、社区临时门诊、方舱医院建设、收治标准",
+    },
+    supplies: {
+      route: "民生保供",
+      detail: "物资低位会同时拉低信任和基层效率。下一局在库存还没见底时就铺货运和保供节点。",
+      examples: "保供专线、货运微循环、社会捐助统筹、药品直送",
+    },
+    trust: {
+      route: "公开修复",
+      detail: "信任失分高说明政策执行开始变钝。下一局多用可核验说明、公开账本和复盘把强措施的代价讲清楚。",
+      examples: "信息公开、财政透明台账、公开阶段复盘、投诉复盘",
+    },
+    economy: {
+      route: "恢复财政",
+      detail: "活力失分高时，不必等到后期大复工。下一局用低风险、低流量的微循环先托住城市账本。",
+      examples: "线上政务、税费社保缓缴、民生网点分时复业、闭环小班",
+    },
+    staffFatigue: {
+      route: "基层减压",
+      detail: "疲劳失分高会吞掉所有行动收益。下一局把轮休和流程压缩穿插在强政策之间，而不是连续加压。",
+      examples: "心理与轮休热线、志愿者调度站、基层轮换令、压缩社区台账",
+    },
+    publicMemory: {
+      route: "创伤修复",
+      detail: "创伤高会改变结局质感。下一局减少强硬余波，并在阶段节点主动修复旧伤。",
+      examples: "公开复盘、重点人群药品直送、悼念与记忆事件、互助路线",
+    },
+    funds: {
+      route: "恢复财政",
+      detail: "资金失分高会锁住工程。下一局更早铺财政恢复渠道，同时避免把所有现金流押在单一大型工程上。",
+      examples: "专项资金申报、社会捐助统筹、采购账期谈判、小额账款清分",
+    },
+  };
+
   const TESTING_KEYS = ["expandTesting", "campusSentinel", "deployHealthCode", "triageNetwork", "communityClinic"];
   const CONTROL_KEYS = ["zoningControl", "citywideSilence", "suppressRumorLine", "deployHealthCode"];
   const SUPPLY_KEYS = ["supplyPriority", "supplyCorridor", "volunteerDispatch", "hardWarehouse", "elasticTransit", "outsourceDelivery", "donationCoordination", "closedLoopSmallShift", "essentialServicePermit", "contactlessServiceRegistry", "nightFreightWindow", "microFreightPermit"];
@@ -4387,7 +4430,56 @@
       scoreText: `${Math.round(calculateScore(state))}/100`,
       breakdown,
       priorities,
+      strategyReview: getEndingStrategyReview(state),
+      nextPlans: getNextRunPlans(state, priorities),
     };
+  }
+
+  function getEndingStrategyReview(state) {
+    const profile = getStrategyProfile(state);
+    if (!profile) return null;
+    return {
+      label: profile.label,
+      tone: profile.tone,
+      detail: profile.detail,
+      blindSpot: profile.blindSpot,
+      routes: (profile.routes || []).slice(0, 4),
+    };
+  }
+
+  function getNextRunPlans(state, priorities) {
+    const profile = getStrategyProfile(state);
+    const dominantRoute = profile && profile.routes && profile.routes[0];
+    const plans = [];
+    priorities.forEach((priority) => {
+      const plan = NEXT_RUN_ROUTE_PLANS[priority.metric];
+      if (!plan) return;
+      const repeated = dominantRoute && plan.route.includes(dominantRoute.label) && dominantRoute.percent >= 45;
+      plans.push({
+        metric: priority.metric,
+        label: priority.label,
+        lost: priority.lost,
+        route: plan.route,
+        tone: repeated ? "warn" : priority.tone,
+        detail: repeated
+          ? `${plan.detail} 本局已经偏向${dominantRoute.label}，下次要注意配套路线，而不是继续堆同一种按钮。`
+          : plan.detail,
+        examples: plan.examples,
+      });
+    });
+    const blindSpot = profile && profile.blindSpot;
+    if (blindSpot && !plans.some((item) => blindSpot.detail.includes(item.route.split(" ")[0]))) {
+      plans.push({
+        metric: "blindSpot",
+        label: blindSpot.label,
+        lost: 0,
+        route: "补齐盲区",
+        tone: blindSpot.tone,
+        detail: blindSpot.detail,
+        examples: "先按右侧恢复渠道、失败预警和阶段目标找可执行节点",
+      });
+    }
+    return plans.slice(0, 4);
   }
 
   function projectedEndingId(state, score) {

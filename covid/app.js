@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v63";
+  const ASSET_VERSION = "v64";
   const core = window.Linjiang72;
 
   let state = null;
@@ -1818,6 +1818,56 @@
             </article>
           `).join("")}
         </div>
+      </section>
+      ${renderEndingStrategyReview(review)}
+    `;
+  }
+
+  function renderEndingStrategyReview(review) {
+    const strategy = review.strategyReview;
+    const plans = review.nextPlans || [];
+    if (!strategy && !plans.length) return "";
+    const routes = strategy && strategy.routes && strategy.routes.length
+      ? `
+        <div class="ending-route-list">
+          ${strategy.routes.map((route) => `
+            <article class="ending-route ${escapeHtml(route.tone || "neutral")}">
+              <div>
+                <strong>${escapeHtml(route.label)}</strong>
+                <span>${escapeHtml(String(route.count))}次 · ${escapeHtml(String(route.percent))}%</span>
+              </div>
+              <i aria-hidden="true"><b style="width:${Math.max(0, Math.min(100, route.percent || 0))}%"></b></i>
+            </article>
+          `).join("")}
+        </div>
+      `
+      : "<p class=\"ending-route-empty\">本局路线尚未形成稳定样本。</p>";
+    const blindSpot = strategy && strategy.blindSpot
+      ? `<p class="ending-route-blindspot ${escapeHtml(strategy.blindSpot.tone || "warn")}"><strong>${escapeHtml(strategy.blindSpot.label)}</strong>${escapeHtml(strategy.blindSpot.detail)}</p>`
+      : "";
+    const planList = plans.length
+      ? `
+        <div class="ending-next-plan-list">
+          ${plans.map((item) => `
+            <article class="ending-next-plan ${escapeHtml(item.tone || "warn")}">
+              <span>${escapeHtml(item.route)} · ${escapeHtml(item.label)}</span>
+              <p>${escapeHtml(item.detail)}</p>
+              <em>${escapeHtml(item.examples)}</em>
+            </article>
+          `).join("")}
+        </div>
+      `
+      : "";
+    return `
+      <section class="ending-review-section">
+        <div class="ending-review-head">
+          <span>路线复盘</span>
+          <strong>${escapeHtml(strategy ? strategy.label : "未成型")}</strong>
+        </div>
+        ${strategy ? `<p class="ending-strategy-detail">${escapeHtml(strategy.detail)}</p>` : ""}
+        ${routes}
+        ${blindSpot}
+        ${planList}
       </section>
     `;
   }

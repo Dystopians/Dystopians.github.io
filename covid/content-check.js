@@ -255,6 +255,33 @@ function validateChoiceRiskPreview() {
   assert(preview.some((item) => item.label && item.tone && item.detail), "Choice risk preview should expose label, tone, and detail under redline pressure.");
 }
 
+function validateEndingStrategyReview() {
+  const state = core.createGame({ difficulty: "normal", seed: 20260603 });
+  state.metrics.hospitalLoad = 88;
+  state.metrics.economy = 28;
+  state.resources.funds = 16;
+  state.history.unshift({
+    day: 1,
+    phase: 1,
+    title: "校验路线",
+    choice: "校验选择",
+    routeKey: "specialFundingApplication",
+    routeLabel: "恢复财政",
+    routeTone: "mixed",
+    routeSource: "operation",
+    notes: [],
+    changes: {},
+  });
+  const review = core.getEndingReview(state);
+  assert(review && review.strategyReview, "getEndingReview must include strategyReview.");
+  assert(Array.isArray(review.nextPlans), "getEndingReview must include nextPlans.");
+  assert(review.nextPlans.length > 0, "Ending review should produce at least one next-run plan.");
+  assert(
+    review.nextPlans.every((item) => item.route && item.detail && item.examples),
+    "Every next-run plan needs route, detail, and examples.",
+  );
+}
+
 function run() {
   const { eventIds, phaseCounts } = validateEventCorpus();
   validateSchedule(eventIds);
@@ -263,6 +290,7 @@ function run() {
   validateCacheVersions();
   validateRecoveryLevers();
   validateChoiceRiskPreview();
+  validateEndingStrategyReview();
 
   const summary = {
     ok: failures.length === 0,
