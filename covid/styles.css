@@ -2484,6 +2484,102 @@ label {
   color: #583b15;
 }
 
+.choice-fit {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 3px 6px;
+  align-items: center;
+  margin: 0 0 7px;
+  padding: 6px;
+  border: 2px solid #b89752;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 245, 210, 0.38) 0 4px, rgba(230, 205, 149, 0.2) 4px 8px),
+    rgba(255, 248, 220, 0.62);
+}
+
+.choice-fit span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 19px;
+  padding: 1px 5px;
+  border: 2px solid #8e6330;
+  background: #8e6330;
+  color: #fff1bf;
+  font-size: 0.58rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.choice-fit strong {
+  min-width: 0;
+  margin: 0;
+  color: var(--deep);
+  font-size: 0.7rem;
+  line-height: 1.12;
+}
+
+.choice-fit em {
+  grid-column: 1 / -1;
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.64rem;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.26;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.choice-fit.good {
+  border-color: var(--good);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 245, 210, 0.36) 0 4px, rgba(207, 228, 154, 0.28) 4px 8px),
+    #e7efbd;
+}
+
+.choice-fit.good span {
+  border-color: var(--good);
+  background: #3f7a54;
+}
+
+.choice-fit.warn {
+  border-color: var(--warn);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 245, 210, 0.34) 0 4px, rgba(238, 198, 115, 0.32) 4px 8px),
+    #f2d48b;
+}
+
+.choice-fit.warn span {
+  border-color: var(--warn);
+  background: #8e6330;
+}
+
+.choice-fit.danger {
+  border-color: var(--danger);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 245, 210, 0.3) 0 4px, rgba(230, 161, 124, 0.34) 4px 8px),
+    #eab08d;
+}
+
+.choice-fit.danger span {
+  border-color: var(--danger);
+  background: #a83f32;
+}
+
+.choice-fit.info {
+  border-color: var(--blue);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 245, 210, 0.35) 0 4px, rgba(197, 210, 202, 0.32) 4px 8px),
+    #dde5d9;
+}
+
+.choice-fit.info span {
+  border-color: var(--blue);
+  background: #446477;
+}
+
 .choice-forecast,
 .choice-risk-preview,
 .action-forecast {

@@ -288,6 +288,7 @@ function validateStageReview() {
 
 function validateChoiceRiskPreview() {
   assert(typeof core.getChoiceRiskPreview === "function", "game-core.js must export getChoiceRiskPreview.");
+  assert(typeof core.getChoiceFit === "function", "game-core.js must export getChoiceFit.");
   const state = core.createGame({ difficulty: "normal", seed: 20260602 });
   state.metrics.hospitalLoad = 96;
   state.flags.failureStreaks.medical = 1;
@@ -296,6 +297,8 @@ function validateChoiceRiskPreview() {
   const preview = core.getChoiceRiskPreview(state, choice.id);
   assert(Array.isArray(preview), "getChoiceRiskPreview must return an array.");
   assert(preview.some((item) => item.label && item.tone && item.detail), "Choice risk preview should expose label, tone, and detail under redline pressure.");
+  const fit = core.getChoiceFit(state, choice.id);
+  assert(fit && fit.label && fit.tone && fit.detail, "getChoiceFit should expose label, tone, and detail for event choices.");
 }
 
 function validateEndingStrategyReview() {

@@ -4897,6 +4897,100 @@
       .map(({ priority, ...item }) => item);
   }
 
+  function getChoiceFit(state, choiceId) {
+    if (!state || state.ended || !choiceId) return null;
+    const event = getCurrentEvent(state);
+    const choice = event && event.choices.find((item) => item.id === choiceId);
+    if (!choice) return null;
+    if (choice.available === false) {
+      return {
+        tone: "danger",
+        label: "暂不可用",
+        detail: choice.lockedReason || "当前条件不足。",
+      };
+    }
+
+    const risks = getChoiceRiskPreview(state, choiceId);
+    const trends = getChoiceOutcomePreview(state, choiceId);
+    const riskDanger = risks.find((item) => item.tone === "danger");
+    if (riskDanger) {
+      return {
+        tone: "danger",
+        label: "红线风险",
+        detail: riskDanger.detail,
+      };
+    }
+
+    const scored = trends.map((item) => ({
+      ...item,
+      fitScore: scoreActionDelta(state, item.metric, item.delta),
+    }));
+    const score = Math.round(scored.reduce((sum, item) => sum + item.fitScore, 0));
+    const bestGood = scored
+      .filter((item) => item.fitScore > 0)
+      .sort((a, b) => b.fitScore - a.fitScore)[0];
+    const worstBad = scored
+      .filter((item) => item.fitScore < 0)
+      .sort((a, b) => a.fitScore - b.fitScore)[0];
+    const riskGood = risks.find((item) => item.tone === "good");
+    const routeTag = choice.routeTag || getChoiceRouteTag(choice);
+    const profile = getStrategyProfile(state);
+    const dominantRoute = profile && profile.routes && profile.routes[0];
+    const routeOverused = dominantRoute
+      && dominantRoute.percent >= 55
+      && routeTag
+      && dominantRoute.label === routeTag.label;
+
+    if (riskGood) {
+      return {
+        tone: "good",
+        label: "补救窗口",
+        detail: riskGood.detail,
+      };
+    }
+    if (score >= 28 && bestGood) {
+      return {
+        tone: routeOverused ? "warn" : "good",
+        label: routeOverused ? "有效但路线偏重" : "契合当前压力",
+        detail: choiceFitDetail(bestGood, worstBad, routeOverused ? `本局${dominantRoute.label}已占 ${dominantRoute.percent}%，继续使用会集中对应代价。` : ""),
+      };
+    }
+    if (score <= -18 && worstBad) {
+      return {
+        tone: "danger",
+        label: "代价偏高",
+        detail: choiceFitDetail(bestGood, worstBad, "当前局势下这项选择的代价会先于收益显形。"),
+      };
+    }
+    if (routeOverused) {
+      return {
+        tone: "warn",
+        label: "路线偏重",
+        detail: `本局${dominantRoute.label}已占 ${dominantRoute.percent}%，继续使用会集中对应代价。`,
+      };
+    }
+    if (choice.delayed || (choice.effectPreview || []).some((item) => String(item).includes("后"))) {
+      return {
+        tone: "warn",
+        label: "后续账单",
+        detail: choiceFitDetail(bestGood, worstBad, "这项选择包含延迟后果，今晚不一定立刻体现全部代价。"),
+      };
+    }
+    return {
+      tone: bestGood ? "info" : "warn",
+      label: bestGood ? "均衡取舍" : "长期铺垫",
+      detail: choiceFitDetail(bestGood, worstBad, bestGood ? "收益和代价都不极端，适合按路线偏好取舍。" : "直接数值收益较弱，更偏叙事或长期方向。"),
+    };
+  }
+
+  function choiceFitDetail(bestGood, worstBad, fallback) {
+    const parts = [];
+    if (bestGood) parts.push(`主要收益：${bestGood.label} ${bestGood.delta > 0 ? "+" : ""}${bestGood.delta}`);
+    if (worstBad) parts.push(`主要代价：${worstBad.label} ${worstBad.delta > 0 ? "+" : ""}${worstBad.delta}`);
+    if (fallback) parts.push(fallback);
+    return parts.join("；") || fallback || "根据当前局势，这是一个中性取舍。";
+  }
+
   function getCityActionOutcomePreview(state, mode, actionId) {
     if (!state || state.ended || !actionId) return [];
     const normalizedMode = mode === "resolutions" ? "resolutions" : "operations";
@@ -5738,6 +5832,7 @@
     getDailyTrendPreview,
     getChoiceOutcomePreview,
     getChoiceRiskPreview,
+    getChoiceFit,
     getChoiceRouteTag,
     getEndingOutlook,
     getCityActionOutcomePreview,

@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v66";
+  const ASSET_VERSION = "v67";
   const core = window.Linjiang72;
 
   let state = null;
@@ -1175,6 +1175,7 @@
       button.innerHTML = `
         <div class="choice-title"><strong>${escapeHtml(choice.label)}</strong>${tag}</div>
         <p>${escapeHtml(choice.available === false ? choice.lockedReason : choice.description)}</p>
+        ${renderChoiceFit(choice)}
         ${renderChoiceImpacts(choice)}
         ${renderChoiceForecast(choice)}
         ${renderChoiceRiskPreview(choice)}
@@ -1194,6 +1195,19 @@
       button.addEventListener("blur", () => renderTrendPreview());
       els.choiceList.appendChild(button);
     });
+  }
+
+  function renderChoiceFit(choice) {
+    if (!core.getChoiceFit) return "";
+    const fit = core.getChoiceFit(state, choice.id);
+    if (!fit) return "";
+    return `
+      <div class="choice-fit ${escapeHtml(fit.tone || "info")}" title="${escapeHtml(fit.detail || "")}">
+        <span>适配</span>
+        <strong>${escapeHtml(fit.label || "策略取舍")}</strong>
+        <em>${escapeHtml(fit.detail || "")}</em>
+      </div>
+    `;
   }
 
   function renderEventStageReview(review) {
