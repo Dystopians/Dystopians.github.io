@@ -2890,6 +2890,38 @@ label {
   font-size: 0.76rem;
 }
 
+.action-finder-head strong.good {
+  border-color: var(--good);
+  background: #cfe49a;
+  color: #244d35;
+}
+
+.action-finder-head strong.warn {
+  border-color: var(--warn);
+  background: #f3c96e;
+  color: #5a3514;
+}
+
+.action-finder-head strong.danger {
+  border-color: var(--danger);
+  background: #df8c68;
+  color: #5b1f18;
+}
+
+.action-finder-head strong.info {
+  border-color: var(--blue);
+  background: #c8d7df;
+  color: #244258;
+}
+
+.action-finder-summary {
+  margin: -1px 0 1px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .city-budget-pill {
   display: inline-flex;
   align-items: center;
@@ -2964,6 +2996,31 @@ label {
 .action-finder-item:hover {
   background: #ffd86f;
   transform: translate(-1px, -1px);
+}
+
+.action-finder-item.good {
+  border-color: var(--good);
+  background:
+    linear-gradient(90deg, rgba(218, 235, 158, 0.56), rgba(255, 241, 200, 0.92)),
+    #fff1c8;
+}
+
+.action-finder-item.info {
+  border-color: var(--blue);
+  background:
+    linear-gradient(90deg, rgba(200, 215, 223, 0.54), rgba(255, 241, 200, 0.92)),
+    #fff1c8;
+}
+
+.action-finder-item.mixed {
+  border-color: var(--warn);
+}
+
+.action-finder-item.warn {
+  border-color: var(--warn);
+  background:
+    linear-gradient(90deg, rgba(243, 201, 110, 0.46), rgba(255, 241, 200, 0.92)),
+    #fff1c8;
 }
 
 .action-finder-item.locked-preview {

@@ -5131,6 +5131,269 @@
     "specialBondQuota",
   ]);
 
+  const ACTION_OPPORTUNITY_LOCKS = new Set(["条件未满足", "资金不足", "财政透支", "今日调度已满"]);
+
+  function getCityActionOpportunities(state) {
+    if (!state || state.ended) {
+      return {
+        tone: "info",
+        detail: "",
+        items: [],
+        lockedItems: [],
+        availableCount: 0,
+        lockedCount: 0,
+        totalCount: 0,
+        budget: { remaining: 0, limit: CITY_ACTIONS_PER_DAY },
+      };
+    }
+
+    const seen = new Set();
+    const available = [];
+    const locked = [];
+    MAP_POINTS.forEach((pointDef) => {
+      const point = getMapPoint(state, pointDef.id);
+      [
+        { mode: "operations", kind: "工程", items: point.operations },
+        { mode: "resolutions", kind: "决议", items: point.resolutions },
+      ].forEach((group) => {
+        group.items.forEach((item) => {
+          const key = `${group.mode}:${item.id}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          if (item.available) {
+            available.push(buildActionOpportunity(state, pointDef, item, group, "available"));
+          } else if (ACTION_OPPORTUNITY_LOCKS.has(item.lockedReason)) {
+            locked.push(buildActionOpportunity(state, pointDef, item, group, "locked"));
+          }
+        });
+      });
+    });
+
+    const sorter = (a, b) => b.priority - a.priority
+      || a.kind.localeCompare(b.kind, "zh-Hans-CN")
+      || a.label.localeCompare(b.label, "zh-Hans-CN");
+    available.sort(sorter);
+    locked.sort(sorter);
+
+    const budget = getCityActionBudget(state);
+    const tone = budget.exhausted
+      ? "warn"
+      : available.length
+        ? "good"
+        : locked.some((item) => item.lockedReason === "资金不足" || item.lockedReason === "财政透支")
+          ? "warn"
+          : "info";
+    const detail = budget.exhausted
+      ? "今日城市调度已满，行动窗口会保留明日可排项目。"
+      : available.length
+        ? `当前有 ${available.length} 个可执行城市行动，优先处理能缓解红线或补足长期资产的项目。`
+        : locked.length
+          ? "暂无可执行行动，但有接近解锁的工程或决议，可先补资金、条件或等待明日调度。"
+          : "暂无明确城市行动窗口，先处理今日事件。";
+
+    return {
+      tone,
+      detail,
+      items: available.slice(0, locked.length ? 4 : 6),
+      lockedItems: locked.slice(0, available.length ? 3 : 5),
+      availableCount: available.length,
+      lockedCount: locked.length,
+      totalCount: available.length + locked.length,
+      budget,
+    };
+  }
+
+  function buildActionOpportunity(state, pointDef, item, group, bucket) {
+    const focusPoint = MAP_POINTS.find((point) => point.id === item.location) || pointDef;
+    const forecast = item.available ? getCityActionOutcomePreview(state, group.mode, item.id).slice(0, 4) : [];
+    const routeTag = getChoiceRouteTag({ id: item.id });
+    const priority = actionOpportunityPriority(state, item, focusPoint.id, bucket);
+    const tradeoffs = rankActionTradeoffs(state, item);
+    return {
+      id: item.id,
+      mode: group.mode,
+      kind: group.kind,
+      pointId: focusPoint.id,
+      pointLabel: focusPoint.label,
+      label: item.label,
+      routeTag,
+      status: bucket === "available" ? actionOpportunityStatus(priority) : unlockPreviewLabel(item.lockedReason),
+      bucket,
+      tone: actionOpportunityTone(item, bucket, priority),
+      reason: actionOpportunityReason(state, item, bucket, tradeoffs),
+      impact: summarizeActionImpact(item, tradeoffs),
+      forecast,
+      lockedReason: item.lockedReason || "",
+      detail: item.available ? item.description : item.lockedDetail || item.lockedReason || item.description,
+      priority,
+    };
+  }
+
+  function actionOpportunityStatus(priority) {
+    if (priority >= 48) return "优先窗口";
+    if (priority >= 26) return "可执行";
+    return "备选";
+  }
+
+  function actionOpportunityTone(item, bucket, priority) {
+    if (bucket !== "available") {
+      if (item.lockedReason === "资金不足" || item.lockedReason === "财政透支") return "warn";
+      if (item.lockedReason === "今日调度已满") return "info";
+      return "mixed";
+    }
+    if (priority >= 48) return "good";
+    if (priority >= 26) return "info";
+    return "mixed";
+  }
+
+  function actionOpportunityPriority(state, item, pointId, bucket) {
+    let score = pointId === state.selectedMapPointId ? 2 : 0;
+    const tradeoffs = rankActionTradeoffs(state, item, true);
+    tradeoffs.forEach((entry) => {
+      score += entry.score;
+    });
+    if (bucket === "locked") {
+      score -= 8;
+      if (item.lockedReason === "今日调度已满") score += 18;
+      if (item.lockedReason === "资金不足" || item.lockedReason === "财政透支") score += state.resources.funds <= 25 ? 12 : 5;
+      if (item.lockedReason === "条件未满足") score += 4;
+    }
+    if (item.delayed) score += 3;
+    if (item.maxUses === 1 && item.uses === 0) score += 1;
+    return Math.round(score);
+  }
+
+  function rankActionTradeoffs(state, item, weighted = false) {
+    const changes = collectActionDeltas(item);
+    return changes
+      .map((entry) => {
+        const score = scoreActionDelta(state, entry.metric, entry.delta) * entry.weight;
+        return {
+          ...entry,
+          good: isGoodDelta(entry.metric, entry.delta),
+          bad: isBadDelta(entry.metric, entry.delta),
+          score: weighted ? score : Math.round(score),
+        };
+      })
+      .filter((entry) => entry.delta)
+      .sort((a, b) => Math.abs(b.score) - Math.abs(a.score)
+        || Math.abs(b.delta) - Math.abs(a.delta)
+        || actionMetricLabel(a.metric).localeCompare(actionMetricLabel(b.metric), "zh-Hans-CN"));
+  }
+
+  function collectActionDeltas(item) {
+    const rows = [];
+    const addMap = (map = {}, weight = 1, delayed = false) => {
+      Object.entries(map || {}).forEach(([metric, delta]) => {
+        if (!delta) return;
+        const meta = METRIC_META[metric] || RESOURCE_META[metric];
+        if (!meta) return;
+        rows.push({ metric, delta, weight, delayed });
+      });
+    };
+    addMap(item.resources, 1, false);
+    addMap(item.effects, 1, false);
+    addMap(item.hidden, 1, false);
+    if (item.delayed) {
+      addMap(item.delayed.resources, 0.55, true);
+      addMap(item.delayed.effects, 0.55, true);
+      addMap(item.delayed.hidden, 0.55, true);
+    }
+    const merged = new Map();
+    rows.forEach((row) => {
+      const key = `${row.delayed ? "delayed" : "now"}:${row.metric}`;
+      const existing = merged.get(key);
+      if (existing) existing.delta += row.delta;
+      else merged.set(key, { ...row });
+    });
+    return [...merged.values()].filter((row) => row.delta);
+  }
+
+  function scoreActionDelta(state, metric, delta) {
+    const pressure = actionMetricPressure(state, metric);
+    const good = isGoodDelta(metric, delta);
+    const bad = isBadDelta(metric, delta);
+    if (good) return Math.abs(delta) * pressure * actionMetricWeight(metric);
+    if (bad) return -Math.abs(delta) * Math.max(1, 5 - pressure) * actionMetricWeight(metric);
+    return 0;
+  }
+
+  function actionMetricPressure(state, metric) {
+    const m = state.metrics;
+    const h = state.hidden;
+    const r = state.resources;
+    if (metric === "infection") return m.infection >= 80 ? 5 : m.infection >= 65 ? 4 : m.infection >= 50 ? 2 : 1;
+    if (metric === "hospitalLoad") return m.hospitalLoad >= 85 ? 5 : m.hospitalLoad >= 70 ? 4 : m.hospitalLoad >= 55 ? 2 : 1;
+    if (metric === "supplies") return m.supplies <= 25 ? 5 : m.supplies <= 40 ? 4 : m.supplies <= 55 ? 2 : 1;
+    if (metric === "trust") return m.trust <= 30 ? 5 : m.trust <= 45 ? 4 : m.trust <= 58 ? 2 : 1;
+    if (metric === "economy") return m.economy <= 25 ? 5 : m.economy <= 40 ? 4 : m.economy <= 58 ? 2 : 1;
+    if (metric === "staffFatigue") return m.staffFatigue >= 80 ? 5 : m.staffFatigue >= 65 ? 4 : m.staffFatigue >= 52 ? 2 : 1;
+    if (metric === "detectedRate") return h.detectedRate <= 35 ? 4 : h.detectedRate <= 55 ? 2 : 1;
+    if (metric === "policyStrictness") return h.policyStrictness >= 80 || h.policyStrictness <= 15 ? 2 : 1;
+    if (metric === "publicMemory") return h.publicMemory >= 60 ? 5 : h.publicMemory >= 40 ? 3 : 1;
+    if (metric === "funds") return r.funds <= 15 ? 5 : r.funds <= 30 ? 4 : r.funds <= 50 ? 2 : 1;
+    return 1;
+  }
+
+  function actionMetricWeight(metric) {
+    if (metric === "hospitalLoad") return 1.22;
+    if (metric === "infection" || metric === "staffFatigue" || metric === "funds") return 1.15;
+    if (metric === "supplies" || metric === "trust") return 1.08;
+    return 1;
+  }
+
+  function actionOpportunityReason(state, item, bucket, tradeoffs) {
+    if (bucket !== "available") {
+      return item.lockedDetail || item.lockedReason || "当前条件不足。";
+    }
+    const best = tradeoffs.find((entry) => entry.good && entry.score > 0);
+    const worst = tradeoffs.find((entry) => entry.bad && entry.score < 0);
+    if (!best) return "这项行动更偏长期铺垫，适合在红线不紧时补资产。";
+    const pressure = actionPressureLabel(state, best.metric);
+    const gain = formatActionDelta(best);
+    if (worst) return `${pressure}：${gain}；主要代价是${formatActionDelta(worst)}。`;
+    return `${pressure}：${gain}，且短期代价较轻。`;
+  }
+
+  function summarizeActionImpact(item, tradeoffs = rankActionTradeoffs({ metrics: INITIAL_VALUES, hidden: INITIAL_VALUES, resources: INITIAL_VALUES }, item)) {
+    const highlights = tradeoffs
+      .filter((entry) => entry.good || entry.bad)
+      .slice(0, 3)
+      .map((entry) => formatActionDelta(entry));
+    return highlights.length ? highlights.join(" / ") : "综合调度";
+  }
+
+  function formatActionDelta(entry) {
+    const suffix = entry.delayed ? "后续" : "";
+    return `${suffix}${actionMetricShort(entry.metric)} ${entry.delta > 0 ? "+" : ""}${entry.delta}`;
+  }
+
+  function actionMetricShort(metric) {
+    const meta = METRIC_META[metric] || RESOURCE_META[metric];
+    return meta ? meta.short : metric;
+  }
+
+  function actionMetricLabel(metric) {
+    const meta = METRIC_META[metric] || RESOURCE_META[metric];
+    return meta ? meta.label : metric;
+  }
+
+  function actionPressureLabel(state, metric) {
+    const pressure = actionMetricPressure(state, metric);
+    const label = actionMetricLabel(metric);
+    if (pressure >= 5) return `${label}红线`;
+    if (pressure >= 4) return `${label}高压`;
+    if (pressure >= 2) return `${label}窗口`;
+    return `${label}铺垫`;
+  }
+
+  function unlockPreviewLabel(reason) {
+    if (reason === "今日调度已满") return "明日可排";
+    if (reason === "资金不足" || reason === "财政透支") return "等资金";
+    if (reason === "条件未满足") return "差条件";
+    return reason || "未解锁";
+  }
+
   function getRecoveryLevers(state) {
     if (!state || state.ended) {
       return { tone: "info", detail: "", items: [], availableCount: 0, totalCount: 0 };
@@ -5347,6 +5610,7 @@
     getChoiceRouteTag,
     getEndingOutlook,
     getCityActionOutcomePreview,
+    getCityActionOpportunities,
     getRecoveryLevers,
     getSystemReadouts,
     getCityActionBudget,

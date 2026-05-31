@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v64";
+  const ASSET_VERSION = "v65";
   const core = window.Linjiang72;
 
   let state = null;
@@ -1415,19 +1415,22 @@
 
   function renderActionFinder() {
     if (!els.actionFinder) return;
-    const cityActions = collectCityActions();
-    const lockedActions = collectLockedCityActions();
-    const budget = core.getCityActionBudget(state);
+    if (!core.getCityActionOpportunities) {
+      els.actionFinder.innerHTML = "";
+      return;
+    }
+    const report = core.getCityActionOpportunities(state);
+    const cityActions = report.items || [];
+    const lockedActions = report.lockedItems || [];
+    const budget = report.budget || core.getCityActionBudget(state);
     const budgetClass = budget.exhausted ? "city-budget-pill exhausted" : "city-budget-pill";
     const budgetText = `${budget.label} ${budget.remaining}/${budget.limit}`;
-    const availableLimit = lockedActions.length ? 4 : 6;
-    const lockedLimit = cityActions.length ? 3 : 5;
     if (!cityActions.length && !lockedActions.length) {
       els.actionFinder.innerHTML = `
         <div class="action-finder-head">
-          <span>全城可用</span>
+          <span>行动窗口</span>
           <strong>0</strong>
-          <em class="${budgetClass}" title="${escapeHtml(budget.detail)}">${escapeHtml(budgetText)}</em>
+          <em class="${budgetClass}" title="${escapeHtml(budget.detail || "")}">${escapeHtml(budgetText)}</em>
         </div>
         <p class="action-finder-empty">暂无立即可执行的工程或决议，先处理今日事件或改善条件。</p>
       `;
@@ -1437,11 +1440,14 @@
     const availableList = cityActions.length
       ? `
         <div class="action-finder-list">
-          ${cityActions.slice(0, availableLimit).map(({ point, item, mode, kind, priority }) => `
-            <button class="action-finder-item" type="button" data-point-id="${point.id}" data-mode="${mode}">
-              <span>${escapeHtml(kind)} · ${escapeHtml(point.label)}${priority >= 24 ? " · 优先" : ""}</span>
+          ${cityActions.map((item) => `
+            <button class="action-finder-item ${escapeHtml(item.tone || "info")}" type="button"
+              data-point-id="${escapeHtml(item.pointId)}" data-mode="${escapeHtml(item.mode)}"
+              title="${escapeHtml(item.detail || item.reason || "")}">
+              <span>${escapeHtml(item.kind)} · ${escapeHtml(item.pointLabel)} · ${escapeHtml((item.routeTag && item.routeTag.label) || "综合调度")}</span>
               <strong>${escapeHtml(item.label)}</strong>
-              <div class="action-finder-chips">${renderFinderChips(item)}</div>
+              <p>${escapeHtml(item.reason || item.impact || "根据当前压力推荐。")}</p>
+              <div class="action-finder-chips">${renderOpportunityChips(item)}</div>
             </button>
           `).join("")}
         </div>
@@ -1451,15 +1457,17 @@
       ? `
         <div class="action-finder-subhead">
           <span>临近解锁</span>
-          <strong>${Math.min(lockedActions.length, lockedLimit)}/${lockedActions.length}</strong>
+          <strong>${lockedActions.length}/${report.lockedCount}</strong>
         </div>
         <div class="action-finder-list locked">
-          ${lockedActions.slice(0, lockedLimit).map(({ point, item, mode, kind, unlockLabel, detail }) => `
-            <button class="action-finder-item locked-preview" type="button" data-point-id="${point.id}" data-mode="${mode}" title="${escapeHtml(detail)}">
-              <span>${escapeHtml(kind)} · ${escapeHtml(point.label)} · ${escapeHtml(unlockLabel)}</span>
+          ${lockedActions.map((item) => `
+            <button class="action-finder-item locked-preview ${escapeHtml(item.tone || "mixed")}" type="button"
+              data-point-id="${escapeHtml(item.pointId)}" data-mode="${escapeHtml(item.mode)}"
+              title="${escapeHtml(item.detail || item.reason || "")}">
+              <span>${escapeHtml(item.kind)} · ${escapeHtml(item.pointLabel)} · ${escapeHtml(item.status || "未解锁")}</span>
               <strong>${escapeHtml(item.label)}</strong>
-              <p>${escapeHtml(detail)}</p>
-              <div class="action-finder-chips">${renderFinderChips(item)}</div>
+              <p>${escapeHtml(item.reason || item.detail || "当前条件不足。")}</p>
+              <div class="action-finder-chips">${renderOpportunityChips(item)}</div>
             </button>
           `).join("")}
         </div>
@@ -1468,10 +1476,11 @@
 
     els.actionFinder.innerHTML = `
       <div class="action-finder-head">
-        <span>全城可用</span>
-        <strong>${cityActions.length}</strong>
-        <em class="${budgetClass}" title="${escapeHtml(budget.detail)}">${escapeHtml(budgetText)}</em>
+        <span title="${escapeHtml(report.detail || "全城可执行工程与决议")}">行动窗口</span>
+        <strong class="${escapeHtml(report.tone || "info")}">${report.availableCount}</strong>
+        <em class="${budgetClass}" title="${escapeHtml(budget.detail || "")}">${escapeHtml(budgetText)}</em>
       </div>
+      ${report.detail ? `<p class="action-finder-summary">${escapeHtml(report.detail)}</p>` : ""}
       ${availableList}
       ${lockedList}
     `;
@@ -1483,138 +1492,30 @@
         save();
         renderMap();
         renderActionMode();
+        renderCrisisBoard();
+        els.mapHint.textContent = `已定位行动窗口：${core.getMapPoint(state, button.dataset.pointId).label}`;
       });
     });
   }
 
-  function collectLockedCityActions() {
-    const seen = new Set();
-    const actions = [];
-    const trackableReasons = new Set(["条件未满足", "资金不足", "财政透支", "今日调度已满"]);
-    core.MAP_POINTS.forEach((mapPoint) => {
-      const point = core.getMapPoint(state, mapPoint.id);
-      [
-        { mode: "operations", kind: "工程", items: point.operations },
-        { mode: "resolutions", kind: "决议", items: point.resolutions },
-      ].forEach((group) => {
-        group.items
-          .filter((item) => !item.available && trackableReasons.has(item.lockedReason))
-          .forEach((item) => {
-            const key = `${group.mode}:${item.id}`;
-            if (seen.has(key)) return;
-            seen.add(key);
-            const detail = item.lockedDetail || item.lockedReason || "当前条件不足。";
-            actions.push({
-              point,
-              item,
-              mode: group.mode,
-              kind: group.kind,
-              detail,
-              unlockLabel: unlockPreviewLabel(item.lockedReason),
-              priority: lockedActionPriority(item, mapPoint.id),
-            });
-          });
-      });
-    });
-    return actions.sort((a, b) => {
-      if (b.priority !== a.priority) return b.priority - a.priority;
-      if (a.mode !== b.mode) return a.mode === "operations" ? -1 : 1;
-      return a.item.label.localeCompare(b.item.label, "zh-Hans-CN");
-    });
+  function renderOpportunityChips(item) {
+    const forecast = item.forecast || [];
+    if (forecast.length) {
+      return forecast
+        .slice(0, 4)
+        .map((entry) => `<em class="${forecastChipClass(entry)}" title="${escapeHtml(entry.detail || "")}">${escapeHtml(entry.short)} ${entry.delta > 0 ? "+" : ""}${entry.delta}</em>`)
+        .join("");
+    }
+    return item.impact
+      ? `<em class="mixed-change" title="${escapeHtml(item.detail || item.reason || "")}">${escapeHtml(item.impact)}</em>`
+      : "";
   }
 
-  function unlockPreviewLabel(reason) {
-    if (reason === "今日调度已满") return "明日可排";
-    if (reason === "资金不足" || reason === "财政透支") return "等资金";
-    return "差条件";
-  }
-
-  function lockedActionPriority(item, pointId) {
-    let score = Math.max(0, cityActionPriority(item, pointId));
-    if (item.lockedReason === "今日调度已满") score += 18;
-    if (item.lockedReason === "资金不足" || item.lockedReason === "财政透支") score += state.resources.funds <= 25 ? 14 : 7;
-    if (item.lockedReason === "条件未满足") score += 5;
-    const detail = item.lockedDetail || "";
-    if (/第\d+天后|进入第\d+天后/.test(detail)) score += 3;
-    return Math.round(score);
-  }
-
-  function collectCityActions() {
-    const seen = new Set();
-    const actions = [];
-    core.MAP_POINTS.forEach((mapPoint) => {
-      const point = core.getMapPoint(state, mapPoint.id);
-      [
-        { mode: "operations", kind: "工程", items: point.operations },
-        { mode: "resolutions", kind: "决议", items: point.resolutions },
-      ].forEach((group) => {
-        group.items
-          .filter((item) => item.available)
-          .forEach((item) => {
-            const key = `${group.mode}:${item.id}`;
-            if (seen.has(key)) return;
-            seen.add(key);
-            actions.push({
-              point,
-              item,
-              mode: group.mode,
-              kind: group.kind,
-              priority: cityActionPriority(item, mapPoint.id),
-            });
-          });
-      });
-    });
-    return actions.sort((a, b) => {
-      if (b.priority !== a.priority) return b.priority - a.priority;
-      if (a.mode !== b.mode) return a.mode === "operations" ? -1 : 1;
-      return a.item.label.localeCompare(b.item.label, "zh-Hans-CN");
-    });
-  }
-
-  function cityActionPriority(item, pointId) {
-    const effects = typeof item.effects === "function" ? item.effects(state) : item.effects || {};
-    const hidden = typeof item.hidden === "function" ? item.hidden(state) : item.hidden || {};
-    const resources = item.resources || {};
-    const m = state.metrics;
-    const h = state.hidden;
-    const r = state.resources;
-    let score = pointId === state.selectedMapPointId ? 2 : 0;
-    const addRelief = (metric, delta, pressure, weight = 1) => {
-      if (!delta) return;
-      const meta = core.METRIC_META[metric] || core.RESOURCE_META[metric];
-      if (!meta) return;
-      const good = meta.direction === "good" ? delta > 0 : meta.direction === "danger" ? delta < 0 : false;
-      const bad = meta.direction === "good" ? delta < 0 : meta.direction === "danger" ? delta > 0 : false;
-      if (good) score += Math.abs(delta) * pressure * weight;
-      if (bad) score -= Math.abs(delta) * Math.max(1, 5 - pressure);
-    };
-    addRelief("infection", effects.infection, m.infection >= 75 ? 5 : m.infection >= 55 ? 3 : 1, 1.15);
-    addRelief("hospitalLoad", effects.hospitalLoad, m.hospitalLoad >= 80 ? 5 : m.hospitalLoad >= 65 ? 3 : 1, 1.2);
-    addRelief("supplies", effects.supplies, m.supplies <= 30 ? 5 : m.supplies <= 45 ? 3 : 1, 1.05);
-    addRelief("trust", effects.trust, m.trust <= 35 ? 5 : m.trust <= 55 ? 3 : 1, 1.05);
-    addRelief("economy", effects.economy, m.economy <= 35 ? 5 : m.economy <= 55 ? 3 : 1, 1);
-    addRelief("staffFatigue", effects.staffFatigue, m.staffFatigue >= 75 ? 5 : m.staffFatigue >= 60 ? 3 : 1, 1.15);
-    addRelief("detectedRate", hidden.detectedRate, h.detectedRate <= 45 ? 4 : 1, 0.9);
-    addRelief("publicMemory", hidden.publicMemory, h.publicMemory >= 45 ? 4 : 1, 0.7);
-    addRelief("funds", resources.funds, r.funds <= 20 ? 5 : r.funds <= 40 ? 3 : 1, 1.15);
-    return Math.round(score);
-  }
-
-  function renderFinderChips(item) {
-    const effects = typeof item.effects === "function" ? item.effects(state) : item.effects || {};
-    const hidden = typeof item.hidden === "function" ? item.hidden(state) : item.hidden || {};
-    const resources = item.resources || {};
-    const all = [
-      ...Object.entries(resources).map(([metric, delta]) => [metric, delta, core.RESOURCE_META[metric]]),
-      ...Object.entries(effects).map(([metric, delta]) => [metric, delta, core.METRIC_META[metric]]),
-      ...Object.entries(hidden).map(([metric, delta]) => [metric, delta, core.METRIC_META[metric]]),
-    ];
-    return all
-      .filter(([, delta, meta]) => delta && meta)
-      .sort(([metricA, deltaA], [metricB, deltaB]) => changePriority(metricB, deltaB) - changePriority(metricA, deltaA))
-      .slice(0, 4)
-      .map(([metric, delta, meta]) => `<em class="${changeClass(metric, delta)}" title="${escapeHtml(meta.description)}">${meta.short} ${delta > 0 ? "+" : ""}${delta}</em>`)
-      .join("");
+  function forecastChipClass(entry) {
+    if (!entry) return "mixed-change";
+    if (entry.tone === "good") return "good-change";
+    if (entry.tone === "bad" || entry.tone === "danger") return "bad-change";
+    return "mixed-change";
   }
 
   function renderCityActionBudget() {

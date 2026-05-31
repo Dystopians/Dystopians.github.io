@@ -243,6 +243,30 @@ function validateRecoveryLevers() {
   );
 }
 
+function validateCityActionOpportunities() {
+  assert(typeof core.getCityActionOpportunities === "function", "game-core.js must export getCityActionOpportunities.");
+  const state = core.createGame({ difficulty: "normal", seed: 20260604 });
+  state.day = 14;
+  state.metrics.hospitalLoad = 76;
+  state.metrics.supplies = 38;
+  state.metrics.staffFatigue = 66;
+  state.metrics.economy = 42;
+  state.resources.funds = 28;
+  state.hidden.detectedRate = 58;
+  const report = core.getCityActionOpportunities(state);
+  assert(report && Array.isArray(report.items), "getCityActionOpportunities must return an object with items.");
+  assert(Number.isInteger(report.availableCount), "Action opportunity report needs availableCount.");
+  assert(report.items.length > 0, "Action opportunity report should surface at least one available action in a pressured state.");
+  assert(
+    report.items.every((item) => item.id && item.pointId && item.mode && item.kind && item.label && item.reason && item.impact && item.status),
+    "Every action opportunity needs id, pointId, mode, kind, label, reason, impact, and status.",
+  );
+  assert(
+    report.items.every((item) => item.routeTag && item.routeTag.label),
+    "Every action opportunity should expose a routeTag label.",
+  );
+}
+
 function validateChoiceRiskPreview() {
   assert(typeof core.getChoiceRiskPreview === "function", "game-core.js must export getChoiceRiskPreview.");
   const state = core.createGame({ difficulty: "normal", seed: 20260602 });
@@ -289,6 +313,7 @@ function run() {
   validateNewsAssets();
   validateCacheVersions();
   validateRecoveryLevers();
+  validateCityActionOpportunities();
   validateChoiceRiskPreview();
   validateEndingStrategyReview();
 
