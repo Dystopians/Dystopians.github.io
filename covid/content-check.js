@@ -557,6 +557,7 @@ function validateFiscalEconomyChannels() {
   const required = [
     "emergencyGapLedger",
     "fastGrantReport",
+    "publicDonationDrive",
     "donationClaimList",
     "platformLogisticsShare",
     "interProvinceSupport",
@@ -565,6 +566,7 @@ function validateFiscalEconomyChannels() {
     "neighborhoodPickupWindow",
     "onlineGovOvertime",
     "remoteApprovalDesk",
+    "serviceVoucherPilot",
     "essentialMaintenanceRoster",
     "communityRepairWhitelist",
   ];

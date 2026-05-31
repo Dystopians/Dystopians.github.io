@@ -702,6 +702,7 @@
     fiscalTransparencyLedger: { label: "恢复财政", tone: "good" },
     emergencyGapLedger: { label: "恢复财政", tone: "good" },
     fastGrantReport: { label: "恢复财政", tone: "good" },
+    publicDonationDrive: { label: "恢复财政", tone: "good" },
     donationClaimList: { label: "恢复财政", tone: "good" },
     platformLogisticsShare: { label: "恢复财政", tone: "mixed" },
     procurementCreditNegotiation: { label: "恢复财政", tone: "mixed" },
@@ -711,6 +712,7 @@
     donationCoordination: { label: "恢复财政", tone: "good" },
     interProvinceSupport: { label: "恢复财政", tone: "good" },
     rentDeferralCoordination: { label: "恢复财政", tone: "mixed" },
+    serviceVoucherPilot: { label: "恢复财政", tone: "mixed" },
     contactlessLivelihoodStalls: { label: "恢复财政", tone: "mixed" },
     neighborhoodPickupWindow: { label: "恢复财政", tone: "mixed" },
     onlineGovOvertime: { label: "恢复财政", tone: "good" },
@@ -1461,7 +1463,7 @@
       x: 39,
       y: 81,
       description: "保供网络的关键节点。保障这里能明显改善物资，但会挤占财政和配送人手。",
-      operations: ["supplyCorridor", "essentialServicePermit", "contactlessLivelihoodStalls", "neighborhoodPickupWindow", "donationClaimList", "donationCoordination", "platformLogisticsShare", "interProvinceSupport", "procurementCreditNegotiation", "supplierPaymentExtension", "rentDeferralCoordination", "livelihoodStaggeredReopen", "contactlessServiceRegistry"],
+      operations: ["supplyCorridor", "essentialServicePermit", "contactlessLivelihoodStalls", "neighborhoodPickupWindow", "publicDonationDrive", "donationClaimList", "donationCoordination", "platformLogisticsShare", "interProvinceSupport", "procurementCreditNegotiation", "supplierPaymentExtension", "rentDeferralCoordination", "serviceVoucherPilot", "livelihoodStaggeredReopen", "contactlessServiceRegistry"],
       resolutions: ["priorityMedicineRoute", "mutualAidFund", "supplyOrderPrepaySwap", "lowContactBusinessPermit", "hardWarehouse", "emergencyLevy", "nightFreightWindow"],
     },
     {
@@ -1501,7 +1503,7 @@
       x: 30,
       y: 24,
       description: "居民信任、药品配送和基层疲劳最容易在这里体现。",
-      operations: ["medicineRoute", "mentalHealthLine", "communityRepairWhitelist", "essentialMaintenanceRoster", "neighborhoodPickupWindow"],
+      operations: ["medicineRoute", "mentalHealthLine", "communityRepairWhitelist", "essentialMaintenanceRoster", "neighborhoodPickupWindow", "serviceVoucherPilot"],
       resolutions: ["priorityMedicineRoute", "publicReviewBrief", "communityAutonomy", "delayBadNews"],
     },
     {
@@ -1681,7 +1683,32 @@
         return state.day >= 4
           && (state.resources.funds <= 62
             || state.metrics.hospitalLoad >= 45
-            || state.metrics.supplies <= 58);
+          || state.metrics.supplies <= 58);
+      },
+    },
+    publicDonationDrive: {
+      label: "公开募捐专户",
+      location: "market",
+      description: "开设公开募捐专户，把医院防护、慢病药、菜包和转运缺口拆成可认领条目。它能在前期补现金流和物资，但必须承担登记、复核和舆论追问。",
+      resources(state) {
+        return { funds: state.metrics.trust >= 65 ? 7 : 5 };
+      },
+      effects: { hospitalLoad: -1, supplies: 1, trust: 2, staffFatigue: 2 },
+      hidden: { publicMemory: -1 },
+      delayed: {
+        delay: 3,
+        label: "募捐专户复核",
+        resources: { funds: -1 },
+        effects: { hospitalLoad: -1, trust: -1 },
+      },
+      maxUses: 1,
+      conditionText: "需要第2天后，信任≥50，且资金≤64、物资≤62或公共创伤≥8。",
+      condition(state) {
+        return state.day >= 2
+          && state.metrics.trust >= 50
+          && (state.resources.funds <= 64
+            || state.metrics.supplies <= 62
+            || state.hidden.publicMemory >= 8);
       },
     },
     donationCoordination: {
@@ -2194,7 +2221,7 @@
           economy: 4,
           supplies: 4,
           infection: state.hidden.detectedRate < 55 ? 3 : 1,
-          staffFatigue: 2,
+          staffFatigue: 1,
         };
       },
       hidden: { policyStrictness: 1 },
@@ -2287,6 +2314,38 @@
       conditionText: "需要第5天后，城市活力≤66，且应急资金≥12。",
       condition(state) {
         return state.day >= 5 && state.metrics.economy <= 66 && state.resources.funds >= 12;
+      },
+    },
+    serviceVoucherPilot: {
+      label: "民生服务券试点",
+      location: "market",
+      description: "给药店、菜店、维修点和低接触服务发放小额服务券，鼓励居民预约消费。它能较早托住小微主体和街区活力，但会消耗现金并增加核销工作。",
+      resources: { funds: -5 },
+      effects(state) {
+        return {
+          economy: 5,
+          trust: 2,
+          supplies: -1,
+          infection: state.hidden.detectedRate >= 55 ? 1 : 2,
+          staffFatigue: 1,
+        };
+      },
+      hidden: { policyStrictness: -1, publicMemory: -1 },
+      delayed: {
+        delay: 3,
+        label: "服务券核销回流",
+        resources: { funds: 1 },
+        effects: { economy: 1 },
+        hidden: {},
+        condition: "trustAtLeast55",
+      },
+      maxUses: 1,
+      conditionText: "需要第6天后，资金≥18、感染压力<65，且城市活力≤62或信任≤58。",
+      condition(state) {
+        return state.day >= 6
+          && state.resources.funds >= 18
+          && state.metrics.infection < 65
+          && (state.metrics.economy <= 62 || state.metrics.trust <= 58);
       },
     },
     taxFeeDeferralDesk: {
@@ -2834,10 +2893,10 @@
 
   const TESTING_KEYS = ["expandTesting", "campusSentinel", "deployHealthCode", "triageNetwork", "communityClinic"];
   const CONTROL_KEYS = ["zoningControl", "citywideSilence", "suppressRumorLine", "deployHealthCode"];
-  const SUPPLY_KEYS = ["supplyPriority", "supplyCorridor", "volunteerDispatch", "hardWarehouse", "elasticTransit", "outsourceDelivery", "donationCoordination", "donationClaimList", "platformLogisticsShare", "interProvinceSupport", "closedLoopSmallShift", "essentialServicePermit", "contactlessServiceRegistry", "contactlessLivelihoodStalls", "neighborhoodPickupWindow", "nightFreightWindow", "microFreightPermit"];
+  const SUPPLY_KEYS = ["supplyPriority", "supplyCorridor", "volunteerDispatch", "hardWarehouse", "elasticTransit", "outsourceDelivery", "publicDonationDrive", "donationCoordination", "donationClaimList", "platformLogisticsShare", "interProvinceSupport", "closedLoopSmallShift", "essentialServicePermit", "contactlessServiceRegistry", "contactlessLivelihoodStalls", "neighborhoodPickupWindow", "nightFreightWindow", "microFreightPermit"];
   const MEDICAL_KEYS = ["medicalExpansion", "buildShelterHospital", "triageNetwork", "communityClinic", "shelterAdmissionStandard", "interProvinceSupport"];
   const REST_KEYS = ["restPolicy", "mentalHealthLine", "staffRotationOrder", "communityAutonomy", "supportTeam", "compressAdmin", "forceSimplify"];
-  const REOPEN_KEYS = ["reopenPilot", "lowRiskWorkList", "factoryClosedLoop", "elasticTransit", "enterpriseExemption", "livelihoodStaggeredReopen", "closedLoopSmallShift", "essentialServicePermit", "contactlessServiceRegistry", "contactlessLivelihoodStalls", "neighborhoodPickupWindow", "onlineGovOvertime", "remoteApprovalDesk", "communityRepairWhitelist", "essentialMaintenanceRoster", "remoteWorkGovServices", "nightFreightWindow", "jobSubsidyAdvance", "microFreightPermit", "rentDeferralCoordination", "taxFeeDeferralDesk", "platformLogisticsShare"];
+  const REOPEN_KEYS = ["reopenPilot", "lowRiskWorkList", "factoryClosedLoop", "elasticTransit", "enterpriseExemption", "livelihoodStaggeredReopen", "closedLoopSmallShift", "essentialServicePermit", "contactlessServiceRegistry", "contactlessLivelihoodStalls", "neighborhoodPickupWindow", "onlineGovOvertime", "remoteApprovalDesk", "communityRepairWhitelist", "essentialMaintenanceRoster", "remoteWorkGovServices", "serviceVoucherPilot", "nightFreightWindow", "jobSubsidyAdvance", "microFreightPermit", "rentDeferralCoordination", "taxFeeDeferralDesk", "platformLogisticsShare"];
   const VOLUNTEER_KEYS = ["volunteerDispatch", "mentalHealthLine", "supportTeam", "communityAutonomy", "interProvinceSupport"];
   const PUBLIC_REPAIR_KEYS = ["transparency", "publicReviewBrief"];
 
@@ -5683,6 +5742,7 @@
       operationUses.onlineGovOvertime && "线上政务加班窗口",
       operationUses.remoteApprovalDesk && "线上预审窗口",
       operationUses.remoteWorkGovServices && "线上政务与远程办公",
+      operationUses.serviceVoucherPilot && "民生服务券试点",
       operationUses.essentialMaintenanceRoster && "必要维修预约窗",
       operationUses.communityRepairWhitelist && "社区维修白名单",
       operationUses.closedLoopSmallShift && "保供工厂闭环小班",
@@ -5710,10 +5770,18 @@
       && m.staffFatigue < 78
       ? 1
       : 0;
+    const microRecoveryNetwork = microRecoveryAssets.length >= 4
+      && m.infection < 55
+      && h.policyStrictness <= 60
+      && m.economy < 60
+      && m.staffFatigue < 75
+      ? 1
+      : 0;
     add("reopenBonus", "复工动能", modifiers.reopenBonus || 0, "今日选择或工程带来的恢复加成。");
     add("controlledRecovery", "低传播微复苏", controlledRecovery, "感染和管控都不高时，城市会自然找回少量活力。");
     add("highTrustRecovery", "高信任协作", highTrustRecovery, "信任高位时，恢复安排更容易落地。");
     add("microRecoveryAssets", "微循环资产", microRecovery, microRecoveryAssets.length ? `生效资产：${microRecoveryAssets.slice(0, 3).join("、")}。` : "低流动复业和线上政务尚未形成合力。");
+    add("microRecoveryNetwork", "微循环网络", microRecoveryNetwork, microRecoveryAssets.length >= 4 ? `已有 ${microRecoveryAssets.length} 个低流动恢复节点，城市活力开始形成稳定回流。` : "微循环资产不足四个时，只能提供零散恢复。");
     add("policyDrag", "管控拖慢", -Math.round(h.policyStrictness / 25), "管控越强，物流、就业和消费越难自然恢复。");
     add("infectionDrag", "感染拖慢", m.infection >= 55 ? -1 : 0, "感染压力高位会压住复业与出行。");
     add("hospitalDrag", "医疗挤压", m.hospitalLoad >= 80 ? -1 : 0, "医疗高压会挤占城市恢复资源。");
@@ -5747,6 +5815,7 @@
       [operationUses.fiscalTransparencyLedger && m.trust >= 55 && r.funds <= 55, "财政透明台账"],
       [operationUses.emergencyGapLedger && m.trust >= 50 && r.funds <= 55, "应急缺口清单"],
       [operationUses.fastGrantReport && m.trust >= 50 && r.funds <= 55, "专项资金快报"],
+      [operationUses.publicDonationDrive && m.trust >= 50 && r.funds <= 60, "公开募捐专户"],
       [operationUses.donationClaimList && m.trust >= 50 && r.funds <= 55, "捐助认领清单"],
       [operationUses.donationCoordination && m.trust >= 50 && r.funds <= 55, "社会捐助统筹"],
       [operationUses.platformLogisticsShare && m.supplies >= 55 && r.funds <= 50, "平台运力共担"],
@@ -5761,6 +5830,7 @@
       [operationUses.essentialMaintenanceRoster && m.economy >= 52 && r.funds <= 45, "必要维修预约"],
       [operationUses.communityRepairWhitelist && m.trust >= 55 && r.funds <= 45, "社区维修白名单"],
       [operationUses.remoteWorkGovServices && m.economy >= 55 && r.funds <= 45, "线上政务与远程办公"],
+      [operationUses.serviceVoucherPilot && m.economy >= 55 && r.funds <= 45, "民生服务券试点"],
       [completed.supplyCorridor && m.supplies >= 60 && r.funds <= 55, "保供专线"],
     ];
     const activeAssets = assetSources.filter(([active]) => active).map(([, label]) => label);
@@ -7299,6 +7369,7 @@
     "fiscalTransparencyLedger",
     "emergencyGapLedger",
     "fastGrantReport",
+    "publicDonationDrive",
     "donationClaimList",
     "donationCoordination",
     "platformLogisticsShare",
@@ -7319,6 +7390,7 @@
     "contactlessServiceRegistry",
     "microFreightPermit",
     "rentDeferralCoordination",
+    "serviceVoucherPilot",
     "taxFeeDeferralDesk",
     "remoteWorkGovServices",
     "budgetReallocationMeeting",
@@ -7340,6 +7412,7 @@
     "fiscalTransparencyLedger",
     "emergencyGapLedger",
     "fastGrantReport",
+    "publicDonationDrive",
     "donationClaimList",
     "emergencyAccountClearing",
     "essentialServicePermit",
@@ -7349,6 +7422,7 @@
     "remoteApprovalDesk",
     "essentialMaintenanceRoster",
     "taxFeeDeferralDesk",
+    "serviceVoucherPilot",
     "remoteWorkGovServices",
     "specialFundingApplication",
     "donationCoordination",
@@ -7368,6 +7442,11 @@
     "emergencyLevy",
     "specialBondQuota",
     "deferProjectPayment",
+  ]);
+
+  const SPOTLIGHT_RECOVERY_IDS = new Set([
+    "publicDonationDrive",
+    "serviceVoucherPilot",
   ]);
 
   const ACTION_OPPORTUNITY_LOCKS = new Set(["条件未满足", "资金不足", "财政透支", "今日调度已满"]);
@@ -7707,7 +7786,7 @@
     return {
       tone,
       detail,
-      items: sorted.slice(0, 5),
+      items: sorted.slice(0, 7),
       availableCount,
       totalCount: sorted.length,
     };
@@ -7783,6 +7862,7 @@
     score += value.fundsGain * (state.resources.funds <= 25 ? 6 : state.resources.funds <= 45 ? 4 : 2);
     score += value.economyGain * (state.metrics.economy <= 35 ? 5 : state.metrics.economy <= 55 ? 3 : 1);
     if (EARLY_RECOVERY_IDS.has(item.id)) score += state.day <= 18 ? 18 : 8;
+    if (SPOTLIGHT_RECOVERY_IDS.has(item.id)) score += state.day <= 18 ? 22 : 10;
     if (LAST_RESORT_RECOVERY_IDS.has(item.id) && state.resources.funds > 30) score -= 35;
     if (bucket === "locked" && item.lockedReason === "条件未满足") score -= 6;
     if (item.lockedReason === "资金不足" || item.lockedReason === "财政透支") score -= 8;
