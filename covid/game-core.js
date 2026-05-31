@@ -3054,7 +3054,7 @@
       if (!delta) return;
       lines.push(`${METRIC_META[metric].short} ${delta > 0 ? "+" : ""}${delta}`);
     });
-    if (result.delayed) lines.push(`${result.delayed.delay}日后：${result.delayed.label}`);
+    if (result.delayed) lines.push(delayedPreviewText(result.delayed));
     return lines.slice(0, 6);
   }
 
@@ -3079,7 +3079,7 @@
       if (!delta) return;
       lines.push(`${METRIC_META[metric].short} ${delta > 0 ? "+" : ""}${delta}`);
     });
-    if (eventMod.delayed) lines.push(`${eventMod.delayed.delay}日后：${eventMod.delayed.label}`);
+    if (eventMod.delayed) lines.push(delayedPreviewText(eventMod.delayed));
     return lines.slice(0, 5);
   }
 
@@ -3526,6 +3526,30 @@
     if (condition === "fundsBelow20") return state.resources.funds < 20;
     if (condition === "economyBelow40") return state.metrics.economy < 40;
     return true;
+  }
+
+  function conditionPreviewLabel(condition) {
+    const labels = {
+      staffFatigueAbove80: "疲劳>80",
+      staffFatigueAbove75: "疲劳>75",
+      trustBelow40: "信任<40",
+      trustBelow45: "信任<45",
+      trustAtLeast55: "信任≥55",
+      trustAtLeast60: "信任≥60",
+      hospitalAtLeast80: "医疗≥80",
+      hospitalAbove85: "医疗>85",
+      suppliesBelow25: "物资<25",
+      detectedBelow50: "发现<50",
+      detectedAtLeast50: "发现≥50",
+      fundsBelow20: "资金<20",
+      economyBelow40: "活力<40",
+    };
+    return labels[condition] || "满足条件";
+  }
+
+  function delayedPreviewText(delayed) {
+    const condition = delayed.condition ? `（条件：${conditionPreviewLabel(delayed.condition)}）` : "";
+    return `${delayed.delay}日后：${delayed.label}${condition}`;
   }
 
   function applyEffects(state, effects = {}, dailyDelta, log, source) {

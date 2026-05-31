@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v46";
+  const ASSET_VERSION = "v47";
   const core = window.Linjiang72;
 
   let state = null;
@@ -700,6 +700,11 @@
     return labels[condition] || "满足条件时触发";
   }
 
+  function delayedChipText(delayed) {
+    const condition = delayed.condition ? `（条件：${conditionLabel(delayed.condition).replace("时触发", "")}）` : "";
+    return `${delayed.delay}日后：${delayed.label}${condition}`;
+  }
+
   function renderMap() {
     els.mapHotspots.innerHTML = "";
     renderMapHighlights();
@@ -1281,7 +1286,10 @@
       .filter(([, delta, meta]) => delta && meta)
       .slice(0, 5)
       .map(([metric, delta, meta]) => `<span class="chip ${changeClass(metric, delta)}" title="${escapeHtml(meta.description)}">${meta.short} ${delta > 0 ? "+" : ""}${delta}</span>`);
-    if (item.delayed) chips.push(`<span class="chip delay">${item.delayed.delay}日后：${escapeHtml(item.delayed.label)}</span>`);
+    if (item.delayed) {
+      const title = item.delayed.condition ? conditionLabel(item.delayed.condition) : "必定触发";
+      chips.push(`<span class="chip delay" title="${escapeHtml(title)}">${escapeHtml(delayedChipText(item.delayed))}</span>`);
+    }
     return chips.join("");
   }
 
@@ -1379,7 +1387,11 @@
 
   function previewChipTitle(text) {
     const value = String(text);
-    if (/^\d+日后/.test(value)) return "延迟后果，会在之后的每日结算中触发。";
+    if (/^\d+日后/.test(value)) {
+      return value.includes("条件：")
+        ? "条件满足时才会进入之后的每日结算。"
+        : "延迟后果，会在之后的每日结算中触发。";
+    }
     const match = value.match(/^(.+?)\s*([+-]\d+)/);
     if (!match) return "";
     const metric = PREVIEW_METRIC_BY_SHORT[match[1].trim()];
