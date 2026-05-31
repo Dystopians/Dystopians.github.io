@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v38";
+  const ASSET_VERSION = "v39";
   const core = window.Linjiang72;
 
   let state = null;
@@ -52,6 +52,120 @@
       { kind: "point", frames: [0, 1, 2, 3, 3, 2, 1, 0], text: "大白：公开信息很强，但供应和医疗要跟得上。" },
     ],
   };
+  const CITY_ASSET_REGISTRY = [
+    {
+      id: "shelterHospital",
+      label: "方舱医院",
+      kind: "工程",
+      detail: "临时收治空间已进入城市调度表，方舱收治标准和医疗分流会更有意义。",
+      completeProject: "shelterHospital",
+    },
+    {
+      id: "healthCode",
+      label: "健康码系统",
+      kind: "工程",
+      detail: "数字通行、核验和申诉系统已铺开，监测治理与复工白名单更稳定。",
+      completeProject: "healthCode",
+    },
+    {
+      id: "supplyCorridor",
+      label: "保供专线",
+      kind: "工程",
+      detail: "货运白名单和配送线路已经稳定，供应恢复和夜间货运窗口会有更强支撑。",
+      completeProject: "supplyCorridor",
+    },
+    {
+      id: "triageNetwork",
+      label: "分级诊疗网络",
+      kind: "工程",
+      detail: "社区转诊与分流流程开始磨合，医院每日压力会被持续削减。",
+      completeProject: "triageNetwork",
+    },
+    {
+      id: "communityClinic",
+      label: "社区临时门诊",
+      kind: "工程",
+      detail: "轻症咨询和慢病续方前移，普通医院获得额外分流能力。",
+      completeProject: "communityClinic",
+    },
+    {
+      id: "campusSentinel",
+      label: "校园哨点筛查",
+      kind: "节点",
+      detail: "学校片区症状报告和家庭筛查已铺开，早期发现能力获得补强。",
+      operation: "campusSentinel",
+    },
+    {
+      id: "volunteerDispatch",
+      label: "志愿者调度站",
+      kind: "节点",
+      detail: "志愿者排班和物资登记纳入统一调度，保供末端更有韧性。",
+      operation: "volunteerDispatch",
+    },
+    {
+      id: "mentalHealthLine",
+      label: "心理与轮休热线",
+      kind: "节点",
+      detail: "基层、医护和居民的减压入口已经建立，疲劳与创伤有了长期缓冲。",
+      operation: "mentalHealthLine",
+    },
+    {
+      id: "factoryClosedLoop",
+      label: "工厂闭环复工",
+      kind: "节点",
+      detail: "工业园闭环产能恢复，财政和城市活力获得恢复窗口。",
+      operation: "factoryClosedLoop",
+    },
+    {
+      id: "livelihoodStaggeredReopen",
+      label: "民生网点分时复业",
+      kind: "节点",
+      detail: "药店、菜店和维修网点开始错峰恢复，前期烟火气被小心托住。",
+      operation: "livelihoodStaggeredReopen",
+    },
+    {
+      id: "closedLoopSmallShift",
+      label: "保供工厂小班闭环",
+      kind: "节点",
+      detail: "保供相关产线以小班闭环运行，库存和城市活力有了早期支点。",
+      operation: "closedLoopSmallShift",
+    },
+    {
+      id: "contactlessServiceRegistry",
+      label: "无接触商铺备案",
+      kind: "节点",
+      detail: "药店、菜店和维修点以预约取货与门外交接恢复，城市活力获得早期支撑。",
+      operation: "contactlessServiceRegistry",
+    },
+    {
+      id: "remoteWorkGovServices",
+      label: "线上政务与远程办公",
+      kind: "节点",
+      detail: "企业申报、通行咨询和低风险岗位转到线上，城市运转能力被保留下来。",
+      operation: "remoteWorkGovServices",
+    },
+    {
+      id: "donationCoordination",
+      label: "社会捐助统筹",
+      kind: "财政",
+      detail: "捐助专户和缺口清单开始对齐，资金与物资能够更快转成实际补位。",
+      operation: "donationCoordination",
+    },
+    {
+      id: "specialFundingApplication",
+      label: "专项资金申报",
+      kind: "财政",
+      detail: "医院、保供和复产缺口已整理上报，财政到账会形成短期缓冲。",
+      operation: "specialFundingApplication",
+    },
+    {
+      id: "budgetReallocationMeeting",
+      label: "预算重排会议",
+      kind: "财政",
+      detail: "恢复期和非急迫项目预算转入应急账本，资金压力被短期压低。",
+      operation: "budgetReallocationMeeting",
+    },
+  ];
   const els = {
     startScreen: document.getElementById("startScreen"),
     gameScreen: document.getElementById("gameScreen"),
@@ -107,6 +221,7 @@
     resolutionsTab: document.getElementById("resolutionsTab"),
     actionFinder: document.getElementById("actionFinder"),
     operationsList: document.getElementById("operationsList"),
+    assetList: document.getElementById("assetList"),
     newsList: document.getElementById("newsList"),
     historyList: document.getElementById("historyList"),
     endingTitle: document.getElementById("endingTitle"),
@@ -304,6 +419,7 @@
     renderEvent();
     renderAlerts();
     renderActionMode();
+    renderCityAssets();
     renderNews();
     renderHistory();
   }
@@ -937,6 +1053,66 @@
       if (a.mode !== b.mode) return a.mode === "operations" ? -1 : 1;
       return a.item.label.localeCompare(b.item.label, "zh-Hans-CN");
     });
+  }
+
+  function renderCityAssets() {
+    if (!els.assetList) return;
+    const assets = collectCityAssets();
+    if (!assets.length) {
+      els.assetList.innerHTML = "<p class=\"empty-state\">尚未形成长期资产。建设工程、铺设节点或通过决议后会在这里留档。</p>";
+      return;
+    }
+
+    els.assetList.innerHTML = assets
+      .map((asset) => `
+        <article class="asset-card ${escapeHtml(asset.statusTone)}">
+          <span>${escapeHtml(asset.kind)} · ${escapeHtml(asset.status)}</span>
+          <strong>${escapeHtml(asset.label)}</strong>
+          <p>${escapeHtml(asset.detail)}</p>
+        </article>
+      `)
+      .join("");
+  }
+
+  function collectCityAssets() {
+    const pendingProjects = new Map(
+      (state.pendingEffects || [])
+        .filter((item) => item.completeProject)
+        .map((item) => [item.completeProject, item])
+    );
+    const assets = [];
+
+    CITY_ASSET_REGISTRY.forEach((item) => {
+      const pending = item.completeProject ? pendingProjects.get(item.completeProject) : null;
+      const completed = item.completeProject ? Boolean(state.completedProjects[item.completeProject]) : false;
+      const deployed = item.operation ? Boolean((state.flags.operationUses || {})[item.operation]) : false;
+      if (!pending && !completed && !deployed) return;
+      assets.push({
+        ...item,
+        status: pending && !completed
+          ? `${Math.max(0, pending.dueDay - state.day)}日后启用`
+          : completed
+            ? "已启用"
+            : "已部署",
+        statusTone: pending && !completed ? "pending" : "ready",
+      });
+    });
+
+    Object.entries(state.flags.resolutions || {})
+      .filter(([, used]) => used)
+      .forEach(([id]) => {
+        const resolution = core.RESOLUTIONS[id];
+        assets.push({
+          id: `resolution-${id}`,
+          kind: "决议",
+          label: resolution ? resolution.label : id,
+          detail: resolution ? resolution.description : "城市决议已通过。",
+          status: "已通过",
+          statusTone: "passed",
+        });
+      });
+
+    return assets.slice(0, 12);
   }
 
   function renderEffectChips(item) {

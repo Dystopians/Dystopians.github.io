@@ -1094,7 +1094,7 @@
       x: 39,
       y: 81,
       description: "保供网络的关键节点。保障这里能明显改善物资，但会挤占财政和配送人手。",
-      operations: ["supplyCorridor", "donationCoordination", "livelihoodStaggeredReopen"],
+      operations: ["supplyCorridor", "donationCoordination", "livelihoodStaggeredReopen", "contactlessServiceRegistry"],
       resolutions: ["priorityMedicineRoute", "hardWarehouse", "emergencyLevy", "nightFreightWindow"],
     },
     {
@@ -1104,7 +1104,7 @@
       x: 78,
       y: 70,
       description: "道路通行决定物资和复工效率。健康码和货运白名单都会在这里体现代价。",
-      operations: ["deployHealthCode", "supplyCorridor"],
+      operations: ["deployHealthCode", "supplyCorridor", "remoteWorkGovServices"],
       resolutions: ["elasticTransit", "lowRiskWorkList", "suppressRumorLine", "nightFreightWindow"],
     },
     {
@@ -1124,7 +1124,7 @@
       x: 86,
       y: 19,
       description: "城市活力和财政恢复来源。复工需要足够发现率和通行秩序支撑。",
-      operations: ["factoryClosedLoop", "specialFundingApplication", "closedLoopSmallShift"],
+      operations: ["factoryClosedLoop", "specialFundingApplication", "closedLoopSmallShift", "budgetReallocationMeeting"],
       resolutions: ["lowRiskWorkList", "elasticTransit", "enterpriseExemption", "jobSubsidyAdvance", "specialBondQuota"],
     },
     {
@@ -1429,6 +1429,84 @@
         return state.day >= 8
           && state.metrics.infection < 75
           && (state.metrics.supplies <= 65 || state.metrics.economy <= 60);
+      },
+    },
+    contactlessServiceRegistry: {
+      label: "无接触商铺备案",
+      location: "market",
+      description: "允许药店、菜店、维修点用预约取货和门外交接恢复营业。它能在早期托住活力、物资和信任，但发现率不足时会带来隐匿流动。",
+      resources: { funds: -4 },
+      effects(state) {
+        return {
+          economy: 4,
+          supplies: 2,
+          trust: 2,
+          infection: state.hidden.detectedRate < 50 ? 3 : 1,
+          staffFatigue: 2,
+        };
+      },
+      hidden: { policyStrictness: -1 },
+      delayed: {
+        delay: 3,
+        label: "备案商铺回访",
+        effects: { economy: 1 },
+        hidden: {},
+        condition: "trustAtLeast60",
+      },
+      maxUses: 1,
+      conditionText: "需要第6天后，感染压力<70，且城市活力≤68或物资≤68。",
+      condition(state) {
+        return state.day >= 6
+          && state.metrics.infection < 70
+          && (state.metrics.economy <= 68 || state.metrics.supplies <= 68);
+      },
+    },
+    remoteWorkGovServices: {
+      label: "线上政务与远程办公",
+      location: "road",
+      description: "把企业申报、通行咨询和部分政务窗口搬到线上，同时推动低风险岗位远程办公。它恢复的是城市运转能力，不是街面流量。",
+      resources: { funds: -4 },
+      effects(state) {
+        return {
+          economy: state.metrics.trust >= 65 ? 5 : 4,
+          trust: 1,
+          staffFatigue: 1,
+        };
+      },
+      hidden: { detectedRate: 2 },
+      delayed: {
+        delay: 2,
+        label: "线上流程跑通",
+        effects: { economy: 1 },
+        hidden: { detectedRate: 1 },
+      },
+      maxUses: 1,
+      conditionText: "需要第6天后，且城市活力≤68、管控强度≥35或资金≤45。",
+      condition(state) {
+        return state.day >= 6
+          && (state.metrics.economy <= 68
+            || state.hidden.policyStrictness >= 35
+            || state.resources.funds <= 45);
+      },
+    },
+    budgetReallocationMeeting: {
+      label: "预算重排会议",
+      location: "factory",
+      description: "把恢复期、宣传和非急迫项目预算挪进应急账本。它能补资金缺口，但会压缩早期活力并带来被质疑的空间。",
+      resources: { funds: 8 },
+      effects: { economy: -2, trust: -2, staffFatigue: 1 },
+      hidden: { publicMemory: 1 },
+      delayed: {
+        delay: 4,
+        label: "预算重排追问",
+        effects: { trust: -1 },
+        condition: "trustBelow45",
+      },
+      maxUses: 2,
+      conditionText: "需要第5天后，且资金≤45或医疗负载≥70；每局最多两次。",
+      condition(state) {
+        return state.day >= 5
+          && (state.resources.funds <= 45 || state.metrics.hospitalLoad >= 70);
       },
     },
     volunteerDispatch: {
@@ -1744,10 +1822,10 @@
 
   const TESTING_KEYS = ["expandTesting", "campusSentinel", "deployHealthCode", "triageNetwork", "communityClinic"];
   const CONTROL_KEYS = ["zoningControl", "citywideSilence", "suppressRumorLine", "deployHealthCode"];
-  const SUPPLY_KEYS = ["supplyPriority", "supplyCorridor", "volunteerDispatch", "hardWarehouse", "elasticTransit", "outsourceDelivery", "donationCoordination", "closedLoopSmallShift", "nightFreightWindow"];
+  const SUPPLY_KEYS = ["supplyPriority", "supplyCorridor", "volunteerDispatch", "hardWarehouse", "elasticTransit", "outsourceDelivery", "donationCoordination", "closedLoopSmallShift", "contactlessServiceRegistry", "nightFreightWindow"];
   const MEDICAL_KEYS = ["medicalExpansion", "buildShelterHospital", "triageNetwork", "communityClinic", "shelterAdmissionStandard"];
   const REST_KEYS = ["restPolicy", "mentalHealthLine", "staffRotationOrder", "communityAutonomy", "supportTeam", "compressAdmin", "forceSimplify"];
-  const REOPEN_KEYS = ["reopenPilot", "lowRiskWorkList", "factoryClosedLoop", "elasticTransit", "enterpriseExemption", "livelihoodStaggeredReopen", "closedLoopSmallShift", "nightFreightWindow", "jobSubsidyAdvance"];
+  const REOPEN_KEYS = ["reopenPilot", "lowRiskWorkList", "factoryClosedLoop", "elasticTransit", "enterpriseExemption", "livelihoodStaggeredReopen", "closedLoopSmallShift", "contactlessServiceRegistry", "remoteWorkGovServices", "nightFreightWindow", "jobSubsidyAdvance"];
   const VOLUNTEER_KEYS = ["volunteerDispatch", "mentalHealthLine", "supportTeam", "communityAutonomy"];
   const PUBLIC_REPAIR_KEYS = ["transparency", "publicReviewBrief"];
 
@@ -3162,7 +3240,7 @@
     );
     applyEffects(state, { infection: infectionDelta }, dailyDelta, log, "每日疫情");
 
-    const hospitalSurgePenalty = state.metrics.infection >= 70 && state.hidden.detectedRate < 75 ? 1 : 0;
+    const hospitalSurgePenalty = state.metrics.infection >= 70 && state.hidden.detectedRate < 85 ? 1 : 0;
     const hospitalDelta = Math.round(state.metrics.infection / 22)
       - modifiers.medicalRelief
       - (state.completedProjects.triageNetwork ? 1 : 0)
@@ -3189,7 +3267,7 @@
     const strictTrustCost = state.hidden.policyStrictness >= 75
       ? (state.metrics.supplies >= 75 ? 0 : 1)
       : 0;
-    const supplyTrustBonus = state.metrics.supplies >= 70 && state.metrics.trust < 85 ? 1 : 0;
+    const supplyTrustBonus = state.metrics.supplies >= 80 && state.metrics.trust < 80 ? 1 : 0;
     const expectationCost = state.metrics.trust >= 92
       && (state.metrics.infection >= 45 || state.metrics.hospitalLoad >= 45 || state.hidden.publicMemory >= 20)
       ? 2
