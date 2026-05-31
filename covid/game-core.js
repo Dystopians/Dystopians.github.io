@@ -3424,6 +3424,7 @@
         label: "尚未成型",
         detail: "本局还没有形成稳定治理路线。处理几次事件或执行城市行动后，这里会显示你的策略倾向。",
         blindSpot: null,
+        recommendations: getStrategyRecommendations(state, null, null),
         routes: [],
       };
     }
@@ -3440,6 +3441,7 @@
         label: "路线试探",
         detail: `本局刚开始出现${dominant.label}倾向。再处理几次事件或城市行动后，路线结构会更稳定。`,
         blindSpot: getStrategyBlindSpot(state, routeMap),
+        recommendations: getStrategyRecommendations(state, getStrategyBlindSpot(state, routeMap), dominant),
         routes: routes.filter((route) => route.count > 0).slice(0, 5),
       };
     }
@@ -3463,6 +3465,7 @@
       label,
       detail,
       blindSpot,
+      recommendations: getStrategyRecommendations(state, blindSpot, dominant),
       routes: routes.filter((route) => route.count > 0).slice(0, 5),
     };
   }
@@ -3494,6 +3497,124 @@
       return { tone: "warn", label: "创伤修复偏少", detail: "公共创伤已经进入结局权重区，记忆修复路线能改善恢复质感。" };
     }
     return null;
+  }
+
+  function getStrategyRecommendations(state, blindSpot, dominant) {
+    if (!state || state.ended) return [];
+    const targetRouteIds = strategyTargetRouteIds(state, blindSpot, dominant);
+    if (!targetRouteIds.length) return [];
+    const targetSet = new Set(targetRouteIds);
+    const rows = [];
+    const seen = new Set();
+    const add = (item) => {
+      if (!item || !item.routeId || !targetSet.has(item.routeId) || seen.has(item.id)) return;
+      seen.add(item.id);
+      rows.push(item);
+    };
+
+    const event = state.currentEventId ? getCurrentEvent(state) : null;
+    (event && event.choices ? event.choices : []).forEach((choice, index) => {
+      if (choice.available === false) return;
+      const route = getStrategyRouteForKey(choice.strategyKey || choice.actionKey || choice.profile || choice.id);
+      const routeTag = choice.routeTag || getChoiceRouteTag(choice);
+      add({
+        id: `choice_${choice.id}`,
+        source: "choice",
+        kind: "今日事件",
+        label: choice.label,
+        routeId: route && route.id,
+        routeLabel: route ? route.label : routeTag.label,
+        tone: routeTag.tone || "info",
+        status: "可选择",
+        detail: (choice.effectPreview || []).slice(0, 3).join(" / ") || "这项事件选项能补足当前路线结构。",
+        choiceId: choice.id,
+        priority: 96 - index,
+      });
+    });
+
+    MAP_POINTS.forEach((pointDef) => {
+      const point = getMapPoint(state, pointDef.id);
+      [
+        { mode: "operations", kind: "工程", items: point.operations },
+        { mode: "resolutions", kind: "决议", items: point.resolutions },
+      ].forEach((group) => {
+        group.items.forEach((item) => {
+          const route = getStrategyRouteForKey(item.id);
+          if (!route) return;
+          const forecast = item.available
+            ? getCityActionOutcomePreview(state, group.mode, item.id).slice(0, 3).map(formatForecastEntry)
+            : [];
+          add({
+            id: `${group.mode}_${item.id}`,
+            source: group.mode,
+            kind: group.kind,
+            label: item.label,
+            routeId: route.id,
+            routeLabel: route.label,
+            tone: item.available ? route.tone : "mixed",
+            status: item.available ? "可执行" : unlockPreviewLabel(item.lockedReason),
+            detail: item.available
+              ? (forecast.length ? forecast.join(" / ") : "这项城市行动能补足当前路线结构。")
+              : item.lockedDetail || item.lockedReason || "当前条件不足。",
+            mode: group.mode,
+            pointId: pointDef.id,
+            pointLabel: point.label,
+            locked: !item.available,
+            priority: (item.available ? 78 : 42)
+              + (EARLY_RECOVERY_IDS.has(item.id) && state.day <= 18 ? 8 : 0)
+              + (item.lockedReason === "今日调度已满" ? 4 : 0),
+          });
+        });
+      });
+    });
+
+    return rows
+      .sort((a, b) => b.priority - a.priority || a.kind.localeCompare(b.kind, "zh-Hans-CN"))
+      .slice(0, 3)
+      .map(({ priority, routeId, ...item }) => item);
+  }
+
+  function strategyTargetRouteIds(state, blindSpot, dominant) {
+    const blindLabel = blindSpot ? blindSpot.label || "" : "";
+    if (blindLabel.includes("医疗")) return ["medical"];
+    if (blindLabel.includes("传播")) return ["monitoring", "control"];
+    if (blindLabel.includes("基层")) return ["workerRelief"];
+    if (blindLabel.includes("信任")) return ["openRepair", "memory"];
+    if (blindLabel.includes("民生")) return ["livelihood"];
+    if (blindLabel.includes("财政")) return ["recovery"];
+    if (blindLabel.includes("创伤")) return ["memory", "openRepair"];
+
+    if (dominant && dominant.percent >= 40) {
+      const complements = {
+        control: ["livelihood", "openRepair", "workerRelief"],
+        recovery: ["monitoring", "livelihood", "medical"],
+        medical: ["recovery", "workerRelief", "livelihood"],
+        monitoring: ["medical", "recovery", "openRepair"],
+        livelihood: ["medical", "monitoring", "recovery"],
+        workerRelief: ["medical", "monitoring", "livelihood"],
+        openRepair: ["medical", "livelihood", "recovery"],
+        memory: ["recovery", "medical", "openRepair"],
+      };
+      if (complements[dominant.id]) return complements[dominant.id];
+    }
+
+    const m = state.metrics;
+    const h = state.hidden;
+    const r = state.resources;
+    const pressureRoutes = [];
+    if (m.hospitalLoad >= 65) pressureRoutes.push("medical");
+    if (m.infection >= 65 || h.detectedRate <= 45) pressureRoutes.push("monitoring", "control");
+    if (m.supplies <= 45) pressureRoutes.push("livelihood");
+    if (m.staffFatigue >= 65) pressureRoutes.push("workerRelief");
+    if (m.trust <= 45) pressureRoutes.push("openRepair", "memory");
+    if (m.economy <= 48 || r.funds <= 45) pressureRoutes.push("recovery");
+    if (h.publicMemory >= 45) pressureRoutes.push("memory");
+    return [...new Set(pressureRoutes)].slice(0, 4);
+  }
+
+  function formatForecastEntry(entry) {
+    if (!entry || !entry.short) return "";
+    return `${entry.short} ${entry.delta > 0 ? "+" : ""}${entry.delta}`;
   }
 
   function getChoiceCrisisImpacts(result = {}) {

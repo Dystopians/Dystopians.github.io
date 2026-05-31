@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v69";
+  const ASSET_VERSION = "v70";
   const core = window.Linjiang72;
 
   let state = null;
@@ -813,6 +813,22 @@
     const blindSpot = profile.blindSpot
       ? `<p class="strategy-blindspot ${escapeHtml(profile.blindSpot.tone || "warn")}"><strong>${escapeHtml(profile.blindSpot.label)}</strong>${escapeHtml(profile.blindSpot.detail)}</p>`
       : "";
+    const recommendations = (profile.recommendations || []).slice(0, 3);
+    const recommendationList = recommendations.length
+      ? `
+        <div class="strategy-rec-list">
+          ${recommendations.map((item) => `
+            <button class="strategy-rec ${escapeHtml(item.tone || "info")}${item.locked ? " locked" : ""}" type="button"
+              data-mode="${escapeHtml(item.mode || "")}" data-point-id="${escapeHtml(item.pointId || "")}"
+              data-choice-id="${escapeHtml(item.choiceId || "")}" title="${escapeHtml(item.detail)}">
+              <span>${escapeHtml(item.kind)} · ${escapeHtml(item.status)}${item.pointLabel ? ` · ${escapeHtml(item.pointLabel)}` : ""}</span>
+              <strong>${escapeHtml(item.label)}</strong>
+              <em>${escapeHtml(item.detail)}</em>
+            </button>
+          `).join("")}
+        </div>
+      `
+      : "<p class=\"strategy-rec-empty\">暂无明确配套建议，先处理今日最高压力。</p>";
     els.strategyProfile.innerHTML = `
       <div class="strategy-profile-head">
         <span>治理路线</span>
@@ -821,7 +837,40 @@
       <p>${escapeHtml(profile.detail)}</p>
       <div class="strategy-route-list">${routeList}</div>
       ${blindSpot}
+      <div class="strategy-recommendations">
+        <span>配套建议</span>
+        ${recommendationList}
+      </div>
     `;
+    els.strategyProfile.querySelectorAll(".strategy-rec").forEach((button) => {
+      button.addEventListener("click", () => {
+        const choiceId = button.dataset.choiceId;
+        if (choiceId) {
+          const target = [...els.choiceList.querySelectorAll(".choice-button")]
+            .find((item) => item.dataset.choiceId === choiceId);
+          if (target) {
+            target.scrollIntoView({ behavior: "smooth", block: "center" });
+            target.classList.add("is-recommended");
+            const event = core.getCurrentEvent(state);
+            const choice = event && event.choices.find((item) => item.id === choiceId);
+            if (choice) renderTrendPreview(choice);
+            setTimeout(() => target.classList.remove("is-recommended"), 1600);
+          }
+          return;
+        }
+        if (button.dataset.pointId) {
+          core.selectMapPoint(state, button.dataset.pointId);
+          if (button.dataset.mode) {
+            actionMode = button.dataset.mode === "resolutions" ? "resolutions" : "operations";
+          }
+          save();
+          renderMap();
+          renderActionMode();
+          els.mapHint.textContent = `已定位配套建议：${core.getMapPoint(state, button.dataset.pointId).label}`;
+          els.cityMapWrap.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      });
+    });
   }
 
   function renderPendingItem(item) {
@@ -1213,6 +1262,7 @@
       button.className = "choice-button";
       button.type = "button";
       button.disabled = choice.available === false;
+      button.dataset.choiceId = choice.id;
       const chips = choice.effectPreview
         .map((item) => `<span class="chip ${chipClassForPreview(item)}" title="${escapeHtml(previewChipTitle(item))}">${escapeHtml(item)}</span>`)
         .join("");

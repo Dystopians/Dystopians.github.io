@@ -352,6 +352,7 @@ function validateChoiceRiskPreview() {
 }
 
 function validateEndingStrategyReview() {
+  assert(typeof core.getStrategyProfile === "function", "game-core.js must export getStrategyProfile.");
   const state = core.createGame({ difficulty: "normal", seed: 20260603 });
   state.metrics.hospitalLoad = 88;
   state.metrics.economy = 28;
@@ -375,6 +376,38 @@ function validateEndingStrategyReview() {
   assert(
     review.nextPlans.every((item) => item.route && item.detail && item.examples),
     "Every next-run plan needs route, detail, and examples.",
+  );
+
+  const activeState = core.createGame({ difficulty: "normal", seed: 20260608 });
+  activeState.currentEventId = "p1_notice_eight_rumor";
+  activeState.day = 9;
+  activeState.metrics.hospitalLoad = 78;
+  activeState.metrics.infection = 68;
+  activeState.metrics.staffFatigue = 68;
+  activeState.metrics.economy = 48;
+  activeState.resources.funds = 38;
+  activeState.history.unshift({
+    day: 8,
+    phase: 1,
+    title: "路线偏重校验",
+    choice: "路线偏重校验",
+    routeKey: "hard",
+    routeLabel: "高压止血",
+    routeTone: "danger",
+    routeSource: "eventChoice",
+    notes: [],
+    changes: {},
+  });
+  const profile = core.getStrategyProfile(activeState);
+  assert(Array.isArray(profile.recommendations), "Strategy profile should expose recommendations.");
+  assert(profile.recommendations.length > 0, "Strategy recommendations should surface route complements under pressure.");
+  assert(
+    profile.recommendations.every((item) => item.kind && item.label && item.status && item.detail && item.routeLabel),
+    "Every strategy recommendation needs kind, label, status, detail, and routeLabel.",
+  );
+  assert(
+    profile.recommendations.every((item) => !String(item.detail).includes("[object Object]")),
+    "Strategy recommendation details must render readable forecast text.",
   );
 }
 
