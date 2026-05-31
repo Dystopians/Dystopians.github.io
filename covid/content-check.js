@@ -403,6 +403,13 @@ function validateFiscalOutlook() {
 
 function validateMicroRecoveryPressure() {
   assert(typeof core.getDailyPressureSummary === "function", "game-core.js must export getDailyPressureSummary.");
+  const opening = core.createGame({ difficulty: "normal", seed: 20260625 });
+  const openingSummary = core.getDailyPressureSummary(opening);
+  assert(
+    openingSummary.some((item) => item.id === "city_action_window" && /今日调度还剩/.test(item.detail)),
+    "Daily pressure summary should remind players when a no-advance city action is still available before the event.",
+  );
+
   const state = core.createGame({ difficulty: "normal", seed: 20260624 });
   state.day = 10;
   state.metrics.infection = 50;

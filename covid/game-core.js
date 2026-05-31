@@ -6603,6 +6603,21 @@
       );
     }
 
+    const actionBudget = getCityActionBudget(state);
+    if (actionBudget.remaining > 0) {
+      const opportunities = getCityActionOpportunities(state);
+      const bestAction = (opportunities.items || [])[0];
+      if (bestAction && opportunities.availableCount > 0) {
+        add(
+          "city_action_window",
+          bestAction.tone === "good" ? "good" : "info",
+          "城市行动窗口",
+          `今日调度还剩 ${actionBudget.remaining}/${actionBudget.limit}，可先执行“${bestAction.label}”，再处理今日事件。`,
+          bestAction.priority >= 48 ? 79 : 57,
+        );
+      }
+    }
+
     const upcoming = SCHEDULED_EVENTS
       .filter((item) => (
         item.day > state.day
