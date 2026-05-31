@@ -369,6 +369,54 @@ function validateFiscalOutlook() {
   const assetReport = core.getFiscalOutlook(assetState);
   assert(Array.isArray(assetReport.activeAssets), "Fiscal outlook should expose active fiscal assets.");
   assert(assetReport.activeAssets.length >= 2, "Fiscal outlook should surface active recovery assets after setup actions.");
+
+  const bridgeState = core.createGame({ difficulty: "normal", seed: 20260622 });
+  bridgeState.metrics.economy = 58;
+  bridgeState.metrics.trust = 62;
+  bridgeState.resources.funds = 30;
+  bridgeState.flags.operationUses.fiscalTransparencyLedger = 1;
+  bridgeState.flags.operationUses.emergencyGapLedger = 1;
+  bridgeState.flags.operationUses.fastGrantReport = 1;
+  const bridgeReport = core.getFiscalOutlook(bridgeState);
+  const bridgeFunds = bridgeReport.items.find((item) => item.id === "funds");
+  assert(bridgeFunds.delta >= 3, "Three active fiscal assets at low funds should raise the capped cashflow bridge to at least +3.");
+  assert(
+    bridgeFunds.components.some((item) => item.id === "assetYield" && item.value >= 3),
+    "Fiscal outlook should explain the stronger low-fund recovery asset yield.",
+  );
+
+  const microState = core.createGame({ difficulty: "normal", seed: 20260623 });
+  microState.day = 10;
+  microState.metrics.infection = 48;
+  microState.metrics.economy = 62;
+  microState.metrics.staffFatigue = 52;
+  microState.hidden.policyStrictness = 42;
+  microState.flags.operationUses.essentialServicePermit = 1;
+  microState.flags.operationUses.remoteApprovalDesk = 1;
+  const microReport = core.getFiscalOutlook(microState);
+  const microEconomy = microReport.items.find((item) => item.id === "economy");
+  assert(
+    microEconomy.components.some((item) => item.id === "microRecoveryAssets" && item.value > 0),
+    "Two low-flow recovery assets should create a readable micro-recovery economy component.",
+  );
+}
+
+function validateMicroRecoveryPressure() {
+  assert(typeof core.getDailyPressureSummary === "function", "game-core.js must export getDailyPressureSummary.");
+  const state = core.createGame({ difficulty: "normal", seed: 20260624 });
+  state.day = 10;
+  state.metrics.infection = 50;
+  state.metrics.economy = 62;
+  state.metrics.staffFatigue = 52;
+  state.hidden.detectedRate = 50;
+  state.hidden.policyStrictness = 42;
+  state.flags.operationUses.essentialServicePermit = 1;
+  state.flags.operationUses.remoteApprovalDesk = 1;
+  const summary = core.getDailyPressureSummary(state);
+  assert(
+    summary.some((item) => item.id === "micro_flow_pressure"),
+    "Low-detection micro-recovery route should surface its extra flow risk in the daily pressure summary.",
+  );
 }
 
 function validateCityBadges() {
@@ -861,6 +909,7 @@ function run() {
   validateTutorialCopy();
   validateRecoveryLevers();
   validateFiscalOutlook();
+  validateMicroRecoveryPressure();
   validateCityBadges();
   validateFiscalEconomyChannels();
   validateCityActionOpportunities();

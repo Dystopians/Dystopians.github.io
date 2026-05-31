@@ -5644,6 +5644,25 @@
     return zeroTone;
   }
 
+  function getMicroRecoveryAssets(state) {
+    const operationUses = state.flags.operationUses || {};
+    const completed = state.completedProjects || {};
+    return [
+      operationUses.essentialServicePermit && "民生服务保留名录",
+      operationUses.contactlessLivelihoodStalls && "无接触民生摊点",
+      operationUses.neighborhoodPickupWindow && "社区预约取货",
+      operationUses.onlineGovOvertime && "线上政务加班窗口",
+      operationUses.remoteApprovalDesk && "线上预审窗口",
+      operationUses.remoteWorkGovServices && "线上政务与远程办公",
+      operationUses.essentialMaintenanceRoster && "必要维修预约窗",
+      operationUses.communityRepairWhitelist && "社区维修白名单",
+      operationUses.closedLoopSmallShift && "保供工厂闭环小班",
+      operationUses.contactlessServiceRegistry && "无接触商铺备案",
+      operationUses.microFreightPermit && "货运微循环许可",
+      completed.supplyCorridor && "保供专线",
+    ].filter(Boolean);
+  }
+
   function calculateEconomyOutlook(state, modifiers = {}) {
     const m = state.metrics;
     const h = state.hidden;
@@ -5654,9 +5673,18 @@
     };
     const controlledRecovery = m.infection < 45 && h.policyStrictness <= 45 && m.economy < 55 ? 1 : 0;
     const highTrustRecovery = m.trust >= 75 && m.infection < 60 && h.policyStrictness <= 55 && m.economy < 65 ? 1 : 0;
+    const microRecoveryAssets = getMicroRecoveryAssets(state);
+    const microRecovery = microRecoveryAssets.length >= 2
+      && m.infection < 60
+      && h.policyStrictness <= 65
+      && m.economy < 65
+      && m.staffFatigue < 78
+      ? 1
+      : 0;
     add("reopenBonus", "复工动能", modifiers.reopenBonus || 0, "今日选择或工程带来的恢复加成。");
     add("controlledRecovery", "低传播微复苏", controlledRecovery, "感染和管控都不高时，城市会自然找回少量活力。");
     add("highTrustRecovery", "高信任协作", highTrustRecovery, "信任高位时，恢复安排更容易落地。");
+    add("microRecoveryAssets", "微循环资产", microRecovery, microRecoveryAssets.length ? `生效资产：${microRecoveryAssets.slice(0, 3).join("、")}。` : "低流动复业和线上政务尚未形成合力。");
     add("policyDrag", "管控拖慢", -Math.round(h.policyStrictness / 25), "管控越强，物流、就业和消费越难自然恢复。");
     add("infectionDrag", "感染拖慢", m.infection >= 55 ? -1 : 0, "感染压力高位会压住复业与出行。");
     add("hospitalDrag", "医疗挤压", m.hospitalLoad >= 80 ? -1 : 0, "医疗高压会挤占城市恢复资源。");
@@ -5707,13 +5735,14 @@
       [completed.supplyCorridor && m.supplies >= 60 && r.funds <= 55, "保供专线"],
     ];
     const activeAssets = assetSources.filter(([active]) => active).map(([, label]) => label);
-    const assetYield = clamp(activeAssets.length, 0, 2);
+    const bridgeCap = activeAssets.length >= 3 && r.funds <= 30 && m.trust >= 45 ? 3 : 2;
+    const assetYield = clamp(activeAssets.length, 0, bridgeCap);
     const rawGain = fiscalBase + trustPremium + assetYield;
-    const cappedGain = clamp(rawGain, 0, 2);
+    const cappedGain = clamp(rawGain, 0, bridgeCap);
     add("fiscalBase", "活力税基", fiscalBase, "活力足够且资金偏低时，会产生少量自然回流。");
     add("trustPremium", "信任协作", trustPremium, "高信任能降低协调成本，形成小额现金流。");
-    add("assetYield", "恢复资产", assetYield, activeAssets.length ? `生效资产：${activeAssets.slice(0, 3).join("、")}。` : "财政、捐助和微复苏资产尚未形成回流。");
-    add("dailyCap", "每日回流上限", cappedGain - rawGain, "财政自然回流每日最多计入 2 点，避免资金滚雪球。");
+    add("assetYield", "恢复资产", assetYield, activeAssets.length ? `生效资产：${activeAssets.slice(0, 3).join("、")}。${bridgeCap > 2 ? "低资金下已形成周转网络。" : ""}` : "财政、捐助和微复苏资产尚未形成回流。");
+    add("dailyCap", "每日回流上限", cappedGain - rawGain, `财政自然回流每日最多计入 ${bridgeCap} 点，避免资金滚雪球。`);
     add("economyLeak", "活力低位漏损", m.economy <= 25 ? -1 : 0, "活力过低会让财政自我修复能力下降。");
     add("hospitalLeak", "医疗高压账单", m.hospitalLoad >= 85 ? -1 : 0, "医疗红线会持续占用现金流。");
     add("controlLeak", "高压管控账单", h.policyStrictness >= 80 ? -1 : 0, "高压管控会带来额外组织成本。");
@@ -5744,8 +5773,9 @@
     const trustPenalty = m.trust < 30 ? 2 : m.trust < 45 ? 1 : 0;
     const strictControlEffect = h.policyStrictness >= 80 ? 1 : 0;
     const openFlowPressure = h.policyStrictness <= 15 ? 1 : 0;
+    const microFlowPressure = getMicroRecoveryAssets(state).length >= 2 && h.detectedRate < 62 && m.infection >= 45 ? 1 : 0;
     const infectionDelta = clamp(
-      phasePressure + mobilityPressure - controlEffect - detectionEffect - strictControlEffect + openFlowPressure + fatiguePenalty + trustPenalty,
+      phasePressure + mobilityPressure - controlEffect - detectionEffect - strictControlEffect + openFlowPressure + microFlowPressure + fatiguePenalty + trustPenalty,
       -6,
       7,
     );
@@ -6553,6 +6583,9 @@
     if (r.funds <= 10) add("resource_funds_low", "danger", "财政透支", "高价工程和决议会被锁定。", 105 - r.funds);
     else if (r.funds <= 20) add("resource_funds_warn", "warn", "资金偏低", "工程选择需要更克制。", 100 - r.funds);
     else if (r.funds <= 45 && state.day >= 7) add("resource_fiscal_window", "info", "财政窗口", "账款清分、专项资金、捐助统筹或举债能补缺口，但会转化为信任、活力或审计压力。", 61);
+    if (getMicroRecoveryAssets(state).length >= 2 && h.detectedRate < 62 && m.infection >= 45) {
+      add("micro_flow_pressure", "warn", "微复苏流动压力", "低发现率下，多条微循环资产会带来额外传播缝隙。", 63);
+    }
     if (h.detectedRate <= 35) add("hidden_detected_low", "warn", "信息盲区", "报告感染压力误差扩大，复工代价更高。", 100 - h.detectedRate);
     if (h.policyStrictness >= 80) add("hidden_policy_high", "warn", "高压管控", "感染压制增强，但活力和疲劳代价上升。", h.policyStrictness);
     if (h.publicMemory >= 60) add("hidden_memory_high", "danger", "长期伤痕", "信任恢复会变慢，结局更容易偏向沉重代价。", h.publicMemory);
@@ -7036,8 +7069,10 @@
     const trustPenalty = projection.metrics.trust < 30 ? 2 : projection.metrics.trust < 45 ? 1 : 0;
     const strictControlEffect = projection.hidden.policyStrictness >= 80 ? 1 : 0;
     const openFlowPressure = projection.hidden.policyStrictness <= 15 ? 1 : 0;
+    const projected = projectedState(projection);
+    const microFlowPressure = getMicroRecoveryAssets(projected).length >= 2 && projection.hidden.detectedRate < 62 && projection.metrics.infection >= 45 ? 1 : 0;
     const infectionDelta = clamp(
-      phasePressure + mobilityPressure - controlEffect - detectionEffect - strictControlEffect + openFlowPressure + fatiguePenalty + trustPenalty,
+      phasePressure + mobilityPressure - controlEffect - detectionEffect - strictControlEffect + openFlowPressure + microFlowPressure + fatiguePenalty + trustPenalty,
       -6,
       7,
     );
