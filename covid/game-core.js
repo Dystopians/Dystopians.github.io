@@ -2434,6 +2434,68 @@
     };
   }
 
+  function getMapPointStatus(state, pointId) {
+    if (!state || !pointId) return null;
+    if (pointId === "stadium") {
+      const pendingShelter = (state.pendingEffects || []).find((item) => item.completeProject === "shelterHospital");
+      if (state.completedProjects && state.completedProjects.shelterHospital) {
+        return {
+          label: "方舱状态",
+          short: "方舱",
+          value: "启用",
+          tone: "good",
+          detail: "方舱已启用，医疗分流能力进入长期资产。",
+        };
+      }
+      if (pendingShelter) {
+        const gap = Math.max(0, pendingShelter.dueDay - state.day);
+        return {
+          label: "方舱建设",
+          short: "建设",
+          value: gap <= 0 ? "今日" : `${gap}日`,
+          tone: "warn",
+          detail: "方舱建设排期中，到期后会形成医疗分流能力。",
+        };
+      }
+      return buildMapMetricStatus(state, "hospitalLoad", "收治", "体育馆尚未启用，医疗负载越高越需要考虑临时收治空间。");
+    }
+    const metricByPoint = {
+      hospital: ["hospitalLoad", "医疗", "医院负载决定医疗挤兑风险。"],
+      market: ["supplies", "物资", "批发市场反映保供和库存缓冲。"],
+      road: ["policyStrictness", "管控", "主干道反映通行管控强度。"],
+      school: ["infection", "感染", "学校片区对传播窗口和复课风险敏感。"],
+      factory: ["economy", "活力", "工业园反映城市活力和财政恢复基础。"],
+      residents: ["trust", "信任", "居民楼院最直接反映配合和民生情绪。"],
+      volunteers: ["staffFatigue", "疲劳", "志愿者集散点反映基层执行透支。"],
+    };
+    const spec = metricByPoint[pointId];
+    if (!spec) return null;
+    return buildMapMetricStatus(state, spec[0], spec[1], spec[2]);
+  }
+
+  function buildMapMetricStatus(state, metric, short, detail) {
+    const value = getObjectiveValue(state, metric);
+    const meta = getObjectiveMeta(metric);
+    return {
+      metric,
+      label: meta.label,
+      short,
+      value,
+      tone: mapStatusTone(metric, value),
+      detail,
+    };
+  }
+
+  function mapStatusTone(metric, value) {
+    if (metric === "policyStrictness") {
+      if (value >= 80) return "danger";
+      if (value <= 15) return "warn";
+      if (value >= 35 && value <= 65) return "good";
+      return "warn";
+    }
+    return getRiskBand(metric, value);
+  }
+
   function selectMapPoint(state, id) {
     state.selectedMapPointId = id;
     return getMapPoint(state, id);
@@ -4541,6 +4603,7 @@
     getVisibleMetrics,
     getEventImage,
     getMapPoint,
+    getMapPointStatus,
     selectMapPoint,
     getAvailableOperations,
     getAvailableResolutions,

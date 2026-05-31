@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v56";
+  const ASSET_VERSION = "v57";
   const core = window.Linjiang72;
 
   let state = null;
@@ -759,12 +759,13 @@
     renderMapHighlights();
     core.MAP_POINTS.forEach((point) => {
       const pointState = core.getMapPoint(state, point.id);
+      const pointStatus = core.getMapPointStatus ? core.getMapPointStatus(state, point.id) : null;
       const availableOps = pointState.operations.filter((item) => item.available).length;
       const availableRes = pointState.resolutions.filter((item) => item.available).length;
       const availableTotal = availableOps + availableRes;
       const footprint = getMapFootprint(point);
       const button = document.createElement("button");
-      button.className = `map-hotspot ${point.type}${state.selectedMapPointId === point.id ? " active" : ""}${availableTotal ? " has-actions" : ""}`;
+      button.className = `map-hotspot ${point.type}${state.selectedMapPointId === point.id ? " active" : ""}${availableTotal ? " has-actions" : ""}${pointStatus ? ` status-${pointStatus.tone}` : ""}`;
       button.type = "button";
       button.style.left = `${point.x}%`;
       button.style.top = `${point.y}%`;
@@ -775,15 +776,22 @@
       const actionHint = availableTotal
         ? `，可用${availableOps ? `${availableOps}项工程` : ""}${availableOps && availableRes ? "、" : ""}${availableRes ? `${availableRes}项决议` : ""}`
         : "";
-      button.title = `${point.label}${actionHint}`;
-      button.setAttribute("aria-label", `${point.label}${actionHint}`);
+      const statusHint = pointStatus ? `，${pointStatus.label}${pointStatus.value}` : "";
+      button.title = `${point.label}${statusHint}${actionHint}`;
+      button.setAttribute("aria-label", `${point.label}${statusHint}${actionHint}`);
       button.innerHTML = `
         <span class="map-hotspot-label">${escapeHtml(point.label)}</span>
+        ${pointStatus ? `
+          <span class="map-status-chip ${escapeHtml(pointStatus.tone)}" title="${escapeHtml(pointStatus.detail)}">
+            <strong>${escapeHtml(pointStatus.short)}</strong>
+            <em>${escapeHtml(String(pointStatus.value))}</em>
+          </span>
+        ` : ""}
         ${availableTotal ? `<span class="map-hotspot-badge" aria-hidden="true">${availableTotal}</span>` : ""}
       `;
       const showHighlight = () => {
         setMapHighlight(point.id);
-        els.mapHint.textContent = `悬停：${point.label}${availableTotal ? ` · 可用行动 ${availableTotal}` : ""} · ${cityActionBudgetText()}`;
+        els.mapHint.textContent = `悬停：${point.label}${pointStatus ? ` · ${pointStatus.short} ${pointStatus.value}` : ""}${availableTotal ? ` · 可用行动 ${availableTotal}` : ""} · ${cityActionBudgetText()}`;
       };
       const hideHighlight = () => {
         setMapHighlight(null);

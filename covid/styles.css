@@ -1587,6 +1587,76 @@ label {
   animation: actionBadgePulse 1.8s steps(2) infinite;
 }
 
+.map-status-chip {
+  position: absolute;
+  left: calc(var(--marker-x, 50%) - 22px);
+  top: calc(var(--marker-y, 50%) + 20px);
+  z-index: 4;
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  min-height: 18px;
+  transform: translate(-50%, -50%);
+  border: 2px solid #95723d;
+  background: #fff1c8;
+  color: #5c3d17;
+  box-shadow: 2px 2px 0 rgba(45, 40, 31, 0.5), inset 1px 1px 0 rgba(255, 244, 202, 0.72);
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.map-status-chip strong,
+.map-status-chip em {
+  display: inline-flex;
+  align-items: center;
+  min-height: 16px;
+  padding: 1px 4px;
+  font-size: 0.58rem;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.map-status-chip strong {
+  background: rgba(234, 209, 154, 0.78);
+}
+
+.map-status-chip em {
+  border-left: 2px solid #95723d;
+  background: rgba(255, 241, 200, 0.8);
+}
+
+.map-status-chip.good {
+  border-color: var(--good);
+  color: #244d35;
+}
+
+.map-status-chip.good em {
+  border-left-color: var(--good);
+  background: #c9dd91;
+}
+
+.map-status-chip.warn {
+  border-color: var(--warn);
+  color: #583b15;
+}
+
+.map-status-chip.warn em {
+  border-left-color: var(--warn);
+  background: #eec673;
+}
+
+.map-status-chip.danger {
+  border-color: var(--danger);
+  color: #5b1f18;
+  animation: mapStatusPulse 1.4s steps(2) infinite;
+}
+
+.map-status-chip.danger em {
+  border-left-color: var(--danger);
+  background: #e6a17c;
+}
+
 .map-hotspot:hover .map-hotspot-label,
 .map-hotspot.active .map-hotspot-label {
   display: block;
@@ -3269,6 +3339,15 @@ label {
   }
   50% {
     filter: brightness(1.12);
+  }
+}
+
+@keyframes mapStatusPulse {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.16);
   }
 }
 
