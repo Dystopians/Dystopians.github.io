@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v97";
+  const ASSET_VERSION = "v98";
   const core = window.Linjiang72;
 
   let state = null;
@@ -1115,16 +1115,7 @@
       button.addEventListener("click", () => {
         const choiceId = button.dataset.choiceId;
         if (choiceId) {
-          const target = [...els.choiceList.querySelectorAll(".choice-button")]
-            .find((item) => item.dataset.choiceId === choiceId);
-          if (target) {
-            target.scrollIntoView({ behavior: "smooth", block: "center" });
-            target.classList.add("is-recommended");
-            const event = core.getCurrentEvent(state);
-            const choice = event && event.choices.find((item) => item.id === choiceId);
-            if (choice) renderTrendPreview(choice);
-            setTimeout(() => target.classList.remove("is-recommended"), 1600);
-          }
+          focusChoiceOption(choiceId);
           return;
         }
         if (button.dataset.pointId) {
@@ -1600,15 +1591,7 @@
     els.choiceList.querySelectorAll("[data-compare-choice]").forEach((button) => {
       button.addEventListener("click", () => {
         const choiceId = button.dataset.compareChoice;
-        const target = [...els.choiceList.querySelectorAll(".choice-button")]
-          .find((item) => item.dataset.choiceId === choiceId);
-        if (!target) return;
-        target.scrollIntoView({ behavior: "smooth", block: "center" });
-        target.classList.add("is-recommended");
-        const event = core.getCurrentEvent(state);
-        const choice = event && event.choices.find((item) => item.id === choiceId);
-        if (choice) renderTrendPreview(choice);
-        setTimeout(() => target.classList.remove("is-recommended"), 1600);
+        focusChoiceOption(choiceId);
       });
     });
   }
@@ -1769,6 +1752,7 @@
     }
     els.dailyDirective.hidden = false;
     els.dailyDirective.className = `daily-directive ${escapeHtml(directive.tone || "warn")}`;
+    const optionReport = core.getDailyDirectiveOptions ? core.getDailyDirectiveOptions(state) : null;
     els.dailyDirective.innerHTML = `
       <div>
         <span>今日调度目标</span>
@@ -1776,7 +1760,68 @@
         <em>${escapeHtml(directive.status)} · ${escapeHtml(directive.metricShort)} ${escapeHtml(String(directive.current))} / ${escapeHtml(directive.targetText)}</em>
       </div>
       <p>${escapeHtml(directive.detail)}</p>
+      ${renderDailyDirectiveOptions(optionReport)}
     `;
+    bindDailyDirectiveOptions();
+  }
+
+  function renderDailyDirectiveOptions(report) {
+    const items = (report && report.items ? report.items : []).slice(0, 4);
+    if (!items.length) return "";
+    return `
+      <div class="directive-options" aria-label="今日目标候选行动">
+        <span>对准目标</span>
+        ${items.map((item) => `
+          <button class="directive-option ${escapeHtml(item.tone || "info")}" type="button"
+            data-directive-choice="${escapeHtml(item.choiceId || "")}"
+            data-directive-point="${escapeHtml(item.pointId || "")}"
+            data-directive-mode="${escapeHtml(item.mode || "")}"
+            title="${escapeHtml(item.detail || "")}">
+            <strong>${escapeHtml(item.label)}</strong>
+            <em>${escapeHtml(item.kind)} · ${escapeHtml(item.routeLabel || item.pointLabel || "候选")}</em>
+          </button>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function bindDailyDirectiveOptions() {
+    els.dailyDirective.querySelectorAll(".directive-option").forEach((button) => {
+      button.addEventListener("click", () => {
+        const choiceId = button.dataset.directiveChoice;
+        if (choiceId) {
+          focusChoiceOption(choiceId);
+          return;
+        }
+        const pointId = button.dataset.directivePoint;
+        if (!pointId) return;
+        core.selectMapPoint(state, pointId);
+        if (button.dataset.directiveMode) {
+          actionMode = button.dataset.directiveMode === "resolutions" ? "resolutions" : "operations";
+        }
+        save();
+        renderMap();
+        renderActionMode();
+        renderCityAssets();
+        const point = core.getMapPoint(state, pointId);
+        els.mapHint.textContent = `已定位今日目标候选：${point ? point.label : "城市节点"}`;
+        if (els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
+          els.operationsList.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      });
+    });
+  }
+
+  function focusChoiceOption(choiceId) {
+    const target = [...els.choiceList.querySelectorAll(".choice-button")]
+      .find((item) => item.dataset.choiceId === choiceId);
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    target.classList.add("is-recommended");
+    const event = core.getCurrentEvent(state);
+    const choice = event && event.choices.find((item) => item.id === choiceId);
+    if (choice) renderTrendPreview(choice);
+    setTimeout(() => target.classList.remove("is-recommended"), 1600);
   }
 
   function renderTrendPreview(choice = null) {

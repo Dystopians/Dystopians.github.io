@@ -625,12 +625,24 @@ function validateChoiceRiskPreview() {
 
 function validateDailyDirective() {
   assert(typeof core.getDailyDirective === "function", "game-core.js must export getDailyDirective.");
+  assert(typeof core.getDailyDirectiveOptions === "function", "game-core.js must export getDailyDirectiveOptions.");
   assert(typeof core.getChoiceDirectiveFit === "function", "game-core.js must export getChoiceDirectiveFit.");
   assert(typeof core.getCityActionDirectiveFit === "function", "game-core.js must export getCityActionDirectiveFit.");
   const state = core.createGame({ difficulty: "normal", seed: 20260614 });
   const directive = core.getDailyDirective(state);
   assert(directive && directive.label && directive.detail, "getDailyDirective should return a readable daily target.");
   assert(directive.metric && directive.targetText && directive.status, "Daily directive needs metric, targetText, and status.");
+  const options = core.getDailyDirectiveOptions(state);
+  assert(options && Array.isArray(options.items), "getDailyDirectiveOptions should return an item list.");
+  assert(options.items.length > 0, "Opening daily directive should expose at least one target-aligned option.");
+  assert(
+    options.items.every((item) => item.id && item.kind && item.label && item.status && item.detail && item.tone),
+    "Every daily directive option needs id, kind, label, status, detail, and tone.",
+  );
+  assert(
+    options.items.every((item) => item.choiceId || (item.pointId && item.mode && item.actionId)),
+    "Daily directive options should link to either an event choice or a city action.",
+  );
   const event = core.getCurrentEvent(state);
   const choice = event.choices.find((item) => item.available !== false);
   assert(Boolean(choice), "Expected an available opening choice for daily directive validation.");

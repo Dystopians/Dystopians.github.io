@@ -2771,6 +2771,75 @@ label {
   line-height: 1.4;
 }
 
+.daily-directive .directive-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.directive-options > span {
+  grid-column: 1 / -1;
+  width: fit-content;
+  min-height: 20px;
+  background: #6f4d28;
+  color: #fff1bf;
+}
+
+.directive-option {
+  min-width: 0;
+  padding: 6px;
+  border: 2px solid #9b7134;
+  background: #fff1c8;
+  box-shadow: 2px 2px 0 rgba(64, 47, 27, 0.24);
+  color: var(--deep);
+  text-align: left;
+}
+
+.directive-option:hover,
+.directive-option:focus-visible {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 rgba(64, 47, 27, 0.3);
+}
+
+.directive-option.good {
+  border-color: var(--good);
+  background: #dcebac;
+}
+
+.directive-option.warn,
+.directive-option.mixed {
+  border-color: var(--warn);
+  background: #f1ca74;
+}
+
+.directive-option.danger {
+  border-color: var(--danger);
+  background: #eaa07c;
+}
+
+.directive-option strong,
+.directive-option em {
+  display: block;
+}
+
+.directive-option strong {
+  margin-bottom: 3px;
+  color: var(--deep);
+  font-size: 0.68rem;
+  line-height: 1.18;
+}
+
+.daily-directive .directive-option em {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.58rem;
+  line-height: 1.1;
+}
+
 .daily-directive.good {
   border-color: var(--good);
   background:

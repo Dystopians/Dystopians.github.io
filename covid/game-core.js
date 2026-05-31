@@ -6357,6 +6357,80 @@
     };
   }
 
+  function getDailyDirectiveOptions(state) {
+    if (!state || state.ended) return null;
+    const directive = getDailyDirective(state);
+    if (!directive) return null;
+    const items = [];
+    const add = (item) => {
+      if (!item || !item.fit || item.fit.tone !== "good") return;
+      items.push({
+        ...item,
+        tone: item.fit.tone,
+        status: item.fit.label,
+        detail: item.fit.detail,
+        score: directiveOptionScore(item.fit, item.kind),
+      });
+    };
+
+    const event = getCurrentEvent(state);
+    (event && event.choices ? event.choices : []).forEach((choice) => {
+      if (!choice || choice.available === false) return;
+      const fit = getChoiceDirectiveFit(state, choice.id);
+      const routeTag = choice.routeTag || getChoiceRouteTag(choice);
+      add({
+        id: `choice_${choice.id}`,
+        kind: "事件选项",
+        label: choice.label,
+        routeLabel: routeTag ? routeTag.label : "综合路线",
+        choiceId: choice.id,
+        fit,
+      });
+    });
+
+    [
+      ["operations", "工程", getAvailableOperations(state)],
+      ["resolutions", "决议", getAvailableResolutions(state)],
+    ].forEach(([mode, kind, actions]) => {
+      actions
+        .filter((item) => item && item.available)
+        .forEach((item) => {
+          const fit = getCityActionDirectiveFit(state, mode, item.id);
+          const point = getMapPoint(state, item.location);
+          const routeTag = getChoiceRouteTag({ id: item.id });
+          add({
+            id: `${mode}_${item.id}`,
+            kind,
+            label: item.label,
+            routeLabel: routeTag ? routeTag.label : "城市行动",
+            mode,
+            actionId: item.id,
+            pointId: item.location,
+            pointLabel: point ? point.label : "",
+            fit,
+          });
+        });
+    });
+
+    const ranked = items
+      .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label, "zh-Hans-CN"))
+      .map(({ score, ...item }) => item);
+    return {
+      directive,
+      items: ranked.slice(0, 4),
+      totalCount: ranked.length,
+    };
+  }
+
+  function directiveOptionScore(fit, kind) {
+    const label = String(fit && fit.label ? fit.label : "");
+    const progress = Number((label.match(/([+-]\d+)/) || [])[1] || 0);
+    let score = kind === "事件选项" ? 12 : 8;
+    if (/完成/.test(label)) score += 80;
+    if (/推进/.test(label)) score += 45 + Math.max(0, progress) * 4;
+    return score;
+  }
+
   function buildDirectiveFit(directive, beforeValue, afterValue, beforeDone, beforeScore) {
     const afterDone = conditionByOperator(afterValue, directive.op, directive.target);
     const afterScore = directive.op === "<=" ? directive.target - afterValue : afterValue - directive.target;
@@ -7763,6 +7837,7 @@
     getAvailableResolutions,
     getRiskBand,
     getDailyDirective,
+    getDailyDirectiveOptions,
     getDailyPressureSummary,
     getDailyTrendPreview,
     getChoiceOutcomePreview,
