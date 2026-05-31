@@ -822,6 +822,20 @@ function validateEndingOutlook() {
   );
 }
 
+function validateBalanceSimCheckMode() {
+  const balanceSim = fs.readFileSync(path.join(rootDir, "balance-sim.js"), "utf8");
+  [
+    "BALANCE_TARGETS",
+    "--check",
+    "validateBalanceTargets",
+    "balancedPassMin",
+    "balancedFatigueMax",
+    "singleStrategyPassMax",
+  ].forEach((text) => {
+    assert(balanceSim.includes(text), `balance-sim.js should expose ${text}.`);
+  });
+}
+
 function run() {
   const { eventIds, phaseCounts } = validateEventCorpus();
   validateSchedule(eventIds);
@@ -844,6 +858,7 @@ function run() {
   validateMetricTrends();
   validateEndingStrategyReview();
   validateEndingOutlook();
+  validateBalanceSimCheckMode();
 
   const summary = {
     ok: failures.length === 0,

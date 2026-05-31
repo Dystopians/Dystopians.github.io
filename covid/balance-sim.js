@@ -5,6 +5,14 @@ const core = require("./game-core.js");
 
 const DEFAULT_RUNS = 50;
 const DEFAULT_SEED = 1000;
+const BALANCE_TARGETS = {
+  balancedPassMin: 45,
+  balancedPassMax: 65,
+  balancedFatigueMin: 45,
+  balancedFatigueMax: 75,
+  noProjectPassMax: 15,
+  singleStrategyPassMax: 10,
+};
 const POLICIES = [
   "balanced",
   "balancedNoProjects",
@@ -139,13 +147,15 @@ function run(seed, policy) {
 }
 
 function summarize(results) {
-  const avg = (fn) => Number(results.reduce((sum, result) => sum + fn(result), 0) / results.length).toFixed(1);
+  const average = (fn) => results.reduce((sum, result) => sum + fn(result), 0) / results.length;
+  const avg = (fn) => Number(average(fn)).toFixed(1);
   const endings = Object.fromEntries([...new Set(results.map((result) => result.ending))]
     .sort()
     .map((ending) => [ending, results.filter((result) => result.ending === ending).length]));
   const passes = results.filter((result) => !String(result.ending).includes("Collapse")).length;
   return {
     passRate: `${passes}/${results.length}`,
+    passPct: Number((passes / results.length * 100).toFixed(1)),
     avgScore: avg((result) => result.score),
     avgDay: avg((result) => result.endedDay),
     avgInfection: avg((result) => result.metrics.infection),
@@ -159,9 +169,38 @@ function summarize(results) {
   };
 }
 
-function main() {
-  const runs = Number(process.argv[2] || DEFAULT_RUNS);
-  const startSeed = Number(process.argv[3] || DEFAULT_SEED);
+function parseArgs(argv) {
+  const options = {
+    check: false,
+    runs: DEFAULT_RUNS,
+    startSeed: DEFAULT_SEED,
+  };
+  const positional = [];
+  argv.forEach((arg) => {
+    if (arg === "--check") {
+      options.check = true;
+      return;
+    }
+    if (arg.startsWith("--runs=")) {
+      options.runs = Number(arg.slice("--runs=".length));
+      return;
+    }
+    if (arg.startsWith("--seed=")) {
+      options.startSeed = Number(arg.slice("--seed=".length));
+      return;
+    }
+    positional.push(arg);
+  });
+  if (positional[0]) options.runs = Number(positional[0]);
+  if (positional[1]) options.startSeed = Number(positional[1]);
+  if (!Number.isFinite(options.runs) || options.runs <= 0) options.runs = DEFAULT_RUNS;
+  if (!Number.isFinite(options.startSeed)) options.startSeed = DEFAULT_SEED;
+  options.runs = Math.floor(options.runs);
+  options.startSeed = Math.floor(options.startSeed);
+  return options;
+}
+
+function buildReport(runs, startSeed) {
   const report = {};
   for (const policy of POLICIES) {
     const results = [];
@@ -170,7 +209,52 @@ function main() {
     }
     report[policy] = summarize(results);
   }
+  return report;
+}
+
+function validateBalanceTargets(report) {
+  const failures = [];
+  const balanced = report.balanced || {};
+  const noProjects = report.balancedNoProjects || {};
+  const singlePolicies = ["hardControl", "reopen", "financeFirst", "trustSacrifice", "fatigueFirst"];
+  const within = (value, min, max) => Number(value) >= min && Number(value) <= max;
+
+  if (!within(balanced.passPct, BALANCE_TARGETS.balancedPassMin, BALANCE_TARGETS.balancedPassMax)) {
+    failures.push(`balanced passPct ${balanced.passPct}% should stay ${BALANCE_TARGETS.balancedPassMin}-${BALANCE_TARGETS.balancedPassMax}%.`);
+  }
+  if (!within(balanced.avgFatigue, BALANCE_TARGETS.balancedFatigueMin, BALANCE_TARGETS.balancedFatigueMax)) {
+    failures.push(`balanced avgFatigue ${balanced.avgFatigue} should stay ${BALANCE_TARGETS.balancedFatigueMin}-${BALANCE_TARGETS.balancedFatigueMax}.`);
+  }
+  if (Number(noProjects.passPct) > BALANCE_TARGETS.noProjectPassMax) {
+    failures.push(`balancedNoProjects passPct ${noProjects.passPct}% should stay <= ${BALANCE_TARGETS.noProjectPassMax}%.`);
+  }
+  singlePolicies.forEach((policy) => {
+    const result = report[policy] || {};
+    if (Number(result.passPct) > BALANCE_TARGETS.singleStrategyPassMax) {
+      failures.push(`${policy} passPct ${result.passPct}% should stay <= ${BALANCE_TARGETS.singleStrategyPassMax}%.`);
+    }
+  });
+  return {
+    ok: failures.length === 0,
+    failures,
+    targets: BALANCE_TARGETS,
+  };
+}
+
+function main() {
+  const options = parseArgs(process.argv.slice(2));
+  const report = buildReport(options.runs, options.startSeed);
+  const validation = validateBalanceTargets(report);
+  report._meta = {
+    runs: options.runs,
+    startSeed: options.startSeed,
+    check: options.check,
+    validation,
+  };
   console.log(JSON.stringify(report, null, 2));
+  if (options.check && !validation.ok) {
+    process.exitCode = 1;
+  }
 }
 
 main();

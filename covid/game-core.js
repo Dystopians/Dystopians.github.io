@@ -2362,7 +2362,7 @@
       location: "volunteers",
       description: "把志愿者纳入统一排班和物资登记。适合保供或基层排班出现缺口后启用；若城市还没有明显压力，提前扩站只会消耗预算。",
       resources: { funds: -7 },
-      effects: { supplies: 4, trust: 2, staffFatigue: 1 },
+      effects: { supplies: 3, trust: 2, staffFatigue: 1 },
       hidden: { publicMemory: -1 },
       delayed: {
         delay: 2,
