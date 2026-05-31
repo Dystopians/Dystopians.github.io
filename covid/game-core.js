@@ -794,7 +794,7 @@
       title: item.title,
       body: description,
       description,
-      sourceNote: `受${item.source}启发。仅用于模拟经营叙事，不构成现实治理建议。`,
+      sourceNote: `受${item.source}启发。`,
       sourceTags: item.tags,
       imageKey: item.imageKey,
       image: item.image || `events/p${phase}_${item.id}.png`,

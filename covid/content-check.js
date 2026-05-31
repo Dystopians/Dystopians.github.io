@@ -18,6 +18,13 @@ const CORE_LIMITED_KEYS = new Set([
   "staffFatigue",
 ]);
 
+const BANNED_SOURCE_NOTE_PATTERNS = [
+  /新闻原型只提供/,
+  /具体城市和人物均为虚构/,
+  /仅用于模拟经营叙事/,
+  /不构成现实治理建议/,
+];
+
 function assert(condition, message) {
   if (!condition) failures.push(message);
 }
@@ -86,6 +93,9 @@ function validateEventCorpus() {
     assert(Boolean(event.title), `${event.id} is missing title.`);
     assert(Boolean(event.description || event.body), `${event.id} is missing long description/body.`);
     assert(Boolean(event.sourceNote), `${event.id} is missing sourceNote.`);
+    BANNED_SOURCE_NOTE_PATTERNS.forEach((pattern) => {
+      assert(!pattern.test(event.sourceNote || ""), `${event.id} sourceNote contains banned disclaimer text.`);
+    });
     assert(Boolean(event.imageKey || event.image), `${event.id} is missing imageKey/image.`);
 
     const image = eventImagePath(event);
@@ -203,11 +213,30 @@ function validateNewsAssets() {
   });
 }
 
+function validateCacheVersions() {
+  const indexHtml = fs.readFileSync(path.join(rootDir, "index.html"), "utf8");
+  const appJs = fs.readFileSync(path.join(rootDir, "app.js"), "utf8");
+  const scriptVersions = [...indexHtml.matchAll(/\.(?:js|css)\?v=(\d+)/g)].map((match) => match[1]);
+  const uniqueScriptVersions = [...new Set(scriptVersions)];
+  assert(scriptVersions.length >= 3, "index.html should version stylesheet, game-core.js, and app.js.");
+  assert(uniqueScriptVersions.length === 1, `index.html has mismatched cache versions: ${uniqueScriptVersions.join(", ")}.`);
+
+  const assetVersion = appJs.match(/ASSET_VERSION\s*=\s*"v(\d+)"/);
+  assert(Boolean(assetVersion), "app.js is missing ASSET_VERSION.");
+  if (uniqueScriptVersions.length === 1 && assetVersion) {
+    assert(
+      assetVersion[1] === uniqueScriptVersions[0],
+      `app.js ASSET_VERSION v${assetVersion[1]} does not match index.html v${uniqueScriptVersions[0]}.`,
+    );
+  }
+}
+
 function run() {
   const { eventIds, phaseCounts } = validateEventCorpus();
   validateSchedule(eventIds);
   validateMapAndCityActions();
   validateNewsAssets();
+  validateCacheVersions();
 
   const summary = {
     ok: failures.length === 0,
