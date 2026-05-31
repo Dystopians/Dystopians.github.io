@@ -243,6 +243,18 @@ function validateRecoveryLevers() {
   );
 }
 
+function validateChoiceRiskPreview() {
+  assert(typeof core.getChoiceRiskPreview === "function", "game-core.js must export getChoiceRiskPreview.");
+  const state = core.createGame({ difficulty: "normal", seed: 20260602 });
+  state.metrics.hospitalLoad = 96;
+  state.flags.failureStreaks.medical = 1;
+  const choice = core.getCurrentEvent(state).choices.find((item) => item.available !== false);
+  assert(Boolean(choice), "Expected at least one available opening choice for risk preview validation.");
+  const preview = core.getChoiceRiskPreview(state, choice.id);
+  assert(Array.isArray(preview), "getChoiceRiskPreview must return an array.");
+  assert(preview.some((item) => item.label && item.tone && item.detail), "Choice risk preview should expose label, tone, and detail under redline pressure.");
+}
+
 function run() {
   const { eventIds, phaseCounts } = validateEventCorpus();
   validateSchedule(eventIds);
@@ -250,6 +262,7 @@ function run() {
   validateNewsAssets();
   validateCacheVersions();
   validateRecoveryLevers();
+  validateChoiceRiskPreview();
 
   const summary = {
     ok: failures.length === 0,

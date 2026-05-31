@@ -2322,6 +2322,7 @@ label {
 }
 
 .choice-forecast,
+.choice-risk-preview,
 .action-forecast {
   display: flex;
   flex-wrap: wrap;
@@ -2342,6 +2343,8 @@ label {
 
 .choice-forecast span,
 .choice-forecast em,
+.choice-risk-preview span,
+.choice-risk-preview em,
 .action-forecast span,
 .action-forecast em {
   display: inline-flex;
@@ -2356,18 +2359,21 @@ label {
 }
 
 .choice-forecast span,
+.choice-risk-preview span,
 .action-forecast span {
   background: #8e6330;
   color: #fff1bf;
 }
 
 .choice-forecast em,
+.choice-risk-preview em,
 .action-forecast em {
   background: #f4d68a;
   color: var(--deep);
 }
 
 .choice-forecast em.good,
+.choice-risk-preview em.good,
 .action-forecast em.good {
   border-color: var(--good);
   background: #c9dd91;
@@ -2375,6 +2381,7 @@ label {
 }
 
 .choice-forecast em.bad,
+.choice-risk-preview em.danger,
 .action-forecast em.bad {
   border-color: var(--danger);
   background: #e6a17c;
@@ -2382,6 +2389,7 @@ label {
 }
 
 .choice-forecast em.mixed,
+.choice-risk-preview em.warn,
 .action-forecast em.mixed {
   border-color: var(--warn);
   background: #eec673;

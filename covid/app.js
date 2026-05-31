@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v62";
+  const ASSET_VERSION = "v63";
   const core = window.Linjiang72;
 
   let state = null;
@@ -1175,6 +1175,7 @@
         <p>${escapeHtml(choice.available === false ? choice.lockedReason : choice.description)}</p>
         ${renderChoiceImpacts(choice)}
         ${renderChoiceForecast(choice)}
+        ${renderChoiceRiskPreview(choice)}
         <div class="chips">${chips}</div>
       `;
       button.addEventListener("click", () => {
@@ -1217,6 +1218,22 @@
         ${items.map((item) => `
           <em class="${item.tone || "neutral"}" title="${escapeHtml(item.detail)}">
             ${escapeHtml(item.short)} ${item.delta > 0 ? "+" : ""}${item.delta}
+          </em>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function renderChoiceRiskPreview(choice) {
+    if (choice.available === false || !core.getChoiceRiskPreview) return "";
+    const items = core.getChoiceRiskPreview(state, choice.id).slice(0, 2);
+    if (!items.length) return "";
+    return `
+      <div class="choice-risk-preview" aria-label="红线预判">
+        <span>红线</span>
+        ${items.map((item) => `
+          <em class="${item.tone || "warn"}" title="${escapeHtml(item.detail)}">
+            ${escapeHtml(item.label)}
           </em>
         `).join("")}
       </div>

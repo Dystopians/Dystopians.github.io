@@ -4601,6 +4601,79 @@
     return rankTrendItems(rows);
   }
 
+  const FAILURE_PREVIEW_META = {
+    medical: {
+      label: "医疗挤兑",
+      endingId: "medicalCollapse",
+      detail: "医疗负载连续高位会触发失败结局。",
+    },
+    supply: {
+      label: "供应断裂",
+      endingId: "supplyCollapse",
+      detail: "物资供应连续探底会触发失败结局。",
+    },
+    trust: {
+      label: "信任崩塌",
+      endingId: "trustCollapse",
+      detail: "市民信任连续低位会触发失败结局。",
+    },
+    staff: {
+      label: "执行失灵",
+      endingId: "staffCollapse",
+      detail: "基层疲劳连续爆表会触发失败结局。",
+    },
+  };
+
+  function getChoiceRiskPreview(state, choiceId) {
+    if (!state || state.ended || !choiceId) return [];
+    const event = getCurrentEvent(state);
+    const choice = event && event.choices.find((item) => item.id === choiceId);
+    if (!choice || choice.available === false) return [];
+
+    const limit = getFailureLimit(state);
+    const beforeStreaks = { ...(state.flags.failureStreaks || {}) };
+    const projected = clone(state);
+    resolveChoice(projected, choiceId);
+    const afterStreaks = projected.flags.failureStreaks || {};
+    const rows = [];
+
+    Object.entries(FAILURE_PREVIEW_META).forEach(([key, meta]) => {
+      const before = beforeStreaks[key] || 0;
+      const after = afterStreaks[key] || 0;
+      const collapse = projected.ending && projected.ending.id === meta.endingId;
+      if (collapse || after >= limit) {
+        rows.push({
+          id: key,
+          tone: "danger",
+          label: `${meta.label}失败`,
+          detail: `${meta.detail} 这项选择预计会把倒计时推到 ${after}/${limit}。`,
+          priority: 120 + after,
+        });
+      } else if (after > before) {
+        rows.push({
+          id: key,
+          tone: after >= limit - 1 ? "danger" : "warn",
+          label: `${meta.label} ${after}/${limit}`,
+          detail: `${meta.detail} 当前选择预计会推进倒计时：${before}/${limit} → ${after}/${limit}。`,
+          priority: 90 + after * 8,
+        });
+      } else if (before > 0 && after === 0) {
+        rows.push({
+          id: key,
+          tone: "good",
+          label: `${meta.label}脱线`,
+          detail: `预计把${meta.label}倒计时从 ${before}/${limit} 拉回安全线。`,
+          priority: 70 + before * 5,
+        });
+      }
+    });
+
+    return rows
+      .sort((a, b) => b.priority - a.priority)
+      .slice(0, 3)
+      .map(({ priority, ...item }) => item);
+  }
+
   function getCityActionOutcomePreview(state, mode, actionId) {
     if (!state || state.ended || !actionId) return [];
     const normalizedMode = mode === "resolutions" ? "resolutions" : "operations";
@@ -5178,6 +5251,7 @@
     getDailyPressureSummary,
     getDailyTrendPreview,
     getChoiceOutcomePreview,
+    getChoiceRiskPreview,
     getChoiceRouteTag,
     getEndingOutlook,
     getCityActionOutcomePreview,
