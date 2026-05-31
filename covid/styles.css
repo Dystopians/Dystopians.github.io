@@ -942,6 +942,140 @@ label {
   line-height: 1.4;
 }
 
+.crisis-board {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 2px solid #b89752;
+}
+
+.crisis-board-head,
+.crisis-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.crisis-board-head span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.crisis-board-head strong {
+  min-height: 22px;
+  padding: 2px 6px;
+  border: 2px solid var(--line-dark);
+  background: #f6c957;
+  color: #4a2516;
+  box-shadow: 2px 2px 0 rgba(45, 40, 31, 0.42);
+  font-size: 0.68rem;
+  line-height: 1.1;
+}
+
+.crisis-list {
+  display: grid;
+  gap: 6px;
+}
+
+.crisis-row {
+  padding: 7px;
+  border: 2px solid #b89752;
+  background: #f8e9bd;
+  box-shadow: inset 2px 2px 0 rgba(255, 247, 209, 0.72);
+}
+
+.crisis-row.warn {
+  border-color: #bd7d24;
+  background: linear-gradient(90deg, rgba(189, 125, 36, 0.14), #f8e9bd);
+}
+
+.crisis-row.danger {
+  border-color: var(--danger);
+  background: linear-gradient(90deg, rgba(168, 63, 50, 0.15), #f8e9bd);
+}
+
+.crisis-row.good {
+  border-color: var(--good);
+  background: linear-gradient(90deg, rgba(63, 122, 84, 0.12), #f8e9bd);
+}
+
+.crisis-row-top strong {
+  font-size: 0.76rem;
+  line-height: 1.2;
+}
+
+.crisis-row-top span {
+  min-height: 20px;
+  padding: 2px 6px;
+  border: 2px solid #b89752;
+  background: #ead19a;
+  color: #5c3d17;
+  font-size: 0.64rem;
+  font-weight: 900;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.crisis-row.good .crisis-row-top span {
+  border-color: var(--good);
+  background: #b9d98e;
+  color: #244d35;
+}
+
+.crisis-row.danger .crisis-row-top span {
+  border-color: var(--danger);
+  background: #eaa07c;
+  color: #5b1f18;
+}
+
+.crisis-track {
+  height: 10px;
+  margin: 6px 0 5px;
+  border: 2px solid var(--line);
+  background: #cfb070;
+  overflow: hidden;
+}
+
+.crisis-track i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 244, 202, 0.3) 0 4px, transparent 4px 8px),
+    #bd7d24;
+}
+
+.crisis-row.good .crisis-track i {
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 244, 202, 0.28) 0 4px, transparent 4px 8px),
+    var(--good);
+}
+
+.crisis-row.danger .crisis-track i {
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 244, 202, 0.26) 0 4px, transparent 4px 8px),
+    var(--danger);
+}
+
+.crisis-row p,
+.crisis-row em {
+  display: block;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  font-style: normal;
+}
+
+.crisis-row em {
+  margin-top: 3px;
+  color: #5c3d17;
+  font-weight: 900;
+}
+
 .map-column {
   display: grid;
   gap: 12px;

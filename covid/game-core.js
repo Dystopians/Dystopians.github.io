@@ -2044,6 +2044,96 @@
     return effects;
   }
 
+  function getCrisisDashboard(state) {
+    if (!state || state.ended) return [];
+    const m = state.metrics;
+    const streaks = state.flags.failureStreaks || {};
+    const limit = getFailureLimit(state);
+    const definitions = [
+      {
+        id: "medical",
+        label: "医疗挤兑",
+        metric: "hospitalLoad",
+        value: m.hospitalLoad,
+        dangerValue: m.hospitalLoad,
+        warning: 85,
+        thresholdText: "医疗负载≥95",
+        streak: streaks.medical || 0,
+        overLine: m.hospitalLoad >= 95,
+        detail: "连续越线会进入医疗挤兑结局。",
+        hint: "补救：医疗扩容、分级诊疗、方舱收治。",
+      },
+      {
+        id: "supply",
+        label: "供应断裂",
+        metric: "supplies",
+        value: m.supplies,
+        dangerValue: 100 - m.supplies,
+        warning: 75,
+        thresholdText: "物资供应<15",
+        streak: streaks.supply || 0,
+        overLine: m.supplies < 15,
+        detail: "低物资会持续拖累信任和基层疲劳。",
+        hint: "补救：保供专线、捐助统筹、仓储征用。",
+      },
+      {
+        id: "trust",
+        label: "信任崩塌",
+        metric: "trust",
+        value: m.trust,
+        dangerValue: 100 - m.trust,
+        warning: 70,
+        thresholdText: "市民信任<20",
+        streak: streaks.trust || 0,
+        overLine: m.trust < 20,
+        detail: "低信任会让政策执行变钝并触发失败倒计时。",
+        hint: "补救：信息公开、阶段复盘、药品直送。",
+      },
+      {
+        id: "staff",
+        label: "执行失灵",
+        metric: "staffFatigue",
+        value: m.staffFatigue,
+        dangerValue: m.staffFatigue,
+        warning: 80,
+        thresholdText: "基层疲劳>90",
+        streak: streaks.staff || 0,
+        overLine: m.staffFatigue > 90,
+        detail: "疲劳高位会削弱行动收益并磨损发现率。",
+        hint: "补救：轮换令、心理热线、社区自治包干。",
+      },
+    ];
+
+    return definitions.map((item) => {
+      const tone = item.overLine || item.streak > 0
+        ? "danger"
+        : item.dangerValue >= item.warning
+          ? "warn"
+          : "good";
+      const effectiveStreak = item.overLine ? Math.max(1, item.streak) : item.streak;
+      const status = effectiveStreak > 0
+        ? `${effectiveStreak}/${limit}`
+        : tone === "warn"
+          ? "接近红线"
+          : "稳定";
+      return {
+        id: item.id,
+        label: item.label,
+        metric: item.metric,
+        metricShort: METRIC_META[item.metric].short,
+        value: item.value,
+        tone,
+        status,
+        limit,
+        remaining: Math.max(0, limit - effectiveStreak),
+        progress: clamp(item.dangerValue, 0, 100),
+        thresholdText: item.thresholdText,
+        detail: item.detail,
+        hint: item.hint,
+      };
+    });
+  }
+
   function generateNews(state) {
     const weighted = NEWS_POOL.map((item) => ({
       item,
@@ -3648,6 +3738,7 @@
     exportState,
     getCurrentEvent,
     getStatusEffects,
+    getCrisisDashboard,
     getVisibleMetrics,
     getEventImage,
     getMapPoint,

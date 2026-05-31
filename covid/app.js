@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v39";
+  const ASSET_VERSION = "v40";
   const core = window.Linjiang72;
 
   let state = null;
@@ -198,6 +198,7 @@
     policyStrictness: document.getElementById("policyStrictness"),
     publicMemory: document.getElementById("publicMemory"),
     statusEffects: document.getElementById("statusEffects"),
+    crisisList: document.getElementById("crisisList"),
     briefStrip: document.getElementById("briefStrip"),
     pendingTimeline: document.getElementById("pendingTimeline"),
     cityMapWrap: document.getElementById("cityMapWrap"),
@@ -451,6 +452,7 @@
     els.policyStrictness.textContent = state.hidden.policyStrictness;
     els.publicMemory.textContent = state.hidden.publicMemory;
     renderStatusEffects();
+    renderCrisisBoard();
   }
 
   function renderStatusEffects() {
@@ -465,6 +467,30 @@
         <article class="status-effect ${escapeHtml(effect.tone)}">
           <strong>${escapeHtml(effect.label)}</strong>
           <p>${escapeHtml(effect.description)}</p>
+        </article>
+      `)
+      .join("");
+  }
+
+  function renderCrisisBoard() {
+    if (!els.crisisList || !core.getCrisisDashboard) return;
+    const risks = core.getCrisisDashboard(state);
+    if (!risks.length) {
+      els.crisisList.innerHTML = "<p class=\"empty-state\">暂无失败预警。</p>";
+      return;
+    }
+    els.crisisList.innerHTML = risks
+      .map((risk) => `
+        <article class="crisis-row ${escapeHtml(risk.tone)}">
+          <div class="crisis-row-top">
+            <strong>${escapeHtml(risk.label)}</strong>
+            <span>${escapeHtml(risk.status)}</span>
+          </div>
+          <div class="crisis-track" aria-hidden="true">
+            <i style="width:${Math.max(0, Math.min(100, risk.progress))}%"></i>
+          </div>
+          <p>${escapeHtml(risk.metricShort)} ${risk.value} · ${escapeHtml(risk.thresholdText)}</p>
+          <em title="${escapeHtml(risk.detail)}">${escapeHtml(risk.hint)}</em>
         </article>
       `)
       .join("");
