@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v111";
+  const ASSET_VERSION = "v112";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -1989,6 +1989,7 @@
     const card = document.createElement("article");
     card.className = `settlement-recap ${settlementTone(entry)}`;
     const changes = renderChangeChips(entry.changes, 7);
+    const narrative = renderSettlementNarrative(entry);
     const highlights = renderSettlementHighlights(entry);
     const breakdown = renderBreakdownRows(entry.breakdown, 4);
     const nextStep = renderSettlementNextStep(meta);
@@ -2003,6 +2004,7 @@
         <strong>第 ${entry.day} 天</strong>
       </div>
       <p><b>${escapeHtml(entry.choice)}</b> / ${escapeHtml(entry.title)}</p>
+      ${narrative}
       ${renderHistoryBadges(meta, "settlement-tags")}
       ${highlights}
       <div class="change-list">${changes}</div>
@@ -2545,6 +2547,7 @@
       const li = document.createElement("li");
       const meta = historyEntryMeta(entry);
       const changes = renderChangeChips(entry.changes, 8);
+      const narrative = renderSettlementNarrative(entry);
       const breakdown = renderBreakdownRows(entry.breakdown, 2);
       const notes = (entry.notes || [])
         .filter(Boolean)
@@ -2555,6 +2558,7 @@
         <span class="history-meta">第 ${entry.day} 天 / 阶段 ${entry.phase} / ${escapeHtml(meta.label)}</span>
         <strong>${escapeHtml(entry.choice)}</strong>
         <p>${escapeHtml(entry.title)}</p>
+        ${narrative}
         ${renderHistoryBadges(meta)}
         <div class="change-list">${changes}</div>
         ${breakdown}
@@ -2705,6 +2709,18 @@
           </article>
         `).join("")}
       </div>
+    `;
+  }
+
+  function renderSettlementNarrative(entry) {
+    if (!core.getSettlementNarrative) return "";
+    const narrative = core.getSettlementNarrative(entry);
+    if (!narrative) return "";
+    return `
+      <p class="settlement-cause ${escapeHtml(narrative.tone || "info")}">
+        <span>${escapeHtml(narrative.label || "结算主因")}</span>
+        ${escapeHtml(narrative.detail || "")}
+      </p>
     `;
   }
 

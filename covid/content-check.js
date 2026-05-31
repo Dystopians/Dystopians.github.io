@@ -334,6 +334,25 @@ function validateRuntimeImageFallbacks() {
   });
 }
 
+function validateSettlementNarrativeUi() {
+  const appJs = fs.readFileSync(path.join(rootDir, "app.js"), "utf8");
+  const styles = fs.readFileSync(path.join(rootDir, "styles.css"), "utf8");
+  [
+    "renderSettlementNarrative",
+    "getSettlementNarrative",
+    "settlement-cause",
+  ].forEach((text) => {
+    assert(appJs.includes(text), `app.js should render settlement narrative UI for ${text}.`);
+  });
+  [
+    ".settlement-cause",
+    ".settlement-cause.good",
+    ".settlement-cause.warn",
+  ].forEach((text) => {
+    assert(styles.includes(text), `styles.css should style settlement narrative state: ${text}.`);
+  });
+}
+
 function validateScenarios() {
   const indexHtml = fs.readFileSync(path.join(rootDir, "index.html"), "utf8");
   assert(core.SCENARIOS && typeof core.SCENARIOS === "object", "game-core.js must export SCENARIOS.");
@@ -820,10 +839,14 @@ function validateSettlementBreakdown() {
     "Every settlement breakdown row needs source and non-empty deltas.",
   );
   assert(typeof core.getSettlementHighlights === "function", "game-core.js must export getSettlementHighlights.");
+  assert(typeof core.getSettlementNarrative === "function", "game-core.js must export getSettlementNarrative.");
   assert(typeof core.getHistoryEntryMeta === "function", "game-core.js must export getHistoryEntryMeta.");
   const highlights = core.getSettlementHighlights(entry);
+  const narrative = core.getSettlementNarrative(entry);
   assert(Array.isArray(highlights), "Settlement highlights should return an array.");
   assert(highlights.length > 0, "Settlement highlights should include at least one readable battle-report item.");
+  assert(narrative && narrative.label && narrative.detail && narrative.tone, "Settlement narrative should summarize the main cause in readable text.");
+  assert(!String(narrative.detail).includes("[object Object]"), "Settlement narrative details must render readable text.");
   assert(
     highlights.every((item) => item.id && item.label && item.detail && item.tone),
     "Every settlement highlight needs id, label, detail, and tone.",
@@ -990,6 +1013,7 @@ function run() {
   validateNewsAssets();
   validateCacheVersions();
   validateRuntimeImageFallbacks();
+  validateSettlementNarrativeUi();
   validateScenarios();
   validateTutorialCopy();
   validateRecoveryLevers();

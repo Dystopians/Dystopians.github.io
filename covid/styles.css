@@ -5334,6 +5334,31 @@ label {
   color: var(--deep);
 }
 
+.settlement-cause {
+  display: grid;
+  gap: 3px;
+  padding: 7px 8px;
+  border: 2px solid #b89752;
+  background: rgba(255, 244, 203, 0.74);
+  box-shadow: 2px 2px 0 rgba(95, 75, 42, 0.28);
+}
+
+.settlement-cause span {
+  color: var(--deep);
+  font-size: 0.64rem;
+  font-weight: 900;
+}
+
+.settlement-cause.good {
+  border-color: #4f8c58;
+  background: rgba(218, 232, 166, 0.74);
+}
+
+.settlement-cause.warn {
+  border-color: #a85b3a;
+  background: rgba(238, 179, 128, 0.72);
+}
+
 .settlement-tags,
 .history-tags {
   display: flex;

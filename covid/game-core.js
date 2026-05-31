@@ -5388,23 +5388,7 @@
 
   function getSettlementHighlights(entry) {
     if (!entry || !entry.changes) return [];
-    const changes = Object.entries(entry.changes)
-      .filter(([, delta]) => delta)
-      .map(([metric, delta]) => {
-        const meta = getObjectiveMeta(metric);
-        const bad = changeIsBad(metric, delta);
-        const mixed = meta.direction === "mixed";
-        return {
-          metric,
-          delta,
-          meta,
-          bad,
-          mixed,
-          score: Math.abs(delta)
-            + (bad ? 8 : 0)
-            + (CORE_METRICS.includes(metric) || RESOURCE_METRICS.includes(metric) ? 3 : 0),
-        };
-      });
+    const changes = settlementChangeRows(entry);
     const byScore = (a, b) => b.score - a.score || a.meta.short.localeCompare(b.meta.short, "zh-Hans-CN");
     const best = changes.filter((item) => !item.bad && !item.mixed).sort(byScore)[0];
     const cost = changes.filter((item) => item.bad).sort(byScore)[0];
@@ -5452,6 +5436,51 @@
       });
     }
     return highlights.slice(0, 4);
+  }
+
+  function settlementChangeRows(entry) {
+    if (!entry || !entry.changes) return [];
+    return Object.entries(entry.changes)
+      .filter(([, delta]) => delta)
+      .map(([metric, delta]) => {
+        const meta = getObjectiveMeta(metric);
+        const bad = changeIsBad(metric, delta);
+        const mixed = meta.direction === "mixed";
+        return {
+          metric,
+          delta,
+          meta,
+          bad,
+          mixed,
+          score: Math.abs(delta)
+            + (bad ? 8 : 0)
+            + (CORE_METRICS.includes(metric) || RESOURCE_METRICS.includes(metric) ? 3 : 0),
+        };
+      });
+  }
+
+  function getSettlementNarrative(entry) {
+    if (!entry) return null;
+    const changes = settlementChangeRows(entry);
+    const byScore = (a, b) => b.score - a.score || a.meta.short.localeCompare(b.meta.short, "zh-Hans-CN");
+    const best = changes.filter((item) => !item.bad && !item.mixed).sort(byScore)[0];
+    const cost = changes.filter((item) => item.bad).sort(byScore)[0];
+    const source = (entry.breakdown || [])
+      .filter((item) => item && item.source && item.deltas && Object.keys(item.deltas).length)
+      .sort((a, b) => (b.weight || 0) - (a.weight || 0))[0];
+    const sourceText = source ? `主要由“${source.source}”推动` : "本日结算已经完成";
+    const parts = [];
+    if (best) parts.push(`收益是${best.meta.short} ${signedDelta(best.delta)}`);
+    if (cost) parts.push(`代价是${cost.meta.short} ${signedDelta(cost.delta)}`);
+    if (!parts.length && changes[0]) parts.push(`${changes[0].meta.short} ${signedDelta(changes[0].delta)}`);
+    if (!parts.length) return null;
+    const tone = cost && (!best || cost.score >= best.score) ? "warn" : best ? "good" : "info";
+    return {
+      id: "settlementNarrative",
+      tone,
+      label: "结算主因",
+      detail: `${sourceText}，${parts.join("，")}。`,
+    };
   }
 
   function getHistoryEntryMeta(entry = {}) {
@@ -7965,6 +7994,7 @@
     getFiscalOutlook,
     getCityBadges,
     getSettlementHighlights,
+    getSettlementNarrative,
     getSystemReadouts,
     getCityActionBudget,
     getCityActionUndo,
