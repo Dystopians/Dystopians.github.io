@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>临江72日</title>
-    <link rel="stylesheet" href="./styles.css?v=98">
+    <link rel="stylesheet" href="./styles.css?v=99">
   </head>
   <body>
     <main class="app-shell">
@@ -286,33 +286,45 @@
         <button id="closeTutorialBtn" class="icon-button tutorial-close" type="button" aria-label="关闭教程">×</button>
         <p class="eyebrow">基础教程</p>
         <h2 id="tutorialTitle">如何玩《临江72日》</h2>
+        <div class="tutorial-flow" aria-label="推荐操作顺序">
+          <span>推荐顺序</span>
+          <ol>
+            <li>先看“今日调度目标”和“对准目标”，决定今天最该处理哪条红线。</li>
+            <li>再点地图执行 1 个工程或决议；它即时生效，可以撤销，不会推进日期。</li>
+            <li>最后处理今日事件，事件选择会完成当天结算并推进到下一天。</li>
+          </ol>
+        </div>
         <div class="tutorial-grid">
           <section>
-            <h3>1. 看红线</h3>
-            <p>感染、医疗、疲劳越高越危险；物资、信任、活力越低越危险。资金用于主动工程和决议。</p>
+            <h3>1. 看目标</h3>
+            <p>事件上方会显示今日调度目标。“对准目标”会列出最能推进目标的事件选项、工程或决议，点击即可定位。</p>
           </section>
           <section>
-            <h3>2. 点地图</h3>
-            <p>医院、体育馆、市场、道路、学校、工厂和人群都有可执行工程。工程和决议即时生效，不会推进日期。</p>
+            <h3>2. 看红线</h3>
+            <p>感染、医疗、疲劳越高越危险；物资、信任、活力越低越危险。失败需要连续越线，通常会给你补救窗口。</p>
           </section>
           <section>
-            <h3>3. 处理事件</h3>
-            <p>每日事件也会消耗一天。选项没有绝对正确答案，延迟后果会在数日后显现。</p>
+            <h3>3. 点地图</h3>
+            <p>医院、体育馆、市场、道路、学校、工厂和人群都有工程或决议。滚轮缩放、拖拽移动，建筑高亮表示可互动。</p>
           </section>
           <section>
-            <h3>4. 等条件决议</h3>
-            <p>健康码、方舱、复工白名单、复盘简报等决议需要满足条件才可通过。</p>
+            <h3>4. 用行动窗口</h3>
+            <p>行动窗口会汇总全城可执行项目。今日调度满额后，“明日可排”会单独列出，不要和条件未满足混淆。</p>
           </section>
           <section>
-            <h3>5. 看后续影响</h3>
-            <p>右侧“后续影响”会列出已经排队的延迟收益或代价；事件按钮悬停时会预览今晚结算走势。</p>
+            <h3>5. 处理事件</h3>
+            <p>每日事件会推进一天。选项没有绝对正确答案，路线标签、适配、红线和结算后预估能帮你判断代价。</p>
           </section>
           <section>
             <h3>6. 托住账本</h3>
-            <p>资金不只靠举债。工厂、市场和道路节点有账款清分、专项资金、捐助统筹和小规模复业等早期恢复渠道。</p>
+            <p>财政与活力面板会拆解每日资金和活力联动。恢复资产、捐助、账款清分和小规模复业能形成长期回流。</p>
           </section>
           <section>
-            <h3>7. 换档案重玩</h3>
+            <h3>7. 看路线债</h3>
+            <p>治理路线会记录你偏向哪种打法。单一路线过重会集中代价，配套建议会提示缺少的补位方向。</p>
+          </section>
+          <section>
+            <h3>8. 换档案重玩</h3>
             <p>开局档案会改变第一阶段的压力结构。医疗、保供、财政和信息盲区档案会迫使你调整早期路线。</p>
           </section>
         </div>
@@ -320,7 +332,7 @@
       </article>
     </section>
 
-    <script src="./game-core.js?v=98"></script>
-    <script src="./app.js?v=98"></script>
+    <script src="./game-core.js?v=99"></script>
+    <script src="./app.js?v=99"></script>
   </body>
 </html>

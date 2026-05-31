@@ -299,6 +299,20 @@ function validateScenarios() {
   assert(hardFiscalBrief.changes.funds === -16, "Scenario deltas should be relative to the selected difficulty baseline.");
 }
 
+function validateTutorialCopy() {
+  const indexHtml = fs.readFileSync(path.join(rootDir, "index.html"), "utf8");
+  [
+    "推荐顺序",
+    "今日调度目标",
+    "对准目标",
+    "明日可排",
+    "财政与活力面板",
+    "治理路线",
+  ].forEach((text) => {
+    assert(indexHtml.includes(text), `Tutorial copy should explain "${text}".`);
+  });
+}
+
 function validateRecoveryLevers() {
   assert(typeof core.getRecoveryLevers === "function", "game-core.js must export getRecoveryLevers.");
   const state = core.createGame({ difficulty: "normal", seed: 20260601 });
@@ -799,6 +813,7 @@ function run() {
   validateNewsAssets();
   validateCacheVersions();
   validateScenarios();
+  validateTutorialCopy();
   validateRecoveryLevers();
   validateFiscalOutlook();
   validateCityBadges();

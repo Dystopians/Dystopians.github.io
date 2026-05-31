@@ -5836,6 +5836,43 @@ label {
   right: 10px;
 }
 
+.tutorial-flow {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 16px;
+  padding: 12px;
+  border: 2px solid var(--line-dark);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 244, 202, 0.4) 0 6px, transparent 6px 12px),
+    #f2d08a;
+  box-shadow: inset 2px 2px 0 rgba(255, 247, 209, 0.74), 3px 3px 0 rgba(74, 53, 26, 0.26);
+}
+
+.tutorial-flow span {
+  width: fit-content;
+  padding: 3px 7px;
+  border: 2px solid var(--line-dark);
+  background: #8e6330;
+  color: #fff1bf;
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.tutorial-flow ol {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.tutorial-flow li {
+  color: var(--deep);
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1.42;
+}
+
 .tutorial-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
