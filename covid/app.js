@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v151";
+  const ASSET_VERSION = "v152";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -12,6 +12,7 @@
   let actionMode = "operations";
   let postRenderFocus = "";
   let pendingSettlementChoice = null;
+  let pendingCriticalChoice = null;
   const MASCOT_FRAME_COUNT = 6;
   const MASCOT_ACTION_FRAME_MS = 118;
   const MASCOT_IDLE_FRAME_MS = 760;
@@ -456,6 +457,7 @@
   function startNewGame(difficulty, scenario = "standard") {
     state = core.createGame({ difficulty, scenario });
     pendingSettlementChoice = null;
+    pendingCriticalChoice = null;
     resetMapView();
     save();
     render();
@@ -468,6 +470,7 @@
     try {
       state = core.importState(JSON.parse(raw));
       pendingSettlementChoice = null;
+      pendingCriticalChoice = null;
       resetMapView();
       save();
       render();
@@ -482,6 +485,7 @@
   function showStart() {
     state = null;
     pendingSettlementChoice = null;
+    pendingCriticalChoice = null;
     els.startScreen.hidden = false;
     els.gameScreen.hidden = true;
     els.endingScreen.hidden = true;
@@ -1766,6 +1770,12 @@
     if (!settlementHint || settlementHint.id !== "cityActionUnused") {
       pendingSettlementChoice = null;
     }
+    if (pendingCriticalChoice && (pendingCriticalChoice.eventId !== state.currentEventId || pendingCriticalChoice.day !== state.day)) {
+      pendingCriticalChoice = null;
+    }
+    if (pendingCriticalChoice && !getCriticalChoiceRisk(pendingCriticalChoice.choiceId)) {
+      pendingCriticalChoice = null;
+    }
     const comparisonReport = core.getChoiceComparison ? core.getChoiceComparison(state) : null;
     const comparisonByChoice = new Map((comparisonReport && comparisonReport.items ? comparisonReport.items : []).map((item) => [item.choiceId, item]));
     const comparison = renderChoiceComparison(comparisonReport);
@@ -1777,16 +1787,18 @@
     event.choices.forEach((choice) => {
       const comparisonItem = comparisonByChoice.get(choice.id);
       const awaitingSettlementConfirm = isPendingSettlementChoice(choice.id);
+      const awaitingCriticalConfirm = isPendingCriticalChoice(choice.id);
       const button = document.createElement("button");
       button.className = [
         "choice-button",
         choiceButtonComparisonClass(comparisonItem),
         awaitingSettlementConfirm ? "choice-awaiting-settlement" : "",
+        awaitingCriticalConfirm ? "choice-awaiting-risk" : "",
       ].filter(Boolean).join(" ");
       button.type = "button";
       button.disabled = choice.available === false;
       button.dataset.choiceId = choice.id;
-      if (awaitingSettlementConfirm) button.setAttribute("aria-pressed", "true");
+      if (awaitingSettlementConfirm || awaitingCriticalConfirm) button.setAttribute("aria-pressed", "true");
       const chips = choice.effectPreview
         .map((item) => `<span class="chip ${chipClassForPreview(item)}" title="${escapeHtml(previewChipTitle(item))}">${escapeHtml(item)}</span>`)
         .join("");
@@ -1806,6 +1818,7 @@
         <div class="chips">${chips}</div>
         ${renderChoiceSettlementHint(choice)}
         ${renderChoiceSettlementConfirm(choice, awaitingSettlementConfirm)}
+        ${renderChoiceCriticalConfirm(choice, awaitingCriticalConfirm)}
       `;
       button.addEventListener("click", () => {
         if (choice.available === false) return;
@@ -1815,6 +1828,22 @@
             eventId: state.currentEventId,
             day: state.day,
           };
+          pendingCriticalChoice = null;
+          renderEvent();
+          const focused = focusChoiceOption(choice.id);
+          if (!focused && els.choiceList && typeof els.choiceList.scrollIntoView === "function") {
+            els.choiceList.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+          return;
+        }
+        if (shouldConfirmCriticalChoice(choice.id)) {
+          const risk = getCriticalChoiceRisk(choice.id);
+          pendingCriticalChoice = {
+            choiceId: choice.id,
+            eventId: state.currentEventId,
+            day: state.day,
+            label: risk ? risk.label : "红线风险",
+          };
           renderEvent();
           const focused = focusChoiceOption(choice.id);
           if (!focused && els.choiceList && typeof els.choiceList.scrollIntoView === "function") {
@@ -1823,6 +1852,7 @@
           return;
         }
         pendingSettlementChoice = null;
+        pendingCriticalChoice = null;
         core.resolveChoice(state, choice.id);
         postRenderFocus = "event-settlement";
         save();
@@ -1930,6 +1960,18 @@
     `;
   }
 
+  function renderChoiceCriticalConfirm(choice, active) {
+    if (!choice || choice.available === false || !active) return "";
+    const risk = getCriticalChoiceRisk(choice.id);
+    const label = risk ? risk.label : "红线风险";
+    const detail = risk ? risk.detail : "这项选择预计会推进失败倒计时。";
+    return `
+      <small class="choice-critical-confirm" title="${escapeHtml(detail)}">
+        高危确认：${escapeHtml(label)}。再次点击确认承受这个红线风险
+      </small>
+    `;
+  }
+
   function isPendingSettlementChoice(choiceId) {
     return Boolean(
       pendingSettlementChoice
@@ -1944,6 +1986,26 @@
     if (!core.getEventSettlementHint) return false;
     const hint = core.getEventSettlementHint(state);
     return Boolean(hint && hint.id === "cityActionUnused");
+  }
+
+  function isPendingCriticalChoice(choiceId) {
+    return Boolean(
+      pendingCriticalChoice
+      && pendingCriticalChoice.choiceId === choiceId
+      && pendingCriticalChoice.eventId === state.currentEventId
+      && pendingCriticalChoice.day === state.day
+    );
+  }
+
+  function getCriticalChoiceRisk(choiceId) {
+    if (!core.getChoiceRiskPreview) return null;
+    return core.getChoiceRiskPreview(state, choiceId)
+      .find((item) => item.tone === "danger") || null;
+  }
+
+  function shouldConfirmCriticalChoice(choiceId) {
+    if (isPendingCriticalChoice(choiceId)) return false;
+    return Boolean(getCriticalChoiceRisk(choiceId));
   }
 
   function renderPreSettlementHint() {
@@ -1982,6 +2044,7 @@
       bindCityActionPreview(actionButton, () => actionButton.dataset.preSettlementMode, () => actionButton.dataset.preSettlementAction);
       actionButton.addEventListener("click", () => {
         pendingSettlementChoice = null;
+        pendingCriticalChoice = null;
         focusRecoveryLever(
           actionButton.dataset.preSettlementPoint,
           actionButton.dataset.preSettlementMode,
@@ -1995,6 +2058,7 @@
         const undone = core.undoCityAction(state);
         if (undone) {
           pendingSettlementChoice = null;
+          pendingCriticalChoice = null;
           save();
           render();
         }
