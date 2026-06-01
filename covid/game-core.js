@@ -3879,6 +3879,7 @@
         resolutions: {},
         cityActionsToday: 0,
         cityActionUndo: null,
+        earnedBadgeIds: [],
         failureStreaks: {
           medical: 0,
           supply: 0,
@@ -3923,6 +3924,9 @@
     state.flags.cityActionUndo = validCityActionUndo(state, state.flags.cityActionUndo)
       ? state.flags.cityActionUndo
       : null;
+    state.flags.earnedBadgeIds = Array.isArray(state.flags.earnedBadgeIds)
+      ? state.flags.earnedBadgeIds
+      : getEarnedCityBadgeRows(state).map((item) => item.id);
     state.flags.failureStreaks = state.flags.failureStreaks || {
       medical: 0,
       supply: 0,
@@ -5863,6 +5867,7 @@
     clampAll(state);
     refreshStatusEffects(state);
     updateFailureStreaks(state);
+    syncCityBadgeAchievements(state, log);
 
     log.changes = diffSnapshots(before, snapshotValues(state));
     compactBreakdown(log);
@@ -5913,6 +5918,7 @@
 
     clampAll(state);
     refreshStatusEffects(state);
+    syncCityBadgeAchievements(state, log);
     log.changes = diffSnapshots(before, snapshotValues(state));
     compactBreakdown(log);
     state.history.unshift(log);
@@ -5950,6 +5956,7 @@
 
     clampAll(state);
     refreshStatusEffects(state);
+    syncCityBadgeAchievements(state, log);
     log.changes = diffSnapshots(before, snapshotValues(state));
     compactBreakdown(log);
     state.history.unshift(log);
@@ -6023,6 +6030,77 @@
     return true;
   }
 
+  function syncCityBadgeAchievements(state, log = null) {
+    if (!state || !state.flags) return [];
+    const known = new Set(Array.isArray(state.flags.earnedBadgeIds) ? state.flags.earnedBadgeIds : []);
+    const earned = getEarnedCityBadgeRows(state);
+    const newlyEarned = earned.filter((item) => !known.has(item.id));
+    state.flags.earnedBadgeIds = [...new Set([
+      ...known,
+      ...earned.map((item) => item.id),
+    ])];
+    if (log && newlyEarned.length) {
+      log.cityBadges = newlyEarned.map((item) => ({
+        id: item.id,
+        label: item.label,
+        category: item.category,
+        tone: item.tone || "good",
+        detail: item.detail,
+      }));
+      log.notes = log.notes || [];
+      log.notes.push(`城市档案入档：${newlyEarned.map((item) => item.label).join("、")}`);
+    }
+    return newlyEarned;
+  }
+
+  function getEarnedCityBadgeRows(state) {
+    return CITY_BADGE_RULES
+      .filter((rule) => cityBadgeEarnedFast(rule.id, state))
+      .map((rule) => ({
+        id: rule.id,
+        label: rule.label,
+        category: rule.category,
+        tone: rule.tone || "good",
+        detail: rule.detail,
+      }));
+  }
+
+  function cityBadgeEarnedFast(id, state) {
+    const m = state.metrics;
+    const h = state.hidden;
+    const r = state.resources;
+    const flags = state.flags || {};
+    const operationUses = flags.operationUses || {};
+    const resolutions = flags.resolutions || {};
+    const completed = state.completedProjects || {};
+    const history = state.history || [];
+    if (id === "monitoring_net") {
+      return h.detectedRate >= 70 && (completed.healthCode || (operationUses.campusSentinel || 0) > 0);
+    }
+    if (id === "medical_buffer") {
+      return m.hospitalLoad <= 55 && (completed.shelterHospital || completed.triageNetwork || completed.communityClinic);
+    }
+    if (id === "supply_mesh") {
+      return m.supplies >= 75
+        && (completed.supplyCorridor || (operationUses.donationCoordination || 0) > 0 || (operationUses.microFreightPermit || 0) > 0);
+    }
+    if (id === "trusted_city") return m.trust >= 75 && h.publicMemory <= 35;
+    if (id === "worker_breathing_room") return state.day >= 13 && m.staffFatigue <= 45;
+    if (id === "fiscal_landing") return state.day >= 37 && m.economy >= 55 && r.funds >= 35;
+    if (id === "low_spread_window") return state.day >= 13 && m.infection <= 35 && m.hospitalLoad <= 65;
+    if (id === "memory_repair") {
+      return state.day >= 37
+        && h.publicMemory <= 18
+        && (Boolean(resolutions.publicReviewBrief)
+          || history.some((entry) => entry.routeLabel === "创伤修复" || entry.routeLabel === "公开修复"));
+    }
+    if (id === "mixed_governance") {
+      const routeLabels = history.map((entry) => entry.routeLabel).filter(Boolean);
+      return routeLabels.length >= 6 && new Set(routeLabels).size >= 4;
+    }
+    return false;
+  }
+
   function snapshotValues(state) {
     return {
       ...state.metrics,
@@ -6082,6 +6160,15 @@
     const hidden = changes.filter((item) => HIDDEN_METRICS.includes(item.metric)).sort(byScore)[0];
     const source = (entry.breakdown || [])[0];
     const highlights = [];
+    if (entry.cityBadges && entry.cityBadges.length) {
+      const badge = entry.cityBadges[0];
+      highlights.push({
+        id: "cityBadge",
+        label: entry.cityBadges.length > 1 ? `城市入档 +${entry.cityBadges.length}` : "城市入档",
+        tone: badge.tone || "good",
+        detail: badge.label,
+      });
+    }
     if (best) {
       highlights.push({
         id: "benefit",

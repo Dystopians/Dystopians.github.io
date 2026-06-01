@@ -940,6 +940,19 @@ function validateCityBadges() {
     report.watch.every((item) => item.focus && item.focus.pointId && item.focus.mode && item.focus.actionId && item.focus.label && item.focus.status),
     "Watched city badges should expose a focusable map action.",
   );
+
+  const badgeState = core.createGame({ difficulty: "normal", seed: 2026061801 });
+  badgeState.metrics.trust = 74;
+  badgeState.hidden.publicMemory = 0;
+  badgeState.metrics.economy = 72;
+  badgeState.flags.earnedBadgeIds = [];
+  core.executeOperation(badgeState, "remoteApprovalDesk");
+  const latest = badgeState.history[0];
+  assert(latest && Array.isArray(latest.cityBadges) && latest.cityBadges.some((item) => item.id === "trusted_city"), "First-time city badge earnings should be written to settlement history.");
+  assert(
+    core.getSettlementHighlights(latest).some((item) => item.id === "cityBadge" && /高配合城市/.test(item.detail)),
+    "Settlement highlights should call out newly earned city badges.",
+  );
 }
 
 function validateFiscalEconomyChannels() {
