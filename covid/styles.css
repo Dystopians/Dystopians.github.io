@@ -4458,8 +4458,21 @@ button.pressure-chip:focus-visible {
 .action-forecast strong,
 .action-forecast em,
 .action-directive strong {
+  gap: 3px;
   background: #f4d68a;
   color: var(--deep);
+}
+
+.choice-risk-preview em small {
+  max-width: 120px;
+  overflow: hidden;
+  color: inherit;
+  font-size: 0.52rem;
+  font-weight: 900;
+  line-height: 1;
+  opacity: 0.82;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .choice-forecast em.good,

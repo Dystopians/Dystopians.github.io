@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v184";
+  const ASSET_VERSION = "v185";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -2452,7 +2452,7 @@
         <span>风险</span>
         ${items.map((item) => `
           <em class="${item.tone || "warn"}" title="${escapeHtml(item.detail)}">
-            ${escapeHtml(item.label)}
+            ${escapeHtml(item.label)}${item.actionLabel ? `<small>先看 ${escapeHtml(item.actionLabel)}</small>` : ""}
           </em>
         `).join("")}
       </div>

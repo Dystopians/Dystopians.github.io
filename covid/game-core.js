@@ -8297,9 +8297,15 @@
     const afterFunds = projectedState.resources.funds;
     const beforeEconomy = beforeState.metrics.economy;
     const afterEconomy = projectedState.metrics.economy;
-    const addValueRisk = (id, tone, label, detail, priority) => {
+    const addValueRisk = (id, tone, label, detail, priority, metric) => {
       if (rows.some((item) => item.id === id || item.label === label)) return;
-      rows.push({ id, tone, label, detail, priority });
+      rows.push(withRiskActionTarget(beforeState, {
+        id,
+        tone,
+        label,
+        detail,
+        priority,
+      }, metric));
     };
 
     if (beforeFunds <= 10 && afterFunds > 10) {
@@ -8309,6 +8315,7 @@
         "脱离透支",
         `应急资金预计 ${beforeFunds} → ${afterFunds}，高价工程锁定会缓和。`,
         74,
+        "funds",
       );
     } else if (afterFunds <= 10 && (beforeFunds > 10 || afterFunds < beforeFunds)) {
       addValueRisk(
@@ -8317,6 +8324,7 @@
         "财政透支",
         `应急资金预计 ${beforeFunds} → ${afterFunds}，高价工程和部分决议会被锁定。`,
         88 + Math.max(0, 10 - afterFunds),
+        "funds",
       );
     } else if (afterFunds <= 20 && (beforeFunds > 20 || afterFunds < beforeFunds)) {
       addValueRisk(
@@ -8325,6 +8333,7 @@
         "资金偏低",
         `应急资金预计 ${beforeFunds} → ${afterFunds}，后续工程选择会收窄。`,
         66 + Math.max(0, 20 - afterFunds),
+        "funds",
       );
     }
 
@@ -8335,6 +8344,7 @@
         "活力回温",
         `城市活力预计 ${beforeEconomy} → ${afterEconomy}，保供、扩容和资金回流会更顺。`,
         72,
+        "economy",
       );
     } else if (afterEconomy <= 15 && (beforeEconomy > 15 || afterEconomy < beforeEconomy)) {
       addValueRisk(
@@ -8343,6 +8353,7 @@
         "活力探底",
         `城市活力预计 ${beforeEconomy} → ${afterEconomy}，长期结局和资金回流都会明显变差。`,
         84 + Math.max(0, 15 - afterEconomy),
+        "economy",
       );
     } else if (afterEconomy <= 25 && (beforeEconomy > 25 || afterEconomy < beforeEconomy)) {
       addValueRisk(
@@ -8351,6 +8362,7 @@
         "城市低温",
         `城市活力预计 ${beforeEconomy} → ${afterEconomy}，保供恢复和医疗扩容会变慢。`,
         70 + Math.max(0, 25 - afterEconomy),
+        "economy",
       );
     } else if (afterEconomy <= 35 && (beforeEconomy > 35 || afterEconomy < beforeEconomy)) {
       addValueRisk(
@@ -8359,8 +8371,36 @@
         "活力偏低",
         `城市活力预计 ${beforeEconomy} → ${afterEconomy}，恢复路线需要提前铺低接触节点。`,
         60 + Math.max(0, 35 - afterEconomy),
+        "economy",
       );
     }
+  }
+
+  function riskPressureTargets(key) {
+    if (key === "medical") return MEDICAL_PRESSURE_TARGETS;
+    if (key === "supply") return SUPPLY_PRESSURE_TARGETS;
+    if (key === "trust") return TRUST_PRESSURE_TARGETS;
+    if (key === "staff") return FATIGUE_PRESSURE_TARGETS;
+    if (key === "funds") return FUNDS_PRESSURE_TARGETS;
+    if (key === "economy") return ECONOMY_PRESSURE_TARGETS;
+    return [];
+  }
+
+  function withRiskActionTarget(state, row, key) {
+    const target = pressureActionTarget(state, riskPressureTargets(key), { includeQueued: true, includeLocked: true });
+    if (!target || !target.actionLabel) return row;
+    const status = target.available ? "可先处理" : target.status || "可先查看";
+    return {
+      ...row,
+      detail: `${row.detail} ${status}“${target.actionLabel}”。`,
+      actionId: target.actionId,
+      mode: target.mode,
+      pointId: target.pointId,
+      actionLabel: target.actionLabel,
+      pointLabel: target.pointLabel,
+      actionStatus: target.status || "",
+      actionAvailable: Boolean(target.available),
+    };
   }
 
   function getChoiceRiskPreview(state, choiceId) {
@@ -8381,29 +8421,29 @@
       const after = afterStreaks[key] || 0;
       const collapse = projected.ending && projected.ending.id === meta.endingId;
       if (collapse || after >= limit) {
-        rows.push({
+        rows.push(withRiskActionTarget(state, {
           id: key,
           tone: "danger",
           label: `${meta.label}失败`,
           detail: `${meta.detail} 这项选择预计会把倒计时推到 ${after}/${limit}。`,
           priority: 120 + after,
-        });
+        }, key));
       } else if (after > before) {
-        rows.push({
+        rows.push(withRiskActionTarget(state, {
           id: key,
           tone: after >= limit - 1 ? "danger" : "warn",
           label: `${meta.label} ${after}/${limit}`,
           detail: `${meta.detail} 当前选择预计会推进倒计时：${before}/${limit} → ${after}/${limit}。`,
           priority: 90 + after * 8,
-        });
+        }, key));
       } else if (before > 0 && after === 0) {
-        rows.push({
+        rows.push(withRiskActionTarget(state, {
           id: key,
           tone: "good",
           label: `${meta.label}脱线`,
           detail: `预计把${meta.label}倒计时从 ${before}/${limit} 拉回安全线。`,
           priority: 70 + before * 5,
-        });
+        }, key));
       }
     });
     addOperationalRiskPreviewRows(rows, state, projected);
@@ -8528,7 +8568,7 @@
       tone: dangerCount >= 2 ? "warn" : recommended ? "good" : "info",
       detail: recommended
         ? `当前最值得先看的方案是“${recommended.choiceLabel}”。`
-        : "三个方案各有明显代价，先看红线和今日目标再取舍。",
+        : "三个方案各有明显代价，先看风险和今日目标再取舍。",
       items,
     };
   }

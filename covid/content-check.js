@@ -1385,12 +1385,12 @@ function validateChoiceRiskPreview() {
   fiscalRiskState.metrics.economy = 28;
   const fiscalRisk = core.getChoiceRiskPreview(fiscalRiskState, "p1_market_closure:c2");
   assert(
-    fiscalRisk.some((item) => item.id === "funds_low" && item.label === "财政透支" && item.detail.includes("高价工程")),
-    "Choice risk preview should warn when a choice will push funds into fiscal overdraft.",
+    fiscalRisk.some((item) => item.id === "funds_low" && item.label === "财政透支" && item.detail.includes("高价工程") && item.actionLabel && item.pointId && item.mode),
+    "Choice risk preview should warn when a choice will push funds into fiscal overdraft and expose a counter-action target.",
   );
   assert(
-    fiscalRisk.some((item) => item.id === "economy_warn" && item.detail.includes("低接触")),
-    "Choice risk preview should warn when a choice worsens low-city-vitality recovery risk.",
+    fiscalRisk.some((item) => item.id === "economy_warn" && item.detail.includes("低接触") && item.actionLabel),
+    "Choice risk preview should warn when a choice worsens low-city-vitality recovery risk and expose a recovery action.",
   );
   const fiscalComparison = core.getChoiceComparison(fiscalRiskState).items.find((item) => item.choiceId === "p1_market_closure:c2");
   assert(
@@ -1793,6 +1793,8 @@ function validateActionPreviewCoverage() {
   assert(styles.includes(".choice-button.choice-awaiting-risk"), "Critical redline choices awaiting confirmation need a visible guard state.");
   assert(styles.includes(".choice-critical-confirm"), "Critical redline confirmation needs dedicated styling.");
   assert(styles.includes(".choice-settlement-confirm.has-risk"), "Merged settlement/risk confirmation needs a distinct danger style.");
+  assert(appJs.includes("item.actionLabel ? `<small>先看"), "Choice risk chips should show a compact counter-action hint.");
+  assert(styles.includes(".choice-risk-preview em small"), "Choice risk counter-action hints need compact styling.");
   assert(styles.includes(".pre-settlement-hint"), "Top pre-settlement hints need dedicated styling.");
   assert(styles.includes(".pre-settlement-action"), "Top pre-settlement hint action buttons need dedicated styling.");
   assert(appJs.includes("renderCityBadgeGaps"), "City badge cards should render concrete remaining gaps.");
