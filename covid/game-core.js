@@ -4872,6 +4872,7 @@
     const tone = dominant.percent >= 60 || dominant.tone === "danger" ? "danger" : "warn";
     return {
       id: `inertia_${dominant.id}`,
+      dominantId: dominant.id,
       tone,
       status: dominant.percent >= 60 ? "单一路线过载" : "路线惯性提醒",
       routeLabel: dominant.label,
@@ -7374,8 +7375,8 @@
     else if (m.infection >= 70) add("metric_infection_warn", "warn", "传播高位", "检测和局部管控会更有价值。", m.infection, pressureActionTarget(state, DETECTION_PRESSURE_TARGETS));
     if (m.supplies <= 25) add("metric_supply_low", "danger", "物资低位", "供应不足会同时伤害信任和基层疲劳。", 100 - m.supplies, pressureActionTarget(state, SUPPLY_PRESSURE_TARGETS));
     else if (m.supplies <= 35) add("metric_supply_warn", "warn", "供应偏紧", "保供链条开始限制医疗和社区执行。", 100 - m.supplies, pressureActionTarget(state, SUPPLY_PRESSURE_TARGETS));
-    if (m.trust <= 30) add("metric_trust_low", "danger", "低配合", "行动效率下降，谣言和拒检事件更容易出现。", 100 - m.trust);
-    else if (m.trust <= 40) add("metric_trust_warn", "warn", "信任承压", "公开解释和可核验流程会更重要。", 100 - m.trust);
+    if (m.trust <= 30) add("metric_trust_low", "danger", "低配合", "行动效率下降，谣言和拒检事件更容易出现。", 100 - m.trust, pressureActionTarget(state, TRUST_PRESSURE_TARGETS));
+    else if (m.trust <= 40) add("metric_trust_warn", "warn", "信任承压", "公开解释和可核验流程会更重要。", 100 - m.trust, pressureActionTarget(state, TRUST_PRESSURE_TARGETS));
     if (m.staffFatigue >= 80) add("metric_fatigue_high", "danger", "执行透支", "所有行动收益打折，发现率会被疲劳磨损。", m.staffFatigue, pressureActionTarget(state, FATIGUE_PRESSURE_TARGETS));
     else if (m.staffFatigue >= 70) add("metric_fatigue_warn", "warn", "排班偏紧", "继续加压会让后续政策变钝。", m.staffFatigue, pressureActionTarget(state, FATIGUE_PRESSURE_TARGETS));
     if (m.economy <= 25) add("metric_economy_low", "warn", "财政吃紧", "活力低位会拖慢保供恢复和医疗扩容。", 100 - m.economy, pressureActionTarget(state, ECONOMY_PRESSURE_TARGETS));
@@ -7387,8 +7388,8 @@
       add("micro_flow_pressure", "warn", "微复苏流动压力", "发现率低于 70 时，多条微循环资产会带来额外传播缝隙。", 63, pressureActionTarget(state, DETECTION_PRESSURE_TARGETS));
     }
     if (h.detectedRate <= 35) add("hidden_detected_low", "warn", "信息盲区", "报告感染压力误差扩大，复工代价更高。", 100 - h.detectedRate, pressureActionTarget(state, DETECTION_PRESSURE_TARGETS));
-    if (h.policyStrictness >= 80) add("hidden_policy_high", "warn", "高压管控", "感染压制增强，但活力和疲劳代价上升。", h.policyStrictness);
-    if (h.publicMemory >= 60) add("hidden_memory_high", "danger", "长期伤痕", "信任恢复会变慢，结局更容易偏向沉重代价。", h.publicMemory);
+    if (h.policyStrictness >= 80) add("hidden_policy_high", "warn", "高压管控", "感染压制增强，但活力和疲劳代价上升。", h.policyStrictness, pressureActionTarget(state, POLICY_PRESSURE_TARGETS));
+    if (h.publicMemory >= 60) add("hidden_memory_high", "danger", "长期伤痕", "信任恢复会变慢，结局更容易偏向沉重代价。", h.publicMemory, pressureActionTarget(state, MEMORY_PRESSURE_TARGETS));
 
     const strategyProfile = getStrategyProfile(state);
     if (strategyProfile && strategyProfile.inertia) {
@@ -7399,6 +7400,7 @@
         inertia.status,
         `${inertia.routeLabel}占比 ${inertia.percent}%。${inertia.complementLabel}`,
         inertia.tone === "danger" ? 96 : 84,
+        strategyInertiaActionTarget(state, strategyProfile),
       );
     }
 
@@ -7518,6 +7520,54 @@
   function findMapPointForCityAction(mode, actionId) {
     const key = mode === "resolutions" ? "resolutions" : "operations";
     return MAP_POINTS.find((point) => (point[key] || []).includes(actionId)) || null;
+  }
+
+  function strategyInertiaActionTarget(state, profile) {
+    const budget = getCityActionBudget(state);
+    if (!budget || budget.remaining <= 0 || !profile || !profile.inertia) return {};
+
+    const recommended = (profile.recommendations || [])
+      .find((item) => item && item.actionId && item.mode && item.pointId && !item.locked)
+      || (profile.recommendations || [])
+        .find((item) => item && item.actionId && item.mode && item.pointId);
+    if (recommended) {
+      return {
+        actionId: recommended.actionId,
+        mode: recommended.mode,
+        pointId: recommended.pointId,
+      };
+    }
+
+    const complement = STRATEGY_COMPLEMENTS[profile.inertia.dominantId];
+    const routeIds = new Set(complement ? complement.routeIds || [] : []);
+    if (!routeIds.size) return {};
+    const rows = [];
+    MAP_POINTS.forEach((pointDef) => {
+      const point = getMapPoint(state, pointDef.id);
+      [
+        { mode: "operations", items: point.operations },
+        { mode: "resolutions", items: point.resolutions },
+      ].forEach((group) => {
+        group.items.forEach((item) => {
+          const route = getStrategyRouteForKey(item.id);
+          if (!route || !routeIds.has(route.id)) return;
+          const established = item.lockedReason === "次数已用完" || item.lockedReason === "已通过";
+          rows.push({
+            actionId: item.id,
+            mode: group.mode,
+            pointId: pointDef.id,
+            available: Boolean(item.available),
+            established,
+          });
+        });
+      });
+    });
+    const selected = rows.find((item) => item.available)
+      || rows.find((item) => !item.established)
+      || rows[0];
+    return selected
+      ? { actionId: selected.actionId, mode: selected.mode, pointId: selected.pointId }
+      : {};
   }
 
   function getDailyTrendPreview(state) {
@@ -8523,6 +8573,29 @@
     ["operations", "interProvinceSupport"],
     ["resolutions", "staffRotationOrder"],
     ["resolutions", "communityAutonomy"],
+  ];
+
+  const TRUST_PRESSURE_TARGETS = [
+    ["resolutions", "priorityMedicineRoute"],
+    ["operations", "medicineRoute"],
+    ["operations", "mentalHealthLine"],
+    ["resolutions", "publicReviewBrief"],
+    ["operations", "fiscalTransparencyLedger"],
+  ];
+
+  const MEMORY_PRESSURE_TARGETS = [
+    ["resolutions", "publicReviewBrief"],
+    ["resolutions", "priorityMedicineRoute"],
+    ["operations", "medicineRoute"],
+    ["operations", "mentalHealthLine"],
+  ];
+
+  const POLICY_PRESSURE_TARGETS = [
+    ["resolutions", "nightFreightWindow"],
+    ["resolutions", "elasticTransit"],
+    ["resolutions", "lowContactBusinessPermit"],
+    ["resolutions", "lowRiskWorkList"],
+    ["operations", "microFreightPermit"],
   ];
 
   const ECONOMY_PRESSURE_TARGETS = [

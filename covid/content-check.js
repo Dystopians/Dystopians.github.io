@@ -688,6 +688,37 @@ function validateMicroRecoveryPressure() {
     "High-hospital pressure",
   );
 
+  const trustState = core.createGame({ difficulty: "normal", seed: 2026062406 });
+  trustState.metrics.trust = 25;
+  trustState.resources.funds = 80;
+  assertActionablePressure(
+    core.getDailyPressureSummary(trustState),
+    "metric_trust_low",
+    "Low-trust pressure",
+  );
+
+  const memoryState = core.createGame({ difficulty: "normal", seed: 2026062407 });
+  memoryState.day = 30;
+  memoryState.phase = core.phaseForDay(memoryState.day);
+  memoryState.hidden.publicMemory = 70;
+  memoryState.resources.funds = 80;
+  assertActionablePressure(
+    core.getDailyPressureSummary(memoryState),
+    "hidden_memory_high",
+    "High-public-memory pressure",
+  );
+
+  const policyState = core.createGame({ difficulty: "normal", seed: 2026062408 });
+  policyState.hidden.policyStrictness = 85;
+  policyState.metrics.infection = 40;
+  policyState.metrics.economy = 40;
+  policyState.resources.funds = 80;
+  assertActionablePressure(
+    core.getDailyPressureSummary(policyState),
+    "hidden_policy_high",
+    "High-policy-strictness pressure",
+  );
+
   const scheduledState = core.createGame({ difficulty: "normal", seed: 2026062405 });
   scheduledState.day = 20;
   scheduledState.phase = core.phaseForDay(scheduledState.day);
@@ -703,6 +734,8 @@ function validateMicroRecoveryPressure() {
   );
 
   const inertiaState = core.createGame({ difficulty: "normal", seed: 20260626 });
+  inertiaState.day = 18;
+  inertiaState.phase = core.phaseForDay(inertiaState.day);
   inertiaState.flags.actionUses.citywideSilence = 2;
   inertiaState.history.unshift({
     day: 8,
@@ -720,6 +753,11 @@ function validateMicroRecoveryPressure() {
   assert(
     inertiaSummary.some((item) => item.id === "strategy_inertia" && /建议补/.test(item.detail)),
     "Daily pressure summary should surface overused strategy-route inertia with complement advice.",
+  );
+  assertActionablePressure(
+    inertiaSummary,
+    "strategy_inertia",
+    "Strategy-inertia pressure",
   );
 }
 
