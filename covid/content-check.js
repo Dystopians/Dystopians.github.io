@@ -679,6 +679,30 @@ function validateMicroRecoveryPressure() {
     "Low-economy pressure",
   );
 
+  const pendingState = core.createGame({ difficulty: "normal", seed: 2026062409 });
+  pendingState.day = 8;
+  pendingState.phase = core.phaseForDay(pendingState.day);
+  pendingState.resources.funds = 50;
+  pendingState.pendingEffects = [{
+    dueDay: 9,
+    eventTitle: "账期谈判复核",
+    label: "供应商尾款到期",
+    effects: {},
+    hidden: {},
+    resources: { funds: -5 },
+    condition: null,
+  }];
+  const pendingSummary = core.getDailyPressureSummary(pendingState);
+  assertActionablePressure(
+    pendingSummary,
+    "pending_due",
+    "Pending delayed-effect pressure",
+  );
+  assert(
+    pendingSummary.some((item) => item.id === "pending_due" && /风险指向资金 -5/.test(item.detail) && /可先准备/.test(item.detail)),
+    "Pending delayed-effect pressure should explain the threatened metric and name a preparation action.",
+  );
+
   const hospitalState = core.createGame({ difficulty: "normal", seed: 2026062404 });
   hospitalState.metrics.hospitalLoad = 88;
   hospitalState.resources.funds = 80;

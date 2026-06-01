@@ -7408,12 +7408,14 @@
       .filter((item) => item.dueDay <= state.day + 1)
       .sort((a, b) => a.dueDay - b.dueDay)[0];
     if (dueSoon) {
+      const pendingTarget = pendingEffectActionTarget(state, dueSoon);
       add(
         "pending_due",
         "warn",
         dueSoon.dueDay <= state.day ? "今日后续影响" : "明日后续影响",
-        `${dueSoon.eventTitle}：${dueSoon.label}`,
+        pendingEffectSummaryDetail(state, dueSoon, pendingTarget),
         82 - Math.max(0, dueSoon.dueDay - state.day),
+        pendingTarget,
       );
     }
 
@@ -7499,8 +7501,12 @@
   }
 
   function pressureActionTarget(state, candidates = []) {
+    return pressureActionTargetDetail(state, candidates) || {};
+  }
+
+  function pressureActionTargetDetail(state, candidates = []) {
     const budget = getCityActionBudget(state);
-    if (!budget || budget.remaining <= 0) return {};
+    if (!budget || budget.remaining <= 0) return null;
     for (const [mode, actionId] of candidates) {
       const status = mode === "resolutions"
         ? getResolutionStatus(state, actionId)
@@ -7512,9 +7518,74 @@
         actionId,
         mode,
         pointId: point.id,
+        actionLabel: status.label,
+        pointLabel: point.label,
       };
     }
-    return {};
+    return null;
+  }
+
+  function pendingEffectSummaryDetail(state, pending, target = null) {
+    const condition = pending.condition
+      ? `（条件：${conditionPreviewLabel(pending.condition)}${conditionMet(state, pending.condition) ? "已满足" : "待观察"}）`
+      : "";
+    const risk = pendingEffectPrimaryRisk(state, pending);
+    const riskText = risk
+      ? `；风险指向${risk.label} ${signedDelta(risk.delta)}`
+      : "";
+    const prep = target && target.actionLabel
+      ? `；可先准备“${target.actionLabel}”`
+      : "";
+    return `${pending.eventTitle}：${pending.label}${condition}${riskText}${prep}`;
+  }
+
+  function pendingEffectActionTarget(state, pending) {
+    const risk = pendingEffectPrimaryRisk(state, pending);
+    if (!risk) return {};
+    return pressureActionTarget(state, PENDING_PRESSURE_TARGETS[risk.metric] || []);
+  }
+
+  function pendingEffectPrimaryRisk(state, pending) {
+    const rows = [];
+    const collect = (source = {}) => {
+      Object.entries(source || {}).forEach(([metric, delta]) => {
+        if (!delta) return;
+        const meta = METRIC_META[metric] || RESOURCE_META[metric];
+        if (!meta) return;
+        const bad = isBadDelta(metric, delta) || isBadMixedPendingDelta(state, metric, delta);
+        if (!bad) return;
+        const urgency = pending.dueDay <= state.day ? 18 : 8;
+        const metricWeight = {
+          hospitalLoad: 20,
+          staffFatigue: 18,
+          trust: 17,
+          funds: 17,
+          infection: 16,
+          supplies: 15,
+          publicMemory: 13,
+          economy: 12,
+          detectedRate: 11,
+          policyStrictness: 9,
+        }[metric] || 8;
+        rows.push({
+          metric,
+          label: meta.short,
+          delta,
+          score: Math.abs(delta) * 12 + metricWeight + urgency,
+        });
+      });
+    };
+    collect(pending.effects);
+    collect(pending.hidden);
+    collect(pending.resources);
+    return rows.sort((a, b) => b.score - a.score || Math.abs(b.delta) - Math.abs(a.delta))[0] || null;
+  }
+
+  function isBadMixedPendingDelta(state, metric, delta) {
+    if (metric !== "policyStrictness") return false;
+    if (delta > 0) return state.hidden.policyStrictness >= 60 || state.metrics.economy <= 45 || state.metrics.staffFatigue >= 65;
+    if (delta < 0) return state.metrics.infection >= 70 || state.hidden.detectedRate <= 45;
+    return false;
   }
 
   function findMapPointForCityAction(mode, actionId) {
@@ -8619,6 +8690,19 @@
     ["resolutions", "temporaryTurnoverPool"],
     ["resolutions", "emergencyLevy"],
   ];
+
+  const PENDING_PRESSURE_TARGETS = {
+    infection: DETECTION_PRESSURE_TARGETS,
+    hospitalLoad: MEDICAL_PRESSURE_TARGETS,
+    supplies: SUPPLY_PRESSURE_TARGETS,
+    trust: TRUST_PRESSURE_TARGETS,
+    economy: ECONOMY_PRESSURE_TARGETS,
+    staffFatigue: FATIGUE_PRESSURE_TARGETS,
+    funds: FUNDS_PRESSURE_TARGETS,
+    detectedRate: DETECTION_PRESSURE_TARGETS,
+    policyStrictness: POLICY_PRESSURE_TARGETS,
+    publicMemory: MEMORY_PRESSURE_TARGETS,
+  };
 
   const ACTION_OPPORTUNITY_LOCKS = new Set(["条件未满足", "资金不足", "财政透支", "今日调度已满"]);
 
