@@ -2915,6 +2915,13 @@ label {
     rgba(238, 220, 164, 0.76);
 }
 
+.trend-preview.is-lock {
+  border-color: rgba(156, 77, 54, 0.78);
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 232, 190, 0.48) 0 2px, rgba(214, 156, 107, 0.32) 2px 4px),
+    rgba(242, 212, 157, 0.78);
+}
+
 .trend-label,
 .trend-summary,
 .trend-chip {
@@ -2939,6 +2946,11 @@ label {
 
 .trend-preview.is-action .trend-label {
   background: #5e5482;
+  color: #fff1bf;
+}
+
+.trend-preview.is-lock .trend-label {
+  background: #8f5139;
   color: #fff1bf;
 }
 

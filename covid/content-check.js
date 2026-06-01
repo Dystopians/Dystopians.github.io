@@ -723,6 +723,18 @@ function validateCityActionOpportunities() {
     (fullReport.lockedItems || []).every((item) => item.lockedReason !== "今日调度已满"),
     "Condition/funding locked preview should not mix in tomorrow-queue actions.",
   );
+
+  assert(typeof core.getCityActionLockPreview === "function", "game-core.js must export getCityActionLockPreview.");
+  const lockedPreview = core.getCityActionLockPreview(core.createGame({ difficulty: "normal", seed: 20260606 }), "operations", "publicDonationDrive");
+  assert(lockedPreview && lockedPreview.items && lockedPreview.items.length >= 2, "Locked city actions should expose a readable lock preview with impact chips.");
+  assert(
+    lockedPreview.items[0].display && lockedPreview.items.every((item) => item.detail && item.tone),
+    "Every locked action preview item needs display/detail/tone text.",
+  );
+  assert(
+    lockedPreview.items.some((item) => item.display.includes("资金") || item.display.includes("物资") || item.display.includes("信任")),
+    "Locked action preview should still show the action's future impact.",
+  );
 }
 
 function validateCityActionUndo() {
@@ -1101,6 +1113,10 @@ function validateActionPreviewCoverage() {
   assert(appJs.includes(".action-card.is-targeted"), "City action focus helper should mark the target card visibly.");
   assert(styles.includes(".action-card.is-targeted"), "Targeted city action cards need dedicated highlight styling.");
   assert(styles.includes("@keyframes actionTargetPulse"), "Targeted city action cards should pulse briefly after navigation.");
+  assert(coreJs.includes("getCityActionLockPreview"), "Core should expose locked city action previews.");
+  assert(appJs.includes("renderTrendItems(lockPreview.items"), "UI should render locked city action previews in the trend panel.");
+  assert(appJs.includes("modeClass === \"is-lock\""), "Trend summary should support locked-action mode.");
+  assert(styles.includes(".trend-preview.is-lock"), "Locked action previews need dedicated trend styling.");
   assert(appJs.includes("focusCityBadgeAction"), "City badge cards should be clickable map-action targets.");
   assert(appJs.includes("data-badge-point"), "City badge cards should carry map target data attributes.");
   assert(styles.includes(".city-badge.actionable"), "Clickable city badges need dedicated styling.");

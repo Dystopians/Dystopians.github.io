@@ -7316,9 +7316,7 @@
   function getCityActionOutcomePreview(state, mode, actionId) {
     if (!state || state.ended || !actionId) return [];
     const normalizedMode = mode === "resolutions" ? "resolutions" : "operations";
-    const status = normalizedMode === "resolutions"
-      ? getResolutionStatus(state, actionId)
-      : getOperationStatus(state, actionId);
+    const status = getCityActionStatusByMode(state, normalizedMode, actionId);
     if (!status || !status.available) return [];
 
     const projected = clone(state);
@@ -7338,6 +7336,77 @@
       .filter(Boolean);
 
     return rankTrendItems(rows);
+  }
+
+  function getCityActionLockPreview(state, mode, actionId) {
+    if (!state || state.ended || !actionId) return null;
+    const normalizedMode = mode === "resolutions" ? "resolutions" : "operations";
+    const status = getCityActionStatusByMode(state, normalizedMode, actionId);
+    if (!status || status.available) return null;
+    const reason = unlockPreviewLabel(status.lockedReason);
+    const detail = status.lockedDetail || status.lockedReason || "当前条件不足。";
+    const reasonTone = status.lockedReason === "今日调度已满"
+      ? "mixed"
+      : status.lockedReason === "已通过" || status.lockedReason === "次数已用完"
+        ? "neutral"
+        : "bad";
+    const reasonItem = {
+      id: "lock_reason",
+      short: reason,
+      delta: "",
+      display: reason,
+      tone: reasonTone,
+      detail,
+      priority: 120,
+    };
+    const impactItems = buildLockedActionImpactItems(status)
+      .sort((a, b) => b.priority - a.priority)
+      .slice(0, 4);
+    return {
+      label: normalizedMode === "resolutions" ? "决议未解锁" : "工程未解锁",
+      title: `${status.label}：${detail}`,
+      actionLabel: status.label,
+      lockedReason: status.lockedReason,
+      lockedDetail: detail,
+      items: [reasonItem, ...impactItems],
+    };
+  }
+
+  function getCityActionStatusByMode(state, normalizedMode, actionId) {
+    return normalizedMode === "resolutions"
+      ? getResolutionStatus(state, actionId)
+      : getOperationStatus(state, actionId);
+  }
+
+  function buildLockedActionImpactItems(status) {
+    const rows = [];
+    const add = (metric, delta, source, delay = 0) => {
+      if (!delta) return;
+      const meta = METRIC_META[metric] || RESOURCE_META[metric];
+      if (!meta) return;
+      const bad = isBadDelta(metric, delta);
+      const good = isGoodDelta(metric, delta);
+      const display = `${delay ? `${delay}日后` : ""}${meta.short} ${delta > 0 ? "+" : ""}${delta}`;
+      rows.push({
+        metric,
+        short: meta.short,
+        delta,
+        display,
+        tone: good ? "good" : bad ? "bad" : "mixed",
+        detail: `${meta.label}：这是“${status.label}”解锁并执行后的${source}影响。`,
+        priority: (bad ? 70 : good ? 52 : 44) + Math.abs(delta) * 6 + (delay ? -4 : 0),
+      });
+    };
+    Object.entries(status.resources || {}).forEach(([metric, delta]) => add(metric, delta, "即时"));
+    Object.entries(status.effects || {}).forEach(([metric, delta]) => add(metric, delta, "即时"));
+    Object.entries(status.hidden || {}).forEach(([metric, delta]) => add(metric, delta, "即时"));
+    if (status.delayed) {
+      const delay = status.delayed.delay || 0;
+      Object.entries(status.delayed.resources || {}).forEach(([metric, delta]) => add(metric, delta, "延迟", delay));
+      Object.entries(status.delayed.effects || {}).forEach(([metric, delta]) => add(metric, delta, "延迟", delay));
+      Object.entries(status.delayed.hidden || {}).forEach(([metric, delta]) => add(metric, delta, "延迟", delay));
+    }
+    return rows;
   }
 
   function rankTrendItems(rows) {
@@ -8309,6 +8378,7 @@
     getChoiceRouteTag,
     getEndingOutlook,
     getCityActionOutcomePreview,
+    getCityActionLockPreview,
     getCityActionDirectiveFit,
     getCityActionOpportunities,
     getRecoveryLevers,

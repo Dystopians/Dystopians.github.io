@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v129";
+  const ASSET_VERSION = "v130";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -748,10 +748,10 @@
     renderCityAssets();
     renderCrisisBoard();
     previewCityAction(actionMode, actionId);
-    focusCityActionCard(actionId);
+    const focused = focusCityActionCard(actionId);
     const pointLabel = point ? point.label : "补救节点";
     els.mapHint.textContent = `已定位：${pointLabel} · 查看${actionMode === "resolutions" ? "决议" : "工程"}`;
-    if (els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
+    if (!focused && els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
       els.operationsList.scrollIntoView({ block: "nearest" });
     }
   }
@@ -1031,10 +1031,10 @@
     renderCityAssets();
     renderCrisisBoard();
     previewCityAction(actionMode, actionId);
-    focusCityActionCard(actionId);
+    const focused = focusCityActionCard(actionId);
     const pointLabel = point ? point.label : "恢复节点";
     els.mapHint.textContent = `已定位恢复渠道：${pointLabel} · ${actionMode === "resolutions" ? "决议" : "工程"}`;
-    if (els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
+    if (!focused && els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
       els.operationsList.scrollIntoView({ block: "nearest" });
     }
   }
@@ -1903,10 +1903,10 @@
         renderActionMode();
         renderCityAssets();
         previewCityAction(actionMode, button.dataset.directiveAction);
-        focusCityActionCard(button.dataset.directiveAction);
+        const focused = focusCityActionCard(button.dataset.directiveAction);
         const point = core.getMapPoint(state, pointId);
         els.mapHint.textContent = `已定位今日目标候选：${point ? point.label : "城市节点"}`;
-        if (els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
+        if (!focused && els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
           els.operationsList.scrollIntoView({ behavior: "smooth", block: "center" });
         }
       });
@@ -1926,22 +1926,23 @@
   }
 
   function focusCityActionCard(actionId, options = {}) {
-    if (!actionId || !els.operationsList) return;
+    if (!actionId || !els.operationsList) return false;
     const target = [...els.operationsList.querySelectorAll(".action-card")]
       .find((item) => item.dataset.actionId === actionId);
-    if (!target) return;
+    if (!target) return false;
     els.operationsList.querySelectorAll(".action-card.is-targeted").forEach((item) => {
       item.classList.remove("is-targeted");
     });
     target.classList.add("is-targeted");
     target.scrollIntoView({
-      behavior: options.behavior || "smooth",
+      behavior: options.behavior || "auto",
       block: options.block || "center",
     });
     clearTimeout(focusCityActionCard.timer);
     focusCityActionCard.timer = setTimeout(() => {
       target.classList.remove("is-targeted");
     }, options.duration || 1800);
+    return true;
   }
 
   function getCurrentChoiceById(choiceId) {
@@ -1972,6 +1973,13 @@
     const normalizedMode = mode === "resolutions" ? "resolutions" : "operations";
     const items = core.getCityActionOutcomePreview(state, normalizedMode, actionId);
     if (!items.length) {
+      const lockPreview = core.getCityActionLockPreview
+        ? core.getCityActionLockPreview(state, normalizedMode, actionId)
+        : null;
+      if (lockPreview && lockPreview.items && lockPreview.items.length) {
+        renderTrendItems(lockPreview.items, lockPreview.label, lockPreview.title, "is-lock");
+        return;
+      }
       renderTrendPreview();
       return;
     }
@@ -2017,19 +2025,29 @@
     els.trendPreview.hidden = false;
     els.trendPreview.classList.toggle("is-choice", modeClass === "is-choice");
     els.trendPreview.classList.toggle("is-action", modeClass === "is-action");
-    const summary = summarizeTrendItems(items);
+    els.trendPreview.classList.toggle("is-lock", modeClass === "is-lock");
+    const summary = summarizeTrendItems(items, modeClass);
     els.trendPreview.innerHTML = `
       <span class="trend-label" title="${escapeHtml(title)}">${escapeHtml(label)}</span>
       <span class="trend-summary ${escapeHtml(summary.tone)}" title="${escapeHtml(summary.detail)}">${escapeHtml(summary.text)}</span>
       ${items.map((item) => `
         <span class="trend-chip ${item.tone || "neutral"}" title="${escapeHtml(item.detail)}">
-          ${escapeHtml(item.short)} ${item.delta > 0 ? "+" : ""}${item.delta}
+          ${escapeHtml(item.display || `${item.short} ${item.delta > 0 ? "+" : ""}${item.delta}`)}
         </span>
       `).join("")}
     `;
   }
 
-  function summarizeTrendItems(items) {
+  function summarizeTrendItems(items, modeClass = "") {
+    if (modeClass === "is-lock") {
+      const reason = items[0] || {};
+      const impactCount = Math.max(0, items.length - 1);
+      return {
+        tone: reason.tone || "mixed",
+        text: impactCount ? `${reason.display || reason.short} · 预览${impactCount}项影响` : `${reason.display || reason.short || "当前不可用"}`,
+        detail: reason.detail || "这项行动暂时不能执行。",
+      };
+    }
     const bad = items.filter((item) => item.tone === "bad");
     const good = items.filter((item) => item.tone === "good");
     const mixed = items.filter((item) => item.tone === "mixed");
@@ -2234,10 +2252,10 @@
         renderActionMode();
         renderCityAssets();
         previewCityAction(actionMode, button.dataset.nextAction);
-        focusCityActionCard(button.dataset.nextAction);
+        const focused = focusCityActionCard(button.dataset.nextAction);
         const point = core.getMapPoint(state, pointId);
         els.mapHint.textContent = `已定位下一步候选：${point ? point.label : "城市节点"}`;
-        if (els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
+        if (!focused && els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
           els.operationsList.scrollIntoView({ behavior: "smooth", block: "center" });
         }
       });
@@ -2581,10 +2599,10 @@
     renderActionMode();
     renderCityAssets();
     previewCityAction(actionMode, actionId);
-    focusCityActionCard(actionId);
+    const focused = focusCityActionCard(actionId);
     const point = core.getMapPoint(state, pointId);
     els.mapHint.textContent = `已定位城市档案目标：${point ? point.label : "城市节点"}`;
-    if (els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
+    if (!focused && els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
       els.operationsList.scrollIntoView({ block: "nearest" });
     }
   }
