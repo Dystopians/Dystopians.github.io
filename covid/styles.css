@@ -3458,6 +3458,52 @@ label {
   line-height: 1.12;
 }
 
+.choice-decision-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 4px 0 5px;
+}
+
+.choice-decision-tags i {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 2px 5px;
+  border: 2px solid #9b7134;
+  background: #fff1c8;
+  color: var(--deep);
+  font-size: 0.54rem;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.choice-decision-tags i.good {
+  border-color: var(--good);
+  background: #cde2a3;
+  color: #244d35;
+}
+
+.choice-decision-tags i.warn,
+.choice-decision-tags i.mixed {
+  border-color: var(--warn);
+  background: #f1c45f;
+  color: #5b3715;
+}
+
+.choice-decision-tags i.danger {
+  border-color: var(--danger);
+  background: #eaa07c;
+  color: #5b1f18;
+}
+
+.choice-decision-tags i.info {
+  border-color: var(--blue);
+  background: #d6e4df;
+  color: #244258;
+}
+
 .choice-compare-item em {
   display: block;
   max-height: 2.5em;
@@ -3638,6 +3684,15 @@ label {
 
 .choice-button p {
   flex: 1;
+}
+
+.choice-button > .choice-decision-tags {
+  margin: 0 0 7px;
+}
+
+.choice-button > .choice-decision-tags i {
+  min-height: 20px;
+  font-size: 0.6rem;
 }
 
 .choice-settlement-hint {

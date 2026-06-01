@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v146";
+  const ASSET_VERSION = "v147";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -1783,6 +1783,7 @@
         : "";
       button.innerHTML = `
         <div class="choice-title"><strong>${escapeHtml(choice.label)}</strong><span class="choice-title-tags">${renderChoiceRankBadge(comparisonItem)}${tag}</span></div>
+        ${renderChoiceDecisionTags(comparisonItem)}
         <p>${escapeHtml(choice.available === false ? choice.lockedReason : choice.description)}</p>
         ${renderChoiceFit(choice)}
         ${renderChoiceDirectiveFit(choice)}
@@ -1824,6 +1825,7 @@
               data-compare-choice="${escapeHtml(item.choiceId || "")}" title="${escapeHtml(item.detail || "")}">
               <span>${escapeHtml(item.recommended ? "建议" : item.rank ? `#${item.rank}` : "锁定")} · ${escapeHtml(item.routeLabel || "综合路线")}</span>
               <strong>${escapeHtml(item.label || "策略取舍")}</strong>
+              ${renderChoiceDecisionTags(item)}
               <em>${escapeHtml(item.detail || "")}</em>
             </button>
           `).join("")}
@@ -1855,6 +1857,20 @@
     const label = item.recommended ? "建议" : item.rank ? `#${item.rank}` : "";
     if (!label) return "";
     return `<span class="choice-rank-badge ${escapeHtml(item.tone || "info")}" title="${escapeHtml(item.detail || "")}">${escapeHtml(label)}</span>`;
+  }
+
+  function renderChoiceDecisionTags(item) {
+    const tags = item && Array.isArray(item.decisionTags) ? item.decisionTags.slice(0, 4) : [];
+    if (!tags.length) return "";
+    return `
+      <div class="choice-decision-tags" aria-label="决策徽章">
+        ${tags.map((tag) => `
+          <i class="${escapeHtml(tag.tone || "info")}" title="${escapeHtml(tag.detail || "")}">
+            ${escapeHtml(tag.label || "")}
+          </i>
+        `).join("")}
+      </div>
+    `;
   }
 
   function renderChoiceSettlementHint(choice) {

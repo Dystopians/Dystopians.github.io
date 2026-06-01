@@ -7417,6 +7417,9 @@
         tone: "danger",
         label: "暂不可用",
         detail: choice ? choice.lockedReason || "当前条件不足。" : "当前条件不足。",
+        decisionTags: [
+          { id: "locked", tone: "danger", label: "锁定", detail: choice ? choice.lockedReason || "当前条件不足。" : "当前条件不足。" },
+        ],
       };
     }
     const trends = getChoiceOutcomePreview(state, choice.id);
@@ -7472,6 +7475,14 @@
     if (bestTrend) details.push(`${bestTrend.short} ${signedDelta(bestTrend.delta)}`);
     if (worstTrend) details.push(`代价 ${worstTrend.short} ${signedDelta(worstTrend.delta)}`);
     if (worstRisk) details.push(worstRisk.label);
+    const decisionTags = buildChoiceDecisionTags(choice, {
+      directiveFit,
+      worstRisk,
+      bestTrend,
+      worstTrend,
+      delayedPenalty,
+      score,
+    });
     return {
       choiceId: choice.id,
       choiceLabel: choice.label,
@@ -7482,7 +7493,72 @@
       tone,
       label,
       detail: details.join(" / ") || "这是一条较中性的策略路线。",
+      decisionTags,
     };
+  }
+
+  function buildChoiceDecisionTags(choice, context) {
+    const tags = [];
+    const add = (id, tone, label, detail, priority) => {
+      if (!label || tags.some((item) => item.id === id || item.label === label)) return;
+      tags.push({ id, tone, label, detail, priority });
+    };
+    const { directiveFit, worstRisk, bestTrend, worstTrend, delayedPenalty, score } = context;
+    if (directiveFit) {
+      add(
+        "directive",
+        directiveFit.tone,
+        directiveFit.tone === "good" ? "贴合目标" : directiveFit.tone === "danger" ? "偏离目标" : "目标有代价",
+        directiveFit.detail,
+        directiveFit.tone === "good" ? 98 : 88,
+      );
+    }
+    if (worstRisk) {
+      add(
+        "risk",
+        worstRisk.tone,
+        worstRisk.tone === "danger" ? "红线风险" : "红线承压",
+        worstRisk.detail,
+        worstRisk.tone === "danger" ? 100 : 90,
+      );
+    } else if (score >= 18) {
+      add("riskStable", "good", "红线平稳", "预计不会推进失败倒计时。", 54);
+    }
+    if (bestTrend) {
+      add(
+        "gain",
+        "good",
+        `收益${bestTrend.short}`,
+        `${bestTrend.label} ${signedDelta(bestTrend.delta)}`,
+        76 + Math.max(0, bestTrend.value || 0),
+      );
+    }
+    if (worstTrend) {
+      add(
+        "cost",
+        worstTrend.value <= -18 ? "danger" : "warn",
+        `代价${worstTrend.short}`,
+        `${worstTrend.label} ${signedDelta(worstTrend.delta)}`,
+        72 + Math.abs(Math.min(0, worstTrend.value || 0)),
+      );
+    }
+    if (delayedPenalty) {
+      add(
+        "delayed",
+        "warn",
+        "有后账",
+        choice.delayed && choice.delayed.label ? `后续影响：${choice.delayed.label}` : "这项选择包含延迟后果。",
+        70,
+      );
+    }
+    const routeTag = choice.routeTag || getChoiceRouteTag(choice);
+    if (routeTag && routeTag.label && routeTag.label !== "综合调度") {
+      add("route", routeTag.tone || "info", routeTag.label, "治理路线标签。", 42);
+    }
+    return tags
+      .sort((a, b) => b.priority - a.priority || a.label.localeCompare(b.label, "zh-Hans-CN"))
+      .slice(0, 4)
+      .map(({ priority, ...item }) => item);
   }
 
   function choicesOrderHint(choice) {

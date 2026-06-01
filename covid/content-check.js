@@ -406,6 +406,10 @@ function validateTutorialCopy() {
     "今晚趋势",
     "对准目标",
     "后果复盘",
+    "决策徽章",
+    "贴合目标",
+    "红线风险",
+    "有后账",
     "下一步队列",
     "今日首选",
     "选后结算",
@@ -924,6 +928,14 @@ function validateChoiceRiskPreview() {
     "Every choice comparison item needs choiceId, choiceLabel, routeLabel, label, detail, and tone.",
   );
   assert(
+    comparison.items.every((item) => Array.isArray(item.decisionTags) && item.decisionTags.length > 0),
+    "Every choice comparison item should expose compact decision tags.",
+  );
+  assert(
+    comparison.items.every((item) => item.decisionTags.every((tag) => tag.id && tag.label && tag.detail && tag.tone)),
+    "Every decision tag needs id, label, detail, and tone.",
+  );
+  assert(
     comparison.items.filter((item) => item.available).some((item) => item.rank === 1),
     "Choice comparison should rank available choices.",
   );
@@ -1216,8 +1228,10 @@ function validateActionPreviewCoverage() {
   assert(styles.includes(".action-queue"), "Action queue summary needs dedicated styling.");
   assert(styles.includes(".action-finder-item.is-queue-primary"), "Primary queued action should be visually distinct.");
   assert(appJs.includes("renderChoiceRankBadge"), "Event choice buttons should render recommendation/rank badges from the comparison model.");
+  assert(appJs.includes("renderChoiceDecisionTags"), "Event choice buttons should render compact decision tags.");
   assert(appJs.includes("choiceButtonComparisonClass"), "Event choice buttons should inherit comparison tone classes.");
   assert(styles.includes(".choice-rank-badge"), "Choice recommendation badges need dedicated styling.");
+  assert(styles.includes(".choice-decision-tags"), "Choice decision tags need dedicated styling.");
   assert(styles.includes(".choice-button.choice-recommended"), "Recommended choice buttons should have a visible persistent state.");
   assert(appJs.includes("renderChoiceSettlementHint"), "Event choice buttons should explain that selecting them settles the day.");
   assert(appJs.includes("今日城市行动将定稿"), "Event choice settlement hint should warn that today's city actions become final.");
