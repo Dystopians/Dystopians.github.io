@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v180";
+  const ASSET_VERSION = "v181";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;

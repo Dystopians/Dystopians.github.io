@@ -906,6 +906,10 @@
     return clamp(Math.round(parts.reduce((sum, part) => sum + part.value * part.weight, 0) / totalWeight), 0, 100);
   }
 
+  function fiscalRecoveryBadgeAssets(state) {
+    return (calculateFiscalOutlook(state).activeAssets || []);
+  }
+
   const CITY_BADGE_RULES = [
     {
       id: "monitoring_net",
@@ -1023,6 +1027,45 @@
       },
     },
     {
+      id: "fiscal_chain",
+      label: "资金回流链",
+      category: "财政",
+      tone: "good",
+      detail: "已经铺出至少 3 个财政、捐助或恢复资产，且资金没有跌破救急底线。",
+      hint: "铺设 3 个财政/捐助/恢复资产，并让资金保持 20 以上。",
+      condition(state) {
+        return fiscalRecoveryBadgeAssets(state).length >= 3 && state.resources.funds >= 20;
+      },
+      progress(state) {
+        return badgeWeighted([
+          { value: badgeAtLeast(fiscalRecoveryBadgeAssets(state).length, 3), weight: 7 },
+          { value: badgeAtLeast(state.resources.funds, 20), weight: 3 },
+        ]);
+      },
+    },
+    {
+      id: "micro_loop",
+      label: "微循环成网",
+      category: "活力",
+      tone: "mixed",
+      detail: "低接触恢复节点达到 4 个，活力、发现率和感染压力足以承接小范围流动。",
+      hint: "铺设 4 个低接触恢复节点，并维持活力、发现率和感染压力的安全边界。",
+      condition(state) {
+        return getMicroRecoveryAssets(state).length >= 4
+          && state.metrics.economy >= 50
+          && state.hidden.detectedRate >= 55
+          && state.metrics.infection <= 65;
+      },
+      progress(state) {
+        return badgeWeighted([
+          { value: badgeAtLeast(getMicroRecoveryAssets(state).length, 4), weight: 5 },
+          { value: badgeAtLeast(state.metrics.economy, 50), weight: 2 },
+          { value: badgeAtLeast(state.hidden.detectedRate, 55), weight: 2 },
+          { value: badgeAtMost(state.metrics.infection, 65), weight: 1 },
+        ]);
+      },
+    },
+    {
       id: "low_spread_window",
       label: "低传播窗口",
       category: "疫情",
@@ -1110,6 +1153,8 @@
     const hasMemoryRepair = Boolean(state.flags.resolutions.publicReviewBrief)
       || history.some((entry) => entry.routeLabel === "创伤修复" || entry.routeLabel === "公开修复");
     const routeProfile = id === "mixed_governance" ? getStrategyProfile(state) : null;
+    const fiscalAssetCount = id === "fiscal_chain" ? fiscalRecoveryBadgeAssets(state).length : 0;
+    const microAssetCount = id === "micro_loop" ? getMicroRecoveryAssets(state).length : 0;
 
     if (id === "monitoring_net") {
       addAtLeast("发现率", h.detectedRate, 70);
@@ -1130,6 +1175,14 @@
       addDay(37);
       addAtLeast("活力", m.economy, 55);
       addAtLeast("资金", r.funds, 35);
+    } else if (id === "fiscal_chain") {
+      if (fiscalAssetCount < 3) gaps.push(`回流资产 +${3 - fiscalAssetCount}`);
+      addAtLeast("资金", r.funds, 20);
+    } else if (id === "micro_loop") {
+      if (microAssetCount < 4) gaps.push(`微循环节点 +${4 - microAssetCount}`);
+      addAtLeast("活力", m.economy, 50);
+      addAtLeast("发现率", h.detectedRate, 55);
+      addAtMost("感染", m.infection, 65);
     } else if (id === "low_spread_window") {
       addDay(13);
       addAtMost("感染", m.infection, 35);
@@ -1179,6 +1232,22 @@
       ["operations", "fastGrantReport"],
       ["operations", "remoteApprovalDesk"],
       ["operations", "factoryClosedLoop"],
+    ],
+    fiscal_chain: [
+      ["operations", "fiscalTransparencyLedger"],
+      ["operations", "emergencyGapLedger"],
+      ["operations", "publicDonationDrive"],
+      ["operations", "bankCreditWindow"],
+      ["resolutions", "mutualAidFund"],
+      ["resolutions", "temporaryTurnoverPool"],
+    ],
+    micro_loop: [
+      ["operations", "remoteApprovalDesk"],
+      ["operations", "microEnterpriseRoster"],
+      ["operations", "essentialServicePermit"],
+      ["operations", "neighborhoodPickupWindow"],
+      ["resolutions", "lowContactBusinessPermit"],
+      ["resolutions", "elasticTransit"],
     ],
     low_spread_window: [
       ["operations", "deployHealthCode"],
@@ -6311,6 +6380,13 @@
     if (id === "trusted_city") return m.trust >= 75 && h.publicMemory <= 35;
     if (id === "worker_breathing_room") return state.day >= 13 && m.staffFatigue <= 45;
     if (id === "fiscal_landing") return state.day >= 37 && m.economy >= 55 && r.funds >= 35;
+    if (id === "fiscal_chain") return fiscalRecoveryBadgeAssets(state).length >= 3 && r.funds >= 20;
+    if (id === "micro_loop") {
+      return getMicroRecoveryAssets(state).length >= 4
+        && m.economy >= 50
+        && h.detectedRate >= 55
+        && m.infection <= 65;
+    }
     if (id === "low_spread_window") return state.day >= 13 && m.infection <= 35 && m.hospitalLoad <= 65;
     if (id === "memory_repair") {
       return state.day >= 37

@@ -910,7 +910,7 @@ function validateCityBadges() {
   const state = core.createGame({ difficulty: "normal", seed: 20260617 });
   const opening = core.getCityBadges(state);
   assert(opening && Array.isArray(opening.earned) && Array.isArray(opening.watch), "getCityBadges must return earned and watch arrays.");
-  assert(opening.total >= 8, `Expected at least 8 city badge rules, found ${opening.total}.`);
+  assert(opening.total >= 10, `Expected at least 10 city badge rules, found ${opening.total}.`);
   assert(
     opening.watch.every((item) => item.focus && item.focus.pointId && item.focus.mode && item.focus.actionId),
     "Opening watched city badges should expose focusable map actions.",
@@ -969,6 +969,30 @@ function validateCityBadges() {
   assert(
     core.getSettlementHighlights(latest).some((item) => item.id === "cityBadge" && /高配合城市/.test(item.detail)),
     "Settlement highlights should call out newly earned city badges.",
+  );
+
+  const recoveryState = core.createGame({ difficulty: "normal", seed: 2026061802 });
+  recoveryState.day = 22;
+  recoveryState.phase = core.phaseForDay(recoveryState.day);
+  recoveryState.metrics.infection = 42;
+  recoveryState.metrics.hospitalLoad = 52;
+  recoveryState.metrics.supplies = 68;
+  recoveryState.metrics.trust = 62;
+  recoveryState.metrics.economy = 56;
+  recoveryState.metrics.staffFatigue = 48;
+  recoveryState.resources.funds = 32;
+  recoveryState.hidden.detectedRate = 70;
+  recoveryState.hidden.policyStrictness = 42;
+  recoveryState.flags.resolutions.mutualAidFund = true;
+  recoveryState.flags.resolutions.lowContactBusinessPermit = true;
+  recoveryState.flags.resolutions.elasticTransit = true;
+  recoveryState.flags.resolutions.lowRiskWorkList = true;
+  recoveryState.flags.resolutions.nightFreightWindow = true;
+  const recoveryBadges = core.getCityBadges(recoveryState);
+  const recoveryEarnedIds = recoveryBadges.earned.map((item) => item.id);
+  assert(
+    recoveryEarnedIds.includes("fiscal_chain") && recoveryEarnedIds.includes("micro_loop"),
+    "Fiscal and low-contact recovery structures should earn dedicated city badges.",
   );
 }
 
