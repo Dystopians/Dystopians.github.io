@@ -5281,12 +5281,31 @@ button.fiscal-route-card:focus-visible {
 }
 
 .pending-item {
+  display: block;
+  width: 100%;
   padding: 8px;
   border: 2px solid #9b7134;
   background:
     linear-gradient(90deg, rgba(255, 244, 202, 0.72), rgba(248, 233, 189, 0.94)),
     #f8e9bd;
   box-shadow: inset 2px 2px 0 rgba(255, 247, 209, 0.72);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+button.pending-item {
+  cursor: pointer;
+}
+
+.pending-item.actionable:hover,
+.pending-item.actionable:focus-visible {
+  transform: translate(-1px, -1px);
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 247, 209, 0.72),
+    3px 3px 0 rgba(90, 60, 29, 0.24);
+  outline: 2px solid rgba(83, 122, 79, 0.55);
+  outline-offset: 1px;
 }
 
 .pending-item-top {
@@ -5352,6 +5371,37 @@ button.fiscal-route-card:focus-visible {
   font-weight: 900;
   line-height: 1.28;
   overflow-wrap: anywhere;
+}
+
+.pending-risk,
+.pending-action {
+  display: block;
+  margin: 0 0 6px;
+  padding: 4px 6px;
+  border: 2px solid #b89752;
+  background: rgba(255, 241, 200, 0.72);
+  color: #5b3715;
+  font-size: 0.66rem;
+  font-weight: 900;
+  line-height: 1.26;
+  overflow-wrap: anywhere;
+}
+
+.pending-risk.warn {
+  border-color: var(--warn);
+  background: #eec673;
+}
+
+.pending-risk.danger {
+  border-color: var(--danger);
+  background: #e6a17c;
+  color: #5b1f18;
+}
+
+.pending-action {
+  border-color: var(--good);
+  background: #c9dd91;
+  color: #244d35;
 }
 
 .pending-empty {

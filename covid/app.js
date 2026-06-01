@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v168";
+  const ASSET_VERSION = "v169";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -1299,9 +1299,11 @@
 
   function renderPendingTimeline() {
     if (!els.pendingTimeline) return;
-    const pending = [...(state.pendingEffects || [])]
-      .sort((a, b) => a.dueDay - b.dueDay || String(a.label).localeCompare(String(b.label), "zh-Hans-CN"))
-      .slice(0, 5);
+    const pending = core.getPendingEffectReadouts
+      ? core.getPendingEffectReadouts(state, 5)
+      : [...(state.pendingEffects || [])]
+        .sort((a, b) => a.dueDay - b.dueDay || String(a.label).localeCompare(String(b.label), "zh-Hans-CN"))
+        .slice(0, 5);
     if (!pending.length) {
       els.pendingTimeline.innerHTML = `
         <div class="pending-head">
@@ -1322,6 +1324,12 @@
         ${pending.map((item) => renderPendingItem(item)).join("")}
       </div>
     `;
+    els.pendingTimeline.querySelectorAll("[data-pending-action]").forEach((button) => {
+      bindCityActionPreview(button, () => button.dataset.pendingMode, () => button.dataset.pendingAction);
+      button.addEventListener("click", () => {
+        focusRecoveryLever(button.dataset.pendingPoint, button.dataset.pendingMode, button.dataset.pendingAction);
+      });
+    });
   }
 
   function renderStrategyProfile() {
@@ -1465,30 +1473,46 @@
   }
 
   function renderPendingItem(item) {
-    const dayGap = item.dueDay - state.day;
-    const dueText = dayGap <= 0 ? "今日" : dayGap === 1 ? "明日" : `${dayGap}日后`;
-    const title = `${item.eventTitle || "后续"} · ${item.choiceLabel || item.label}`;
+    const dayGap = typeof item.dayGap === "number" ? item.dayGap : item.dueDay - state.day;
+    const dueText = item.dueText || (dayGap <= 0 ? "今日" : dayGap === 1 ? "明日" : `${dayGap}日后`);
+    const title = item.title || `${item.eventTitle || "后续"} · ${item.choiceLabel || item.label}`;
     const chips = renderEffectChips({
       resources: item.resources || {},
       effects: item.effects || {},
       hidden: item.hidden || {},
     });
-    const conditionReady = item.condition ? core.isConditionMet(state, item.condition) : true;
+    const conditionReady = typeof item.conditionReady === "boolean"
+      ? item.conditionReady
+      : item.condition ? core.isConditionMet(state, item.condition) : true;
+    const conditionText = item.conditionText || (item.condition ? conditionLabel(item.condition).replace("时触发", "") : "必定触发");
     const condition = item.condition
-      ? `<span class="pending-condition ${conditionReady ? "is-ready" : "is-waiting"}">${escapeHtml(conditionLabel(item.condition))} · ${conditionReady ? "当前满足" : "当前未满足"}</span>`
+      ? `<span class="pending-condition ${conditionReady ? "is-ready" : "is-waiting"}">${escapeHtml(conditionText)} · ${conditionReady ? "当前满足" : "当前未满足"}</span>`
       : "<span class=\"pending-condition is-ready\">必定触发</span>";
     const complete = item.completeProject ? "<span class=\"chip delay\">项目完成</span>" : "";
+    const actionable = item.actionId && item.pointId && item.mode;
+    const tagName = actionable ? "button" : "article";
+    const actionAttrs = actionable
+      ? ` type="button" data-pending-point="${escapeHtml(item.pointId)}" data-pending-mode="${escapeHtml(item.mode)}" data-pending-action="${escapeHtml(item.actionId)}"`
+      : "";
+    const riskLine = item.risk
+      ? `<small class="pending-risk ${escapeHtml(item.risk.tone || "warn")}">风险指向：${escapeHtml(item.risk.summary || "")}</small>`
+      : "";
+    const actionLine = actionable
+      ? `<small class="pending-action">${escapeHtml(item.pointLabel || "地图节点")} · ${escapeHtml(item.actionLabel || "准备行动")}</small>`
+      : "";
     return `
-      <article class="pending-item">
+      <${tagName} class="pending-item ${actionable ? "actionable" : ""}" title="${escapeHtml(actionable ? `定位准备行动：${item.actionLabel}` : title)}"${actionAttrs}>
         <div class="pending-item-top">
           <span>${escapeHtml(dueText)}</span>
           ${condition}
         </div>
         <strong>${escapeHtml(item.label)}</strong>
         <p>${escapeHtml(title)}</p>
-        <small class="pending-impact">${escapeHtml(pendingImpactSummary(item))}</small>
+        <small class="pending-impact">${escapeHtml(item.impactSummary || pendingImpactSummary(item))}</small>
+        ${riskLine}
+        ${actionLine}
         <div class="chips">${chips}${complete}</div>
-      </article>
+      </${tagName}>
     `;
   }
 

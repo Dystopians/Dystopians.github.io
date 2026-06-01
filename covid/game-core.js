@@ -7581,6 +7581,61 @@
     return pressureActionTarget(state, PENDING_PRESSURE_TARGETS[risk.metric] || []);
   }
 
+  function getPendingEffectReadouts(state, limit = 5) {
+    if (!state || state.ended) return [];
+    return [...(state.pendingEffects || [])]
+      .sort((a, b) => a.dueDay - b.dueDay || String(a.label).localeCompare(String(b.label), "zh-Hans-CN"))
+      .slice(0, limit)
+      .map((item, index) => {
+        const dayGap = item.dueDay - state.day;
+        const risk = pendingEffectPrimaryRisk(state, item);
+        const target = pendingEffectActionTarget(state, item);
+        const conditionReady = item.condition ? conditionMet(state, item.condition) : true;
+        const impactSummary = pendingEffectImpactSummary(item);
+        return {
+          ...item,
+          id: `pending_${item.dueDay}_${index}_${String(item.label || "effect").replace(/\s+/g, "_")}`,
+          dayGap,
+          dueText: dayGap <= 0 ? "今日" : dayGap === 1 ? "明日" : `${dayGap}日后`,
+          title: `${item.eventTitle || "后续"} · ${item.choiceLabel || item.label}`,
+          conditionText: item.condition ? conditionPreviewLabel(item.condition) : "必定触发",
+          conditionReady,
+          impactSummary,
+          risk: risk ? {
+            metric: risk.metric,
+            label: risk.label,
+            delta: risk.delta,
+            summary: `${risk.label} ${signedDelta(risk.delta)}`,
+            tone: Math.abs(risk.delta) >= 5 ? "danger" : "warn",
+          } : null,
+          actionId: target.actionId || "",
+          mode: target.mode || "",
+          pointId: target.pointId || "",
+          actionLabel: target.actionLabel || "",
+          pointLabel: target.pointLabel || "",
+        };
+      });
+  }
+
+  function pendingEffectImpactSummary(item) {
+    const parts = [];
+    const add = (source = {}, metaMap = {}) => {
+      Object.entries(source || {}).forEach(([metric, delta]) => {
+        const meta = metaMap[metric];
+        if (!meta || !delta) return;
+        parts.push(`${meta.short} ${signedDelta(delta)}`);
+      });
+    };
+    add(item.resources, RESOURCE_META);
+    add(item.effects, METRIC_META);
+    add(item.hidden, METRIC_META);
+    if (item.completeProject) parts.push("项目完成");
+    const prefix = item.condition ? "若触发" : "预计";
+    return parts.length
+      ? `${prefix}：${parts.slice(0, 5).join(" / ")}`
+      : `${prefix}：仅记录后续叙事变化`;
+  }
+
   function pendingEffectPrimaryRisk(state, pending) {
     const rows = [];
     const collect = (source = {}) => {
@@ -9984,6 +10039,7 @@
     getEventSettlementHint,
     getCityActionBudget,
     getCityActionUndo,
+    getPendingEffectReadouts,
     undoCityAction,
     getHistoryEntryMeta,
     getStrategyProfile,

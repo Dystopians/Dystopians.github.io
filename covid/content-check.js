@@ -702,6 +702,12 @@ function validateMicroRecoveryPressure() {
     pendingSummary.some((item) => item.id === "pending_due" && /风险指向资金 -5/.test(item.detail) && /可先准备/.test(item.detail)),
     "Pending delayed-effect pressure should explain the threatened metric and name a preparation action.",
   );
+  assert(typeof core.getPendingEffectReadouts === "function", "game-core.js must export getPendingEffectReadouts.");
+  const pendingReadouts = core.getPendingEffectReadouts(pendingState);
+  assert(
+    pendingReadouts.some((item) => item.risk && item.risk.metric === "funds" && item.actionId && item.mode && item.pointId),
+    "Pending timeline readouts should expose the threatened metric and a focusable preparation action.",
+  );
 
   const hospitalState = core.createGame({ difficulty: "normal", seed: 2026062404 });
   hospitalState.metrics.hospitalLoad = 88;
@@ -1494,8 +1500,11 @@ function validateActionPreviewCoverage() {
   assert(styles.includes(".fiscal-route-card"), "Recovery route roadmap cards need dedicated styling.");
   assert(styles.includes("button.fiscal-route-card"), "Clickable recovery route cards need button-specific styling.");
   assert(appJs.includes("pendingImpactSummary"), "Pending timeline should expose readable delayed-effect impact summaries.");
+  assert(appJs.includes("data-pending-action"), "Pending timeline items should expose focusable preparation action hooks.");
+  assert(appJs.includes("focusRecoveryLever(button.dataset.pendingPoint"), "Pending timeline action clicks should focus the exact preparation action.");
   assert(appJs.includes("\"若触发\""), "Conditional pending effects should be labeled as conditional rather than certain.");
   assert(styles.includes(".pending-impact"), "Pending impact summaries need dedicated styling.");
+  assert(styles.includes(".pending-action"), "Pending preparation actions need dedicated styling.");
   assert(appJs.includes("summarizeTrendItems"), "Trend preview should include a readable overall trend summary.");
   assert(styles.includes(".trend-summary"), "Trend preview summary needs dedicated styling.");
   assert(appJs.includes("strategy-inertia"), "Strategy profile should render route inertia warnings.");
