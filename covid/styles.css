@@ -1107,8 +1107,51 @@ label {
   line-height: 1.2;
 }
 
+.ending-driver-action {
+  display: inline-grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  max-width: 100%;
+  padding: 3px 5px;
+  border: 2px solid #9b7134;
+  background: #fff1c8;
+  color: #5c3d17;
+  font-family: inherit;
+  font-weight: 900;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 rgba(83, 58, 26, 0.22);
+}
+
+.ending-driver-action:hover,
+.ending-driver-action:focus-visible {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 rgba(83, 58, 26, 0.32);
+  outline: 2px solid rgba(51, 97, 78, 0.45);
+}
+
+.ending-driver-action span,
+.ending-driver-action strong {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 0.62rem;
+  line-height: 1.16;
+}
+
+.ending-driver-action strong {
+  color: #2d5c42;
+}
+
 .ending-driver-list span.good,
-.ending-clock-list span.good {
+.ending-clock-list span.good,
+.ending-driver-action.good {
   border-color: var(--good);
   background: #d7e8ad;
   color: #234522;
@@ -1117,14 +1160,17 @@ label {
 .ending-driver-list span.warn,
 .ending-clock-list span.warn,
 .ending-driver-list span.mixed,
-.ending-clock-list span.mixed {
+.ending-clock-list span.mixed,
+.ending-driver-action.warn,
+.ending-driver-action.mixed {
   border-color: var(--warn);
   background: #f0c877;
   color: #5c3d17;
 }
 
 .ending-driver-list span.danger,
-.ending-clock-list span.danger {
+.ending-clock-list span.danger,
+.ending-driver-action.danger {
   border-color: var(--danger);
   background: #eaa07c;
   color: #5b1f18;

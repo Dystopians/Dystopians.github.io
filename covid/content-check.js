@@ -1515,6 +1515,10 @@ function validateEndingOutlook() {
     opening.drivers.every((item) => item.metric && item.label && item.status && item.detail && item.tone),
     "Every ending outlook score driver needs metric, label, status, detail, and tone.",
   );
+  assert(
+    opening.drivers.some((item) => item.focusAction && item.focusAction.actionId && item.focusAction.mode && item.focusAction.pointId),
+    "Ending outlook score drivers should expose at least one focusable recovery action when city action budget remains.",
+  );
 
   state.metrics.hospitalLoad = 96;
   state.metrics.supplies = 22;
@@ -1705,6 +1709,13 @@ function validateActionPreviewCoverage() {
     "Stage schedule preparation buttons should support hover previews.",
   );
   assert(styles.includes(".stage-schedule-action"), "Stage schedule preparation buttons need dedicated styling.");
+  assert(appJs.includes("renderEndingDriverItem"), "Ending outlook score drivers should render as focusable action chips.");
+  assert(appJs.includes("data-ending-action"), "Ending outlook driver actions need exact map-action data hooks.");
+  assert(
+    appJs.includes("bindCityActionPreview(button, () => button.dataset.endingMode, () => button.dataset.endingAction)"),
+    "Ending outlook driver actions should preview their target city action.",
+  );
+  assert(styles.includes(".ending-driver-action"), "Ending outlook driver action chips need dedicated styling.");
 }
 
 function run() {

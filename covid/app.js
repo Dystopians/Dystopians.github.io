@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v175";
+  const ASSET_VERSION = "v176";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -969,11 +969,7 @@
     const driverList = drivers.length
       ? `
         <div class="ending-driver-list" aria-label="主要扣分项">
-          ${drivers.map((item) => `
-            <span class="${escapeHtml(item.tone || "warn")}" title="${escapeHtml(item.detail || "")}">
-              ${escapeHtml(item.label)} ${escapeHtml(String(item.value))} · ${escapeHtml(item.status)}
-            </span>
-          `).join("")}
+          ${drivers.map((item) => renderEndingDriverItem(item)).join("")}
         </div>
       `
       : "";
@@ -1001,6 +997,34 @@
         ${driverList}
         ${clockList}
       </article>
+    `;
+    els.endingOutlook.querySelectorAll("[data-ending-action]").forEach((button) => {
+      bindCityActionPreview(button, () => button.dataset.endingMode, () => button.dataset.endingAction);
+      button.addEventListener("click", () => {
+        focusRecoveryLever(button.dataset.endingPoint, button.dataset.endingMode, button.dataset.endingAction);
+      });
+    });
+  }
+
+  function renderEndingDriverItem(item) {
+    const action = item && item.focusAction;
+    const label = `${item.label} ${String(item.value)} · ${item.status}`;
+    if (!action || !action.actionId || !action.pointId || !action.mode) {
+      return `
+        <span class="${escapeHtml(item.tone || "warn")}" title="${escapeHtml(item.detail || "")}">
+          ${escapeHtml(label)}
+        </span>
+      `;
+    }
+    return `
+      <button class="ending-driver-action ${escapeHtml(item.tone || "warn")}" type="button"
+        data-ending-point="${escapeHtml(action.pointId)}"
+        data-ending-mode="${escapeHtml(action.mode)}"
+        data-ending-action="${escapeHtml(action.actionId)}"
+        title="${escapeHtml(item.detail || "")}">
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(action.actionLabel || "追分行动")}</strong>
+      </button>
     `;
   }
 

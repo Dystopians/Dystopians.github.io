@@ -7325,15 +7325,21 @@
     const drivers = getScoreBreakdown(state)
       .sort((a, b) => b.lost - a.lost || b.max - a.max)
       .slice(0, 3)
-      .map((item) => ({
-        metric: item.metric,
-        label: item.short,
-        value: item.value,
-        lost: item.lost,
-        status: `扣 ${item.lost} 分`,
-        tone: item.tone,
-        detail: item.advice,
-      }));
+      .map((item) => {
+        const focusAction = pressureActionTarget(state, PENDING_PRESSURE_TARGETS[item.metric] || []);
+        return {
+          metric: item.metric,
+          label: item.short,
+          value: item.value,
+          lost: item.lost,
+          status: `扣 ${item.lost} 分`,
+          tone: item.tone,
+          detail: focusAction && focusAction.actionLabel
+            ? `${item.advice} 可先定位“${focusAction.actionLabel}”。`
+            : item.advice,
+          focusAction: focusAction && focusAction.actionId ? focusAction : null,
+        };
+      });
 
     if (activeRisk && activeRisk.streak > 0) {
       return {
