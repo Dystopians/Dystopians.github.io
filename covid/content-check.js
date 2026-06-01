@@ -1105,7 +1105,17 @@ function validateActionPreviewCoverage() {
   );
   assert(styles.includes(".recovery-unlock"), "Recovery unlock hints need dedicated styling.");
   assert(appJs.includes("renderFiscalRoadmap"), "Fiscal panel should render the recovery route roadmap.");
+  assert(appJs.includes("data-roadmap-action"), "Fiscal recovery roadmap cards should carry exact next-action ids.");
+  assert(
+    appJs.includes("bindCityActionPreview(button, () => button.dataset.roadmapMode, () => button.dataset.roadmapAction)"),
+    "Fiscal recovery roadmap cards should preview their next action on hover/focus.",
+  );
+  assert(
+    appJs.includes("focusRecoveryLever(button.dataset.roadmapPoint, button.dataset.roadmapMode, button.dataset.roadmapAction)"),
+    "Fiscal recovery roadmap cards should focus their exact next action on click.",
+  );
   assert(styles.includes(".fiscal-route-card"), "Recovery route roadmap cards need dedicated styling.");
+  assert(styles.includes("button.fiscal-route-card"), "Clickable recovery route cards need button-specific styling.");
   assert(appJs.includes("pendingImpactSummary"), "Pending timeline should expose readable delayed-effect impact summaries.");
   assert(appJs.includes("\"若触发\""), "Conditional pending effects should be labeled as conditional rather than certain.");
   assert(styles.includes(".pending-impact"), "Pending impact summaries need dedicated styling.");

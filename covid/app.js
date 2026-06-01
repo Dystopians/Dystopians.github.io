@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v136";
+  const ASSET_VERSION = "v137";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -969,6 +969,12 @@
       ${renderFiscalRoadmap(report.roadmap)}
       ${assetList}
     `;
+    els.fiscalOutlook.querySelectorAll("[data-roadmap-action]").forEach((button) => {
+      bindCityActionPreview(button, () => button.dataset.roadmapMode, () => button.dataset.roadmapAction);
+      button.addEventListener("click", () => {
+        focusRecoveryLever(button.dataset.roadmapPoint, button.dataset.roadmapMode, button.dataset.roadmapAction);
+      });
+    });
   }
 
   function renderFiscalRoadmap(roadmap = []) {
@@ -976,8 +982,15 @@
     if (!items.length) return "";
     return `
       <div class="fiscal-roadmap" aria-label="资金与活力恢复路线">
-        ${items.map((item) => `
-          <article class="fiscal-route-card ${escapeHtml(item.tone || "info")}" title="${escapeHtml(item.detail || "")}">
+        ${items.map((item) => {
+          const next = item.next || {};
+          const actionable = next.id && next.pointId && next.mode;
+          const tagName = actionable ? "button" : "article";
+          const actionAttrs = actionable
+            ? ` type="button" data-roadmap-point="${escapeHtml(next.pointId)}" data-roadmap-mode="${escapeHtml(next.mode)}" data-roadmap-action="${escapeHtml(next.id)}"`
+            : "";
+          return `
+          <${tagName} class="fiscal-route-card ${escapeHtml(item.tone || "info")} ${actionable ? "actionable" : ""}"${actionAttrs} title="${escapeHtml(item.detail || "")}">
             <div class="fiscal-route-top">
               <span>${escapeHtml(item.label)}</span>
               <strong>${escapeHtml(item.stage || "")}</strong>
@@ -987,8 +1000,10 @@
             </div>
             <p>${escapeHtml(item.detail || "")}</p>
             ${item.counts ? `<em>${escapeHtml(String(item.counts.established || 0))}/${escapeHtml(String(item.counts.target || 0))} 已铺垫 · ${escapeHtml(String(item.counts.available || 0))} 可执行</em>` : ""}
-          </article>
-        `).join("")}
+            ${actionable ? `<small>${escapeHtml(next.status || "下一步")} · ${escapeHtml(next.pointLabel || "")}</small>` : ""}
+          </${tagName}>
+        `;
+        }).join("")}
       </div>
     `;
   }

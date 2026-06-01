@@ -4125,6 +4125,21 @@ label {
   border: 2px solid #b89752;
   background: rgba(255, 241, 200, 0.72);
   box-shadow: inset 1px 1px 0 rgba(255, 247, 209, 0.82);
+  color: var(--deep);
+  font: inherit;
+  text-align: left;
+}
+
+button.fiscal-route-card {
+  cursor: pointer;
+}
+
+button.fiscal-route-card:hover,
+button.fiscal-route-card:focus-visible {
+  transform: translateY(-1px);
+  outline: 3px solid rgba(73, 119, 82, 0.48);
+  outline-offset: 2px;
+  box-shadow: inset 1px 1px 0 rgba(255, 247, 209, 0.82), 3px 3px 0 rgba(45, 40, 31, 0.32);
 }
 
 .fiscal-route-card.good {
@@ -4156,7 +4171,8 @@ label {
 }
 
 .fiscal-route-top span,
-.fiscal-route-card em {
+.fiscal-route-card em,
+.fiscal-route-card small {
   color: var(--muted);
   font-size: 0.58rem;
   font-weight: 900;
@@ -4206,6 +4222,17 @@ label {
 .fiscal-route-card em {
   display: block;
   font-style: normal;
+}
+
+.fiscal-route-card small {
+  display: inline-flex;
+  max-width: 100%;
+  margin-top: 5px;
+  padding: 2px 5px;
+  border: 2px solid #4f8d55;
+  background: #cde2a3;
+  color: #244d35;
+  overflow-wrap: anywhere;
 }
 
 .fiscal-assets {
