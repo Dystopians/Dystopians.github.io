@@ -7842,8 +7842,11 @@
         detail: "",
         items: [],
         lockedItems: [],
+        nextDayItems: [],
+        queue: { tone: "info", headline: "", detail: "", steps: [], routeSpread: [] },
         availableCount: 0,
         lockedCount: 0,
+        nextDayCount: 0,
         totalCount: 0,
         budget: { remaining: 0, limit: CITY_ACTIONS_PER_DAY },
       };
@@ -7894,10 +7897,12 @@
         : lockedPreview.length || tomorrow.length
           ? "暂无可执行行动，但有接近解锁的工程或决议，可先补资金、条件或等待明日调度。"
           : "暂无明确城市行动窗口，先处理今日事件。";
+    const queue = buildActionOpportunityQueue(available, tomorrow, lockedPreview, budget);
 
     return {
       tone,
       detail,
+      queue,
       items: available.slice(0, (lockedPreview.length || tomorrow.length) ? 4 : 6),
       nextDayItems: tomorrow.slice(0, budget.exhausted ? 5 : 3),
       lockedItems: lockedPreview.slice(0, (available.length || tomorrow.length) ? 3 : 5),
@@ -7907,6 +7912,76 @@
       totalCount: available.length + locked.length,
       budget,
     };
+  }
+
+  function buildActionOpportunityQueue(available, tomorrow, lockedPreview, budget) {
+    const steps = [];
+    const addStep = (item, queueLabel, tone, detailOverride = "") => {
+      if (!item || steps.some((step) => step.id === item.id && step.mode === item.mode)) return;
+      steps.push({
+        id: item.id,
+        mode: item.mode,
+        pointId: item.pointId,
+        kind: item.kind,
+        pointLabel: item.pointLabel,
+        label: item.label,
+        queueLabel,
+        status: item.status || "",
+        route: item.routeTag && item.routeTag.label ? item.routeTag.label : "",
+        tone: tone || item.tone || "info",
+        detail: detailOverride || item.reason || item.impact || item.detail || "",
+      });
+    };
+
+    if (!budget.exhausted && available.length) {
+      addStep(available[0], "今日首选", "good");
+      if (budget.remaining > 1) addStep(available[1], "同日备选", available[1] ? available[1].tone : "info");
+      addStep(tomorrow[0], "明日排队", "info");
+      if (steps.length < 3) addStep(lockedPreview[0], "解锁卡点", lockedPreview[0] ? lockedPreview[0].tone : "warn");
+    } else if (budget.exhausted) {
+      addStep(
+        tomorrow[0],
+        "明日首排",
+        "info",
+        tomorrow[0] ? `今日额度已满，明日优先处理：${tomorrow[0].reason || tomorrow[0].impact || "继续排队"}` : "",
+      );
+      addStep(tomorrow[1], "明日备选", "info");
+      if (steps.length < 3) addStep(lockedPreview[0], "解锁卡点", lockedPreview[0] ? lockedPreview[0].tone : "warn");
+    } else {
+      addStep(lockedPreview[0], "先解卡点", lockedPreview[0] ? lockedPreview[0].tone : "warn");
+      addStep(lockedPreview[1], "备选卡点", lockedPreview[1] ? lockedPreview[1].tone : "mixed");
+      addStep(tomorrow[0], "明日排队", "info");
+    }
+
+    const primary = steps[0];
+    const headline = primary
+      ? `${primary.queueLabel}：${primary.label}`
+      : budget.exhausted
+        ? "今日额度已满，处理事件后刷新调度。"
+        : "暂时没有明确行动队列。";
+    const detail = primary
+      ? `${primary.kind} / ${primary.pointLabel}${primary.route ? ` / ${primary.route}` : ""}。${primary.detail}`
+      : "先观察今日事件和压力摘要，等新的工程或决议窗口出现。";
+    return {
+      tone: primary ? primary.tone : budget.exhausted ? "warn" : "info",
+      headline,
+      detail,
+      steps: steps.slice(0, 3),
+      routeSpread: summarizeActionQueueRoutes(available),
+    };
+  }
+
+  function summarizeActionQueueRoutes(items) {
+    const counts = new Map();
+    items.slice(0, 6).forEach((item) => {
+      const label = item.routeTag && item.routeTag.label ? item.routeTag.label : "";
+      if (!label) return;
+      counts.set(label, (counts.get(label) || 0) + 1);
+    });
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "zh-Hans-CN"))
+      .slice(0, 3)
+      .map(([label, count]) => ({ label, count }));
   }
 
   function buildActionOpportunity(state, pointDef, item, group, bucket) {

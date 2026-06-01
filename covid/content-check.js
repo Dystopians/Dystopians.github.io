@@ -1150,6 +1150,11 @@ function validateActionPreviewCoverage() {
   assert(appJs.includes("core.getChoiceRouteTag({ id: item.id })"), "City action cards should derive route tags from their action id.");
   assert(styles.includes(".action-finder-route"), "Action finder route tags need dedicated styling.");
   assert(styles.includes(".action-card .action-finder-route"), "Map action cards should style route tags consistently.");
+  assert(coreJs.includes("buildActionOpportunityQueue"), "Action finder should return a readable next-action queue.");
+  assert(appJs.includes("renderActionQueue"), "Action finder should render the next-action queue summary.");
+  assert(appJs.includes("action-queue-step"), "Action queue steps should be clickable map-action targets.");
+  assert(styles.includes(".action-queue"), "Action queue summary needs dedicated styling.");
+  assert(styles.includes(".action-finder-item.is-queue-primary"), "Primary queued action should be visually distinct.");
   assert(appJs.includes("renderChoiceRankBadge"), "Event choice buttons should render recommendation/rank badges from the comparison model.");
   assert(appJs.includes("choiceButtonComparisonClass"), "Event choice buttons should inherit comparison tone classes.");
   assert(styles.includes(".choice-rank-badge"), "Choice recommendation badges need dedicated styling.");

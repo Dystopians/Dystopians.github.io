@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v140";
+  const ASSET_VERSION = "v141";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -2520,6 +2520,7 @@
           <strong>0</strong>
           <em class="${budgetClass}" title="${escapeHtml(budget.detail || "")}">${escapeHtml(budgetText)}</em>
         </div>
+        ${renderActionQueue(report.queue)}
         <p class="action-finder-empty">暂无立即可执行的工程或决议，先处理今日事件或改善条件。</p>
       `;
       return;
@@ -2529,11 +2530,12 @@
       ? `
         <div class="action-finder-list">
           ${cityActions.map((item) => `
-            <button class="action-finder-item ${escapeHtml(item.tone || "info")}" type="button"
+            <button class="action-finder-item ${escapeHtml(actionFinderQueueClass(item, report))} ${escapeHtml(item.tone || "info")}" type="button"
               data-point-id="${escapeHtml(item.pointId)}" data-mode="${escapeHtml(item.mode)}"
               data-action-id="${escapeHtml(item.id)}"
               title="${escapeHtml(item.detail || item.reason || "")}">
               <span>${escapeHtml(item.kind)} · ${escapeHtml(item.pointLabel)} · ${escapeHtml(item.status || "可执行")}</span>
+              ${renderActionFinderQueueBadge(item, report)}
               ${renderActionFinderRouteTag(item)}
               <strong>${escapeHtml(item.label)}</strong>
               <p>${escapeHtml(item.reason || item.impact || "根据当前压力推荐。")}</p>
@@ -2552,11 +2554,12 @@
         </div>
         <div class="action-finder-list tomorrow">
           ${nextDayActions.map((item) => `
-            <button class="action-finder-item next-day ${escapeHtml(item.tone || "info")}" type="button"
+            <button class="action-finder-item next-day ${escapeHtml(actionFinderQueueClass(item, report))} ${escapeHtml(item.tone || "info")}" type="button"
               data-point-id="${escapeHtml(item.pointId)}" data-mode="${escapeHtml(item.mode)}"
               data-action-id="${escapeHtml(item.id)}"
               title="${escapeHtml(item.detail || item.reason || "")}">
               <span>${escapeHtml(item.kind)} · ${escapeHtml(item.pointLabel)} · ${escapeHtml(item.status || "明日可排")}</span>
+              ${renderActionFinderQueueBadge(item, report)}
               ${renderActionFinderRouteTag(item)}
               <strong>${escapeHtml(item.label)}</strong>
               <p>${escapeHtml(item.reason || item.impact || "明日调度额度恢复后可执行。")}</p>
@@ -2574,11 +2577,12 @@
         </div>
         <div class="action-finder-list locked">
           ${lockedActions.map((item) => `
-            <button class="action-finder-item locked-preview ${escapeHtml(item.tone || "mixed")}" type="button"
+            <button class="action-finder-item locked-preview ${escapeHtml(actionFinderQueueClass(item, report))} ${escapeHtml(item.tone || "mixed")}" type="button"
               data-point-id="${escapeHtml(item.pointId)}" data-mode="${escapeHtml(item.mode)}"
               data-action-id="${escapeHtml(item.id)}"
               title="${escapeHtml(item.detail || item.reason || "")}">
               <span>${escapeHtml(item.kind)} · ${escapeHtml(item.pointLabel)} · ${escapeHtml(item.status || "未解锁")}</span>
+              ${renderActionFinderQueueBadge(item, report)}
               ${renderActionFinderRouteTag(item)}
               <strong>${escapeHtml(item.label)}</strong>
               <p>${escapeHtml(item.reason || item.detail || "当前条件不足。")}</p>
@@ -2595,13 +2599,14 @@
         <strong class="${escapeHtml(report.tone || "info")}">${report.availableCount}</strong>
         <em class="${budgetClass}" title="${escapeHtml(budget.detail || "")}">${escapeHtml(budgetText)}</em>
       </div>
+      ${renderActionQueue(report.queue)}
       ${report.detail ? `<p class="action-finder-summary">${escapeHtml(report.detail)}</p>` : ""}
       ${availableList}
       ${nextDayList}
       ${lockedList}
     `;
 
-    els.actionFinder.querySelectorAll(".action-finder-item").forEach((button) => {
+    els.actionFinder.querySelectorAll(".action-finder-item, .action-queue-step").forEach((button) => {
       bindCityActionPreview(button, () => button.dataset.mode, () => button.dataset.actionId);
       button.addEventListener("click", () => {
         core.selectMapPoint(state, button.dataset.pointId);
@@ -2615,6 +2620,56 @@
         els.mapHint.textContent = `已定位行动窗口：${core.getMapPoint(state, button.dataset.pointId).label}`;
       });
     });
+  }
+
+  function renderActionQueue(queue) {
+    if (!queue || !Array.isArray(queue.steps) || !queue.steps.length) return "";
+    const routeSpread = Array.isArray(queue.routeSpread) && queue.routeSpread.length
+      ? `
+        <div class="action-queue-routes" aria-label="今日行动路线分布">
+          ${queue.routeSpread.map((entry) => `<em>${escapeHtml(entry.label)} ×${escapeHtml(String(entry.count))}</em>`).join("")}
+        </div>
+      `
+      : "";
+    return `
+      <div class="action-queue ${escapeHtml(queue.tone || "info")}">
+        <div class="action-queue-top">
+          <span>下一步队列</span>
+          <strong>${escapeHtml(queue.headline || "行动队列")}</strong>
+        </div>
+        <p>${escapeHtml(queue.detail || "根据当前压力和行动窗口整理。")}</p>
+        <div class="action-queue-steps">
+          ${queue.steps.map((step) => `
+            <button class="action-queue-step ${escapeHtml(step.tone || "info")}" type="button"
+              data-point-id="${escapeHtml(step.pointId)}" data-mode="${escapeHtml(step.mode)}"
+              data-action-id="${escapeHtml(step.id)}"
+              title="${escapeHtml(step.detail || step.status || "")}">
+              <span>${escapeHtml(step.queueLabel || "行动")}</span>
+              <strong>${escapeHtml(step.label || "")}</strong>
+            </button>
+          `).join("")}
+        </div>
+        ${routeSpread}
+      </div>
+    `;
+  }
+
+  function actionFinderQueueStep(item, report) {
+    const steps = report && report.queue && Array.isArray(report.queue.steps) ? report.queue.steps : [];
+    return steps.find((step) => step.id === item.id && step.mode === item.mode) || null;
+  }
+
+  function actionFinderQueueClass(item, report) {
+    const step = actionFinderQueueStep(item, report);
+    if (!step) return "";
+    const first = report.queue.steps[0];
+    return first && first.id === item.id && first.mode === item.mode ? "is-queue-primary" : "is-queued";
+  }
+
+  function renderActionFinderQueueBadge(item, report) {
+    const step = actionFinderQueueStep(item, report);
+    if (!step) return "";
+    return `<em class="action-queue-badge ${escapeHtml(step.tone || "info")}">${escapeHtml(step.queueLabel || "队列")}</em>`;
   }
 
   function renderActionFinderRouteTag(item) {

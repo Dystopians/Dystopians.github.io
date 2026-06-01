@@ -5049,6 +5049,189 @@ button.fiscal-route-card:focus-visible {
   line-height: 1.35;
 }
 
+.action-queue {
+  display: grid;
+  gap: 6px;
+  padding: 7px;
+  border: 2px solid #8e6330;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 248, 215, 0.42) 0 5px, rgba(232, 199, 121, 0.24) 5px 10px),
+    #f4dda0;
+  box-shadow: inset 2px 2px 0 rgba(255, 247, 209, 0.68), 2px 2px 0 rgba(64, 47, 27, 0.18);
+}
+
+.action-queue.good {
+  border-color: var(--good);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 248, 215, 0.4) 0 5px, rgba(171, 207, 111, 0.28) 5px 10px),
+    #dcebac;
+}
+
+.action-queue.warn {
+  border-color: var(--warn);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 248, 215, 0.38) 0 5px, rgba(238, 198, 115, 0.32) 5px 10px),
+    #f2d48b;
+}
+
+.action-queue.danger {
+  border-color: var(--danger);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 248, 215, 0.32) 0 5px, rgba(230, 161, 124, 0.34) 5px 10px),
+    #eab08d;
+}
+
+.action-queue.info {
+  border-color: var(--blue);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 248, 215, 0.38) 0 5px, rgba(197, 210, 202, 0.3) 5px 10px),
+    #dde5d9;
+}
+
+.action-queue-top {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+}
+
+.action-queue-top span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 1px 5px;
+  border: 2px solid #8e6330;
+  background: #8e6330;
+  color: #fff1bf;
+  font-size: 0.58rem;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.action-queue-top strong {
+  min-width: 0;
+  color: var(--deep);
+  font-size: 0.72rem;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
+.action-queue p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.action-queue-steps,
+.action-queue-routes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.action-queue-step {
+  display: inline-grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px;
+  align-items: center;
+  max-width: 100%;
+  min-height: 26px;
+  padding: 2px 5px;
+  border: 2px solid #b89752;
+  background: #fff1c8;
+  color: var(--deep);
+  box-shadow: 1px 1px 0 rgba(95, 75, 42, 0.32);
+  text-align: left;
+}
+
+.action-queue-step:hover {
+  background: #ffd86f;
+  transform: translate(-1px, -1px);
+}
+
+.action-queue-step span {
+  padding: 1px 4px;
+  border: 2px solid #8e6330;
+  background: #8e6330;
+  color: #fff1bf;
+  font-size: 0.56rem;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.action-queue-step strong {
+  min-width: 0;
+  font-size: 0.62rem;
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
+.action-queue-step.good {
+  border-color: var(--good);
+}
+
+.action-queue-step.info {
+  border-color: var(--blue);
+}
+
+.action-queue-step.warn,
+.action-queue-step.mixed {
+  border-color: var(--warn);
+}
+
+.action-queue-step.danger {
+  border-color: var(--danger);
+}
+
+.action-queue-routes em,
+.action-queue-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 1px 4px;
+  border: 2px solid rgba(119, 82, 33, 0.58);
+  background: #fff1c8;
+  color: var(--deep);
+  font-size: 0.56rem;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.action-queue-badge {
+  width: fit-content;
+  margin: 2px 4px 1px 0;
+}
+
+.action-queue-badge.good {
+  border-color: var(--good);
+  background: #c9dd91;
+  color: #244d35;
+}
+
+.action-queue-badge.info {
+  border-color: var(--blue);
+  background: #c8d7df;
+  color: #244258;
+}
+
+.action-queue-badge.warn,
+.action-queue-badge.mixed {
+  border-color: var(--warn);
+  background: #f0ca75;
+  color: #5b3715;
+}
+
+.action-queue-badge.danger {
+  border-color: var(--danger);
+  background: #eaa07c;
+  color: #5b1f18;
+}
+
 .city-budget-pill {
   display: inline-flex;
   align-items: center;
@@ -5141,6 +5324,16 @@ button.fiscal-route-card:focus-visible {
 .action-finder-item:hover {
   background: #ffd86f;
   transform: translate(-1px, -1px);
+}
+
+.action-finder-item.is-queue-primary {
+  outline: 2px solid #4b7f45;
+  outline-offset: 2px;
+  box-shadow: 3px 3px 0 rgba(64, 47, 27, 0.32), inset 3px 0 0 rgba(77, 126, 67, 0.82);
+}
+
+.action-finder-item.is-queued:not(.is-queue-primary) {
+  box-shadow: 2px 2px 0 rgba(95, 75, 42, 0.34), inset 3px 0 0 rgba(68, 100, 119, 0.55);
 }
 
 .action-finder-item.good {
