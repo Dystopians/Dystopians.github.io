@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v167";
+  const ASSET_VERSION = "v168";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -1635,24 +1635,35 @@
         ${signals.map((signal) => `
           <button class="map-signal-item ${escapeHtml(signal.tone || "info")}" type="button"
             data-point-id="${escapeHtml(signal.pointId)}" data-mode="${escapeHtml(signal.mode || "")}"
+            data-action-point-id="${escapeHtml(signal.actionPointId || "")}"
+            data-action-id="${escapeHtml(signal.actionId || "")}"
             title="${escapeHtml(signal.detail)}">
             <span>${escapeHtml(signal.pointLabel)} · ${escapeHtml(signal.status || "观察")}</span>
             <strong>${escapeHtml(signal.label)}</strong>
             <em>${escapeHtml(signal.detail)}</em>
+            ${signal.actionLabel ? `<small>${escapeHtml(signal.actionPointLabel || signal.pointLabel)} · ${escapeHtml(signal.actionLabel)}</small>` : ""}
           </button>
         `).join("")}
       </div>
     `;
     els.mapSignals.querySelectorAll(".map-signal-item").forEach((button) => {
+      bindCityActionPreview(button, () => button.dataset.mode, () => button.dataset.actionId);
       button.addEventListener("click", () => {
-        core.selectMapPoint(state, button.dataset.pointId);
+        const targetPoint = button.dataset.actionPointId || button.dataset.pointId;
+        core.selectMapPoint(state, targetPoint);
         if (button.dataset.mode) {
           actionMode = button.dataset.mode === "resolutions" ? "resolutions" : "operations";
         }
         save();
         renderMap();
         renderActionMode();
-        els.mapHint.textContent = `已定位城市信号：${core.getMapPoint(state, button.dataset.pointId).label}`;
+        if (button.dataset.actionId) {
+          previewCityAction(actionMode, button.dataset.actionId);
+          focusCityActionCard(button.dataset.actionId);
+        }
+        els.mapHint.textContent = button.dataset.actionId
+          ? `已定位城市信号应对：${core.getMapPoint(state, targetPoint).label}`
+          : `已定位城市信号：${core.getMapPoint(state, button.dataset.pointId).label}`;
       });
     });
   }

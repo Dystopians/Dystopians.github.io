@@ -2505,7 +2505,8 @@ button.status-effect {
 }
 
 .map-signal-item span,
-.map-signal-item em {
+.map-signal-item em,
+.map-signal-item small {
   display: block;
   color: #6d4a1e;
   font-size: 0.6rem;
@@ -2531,6 +2532,15 @@ button.status-effect {
   line-height: 1.25;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+.map-signal-item small {
+  margin-top: 5px;
+  padding: 3px 5px;
+  border: 2px solid rgba(86, 58, 25, 0.42);
+  background: rgba(255, 247, 209, 0.62);
+  color: #4d6b3a;
+  overflow-wrap: anywhere;
 }
 
 .map-signals-empty {

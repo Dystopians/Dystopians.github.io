@@ -4269,34 +4269,40 @@
     const add = (id, pointId, tone, label, detail, priority, extra = {}) => {
       const point = MAP_POINTS.find((item) => item.id === pointId);
       if (!point) return;
+      const target = extra.target || null;
+      const targetText = target && target.actionLabel ? ` 应对入口：“${target.actionLabel}”。` : "";
       rows.push({
         id,
         pointId,
         pointLabel: point.label,
         tone,
         label,
-        detail,
+        detail: `${detail}${targetText}`,
         priority,
         status: extra.status || signalStatusText(tone),
-        mode: extra.mode || "",
+        mode: target && target.mode ? target.mode : extra.mode || "",
+        actionId: target && target.actionId ? target.actionId : "",
+        actionLabel: target && target.actionLabel ? target.actionLabel : "",
+        actionPointId: target && target.pointId ? target.pointId : "",
+        actionPointLabel: target && target.pointLabel ? target.pointLabel : "",
       });
     };
 
-    if (m.hospitalLoad >= 85) add("hospital_red", "hospital", "danger", "医疗红线", "中心医院负载已进入持续伤害信任和公共创伤的区间。", 110, { mode: "operations" });
-    else if (m.hospitalLoad >= 70) add("hospital_warn", "hospital", "warn", "医疗高压", "医院、急诊、床位和转运需要尽快分流。", 88, { mode: "operations" });
-    if (m.infection >= 80) add("infection_spread", "school", "danger", "社区扩散", "感染压力会额外推高医疗负载，监测或管控路线需要承担主压。", 104, { mode: "operations" });
-    else if (m.infection >= 65) add("infection_warn", "school", "warn", "传播高位", "传播压力已经抬头，复工和流动窗口要谨慎。", 78, { mode: "operations" });
-    if (m.supplies <= 25) add("supply_low", "market", "danger", "物资低位", "供应不足会同时伤害信任、疲劳和医疗效率。", 101, { mode: "operations" });
-    else if (m.supplies <= 40) add("supply_warn", "market", "warn", "供应偏紧", "保供链条开始限制社区执行和医疗效率。", 74, { mode: "operations" });
-    if (m.trust <= 30) add("trust_low", "residents", "danger", "低配合", "低信任会削弱行动效果，并提高谣言和拒检事件权重。", 99, { mode: "resolutions" });
-    else if (m.trust <= 45) add("trust_warn", "residents", "warn", "信任承压", "居民配合开始变脆，公开修复和可核验流程更重要。", 72, { mode: "resolutions" });
-    if (m.staffFatigue >= 80) add("fatigue_high", "volunteers", "danger", "执行透支", "疲劳高位会削弱所有行动收益，并磨损发现率。", 103, { mode: "resolutions" });
-    else if (m.staffFatigue >= 65) add("fatigue_warn", "volunteers", "warn", "排班偏紧", "基层排班继续加压会让后续政策变钝。", 76, { mode: "resolutions" });
-    if (m.economy <= 30) add("economy_low", "factory", "warn", "活力低位", "城市活力低位会拖慢供应恢复、资金回补和最终结局。", 70, { mode: "operations" });
-    if (r.funds <= 20) add("funds_low", "factory", r.funds <= 10 ? "danger" : "warn", "资金吃紧", "应急资金不足会锁住高价工程和部分决议。", 92 - r.funds, { mode: "operations" });
-    if (h.detectedRate <= 35) add("detected_low", "road", "warn", "信息盲区", "发现率偏低会扩大报告误差，并提高复工反弹代价。", 73, { mode: "operations" });
-    if (h.policyStrictness >= 80) add("policy_high", "road", "warn", "高压管控", "感染压制增强，但活力和基层疲劳代价上升。", 69, { mode: "resolutions" });
-    if (h.publicMemory >= 60) add("memory_high", "residents", "danger", "长期伤痕", "公共创伤已进入结局权重区，信任恢复会变慢。", 86, { mode: "resolutions" });
+    if (m.hospitalLoad >= 85) add("hospital_red", "hospital", "danger", "医疗红线", "中心医院负载已进入持续伤害信任和公共创伤的区间。", 110, { mode: "operations", target: pressureActionTargetDetail(state, MEDICAL_PRESSURE_TARGETS) });
+    else if (m.hospitalLoad >= 70) add("hospital_warn", "hospital", "warn", "医疗高压", "医院、急诊、床位和转运需要尽快分流。", 88, { mode: "operations", target: pressureActionTargetDetail(state, MEDICAL_PRESSURE_TARGETS) });
+    if (m.infection >= 80) add("infection_spread", "school", "danger", "社区扩散", "感染压力会额外推高医疗负载，监测或管控路线需要承担主压。", 104, { mode: "operations", target: pressureActionTargetDetail(state, DETECTION_PRESSURE_TARGETS) });
+    else if (m.infection >= 65) add("infection_warn", "school", "warn", "传播高位", "传播压力已经抬头，复工和流动窗口要谨慎。", 78, { mode: "operations", target: pressureActionTargetDetail(state, DETECTION_PRESSURE_TARGETS) });
+    if (m.supplies <= 25) add("supply_low", "market", "danger", "物资低位", "供应不足会同时伤害信任、疲劳和医疗效率。", 101, { mode: "operations", target: pressureActionTargetDetail(state, SUPPLY_PRESSURE_TARGETS) });
+    else if (m.supplies <= 40) add("supply_warn", "market", "warn", "供应偏紧", "保供链条开始限制社区执行和医疗效率。", 74, { mode: "operations", target: pressureActionTargetDetail(state, SUPPLY_PRESSURE_TARGETS) });
+    if (m.trust <= 30) add("trust_low", "residents", "danger", "低配合", "低信任会削弱行动效果，并提高谣言和拒检事件权重。", 99, { mode: "resolutions", target: pressureActionTargetDetail(state, TRUST_PRESSURE_TARGETS) });
+    else if (m.trust <= 45) add("trust_warn", "residents", "warn", "信任承压", "居民配合开始变脆，公开修复和可核验流程更重要。", 72, { mode: "resolutions", target: pressureActionTargetDetail(state, TRUST_PRESSURE_TARGETS) });
+    if (m.staffFatigue >= 80) add("fatigue_high", "volunteers", "danger", "执行透支", "疲劳高位会削弱所有行动收益，并磨损发现率。", 103, { mode: "resolutions", target: pressureActionTargetDetail(state, FATIGUE_PRESSURE_TARGETS) });
+    else if (m.staffFatigue >= 65) add("fatigue_warn", "volunteers", "warn", "排班偏紧", "基层排班继续加压会让后续政策变钝。", 76, { mode: "resolutions", target: pressureActionTargetDetail(state, FATIGUE_PRESSURE_TARGETS) });
+    if (m.economy <= 30) add("economy_low", "factory", "warn", "活力低位", "城市活力低位会拖慢供应恢复、资金回补和最终结局。", 70, { mode: "operations", target: pressureActionTargetDetail(state, ECONOMY_PRESSURE_TARGETS) });
+    if (r.funds <= 20) add("funds_low", "factory", r.funds <= 10 ? "danger" : "warn", "资金吃紧", "应急资金不足会锁住高价工程和部分决议。", 92 - r.funds, { mode: "operations", target: pressureActionTargetDetail(state, FUNDS_PRESSURE_TARGETS) });
+    if (h.detectedRate <= 35) add("detected_low", "road", "warn", "信息盲区", "发现率偏低会扩大报告误差，并提高复工反弹代价。", 73, { mode: "operations", target: pressureActionTargetDetail(state, DETECTION_PRESSURE_TARGETS) });
+    if (h.policyStrictness >= 80) add("policy_high", "road", "warn", "高压管控", "感染压制增强，但活力和基层疲劳代价上升。", 69, { mode: "resolutions", target: pressureActionTargetDetail(state, POLICY_PRESSURE_TARGETS) });
+    if (h.publicMemory >= 60) add("memory_high", "residents", "danger", "长期伤痕", "公共创伤已进入结局权重区，信任恢复会变慢。", 86, { mode: "resolutions", target: pressureActionTargetDetail(state, MEMORY_PRESSURE_TARGETS) });
 
     const opportunities = getCityActionOpportunities(state);
     (opportunities.items || []).slice(0, 2).forEach((item, index) => {
@@ -4307,7 +4313,17 @@
         `可执行：${item.label}`,
         item.reason || item.detail,
         63 - index * 4,
-        { mode: item.mode, status: item.status || "可执行" },
+        {
+          mode: item.mode,
+          status: item.status || "可执行",
+          target: {
+            actionId: item.id,
+            mode: item.mode,
+            pointId: item.pointId,
+            pointLabel: item.pointLabel,
+            actionLabel: item.label,
+          },
+        },
       );
     });
 

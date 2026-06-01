@@ -1119,6 +1119,10 @@ function validateMapSignals() {
     signals.every((item) => item.id && item.pointId && item.pointLabel && item.label && item.detail && item.tone && item.status),
     "Every map signal needs id, pointId, pointLabel, label, detail, tone, and status.",
   );
+  assert(
+    signals.some((item) => item.actionId && item.mode && item.actionPointId && item.actionLabel && /应对入口/.test(item.detail)),
+    "Map signals should expose a focusable response action when one is available.",
+  );
   assert(core.getMapPointStatus(state, "hospital").tone === "danger", "Hospital map status should reflect a medical redline.");
   const hospitalStatus = core.getMapPointStatus(state, "hospital");
   assert(
@@ -1129,6 +1133,9 @@ function validateMapSignals() {
   const styles = fs.readFileSync(path.join(rootDir, "styles.css"), "utf8");
   assert(appJs.includes("status-${pointStatus.tone}"), "Map hotspots should receive status tone classes.");
   assert(appJs.includes("map-status-trend"), "Map status chips should render compact trend deltas.");
+  assert(appJs.includes("data-action-point-id"), "Map signal items should carry exact response action point hooks.");
+  assert(appJs.includes("focusCityActionCard(button.dataset.actionId)"), "Map signal clicks should focus the exact response action when available.");
+  assert(styles.includes(".map-signal-item small"), "Map signal response actions need compact styling.");
   ["status-danger", "status-warn", "status-good"].forEach((className) => {
     assert(styles.includes(`.map-hotspot.${className}::before`), `Missing map pressure halo style for ${className}.`);
   });
