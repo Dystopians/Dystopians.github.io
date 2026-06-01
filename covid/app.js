@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v133";
+  const ASSET_VERSION = "v134";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -2152,6 +2152,7 @@
     const narrative = renderSettlementNarrative(entry);
     const highlights = renderSettlementHighlights(entry);
     const breakdown = renderBreakdownRows(entry.breakdown, 4);
+    const undoAction = renderSettlementUndoAction(meta);
     const nextStep = renderSettlementNextStep(meta);
     const notes = (entry.notes || [])
       .filter(Boolean)
@@ -2170,6 +2171,7 @@
       <div class="change-list">${changes}</div>
       ${breakdown}
       ${notes ? `<ul class="settlement-notes">${notes}</ul>` : ""}
+      ${undoAction}
       ${nextStep}
     `;
     return card;
@@ -2242,8 +2244,30 @@
     `;
   }
 
+  function renderSettlementUndoAction(meta) {
+    if (!core.getCityActionUndo || !meta || meta.status !== "即时生效") return "";
+    const undo = core.getCityActionUndo(state);
+    if (!undo) return "";
+    return `
+      <button class="settlement-undo-action" type="button" data-settlement-undo title="${escapeHtml(undo.detail)}">
+        <strong>撤销本次城市行动</strong>
+        <em>${escapeHtml(undo.label)} · 今日事件仍未处理</em>
+      </button>
+    `;
+  }
+
   function bindLatestSettlementActions() {
     if (!els.alerts) return;
+    const undoButton = els.alerts.querySelector("[data-settlement-undo]");
+    if (undoButton && core.undoCityAction) {
+      undoButton.addEventListener("click", () => {
+        const undone = core.undoCityAction(state);
+        if (undone) {
+          save();
+          render();
+        }
+      });
+    }
     els.alerts.querySelectorAll(".settlement-next-action").forEach((button) => {
       bindChoicePreview(button, () => button.dataset.nextChoice);
       bindCityActionPreview(button, () => button.dataset.nextMode, () => button.dataset.nextAction);

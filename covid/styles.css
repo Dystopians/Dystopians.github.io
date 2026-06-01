@@ -5789,6 +5789,42 @@ label {
   box-shadow: inset 1px 1px 0 rgba(255, 247, 209, 0.76);
 }
 
+.settlement-undo-action {
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px;
+  border: 2px solid #2f6f73;
+  background:
+    repeating-linear-gradient(90deg, rgba(217, 235, 217, 0.5) 0 5px, rgba(180, 210, 200, 0.34) 5px 10px),
+    #d8e7c8;
+  color: #254e4f;
+  text-align: left;
+  box-shadow: 2px 2px 0 rgba(72, 86, 70, 0.28), inset 1px 1px 0 rgba(255, 247, 209, 0.72);
+}
+
+.settlement-undo-action:hover,
+.settlement-undo-action:focus-visible {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 rgba(72, 86, 70, 0.34), inset 1px 1px 0 rgba(255, 247, 209, 0.82);
+}
+
+.settlement-undo-action strong,
+.settlement-undo-action em {
+  display: block;
+  line-height: 1.25;
+}
+
+.settlement-undo-action strong {
+  font-size: 0.8rem;
+}
+
+.settlement-undo-action em {
+  margin-top: 3px;
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
 .settlement-next-step.good {
   border-color: var(--good);
   background: #e0edb2;
