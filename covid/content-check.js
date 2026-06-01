@@ -400,15 +400,23 @@ function validateTutorialCopy() {
     "今日调度目标",
     "今晚趋势",
     "对准目标",
+    "下一步队列",
+    "今日首选",
     "选后结算",
     "明日可排",
     "后续影响",
     "若触发",
     "财政与活力面板",
+    "预算压力",
+    "现金余量",
+    "可承受支出",
+    "回流资产",
     "筹措资金",
     "低接触活力",
     "财政透支",
     "治理路线",
+    "最近路线账本",
+    "归档预估",
   ].forEach((text) => {
     assert(indexHtml.includes(text), `Tutorial copy should explain "${text}".`);
   });
