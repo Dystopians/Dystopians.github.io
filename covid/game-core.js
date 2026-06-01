@@ -8294,6 +8294,8 @@
             label: item.label,
             route: value.route,
             routeTag,
+            fundsGain: value.fundsGain,
+            economyGain: value.economyGain,
             impact: recoveryLeverImpact(item),
             status: recoveryLeverStatus(item, bucket),
             detail: item.available ? item.description : item.lockedDetail || item.lockedReason || item.description,
@@ -8613,6 +8615,185 @@
     };
   }
 
+  function getFiscalPrescription(state, fiscal, economy, lockedByFunds) {
+    if (!state || state.ended) {
+      return { tone: "info", label: "今日处方", detail: "", steps: [] };
+    }
+
+    const rows = collectRecoveryLeverRows(state);
+    const used = new Set();
+    const steps = [];
+    const funds = state.resources.funds;
+    const activeAssetCount = (fiscal.activeAssets || []).length;
+    const fiscalPressure = funds <= 25 || lockedByFunds > 0 || fiscal.delta < 0;
+    const economyPressure = state.metrics.economy <= 55 || economy.delta < 0;
+    const recoveryBlocked = state.metrics.infection >= 65
+      || state.hidden.detectedRate < 50
+      || state.hidden.policyStrictness >= 70
+      || state.metrics.trust < 45
+      || state.metrics.staffFatigue >= 75;
+
+    const pick = (predicate) => selectRecoveryPrescriptionRow(rows, predicate, used);
+    const add = (id, tone, label, detail, row) => {
+      if (steps.some((item) => item.id === id)) return;
+      const step = buildFiscalPrescriptionStep(id, tone, label, detail, row);
+      steps.push(step);
+      if (row) used.add(`${row.mode}:${row.id}`);
+    };
+
+    if (funds <= 18 || lockedByFunds > 0) {
+      add(
+        "cashflow",
+        funds <= 12 ? "danger" : "warn",
+        "先补现金流",
+        lockedByFunds > 0
+          ? `已有 ${lockedByFunds} 项行动被资金卡住，先找不扩大感染的现金入口。`
+          : "资金接近底线，优先用台账、专项、捐助或账期动作争取周转。",
+        selectCashflowPrescriptionRow(rows, used, funds),
+      );
+    }
+
+    if (activeAssetCount < 3 && (state.day <= 30 || fiscalPressure)) {
+      add(
+        "fiscalChain",
+        "info",
+        "铺回流链",
+        `回流资产还差 ${Math.max(0, 3 - activeAssetCount)} 项才成网，前期铺节点比临时举债更稳。`,
+        pick((row) => FISCAL_ROADMAP_IDS.has(row.id) && !LAST_RESORT_RECOVERY_IDS.has(row.id)),
+      );
+    }
+
+    if (economyPressure && state.metrics.infection < 75) {
+      add(
+        "microLoop",
+        state.metrics.economy <= 30 ? "warn" : "info",
+        "托住活力",
+        state.hidden.detectedRate < 50
+          ? "活力偏低，但发现率不足会放大复业感染代价，优先低接触和线上窗口。"
+          : "用低接触民生、线上政务和微循环恢复城市机能，避免一上来大复工。",
+        pick((row) => MICRO_ROADMAP_IDS.has(row.id)),
+      );
+    }
+
+    if (!steps.length && recoveryBlocked) {
+      add(
+        "recoveryGate",
+        "warn",
+        "先解除阻力",
+        buildRecoveryBlockerDetail(state),
+        pick((row) => (
+          row.route === "低接触活力"
+          || row.route === "筹措资金"
+          || row.route === "资金+活力"
+        )),
+      );
+    }
+
+    if (!steps.length) {
+      add(
+        "convertReserve",
+        "good",
+        "把余量变资产",
+        "资金和活力暂时没有红线，可以选择一项温和恢复节点，把现金转成后续回流能力。",
+        pick((row) => RECOVERY_FOCUS_IDS.has(row.id)),
+      );
+    }
+
+    const tone = steps.some((item) => item.tone === "danger")
+      ? "danger"
+      : steps.some((item) => item.tone === "warn")
+        ? "warn"
+        : steps.some((item) => item.tone === "good")
+          ? "good"
+          : "info";
+    const label = tone === "danger"
+      ? "现金优先"
+      : economyPressure
+        ? "低接触恢复"
+        : activeAssetCount < 3
+          ? "铺恢复网"
+          : "恢复窗口";
+    const detail = steps[0]
+      ? `${steps[0].label}：${steps[0].detail}`
+      : "今天没有明显财政或活力短板。";
+
+    return {
+      tone,
+      label,
+      detail,
+      steps: steps.slice(0, 3),
+    };
+  }
+
+  function selectRecoveryPrescriptionRow(rows, predicate, used) {
+    return rows
+      .filter((row) => predicate(row) && !used.has(`${row.mode}:${row.id}`))
+      .sort((a, b) => {
+        if (a.bucket !== b.bucket) return recoveryBucketRank(a.bucket) - recoveryBucketRank(b.bucket);
+        if (b.priority !== a.priority) return b.priority - a.priority;
+        return a.label.localeCompare(b.label, "zh-Hans-CN");
+      })[0] || null;
+  }
+
+  function selectCashflowPrescriptionRow(rows, used, funds) {
+    const gentle = selectRecoveryPrescriptionRow(rows, (row) => (
+      !LAST_RESORT_RECOVERY_IDS.has(row.id)
+      && (row.route === "筹措资金" || row.route === "资金+活力" || row.fundsGain > 0)
+    ), used);
+    if (gentle || funds > 15) return gentle;
+    return selectRecoveryPrescriptionRow(rows, (row) => LAST_RESORT_RECOVERY_IDS.has(row.id), used);
+  }
+
+  function buildFiscalPrescriptionStep(id, tone, label, detail, row) {
+    if (!row) {
+      return {
+        id,
+        tone,
+        label,
+        detail,
+        status: "观察",
+        impact: "",
+        available: false,
+        mode: "",
+        actionId: "",
+        pointId: "",
+        pointLabel: "",
+      };
+    }
+    const locked = row.bucket === "locked";
+    const established = row.bucket === "established";
+    const actionDetail = row.bucket === "available"
+      ? `建议先看：${row.label}。`
+      : established
+        ? `${row.label}已经铺垫，等待它进入自然回流。`
+        : `卡点：${row.detail}`;
+    return {
+      id,
+      tone: row.bucket === "available" ? tone : established ? "good" : locked ? "mixed" : tone,
+      label,
+      detail: `${detail} ${actionDetail}`,
+      status: row.status,
+      impact: row.impact,
+      available: row.bucket === "available",
+      mode: row.mode,
+      actionId: row.id,
+      pointId: row.pointId,
+      pointLabel: row.pointLabel,
+    };
+  }
+
+  function buildRecoveryBlockerDetail(state) {
+    const blockers = [];
+    if (state.metrics.infection >= 65) blockers.push("感染高位");
+    if (state.hidden.detectedRate < 50) blockers.push("发现率不足");
+    if (state.hidden.policyStrictness >= 70) blockers.push("管控偏高");
+    if (state.metrics.trust < 45) blockers.push("信任偏低");
+    if (state.metrics.staffFatigue >= 75) blockers.push("基层疲劳偏高");
+    return blockers.length
+      ? `${blockers.slice(0, 3).join("、")}正在压住资金和活力兑现，先选低流动、低争议的恢复动作。`
+      : "恢复闸门基本打开，选择温和恢复节点即可。";
+  }
+
   function getFiscalOutlook(state) {
     const fiscal = calculateFiscalOutlook(state);
     const economy = calculateEconomyOutlook(state, {});
@@ -8643,6 +8824,7 @@
       activeAssets: fiscal.activeAssets || [],
       runway: getFiscalRunway(state, fiscal, economy, lockedByFunds),
       roadmap: getRecoveryRoadmap(state),
+      prescription: getFiscalPrescription(state, fiscal, economy, lockedByFunds),
       items: [
         {
           id: "funds",
@@ -8797,6 +8979,7 @@
     getCityActionDirectiveFit,
     getCityActionOpportunities,
     getRecoveryLevers,
+    getFiscalPrescription,
     getFiscalOutlook,
     getCityBadges,
     getSettlementHighlights,

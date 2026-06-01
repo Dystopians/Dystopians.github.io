@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v144";
+  const ASSET_VERSION = "v145";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -981,6 +981,7 @@
         <strong class="${escapeHtml(report.tone || "info")}">${escapeHtml(report.lockedByFunds ? `${report.lockedByFunds}锁` : "账本")}</strong>
       </div>
       ${renderFiscalRunway(report.runway)}
+      ${renderFiscalPrescription(report.prescription)}
       <div class="fiscal-grid">
         ${items.map((item) => `
           <article class="fiscal-item ${escapeHtml(item.tone || "info")}" title="${escapeHtml(item.detail || "")}">
@@ -1000,6 +1001,12 @@
         focusRecoveryLever(button.dataset.roadmapPoint, button.dataset.roadmapMode, button.dataset.roadmapAction);
       });
     });
+    els.fiscalOutlook.querySelectorAll("[data-prescription-action]").forEach((button) => {
+      bindCityActionPreview(button, () => button.dataset.prescriptionMode, () => button.dataset.prescriptionAction);
+      button.addEventListener("click", () => {
+        focusRecoveryLever(button.dataset.prescriptionPoint, button.dataset.prescriptionMode, button.dataset.prescriptionAction);
+      });
+    });
   }
 
   function renderFiscalRunway(runway) {
@@ -1017,6 +1024,36 @@
           `).join("")}
         </div>
       </div>
+    `;
+  }
+
+  function renderFiscalPrescription(prescription) {
+    const steps = prescription && Array.isArray(prescription.steps) ? prescription.steps.slice(0, 3) : [];
+    if (!steps.length) return "";
+    return `
+      <section class="fiscal-prescription ${escapeHtml(prescription.tone || "info")}" aria-label="财政与活力今日处方">
+        <div class="fiscal-prescription-head">
+          <span>今日处方</span>
+          <strong>${escapeHtml(prescription.label || "恢复判断")}</strong>
+        </div>
+        <p>${escapeHtml(prescription.detail || "根据资金、活力和回流资产给出今日恢复判断。")}</p>
+        <div class="fiscal-prescription-steps">
+          ${steps.map((step) => {
+            const actionable = step.actionId && step.pointId && step.mode;
+            const tagName = actionable ? "button" : "article";
+            const actionAttrs = actionable
+              ? ` type="button" data-prescription-point="${escapeHtml(step.pointId)}" data-prescription-mode="${escapeHtml(step.mode)}" data-prescription-action="${escapeHtml(step.actionId)}"`
+              : "";
+            return `
+              <${tagName} class="fiscal-prescription-step ${escapeHtml(step.tone || "info")} ${actionable ? "actionable" : ""}"${actionAttrs} title="${escapeHtml(step.detail || "")}">
+                <span>${escapeHtml(step.status || "观察")} · ${escapeHtml(step.pointLabel || "账本")}</span>
+                <strong>${escapeHtml(step.label || "恢复")}</strong>
+                <em>${escapeHtml(step.impact || "形成恢复判断")}</em>
+              </${tagName}>
+            `;
+          }).join("")}
+        </div>
+      </section>
     `;
   }
 

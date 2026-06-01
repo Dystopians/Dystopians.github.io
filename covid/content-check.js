@@ -407,6 +407,7 @@ function validateTutorialCopy() {
     "后续影响",
     "若触发",
     "财政与活力面板",
+    "今日处方",
     "预算压力",
     "现金余量",
     "可承受支出",
@@ -449,6 +450,13 @@ function validateFiscalOutlook() {
     "Every budget runway item needs id, label, value, detail, and tone.",
   );
   assert(!String(opening.runway.summary).includes("[object Object]"), "Budget runway summary must be readable text.");
+  assert(opening.prescription && Array.isArray(opening.prescription.steps), "Fiscal outlook should expose a daily fiscal/economy prescription.");
+  assert(opening.prescription.steps.length >= 2, "Opening prescription should include at least two recovery priorities.");
+  assert(
+    opening.prescription.steps.every((item) => item.id && item.label && item.detail && item.status && item.tone),
+    "Every fiscal prescription step needs id, label, detail, status, and tone.",
+  );
+  assert(!String(opening.prescription.detail).includes("[object Object]"), "Fiscal prescription detail must be readable text.");
   assert(Array.isArray(opening.roadmap) && opening.roadmap.length === 3, "Fiscal outlook should expose a three-part recovery roadmap.");
   assert(
     opening.roadmap.every((item) => item.id && item.label && item.stage && item.detail && item.counts && Number.isFinite(item.progress)),
@@ -522,7 +530,9 @@ function validateFiscalOutlook() {
   );
   assert(microRoadmap.counts.established >= 2, "Micro-loop roadmap should count established low-contact vitality assets.");
   assert(appJs.includes("renderFiscalRunway"), "Fiscal panel should render the budget runway.");
+  assert(appJs.includes("renderFiscalPrescription"), "Fiscal panel should render the daily prescription.");
   assert(styles.includes(".fiscal-runway"), "Budget runway needs dedicated styling.");
+  assert(styles.includes(".fiscal-prescription"), "Daily fiscal prescription needs dedicated styling.");
 }
 
 function validateCrisisDashboard() {
