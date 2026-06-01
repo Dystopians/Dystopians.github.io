@@ -1306,7 +1306,7 @@
       delayed,
       condition: choice.condition || null,
       notes: [
-        `新闻原型策略 ${eventIndex + 1}.${choiceIndex + 1}：${profile.axis}`,
+        `事件策略 ${eventIndex + 1}.${choiceIndex + 1}：${profile.axis}`,
         ...(choice.notes || []),
       ],
     };
@@ -5240,7 +5240,7 @@
         status: "可选择",
         detail: (choice.effectPreview || []).slice(0, 3).join(" / ") || "这项事件选项能补足当前路线结构。",
         choiceId: choice.id,
-        priority: 96 - index,
+        priority: strategyRecommendationPriority(state, route, choice, "choice", index, true),
       });
     });
 
@@ -5253,6 +5253,11 @@
         group.items.forEach((item) => {
           const route = getStrategyRouteForKey(item.id);
           if (!route) return;
+          const resolved = {
+            resources: resolveResources(state, item),
+            effects: resolveEffects(state, item),
+            hidden: resolveHidden(state, item),
+          };
           const forecast = item.available
             ? getCityActionOutcomePreview(state, group.mode, item.id).slice(0, 3).map(formatForecastEntry)
             : [];
@@ -5273,7 +5278,7 @@
             pointId: pointDef.id,
             pointLabel: point.label,
             locked: !item.available,
-            priority: (item.available ? 78 : 42)
+            priority: strategyRecommendationPriority(state, route, resolved, group.mode, 0, item.available)
               + (EARLY_RECOVERY_IDS.has(item.id) && state.day <= 18 ? 8 : 0)
               + (item.lockedReason === "今日调度已满" ? 4 : 0),
           });
@@ -5314,6 +5319,59 @@
     if (m.economy <= 48 || r.funds <= 45) pressureRoutes.push("recovery");
     if (h.publicMemory >= 45) pressureRoutes.push("memory");
     return [...new Set(pressureRoutes)].slice(0, 4);
+  }
+
+  function strategyRecommendationPriority(state, route, result = {}, source = "", index = 0, available = true) {
+    if (!route) return 0;
+    const routePressure = strategyRoutePressureScore(state, route.id);
+    const sourceBias = source === "choice" ? 66 : 56;
+    let priority = sourceBias + routePressure - index * 3;
+    if (!available) priority -= 22;
+    priority -= strategyRecommendationRiskPenalty(state, route.id, result);
+
+    if (route.id === "monitoring" && state.hidden.detectedRate <= 45) priority += 14;
+    if (route.id === "control" && state.metrics.infection < 65) priority -= 18;
+    if (route.id === "control" && state.hidden.detectedRate <= 45 && state.metrics.infection < 65) priority -= 10;
+    if (route.id === "recovery" && (state.resources.funds <= 45 || state.metrics.economy <= 55)) priority += 8;
+    if (route.id === "workerRelief" && state.metrics.staffFatigue >= 70) priority += 8;
+    return priority;
+  }
+
+  function strategyRoutePressureScore(state, routeId) {
+    const m = state.metrics;
+    const h = state.hidden;
+    const r = state.resources;
+    if (routeId === "medical") return m.hospitalLoad >= 85 ? 34 : m.hospitalLoad >= 70 ? 24 : m.hospitalLoad >= 55 ? 12 : 4;
+    if (routeId === "monitoring") return h.detectedRate <= 40 ? 34 : h.detectedRate <= 55 ? 24 : m.infection >= 65 ? 14 : 5;
+    if (routeId === "control") return m.infection >= 82 ? 34 : m.infection >= 70 ? 24 : m.infection >= 60 ? 12 : 0;
+    if (routeId === "livelihood") return m.supplies <= 25 ? 32 : m.supplies <= 45 ? 22 : m.trust <= 45 ? 10 : 4;
+    if (routeId === "workerRelief") return m.staffFatigue >= 82 ? 32 : m.staffFatigue >= 68 ? 22 : m.staffFatigue >= 55 ? 10 : 4;
+    if (routeId === "openRepair") return m.trust <= 35 ? 30 : m.trust <= 50 ? 20 : h.publicMemory >= 35 ? 12 : 5;
+    if (routeId === "memory") return h.publicMemory >= 55 ? 30 : h.publicMemory >= 35 ? 18 : m.trust <= 40 ? 10 : 4;
+    if (routeId === "recovery") return r.funds <= 20 ? 32 : r.funds <= 45 ? 22 : m.economy <= 40 ? 18 : m.economy <= 58 ? 10 : 4;
+    return 6;
+  }
+
+  function strategyRecommendationRiskPenalty(state, routeId, result = {}) {
+    let penalty = 0;
+    const collect = (bucket = {}, weight = 1) => {
+      Object.entries(bucket || {}).forEach(([metric, delta]) => {
+        if (!delta) return;
+        if (isBadDelta(metric, delta)) {
+          penalty += Math.min(24, Math.abs(delta) * 3 * weight);
+          if (metric === "trust" && state.metrics.trust <= 45) penalty += 5;
+          if (metric === "staffFatigue" && state.metrics.staffFatigue >= 70) penalty += 5;
+          if (metric === "funds" && state.resources.funds <= 30) penalty += 5;
+        }
+      });
+    };
+    collect(result.effects, 1);
+    collect(result.hidden, 0.9);
+    collect(result.resources, 0.7);
+    if (routeId === "control" && state.metrics.infection < 70) penalty += 8;
+    if (routeId === "control" && state.metrics.trust < 50) penalty += 8;
+    if (routeId === "recovery" && result.hidden && result.hidden.publicMemory > 0 && state.hidden.publicMemory >= 45) penalty += 6;
+    return penalty;
   }
 
   function formatForecastEntry(entry) {
@@ -5533,8 +5591,8 @@
       phase: [state.phase],
       tags: profile.tags,
       title: "城市滚动简报",
-      body: `${profile.summary} 今日没有新的新闻原型事件进入指挥部，但系统压力仍在累积。你可以把这次简报当成一次低强度调度窗口：收益不会很大，代价也不会被完全免除。`,
-      description: `${profile.summary} 今日没有新的新闻原型事件进入指挥部，但系统压力仍在累积。你可以把这次简报当成一次低强度调度窗口：收益不会很大，代价也不会被完全免除。`,
+      body: `${profile.summary} 今日没有新的专题事件进入指挥部，但系统压力仍在累积。你可以把这次简报当成一次低强度调度窗口：收益不会很大，代价也不会被完全免除。`,
+      description: `${profile.summary} 今日没有新的专题事件进入指挥部，但系统压力仍在累积。你可以把这次简报当成一次低强度调度窗口：收益不会很大，代价也不会被完全免除。`,
       sourceNote: "",
       imageKey: profile.imageKey,
       image: profile.image,
@@ -5549,7 +5607,7 @@
         eventHidden: choice.hidden,
         modifiers: {},
         delayed: null,
-        eventNotes: ["候选新闻事件已耗尽：使用低强度滚动简报，不记录为新闻原型事件。"],
+        eventNotes: ["候选专题事件已耗尽：使用低强度滚动简报，不记录为正式专题事件。"],
         effectPreview: previewEventChoiceEffects({
           resources: {},
           effects: choice.effects,

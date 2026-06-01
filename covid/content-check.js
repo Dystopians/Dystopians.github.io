@@ -6,6 +6,7 @@ const core = require("./game-core.js");
 
 const rootDir = __dirname;
 const assetsDir = path.join(rootDir, "assets");
+const coreJs = fs.readFileSync(path.join(rootDir, "game-core.js"), "utf8");
 const failures = [];
 const warnings = [];
 
@@ -113,6 +114,7 @@ function validateEventCorpus() {
 
   assert(Array.isArray(core.EVENTS), "EVENTS must be exported as an array.");
   assert(core.EVENTS.length >= 96, `Expected at least 96 corpus events, found ${core.EVENTS.length}.`);
+  assert(!coreJs.includes("新闻原型"), "Runtime-facing copy should avoid the intrusive 新闻原型 phrasing.");
 
   core.EVENTS.forEach((event) => {
     assert(event.id, "Every event needs a stable id.");
@@ -154,6 +156,10 @@ function validateEventCorpus() {
 
       const tag = choice.routeTag || core.getChoiceRouteTag(choice);
       assert(Boolean(tag && tag.label), `${choiceName} is missing route tag.`);
+      assert(
+        !(choice.notes || []).some((note) => /新闻原型/.test(String(note))),
+        `${choiceName} should not surface 新闻原型 wording in settlement/history notes.`,
+      );
 
       const changeCount = collectChoiceChangeCount(choice);
       assert(changeCount >= 3, `${choiceName} changes only ${changeCount} values; expected at least 3.`);
@@ -1487,6 +1493,16 @@ function validateEndingStrategyReview() {
   assert(
     profile.recommendations.every((item) => !String(item.detail).includes("[object Object]")),
     "Strategy recommendation details must render readable forecast text.",
+  );
+
+  const openingProfile = core.getStrategyProfile(core.createGame({ difficulty: "normal", seed: 202606081 }));
+  assert(
+    openingProfile.recommendations[0] && openingProfile.recommendations[0].routeLabel === "监测治理",
+    "Opening strategy recommendations should prefer monitoring under information-blind pressure rather than high-pressure control.",
+  );
+  assert(
+    openingProfile.recommendations[0].tone !== "danger",
+    "Opening strategy recommendations should not lead with a danger-toned option when infection pressure is still low.",
   );
 }
 
