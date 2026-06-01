@@ -473,6 +473,11 @@ function validateFiscalOutlook() {
     opening.runway.items.every((item) => item.id && item.label && item.value !== undefined && item.detail && item.tone),
     "Every budget runway item needs id, label, value, detail, and tone.",
   );
+  assert(opening.network && Array.isArray(opening.network) && opening.network.length === 3, "Fiscal outlook should expose fiscal/micro network readouts.");
+  assert(
+    opening.network.every((item) => item.id && item.label && item.value !== undefined && item.detail && item.tone),
+    "Every fiscal/micro network readout needs id, label, value, detail, and tone.",
+  );
   assert(!String(opening.runway.summary).includes("[object Object]"), "Budget runway summary must be readable text.");
   assert(opening.prescription && Array.isArray(opening.prescription.steps), "Fiscal outlook should expose a daily fiscal/economy prescription.");
   assert(opening.prescription.steps.length >= 2, "Opening prescription should include at least two recovery priorities.");
@@ -553,10 +558,16 @@ function validateFiscalOutlook() {
     "Two low-flow recovery assets should create a readable micro-recovery economy component.",
   );
   assert(microRoadmap.counts.established >= 2, "Micro-loop roadmap should count established low-contact vitality assets.");
+  assert(
+    microReport.network.some((item) => item.id === "microNetwork" && item.tone === "warn" && item.detail.includes("发现率")),
+    "Micro network readout should warn when low detection makes micro-recovery risky.",
+  );
   assert(appJs.includes("renderFiscalRunway"), "Fiscal panel should render the budget runway.");
   assert(appJs.includes("renderFiscalPrescription"), "Fiscal panel should render the daily prescription.");
+  assert(appJs.includes("renderFiscalNetwork"), "Fiscal panel should render fiscal/micro network readouts.");
   assert(styles.includes(".fiscal-runway"), "Budget runway needs dedicated styling.");
   assert(styles.includes(".fiscal-prescription"), "Daily fiscal prescription needs dedicated styling.");
+  assert(styles.includes(".fiscal-network"), "Fiscal/micro network readouts need dedicated styling.");
 }
 
 function validateCrisisDashboard() {
@@ -597,6 +608,16 @@ function validateMicroRecoveryPressure() {
   assert(
     summary.some((item) => item.id === "micro_flow_pressure"),
     "Low-detection micro-recovery route should surface its extra flow risk in the daily pressure summary.",
+  );
+  const thresholdState = core.createGame({ difficulty: "normal", seed: 2026062401 });
+  thresholdState.metrics.infection = 50;
+  thresholdState.hidden.detectedRate = 65;
+  thresholdState.flags.operationUses.essentialServicePermit = 1;
+  thresholdState.flags.operationUses.remoteApprovalDesk = 1;
+  const thresholdSummary = core.getDailyPressureSummary(thresholdState);
+  assert(
+    thresholdSummary.some((item) => item.id === "micro_flow_pressure"),
+    "Daily pressure summary should use the same detectedRate<70 micro-flow threshold as daily resolution.",
   );
 
   const inertiaState = core.createGame({ difficulty: "normal", seed: 20260626 });

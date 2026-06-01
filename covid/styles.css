@@ -4740,6 +4740,66 @@ button.fiscal-prescription-step:focus-visible {
   background: #d6e4df;
 }
 
+.fiscal-network {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 6px;
+}
+
+.fiscal-network-item {
+  min-width: 0;
+  padding: 7px;
+  border: 2px solid #b89752;
+  background: rgba(255, 238, 184, 0.78);
+  box-shadow: inset 1px 1px 0 rgba(255, 247, 209, 0.84);
+}
+
+.fiscal-network-item.good {
+  border-color: #4f8d55;
+  background: #dcebb0;
+}
+
+.fiscal-network-item.warn,
+.fiscal-network-item.mixed {
+  border-color: #9b7134;
+  background: #f2d48b;
+}
+
+.fiscal-network-item.danger {
+  border-color: #9f4639;
+  background: #eaa07c;
+}
+
+.fiscal-network-item.info {
+  border-color: var(--blue);
+  background: #dde5d9;
+}
+
+.fiscal-network-item span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.58rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.fiscal-network-item strong {
+  display: block;
+  margin: 3px 0;
+  color: var(--deep);
+  font-size: 0.92rem;
+  line-height: 1;
+}
+
+.fiscal-network-item p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1.24;
+  overflow-wrap: anywhere;
+}
+
 .fiscal-roadmap {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));

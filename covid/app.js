@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v157";
+  const ASSET_VERSION = "v158";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -1049,6 +1049,7 @@
       </div>
       ${renderFiscalRunway(report.runway)}
       ${renderFiscalPrescription(report.prescription)}
+      ${renderFiscalNetwork(report.network)}
       <div class="fiscal-grid">
         ${items.map((item) => `
           <article class="fiscal-item ${escapeHtml(item.tone || "info")}" title="${escapeHtml(item.detail || "")}">
@@ -1151,6 +1152,22 @@
           </${tagName}>
         `;
         }).join("")}
+      </div>
+    `;
+  }
+
+  function renderFiscalNetwork(network = []) {
+    const items = Array.isArray(network) ? network.slice(0, 3) : [];
+    if (!items.length) return "";
+    return `
+      <div class="fiscal-network" aria-label="资金链与微循环生效状态">
+        ${items.map((item) => `
+          <article class="fiscal-network-item ${escapeHtml(item.tone || "info")}" title="${escapeHtml(item.detail || "")}">
+            <span>${escapeHtml(item.label || "网络")}</span>
+            <strong>${escapeHtml(item.value || "")}</strong>
+            <p>${escapeHtml(item.detail || "")}</p>
+          </article>
+        `).join("")}
       </div>
     `;
   }

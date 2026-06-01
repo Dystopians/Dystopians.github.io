@@ -7297,8 +7297,8 @@
     if (r.funds <= 10) add("resource_funds_low", "danger", "财政透支", "高价工程和决议会被锁定。", 105 - r.funds);
     else if (r.funds <= 20) add("resource_funds_warn", "warn", "资金偏低", "工程选择需要更克制。", 100 - r.funds);
     else if (r.funds <= 45 && state.day >= 7) add("resource_fiscal_window", "info", "财政窗口", "账款清分、专项资金、捐助统筹或举债能补缺口，但会转化为信任、活力或审计压力。", 61);
-    if (getMicroRecoveryAssets(state).length >= 2 && h.detectedRate < 62 && m.infection >= 45) {
-      add("micro_flow_pressure", "warn", "微复苏流动压力", "低发现率下，多条微循环资产会带来额外传播缝隙。", 63);
+    if (getMicroRecoveryAssets(state).length >= 2 && h.detectedRate < 70 && m.infection >= 45) {
+      add("micro_flow_pressure", "warn", "微复苏流动压力", "发现率低于 70 时，多条微循环资产会带来额外传播缝隙。", 63);
     }
     if (h.detectedRate <= 35) add("hidden_detected_low", "warn", "信息盲区", "报告感染压力误差扩大，复工代价更高。", 100 - h.detectedRate);
     if (h.policyStrictness >= 80) add("hidden_policy_high", "warn", "高压管控", "感染压制增强，但活力和疲劳代价上升。", h.policyStrictness);
@@ -9002,6 +9002,61 @@
     ];
   }
 
+  function getRecoveryNetworkReadouts(state, fiscal, economy) {
+    const m = state.metrics;
+    const h = state.hidden;
+    const r = state.resources;
+    const fiscalAssets = fiscal.activeAssets || [];
+    const microAssets = getMicroRecoveryAssets(state);
+    const fiscalBridgeActive = fiscalAssets.length >= 3 && r.funds <= 30 && m.trust >= 45;
+    const fiscalAssetYield = (fiscal.components || []).find((item) => item.id === "assetYield");
+    const microFlowRisk = microAssets.length >= 2 && h.detectedRate < 70 && m.infection >= 45;
+    const microNetworkActive = microAssets.length >= 4
+      && m.infection < 55
+      && h.policyStrictness <= 60
+      && m.economy < 60
+      && m.staffFatigue < 75;
+    const careRelief = getContinuityCareRelief(state);
+    const detectionGap = Math.max(0, 70 - h.detectedRate);
+    return [
+      {
+        id: "fiscalNetwork",
+        label: "资金链",
+        value: `${Math.min(fiscalAssets.length, 3)}/3`,
+        tone: fiscalBridgeActive ? "good" : fiscalAssets.length >= 2 ? "info" : r.funds <= 25 ? "warn" : "mixed",
+        detail: fiscalBridgeActive
+          ? "资金链已经形成低位周转网，资金偏低时每日回流上限提高到 3。"
+          : fiscalAssets.length
+            ? `已有 ${fiscalAssets.length} 个财政/捐助节点；${fiscalAssetYield ? `当前贡献 ${signedDelta(fiscalAssetYield.value)}。` : "继续铺节点能提高低资金回流稳定性。"}`
+            : "还没有财政协作节点，资金主要依赖自然账本和事件选择。",
+      },
+      {
+        id: "microNetwork",
+        label: "微循环",
+        value: `${Math.min(microAssets.length, 4)}/4`,
+        tone: microFlowRisk ? "warn" : microNetworkActive ? "good" : microAssets.length >= 2 ? "info" : "mixed",
+        detail: microFlowRisk
+          ? `已有 ${microAssets.length} 个微循环节点，但发现率距安全门槛还差 ${detectionGap}，每日传播压力会额外 +1。`
+          : microNetworkActive
+            ? `已有 ${microAssets.length} 个低流动节点，活力自然回流更稳定。`
+            : microAssets.length
+              ? `已有 ${microAssets.length} 个微循环节点；发现率达到 70 后，恢复流动的隐性反弹会更可控。`
+              : "还没有微循环节点，活力恢复主要依赖自然结算或较重的复工动作。",
+      },
+      {
+        id: "careBuffer",
+        label: "照护缓冲",
+        value: careRelief ? "生效" : "待成形",
+        tone: careRelief ? "good" : microAssets.length >= 4 ? "info" : "mixed",
+        detail: careRelief
+          ? "微循环、物资和活力形成照护缓冲，医疗高压时每日医疗负载额外 -1。"
+          : microAssets.length >= 4
+            ? "微循环节点已足够，但还需要物资、活力和医疗高压条件同时满足，才会转化成照护缓冲。"
+            : "照护缓冲需要至少 4 个微循环节点，并维持物资与活力不低于 50。",
+      },
+    ];
+  }
+
   function buildRecoveryRoadmapItem(state, rows, config) {
     const established = rows.filter((item) => item.bucket === "established").length;
     const available = rows
@@ -9301,6 +9356,7 @@
       lockedByFunds,
       activeAssets: fiscal.activeAssets || [],
       runway: getFiscalRunway(state, fiscal, economy, lockedByFunds),
+      network: getRecoveryNetworkReadouts(state, fiscal, economy),
       roadmap: getRecoveryRoadmap(state),
       prescription: getFiscalPrescription(state, fiscal, economy, lockedByFunds),
       items: [
