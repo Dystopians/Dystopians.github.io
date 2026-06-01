@@ -6764,6 +6764,7 @@
 
   function getMicroRecoveryAssets(state) {
     const operationUses = state.flags.operationUses || {};
+    const resolutions = state.flags.resolutions || {};
     const completed = state.completedProjects || {};
     return [
       operationUses.essentialServicePermit && "民生服务保留名录",
@@ -6782,6 +6783,12 @@
       operationUses.closedLoopSmallShift && "保供工厂闭环小班",
       operationUses.contactlessServiceRegistry && "无接触商铺备案",
       operationUses.microFreightPermit && "货运微循环许可",
+      resolutions.lowContactBusinessPermit && "低接触复业许可",
+      resolutions.lowRiskWorkList && "低风险白名单复工",
+      resolutions.elasticTransit && "弹性交通班表",
+      resolutions.nightFreightWindow && "夜间保供货运窗口",
+      resolutions.supplyOrderPrepaySwap && "保供订单预付置换",
+      resolutions.enterpriseExemption && "企业定向豁免",
       completed.supplyCorridor && "保供专线",
     ].filter(Boolean);
   }
@@ -6838,6 +6845,7 @@
     const h = state.hidden;
     const r = state.resources;
     const operationUses = state.flags.operationUses || {};
+    const resolutions = state.flags.resolutions || {};
     const completed = state.completedProjects || {};
     const components = [];
     const add = (id, label, value, detail) => {
@@ -6879,6 +6887,13 @@
       [operationUses.communityRepairWhitelist && m.trust >= 55 && r.funds <= 45, "社区维修白名单"],
       [operationUses.remoteWorkGovServices && m.economy >= 55 && r.funds <= 45, "线上政务与远程办公"],
       [operationUses.serviceVoucherPilot && m.economy >= 55 && r.funds <= 45, "民生服务券试点"],
+      [resolutions.mutualAidFund && m.trust >= 50 && r.funds <= 60, "社区互助基金"],
+      [resolutions.lowContactBusinessPermit && m.economy >= 52 && r.funds <= 50, "低接触复业许可"],
+      [resolutions.lowRiskWorkList && m.economy >= 52 && r.funds <= 55, "低风险白名单复工"],
+      [resolutions.elasticTransit && m.economy >= 52 && r.funds <= 50, "弹性交通班表"],
+      [resolutions.nightFreightWindow && m.supplies >= 55 && r.funds <= 55, "夜间保供货运窗口"],
+      [resolutions.supplyOrderPrepaySwap && m.supplies >= 55 && r.funds <= 55, "保供订单预付置换"],
+      [resolutions.enterpriseExemption && m.economy >= 55 && m.trust >= 35 && r.funds <= 60, "企业定向豁免"],
       [completed.supplyCorridor && m.supplies >= 60 && r.funds <= 55, "保供专线"],
     ];
     const activeAssets = assetSources.filter(([active]) => active).map(([, label]) => label);

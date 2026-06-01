@@ -1002,6 +1002,10 @@ function validateFiscalEconomyChannels() {
     "lowContactBusinessPermit",
     "supplyOrderPrepaySwap",
     "deferProjectPayment",
+    "lowRiskWorkList",
+    "elasticTransit",
+    "nightFreightWindow",
+    "enterpriseExemption",
   ];
   required.forEach((id) => {
     assert(core.OPERATIONS[id], `Missing fiscal/economy recovery operation: ${id}.`);
@@ -1069,6 +1073,32 @@ function validateFiscalEconomyChannels() {
   assert(availableResolutions.length >= 4, `Expected at least 4 early fiscal/economy recovery resolutions available, found ${availableResolutions.length}.`);
   const report = core.getRecoveryLevers(state);
   assert(report.totalCount >= 44, `Recovery lever report should recognize expanded fiscal/economy channels, found ${report.totalCount}.`);
+
+  const resolutionAssetState = core.createGame({ difficulty: "normal", seed: 202606071 });
+  resolutionAssetState.day = 18;
+  resolutionAssetState.phase = core.phaseForDay(resolutionAssetState.day);
+  resolutionAssetState.metrics.infection = 42;
+  resolutionAssetState.metrics.hospitalLoad = 52;
+  resolutionAssetState.metrics.supplies = 66;
+  resolutionAssetState.metrics.trust = 62;
+  resolutionAssetState.metrics.economy = 56;
+  resolutionAssetState.metrics.staffFatigue = 48;
+  resolutionAssetState.resources.funds = 32;
+  resolutionAssetState.hidden.detectedRate = 70;
+  resolutionAssetState.hidden.policyStrictness = 42;
+  resolutionAssetState.flags.resolutions.mutualAidFund = true;
+  resolutionAssetState.flags.resolutions.lowContactBusinessPermit = true;
+  resolutionAssetState.flags.resolutions.elasticTransit = true;
+  const resolutionAssetOutlook = core.getFiscalOutlook(resolutionAssetState);
+  assert(
+    resolutionAssetOutlook.activeAssets.some((label) => /互助基金|低接触复业|弹性交通/.test(label)),
+    "Passed fiscal/economy resolutions should count as fiscal recovery assets.",
+  );
+  const economyComponents = resolutionAssetOutlook.items.find((item) => item.id === "economy").components;
+  assert(
+    economyComponents.some((item) => item.id === "microRecoveryAssets" && item.value > 0),
+    "Passed low-contact recovery resolutions should count toward daily micro-recovery.",
+  );
 }
 
 function validateCityActionOpportunities() {
