@@ -1117,6 +1117,9 @@ function validateActionPreviewCoverage() {
   assert(appJs.includes("renderTrendItems(lockPreview.items"), "UI should render locked city action previews in the trend panel.");
   assert(appJs.includes("modeClass === \"is-lock\""), "Trend summary should support locked-action mode.");
   assert(styles.includes(".trend-preview.is-lock"), "Locked action previews need dedicated trend styling.");
+  assert(appJs.includes("renderActionLockHint"), "Locked city action cards should render visible unlock hints.");
+  assert(appJs.includes("previewCityAction(actionMode, item.id);"), "Clicking a locked city action button should show its lock preview.");
+  assert(styles.includes(".action-lock-hint"), "Visible city action lock hints need dedicated styling.");
   assert(appJs.includes("focusCityBadgeAction"), "City badge cards should be clickable map-action targets.");
   assert(appJs.includes("data-badge-point"), "City badge cards should carry map target data attributes.");
   assert(styles.includes(".city-badge.actionable"), "Clickable city badges need dedicated styling.");

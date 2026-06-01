@@ -5480,8 +5480,23 @@ label {
 }
 
 .action-card.locked {
-  opacity: 0.66;
+  opacity: 0.78;
   filter: grayscale(0.25);
+}
+
+.action-lock-hint {
+  display: block;
+  margin-top: 6px;
+  padding: 5px 6px;
+  border: 2px solid rgba(149, 77, 53, 0.62);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 240, 198, 0.46) 0 4px, rgba(229, 188, 133, 0.32) 4px 8px),
+    #f2d49d;
+  color: #643724;
+  font-size: 0.66rem;
+  font-weight: 900;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .action-card.locked[data-lock-detail] {

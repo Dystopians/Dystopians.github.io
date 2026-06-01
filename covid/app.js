@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v130";
+  const ASSET_VERSION = "v131";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -2297,6 +2297,7 @@
           <div class="chips">${preview}</div>
           ${renderActionDirectiveFit(item, actionMode)}
           ${renderActionForecast(item, actionMode)}
+          ${renderActionLockHint(item)}
         </div>
         <button class="small-action" type="button" ${item.available ? "" : "aria-disabled=\"true\""} ${lockDetail ? `title="${escapeHtml(lockDetail)}"` : ""}>
           ${item.available ? "执行" : escapeHtml(item.lockedReason)}
@@ -2304,7 +2305,11 @@
       `;
       const button = card.querySelector("button");
       button.addEventListener("click", () => {
-        if (!item.available) return;
+        if (!item.available) {
+          previewCityAction(actionMode, item.id);
+          focusCityActionCard(item.id, { duration: 1400 });
+          return;
+        }
         if (actionMode === "operations") core.executeOperation(state, item.id);
         else core.executeResolution(state, item.id);
         save();
@@ -2314,6 +2319,24 @@
       els.operationsList.appendChild(card);
     });
     bindCityActionUndo();
+  }
+
+  function renderActionLockHint(item) {
+    if (!item || item.available) return "";
+    const reason = item.lockedReason || "未解锁";
+    const detail = item.lockedDetail || reason;
+    const prefix = reason === "今日调度已满"
+      ? "明日可排"
+      : reason === "资金不足" || reason === "财政透支"
+        ? "等资金"
+        : reason === "已通过" || reason === "次数已用完"
+          ? "已处理"
+          : "解锁";
+    return `
+      <small class="action-lock-hint" title="${escapeHtml(detail)}">
+        ${escapeHtml(prefix)}：${escapeHtml(detail)}
+      </small>
+    `;
   }
 
   function renderActionForecast(item, mode) {
