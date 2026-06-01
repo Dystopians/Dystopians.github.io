@@ -399,8 +399,10 @@ function validateScenarios() {
 
 function validateTutorialCopy() {
   const indexHtml = fs.readFileSync(path.join(rootDir, "index.html"), "utf8");
+  assert(indexHtml.includes('form="startForm"'), "Start screen should expose a first-viewport submit button wired to the setup form.");
   [
     "推荐顺序",
+    "立即开始第 1 天",
     "今日压力摘要",
     "今日调度目标",
     "今晚趋势",
