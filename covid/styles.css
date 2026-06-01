@@ -1681,7 +1681,8 @@ label {
 }
 
 .crisis-row p,
-.crisis-row em {
+.crisis-row em,
+.crisis-clock {
   display: block;
   margin: 0;
   color: var(--muted);
@@ -1694,6 +1695,37 @@ label {
   margin-top: 3px;
   color: #5c3d17;
   font-weight: 900;
+}
+
+.crisis-clock {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 4px;
+  padding: 2px 5px;
+  border: 2px solid rgba(119, 82, 33, 0.52);
+  background: #fff1c8;
+  color: var(--deep);
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.crisis-clock.good {
+  border-color: var(--good);
+  background: #dcebac;
+  color: #244d35;
+}
+
+.crisis-clock.warn {
+  border-color: var(--warn);
+  background: #f0ca75;
+  color: #583b15;
+}
+
+.crisis-clock.danger {
+  border-color: var(--danger);
+  background: #eaa07c;
+  color: #5b1f18;
 }
 
 .crisis-relief-list {

@@ -505,6 +505,22 @@ function validateFiscalOutlook() {
   assert(microRoadmap.counts.established >= 2, "Micro-loop roadmap should count established low-contact vitality assets.");
 }
 
+function validateCrisisDashboard() {
+  assert(typeof core.getCrisisDashboard === "function", "game-core.js must export getCrisisDashboard.");
+  const state = core.createGame({ difficulty: "normal", seed: 20260627 });
+  state.metrics.hospitalLoad = 96;
+  state.flags.failureStreaks.medical = 1;
+  const risks = core.getCrisisDashboard(state);
+  const medical = risks.find((item) => item.id === "medical");
+  assert(medical && medical.status === "1/3", "Medical crisis dashboard should expose the active countdown status.");
+  assert(
+    medical.clockText && medical.clockText.includes("仍有 2 天补救"),
+    "Active crisis countdown should spell out the remaining rescue window.",
+  );
+  const stable = risks.find((item) => item.id === "supply");
+  assert(stable && stable.clockText, "Stable crisis rows should still explain that no failure countdown is active.");
+}
+
 function validateMicroRecoveryPressure() {
   assert(typeof core.getDailyPressureSummary === "function", "game-core.js must export getDailyPressureSummary.");
   const opening = core.createGame({ difficulty: "normal", seed: 20260625 });
@@ -1104,6 +1120,8 @@ function validateActionPreviewCoverage() {
     "Recovery lever clicks should focus the exact recovery action, not only the map point.",
   );
   assert(styles.includes(".recovery-unlock"), "Recovery unlock hints need dedicated styling.");
+  assert(appJs.includes("crisis-clock"), "Crisis rows should render readable failure countdown text.");
+  assert(styles.includes(".crisis-clock"), "Crisis countdown text needs dedicated styling.");
   assert(appJs.includes("renderFiscalRoadmap"), "Fiscal panel should render the recovery route roadmap.");
   assert(appJs.includes("data-roadmap-action"), "Fiscal recovery roadmap cards should carry exact next-action ids.");
   assert(
@@ -1177,6 +1195,7 @@ function run() {
   validateTutorialCopy();
   validateRecoveryLevers();
   validateFiscalOutlook();
+  validateCrisisDashboard();
   validateMicroRecoveryPressure();
   validateCityBadges();
   validateFiscalEconomyChannels();

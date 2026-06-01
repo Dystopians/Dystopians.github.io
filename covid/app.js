@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v138";
+  const ASSET_VERSION = "v139";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -721,6 +721,7 @@
             <i style="width:${Math.max(0, Math.min(100, risk.progress))}%"></i>
           </div>
           <p>${escapeHtml(risk.metricShort)} ${risk.value} · ${escapeHtml(risk.thresholdText)}</p>
+          <small class="crisis-clock ${escapeHtml(risk.tone || "info")}">${escapeHtml(risk.clockText || "")}</small>
           <em title="${escapeHtml(risk.detail)}">${escapeHtml(risk.hint)}</em>
           ${renderCrisisReliefActions(risk)}
           ${risk.tone === "good" ? "" : `<button class="crisis-jump" type="button" data-crisis-target="${escapeHtml(risk.focusPointId)}" data-crisis-mode="${escapeHtml(risk.focusMode)}" data-crisis-action="${escapeHtml(risk.focusActionId || "")}">

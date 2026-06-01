@@ -3785,11 +3785,17 @@
           ? "warn"
           : "good";
       const effectiveStreak = item.overLine ? Math.max(1, item.streak) : item.streak;
+      const remaining = Math.max(0, limit - effectiveStreak);
       const status = effectiveStreak > 0
         ? `${effectiveStreak}/${limit}`
         : tone === "warn"
           ? "接近红线"
           : "稳定";
+      const clockText = effectiveStreak > 0
+        ? `倒计时已启动，仍有 ${remaining} 天补救`
+        : tone === "warn"
+          ? "尚未进入失败倒计时，但已接近红线"
+          : "当前不在失败倒计时内";
       const reliefActions = tone === "good" ? [] : collectCrisisReliefActions(state, item.id);
       const primaryRelief = reliefActions[0] || null;
       return {
@@ -3800,8 +3806,9 @@
         value: item.value,
         tone,
         status,
+        clockText,
         limit,
-        remaining: Math.max(0, limit - effectiveStreak),
+        remaining,
         progress: clamp(item.dangerValue, 0, 100),
         thresholdText: item.thresholdText,
         detail: item.detail,
