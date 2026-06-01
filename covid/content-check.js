@@ -432,6 +432,15 @@ function validateFiscalOutlook() {
   const opening = core.getFiscalOutlook(state);
   assert(opening && Array.isArray(opening.items), "getFiscalOutlook must return an object with items.");
   assert(opening.items.length === 3, "Fiscal outlook should expose funds, economy, and locked-action readouts.");
+  assert(Array.isArray(opening.roadmap) && opening.roadmap.length === 3, "Fiscal outlook should expose a three-part recovery roadmap.");
+  assert(
+    opening.roadmap.every((item) => item.id && item.label && item.stage && item.detail && item.counts && Number.isFinite(item.progress)),
+    "Every recovery roadmap item needs id, label, stage, detail, counts, and progress.",
+  );
+  assert(
+    opening.roadmap.some((item) => item.id === "fiscalChain") && opening.roadmap.some((item) => item.id === "microLoop"),
+    "Recovery roadmap should distinguish the fiscal chain from the low-contact micro-loop.",
+  );
   assert(
     opening.items.every((item) => item.id && item.label && item.value !== undefined && item.detail && item.tone),
     "Every fiscal outlook item needs id, label, value, detail, and tone.",
@@ -488,10 +497,12 @@ function validateFiscalOutlook() {
   microState.flags.operationUses.remoteApprovalDesk = 1;
   const microReport = core.getFiscalOutlook(microState);
   const microEconomy = microReport.items.find((item) => item.id === "economy");
+  const microRoadmap = microReport.roadmap.find((item) => item.id === "microLoop");
   assert(
     microEconomy.components.some((item) => item.id === "microRecoveryAssets" && item.value > 0),
     "Two low-flow recovery assets should create a readable micro-recovery economy component.",
   );
+  assert(microRoadmap.counts.established >= 2, "Micro-loop roadmap should count established low-contact vitality assets.");
 }
 
 function validateMicroRecoveryPressure() {
@@ -1093,6 +1104,8 @@ function validateActionPreviewCoverage() {
     "Recovery lever clicks should focus the exact recovery action, not only the map point.",
   );
   assert(styles.includes(".recovery-unlock"), "Recovery unlock hints need dedicated styling.");
+  assert(appJs.includes("renderFiscalRoadmap"), "Fiscal panel should render the recovery route roadmap.");
+  assert(styles.includes(".fiscal-route-card"), "Recovery route roadmap cards need dedicated styling.");
   assert(appJs.includes("pendingImpactSummary"), "Pending timeline should expose readable delayed-effect impact summaries.");
   assert(appJs.includes("\"若触发\""), "Conditional pending effects should be labeled as conditional rather than certain.");
   assert(styles.includes(".pending-impact"), "Pending impact summaries need dedicated styling.");

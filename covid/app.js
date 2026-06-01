@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v135";
+  const ASSET_VERSION = "v136";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -966,7 +966,30 @@
           </article>
         `).join("")}
       </div>
+      ${renderFiscalRoadmap(report.roadmap)}
       ${assetList}
+    `;
+  }
+
+  function renderFiscalRoadmap(roadmap = []) {
+    const items = roadmap.slice(0, 3);
+    if (!items.length) return "";
+    return `
+      <div class="fiscal-roadmap" aria-label="资金与活力恢复路线">
+        ${items.map((item) => `
+          <article class="fiscal-route-card ${escapeHtml(item.tone || "info")}" title="${escapeHtml(item.detail || "")}">
+            <div class="fiscal-route-top">
+              <span>${escapeHtml(item.label)}</span>
+              <strong>${escapeHtml(item.stage || "")}</strong>
+            </div>
+            <div class="fiscal-route-meter" aria-hidden="true">
+              <i style="width:${Math.max(0, Math.min(100, Number(item.progress) || 0))}%"></i>
+            </div>
+            <p>${escapeHtml(item.detail || "")}</p>
+            ${item.counts ? `<em>${escapeHtml(String(item.counts.established || 0))}/${escapeHtml(String(item.counts.target || 0))} 已铺垫 · ${escapeHtml(String(item.counts.available || 0))} 可执行</em>` : ""}
+          </article>
+        `).join("")}
+      </div>
     `;
   }
 

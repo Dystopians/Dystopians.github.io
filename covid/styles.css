@@ -4113,6 +4113,101 @@ label {
   background: #d6e4df;
 }
 
+.fiscal-roadmap {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 6px;
+}
+
+.fiscal-route-card {
+  min-width: 0;
+  padding: 7px;
+  border: 2px solid #b89752;
+  background: rgba(255, 241, 200, 0.72);
+  box-shadow: inset 1px 1px 0 rgba(255, 247, 209, 0.82);
+}
+
+.fiscal-route-card.good {
+  border-color: #4f8d55;
+  background: #dcebb0;
+}
+
+.fiscal-route-card.warn,
+.fiscal-route-card.mixed {
+  border-color: #9b7134;
+  background: #f2d48b;
+}
+
+.fiscal-route-card.danger {
+  border-color: #9f4639;
+  background: #eaa07c;
+}
+
+.fiscal-route-card.info {
+  border-color: var(--blue);
+  background: #dde5d9;
+}
+
+.fiscal-route-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+}
+
+.fiscal-route-top span,
+.fiscal-route-card em {
+  color: var(--muted);
+  font-size: 0.58rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.fiscal-route-top strong {
+  flex: 0 0 auto;
+  max-width: 62%;
+  color: var(--deep);
+  font-size: 0.58rem;
+  line-height: 1.05;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.fiscal-route-meter {
+  position: relative;
+  height: 8px;
+  margin: 6px 0;
+  border: 2px solid #7b6239;
+  background: rgba(95, 80, 49, 0.2);
+  overflow: hidden;
+}
+
+.fiscal-route-meter i {
+  display: block;
+  height: 100%;
+  background: repeating-linear-gradient(
+    90deg,
+    #4f8d55 0,
+    #4f8d55 5px,
+    #6da96a 5px,
+    #6da96a 8px
+  );
+}
+
+.fiscal-route-card p {
+  margin: 0 0 5px;
+  color: #514632;
+  font-size: 0.6rem;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.fiscal-route-card em {
+  display: block;
+  font-style: normal;
+}
+
 .fiscal-assets {
   display: flex;
   flex-wrap: wrap;
@@ -6913,7 +7008,8 @@ label {
   .tutorial-grid,
   .ending-metrics,
   .ending-score-grid,
-  .fiscal-grid {
+  .fiscal-grid,
+  .fiscal-roadmap {
     grid-template-columns: 1fr;
   }
 }

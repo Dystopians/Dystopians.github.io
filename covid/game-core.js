@@ -7750,6 +7750,44 @@
     "serviceVoucherPilot",
   ]);
 
+  const FISCAL_ROADMAP_IDS = new Set([
+    "fiscalTransparencyLedger",
+    "emergencyGapLedger",
+    "fastGrantReport",
+    "publicDonationDrive",
+    "donationClaimList",
+    "donationCoordination",
+    "platformLogisticsShare",
+    "interProvinceSupport",
+    "procurementCreditNegotiation",
+    "supplierPaymentExtension",
+    "emergencyAccountClearing",
+    "specialFundingApplication",
+    "mutualAidFund",
+    "temporaryTurnoverPool",
+    "supplyOrderPrepaySwap",
+  ]);
+
+  const MICRO_ROADMAP_IDS = new Set([
+    "remoteApprovalDesk",
+    "onlineGovOvertime",
+    "remoteWorkGovServices",
+    "essentialServicePermit",
+    "contactlessLivelihoodStalls",
+    "neighborhoodPickupWindow",
+    "essentialMaintenanceRoster",
+    "communityRepairWhitelist",
+    "microFreightPermit",
+    "closedLoopSmallShift",
+    "contactlessServiceRegistry",
+    "serviceVoucherPilot",
+    "livelihoodStaggeredReopen",
+    "factoryClosedLoop",
+    "lowContactBusinessPermit",
+    "lowRiskWorkList",
+    "elasticTransit",
+  ]);
+
   const ACTION_OPPORTUNITY_LOCKS = new Set(["条件未满足", "资金不足", "财政透支", "今日调度已满"]);
 
   function getCityActionOpportunities(state) {
@@ -8029,6 +8067,38 @@
       return { tone: "info", detail: "", items: [], availableCount: 0, totalCount: 0 };
     }
 
+    const rows = collectRecoveryLeverRows(state);
+    const sorted = rows.sort((a, b) => {
+      if (b.priority !== a.priority) return b.priority - a.priority;
+      if (a.bucket !== b.bucket) return recoveryBucketRank(a.bucket) - recoveryBucketRank(b.bucket);
+      return a.label.localeCompare(b.label, "zh-Hans-CN");
+    });
+    const availableCount = sorted.filter((item) => item.bucket === "available").length;
+    const establishedCount = sorted.filter((item) => item.bucket === "established").length;
+    const pressure = Math.max(0, 55 - state.resources.funds) + Math.max(0, 58 - state.metrics.economy);
+    const tone = state.resources.funds <= 15 || state.metrics.economy <= 25
+      ? "danger"
+      : availableCount
+        ? "good"
+        : pressure > 24
+          ? "warn"
+          : "info";
+    const detail = availableCount
+      ? `当前有 ${availableCount} 条资金或活力恢复渠道可执行。`
+      : establishedCount
+        ? `已有 ${establishedCount} 条恢复铺垫生效，等待条件或次日调度。`
+        : "暂无立即可用恢复渠道，可先改善条件或处理今日事件。";
+
+    return {
+      tone,
+      detail,
+      items: sorted.slice(0, 7),
+      availableCount,
+      totalCount: sorted.length,
+    };
+  }
+
+  function collectRecoveryLeverRows(state) {
     const seen = new Set();
     const rows = [];
     MAP_POINTS.forEach((pointDef) => {
@@ -8064,35 +8134,7 @@
         });
       });
     });
-
-    const sorted = rows.sort((a, b) => {
-      if (b.priority !== a.priority) return b.priority - a.priority;
-      if (a.bucket !== b.bucket) return recoveryBucketRank(a.bucket) - recoveryBucketRank(b.bucket);
-      return a.label.localeCompare(b.label, "zh-Hans-CN");
-    });
-    const availableCount = sorted.filter((item) => item.bucket === "available").length;
-    const establishedCount = sorted.filter((item) => item.bucket === "established").length;
-    const pressure = Math.max(0, 55 - state.resources.funds) + Math.max(0, 58 - state.metrics.economy);
-    const tone = state.resources.funds <= 15 || state.metrics.economy <= 25
-      ? "danger"
-      : availableCount
-        ? "good"
-        : pressure > 24
-          ? "warn"
-          : "info";
-    const detail = availableCount
-      ? `当前有 ${availableCount} 条资金或活力恢复渠道可执行。`
-      : establishedCount
-        ? `已有 ${establishedCount} 条恢复铺垫生效，等待条件或次日调度。`
-        : "暂无立即可用恢复渠道，可先改善条件或处理今日事件。";
-
-    return {
-      tone,
-      detail,
-      items: sorted.slice(0, 7),
-      availableCount,
-      totalCount: sorted.length,
-    };
+    return rows;
   }
 
   function recoveryLeverValue(item) {
@@ -8200,6 +8242,120 @@
     return "info";
   }
 
+  function getRecoveryRoadmap(state) {
+    const rows = collectRecoveryLeverRows(state);
+    return [
+      buildRecoveryRoadmapItem(state, rows.filter((item) => FISCAL_ROADMAP_IDS.has(item.id)), {
+        id: "fiscalChain",
+        label: "资金链",
+        target: 3,
+        empty: "还没有形成财政协作链，前期应先做台账、缺口清单或公开募捐。",
+        ready: "资金链已经成网，低资金时更容易产生每日小额回流。",
+        available: "今天可以继续铺财政节点。",
+      }),
+      buildRecoveryRoadmapItem(state, rows.filter((item) => MICRO_ROADMAP_IDS.has(item.id)), {
+        id: "microLoop",
+        label: "微循环",
+        target: 4,
+        empty: "城市活力仍主要靠自然结算，前期可以先铺线上预审、民生名录或预约取货。",
+        ready: "低接触微循环已经成网，活力恢复会更稳，但仍受感染和管控限制。",
+        available: "今天可以增加低接触活力节点。",
+      }),
+      buildRecoveryGateItem(state),
+    ];
+  }
+
+  function buildRecoveryRoadmapItem(state, rows, config) {
+    const established = rows.filter((item) => item.bucket === "established").length;
+    const available = rows
+      .filter((item) => item.bucket === "available")
+      .sort((a, b) => b.priority - a.priority);
+    const locked = rows
+      .filter((item) => item.bucket === "locked")
+      .sort((a, b) => b.priority - a.priority);
+    const next = available[0] || locked[0] || null;
+    const target = Math.max(1, config.target || 3);
+    const progress = established >= target
+      ? 100
+      : clamp(Math.round((Math.min(established, target) / target) * 76 + Math.min(available.length, 2) * 8), 0, 92);
+    const stage = established >= target
+      ? "已成网"
+      : established > 0
+        ? "铺垫中"
+        : available.length
+          ? "可起步"
+          : "待解锁";
+    const tone = established >= target
+      ? "good"
+      : available.length
+        ? "info"
+        : state.resources.funds <= 18 || state.metrics.economy <= 30
+          ? "warn"
+          : "mixed";
+    const nextText = next
+      ? `${next.bucket === "available" ? "可做" : unlockPreviewLabel(next.lockedReason)}：${next.label}`
+      : "暂无下一步";
+    const detail = established >= target
+      ? config.ready
+      : available.length
+        ? `${config.available} ${nextText}。`
+        : next
+          ? `${config.empty} 下一步${nextText}。`
+          : config.empty;
+    return {
+      id: config.id,
+      label: config.label,
+      stage,
+      tone,
+      progress,
+      detail,
+      next: next ? {
+        id: next.id,
+        label: next.label,
+        mode: next.mode,
+        pointId: next.pointId,
+        pointLabel: next.pointLabel,
+        status: next.status,
+      } : null,
+      counts: {
+        established,
+        available: available.length,
+        locked: locked.length,
+        target,
+      },
+    };
+  }
+
+  function buildRecoveryGateItem(state) {
+    const m = state.metrics;
+    const h = state.hidden;
+    const blockers = [];
+    if (m.infection >= 65) blockers.push("感染高位会放大复业代价");
+    if (h.detectedRate < 50) blockers.push("发现率不足会让微循环多带感染风险");
+    if (h.policyStrictness >= 70) blockers.push("管控偏高会压住活力回流");
+    if (m.trust < 45) blockers.push("低信任会削弱捐助和协作资金");
+    if (m.staffFatigue >= 75) blockers.push("基层疲劳会拖慢恢复资产兑现");
+    if (state.resources.funds <= 15) blockers.push("资金低位会锁住恢复工程");
+    const progress = clamp(100 - blockers.length * 17, 8, 100);
+    return {
+      id: "recoveryGate",
+      label: "恢复闸门",
+      stage: blockers.length ? `${blockers.length}项阻力` : "窗口打开",
+      tone: blockers.length >= 4 ? "danger" : blockers.length ? "warn" : "good",
+      progress,
+      detail: blockers.length
+        ? blockers.slice(0, 3).join("；")
+        : "感染、发现率、管控和信任暂时允许恢复渠道兑现收益。",
+      next: null,
+      counts: {
+        established: Math.max(0, 6 - blockers.length),
+        available: blockers.length ? 0 : 1,
+        locked: blockers.length,
+        target: 6,
+      },
+    };
+  }
+
   function getFiscalOutlook(state) {
     const fiscal = calculateFiscalOutlook(state);
     const economy = calculateEconomyOutlook(state, {});
@@ -8228,6 +8384,7 @@
       detail,
       lockedByFunds,
       activeAssets: fiscal.activeAssets || [],
+      roadmap: getRecoveryRoadmap(state),
       items: [
         {
           id: "funds",
