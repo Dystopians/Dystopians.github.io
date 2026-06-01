@@ -5062,6 +5062,114 @@ button.fiscal-route-card:focus-visible {
   gap: 6px;
 }
 
+.fiscal-channel-advice {
+  display: grid;
+  gap: 6px;
+  padding: 7px;
+  border: 2px solid #8f6f34;
+  background: rgba(255, 236, 174, 0.74);
+  box-shadow: inset 1px 1px 0 rgba(255, 248, 214, 0.82);
+}
+
+.fiscal-channel-advice-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fiscal-channel-advice-head span,
+.fiscal-channel-advice-head strong {
+  font-size: 0.62rem;
+  font-weight: 900;
+  line-height: 1.08;
+}
+
+.fiscal-channel-advice-head span {
+  color: var(--muted);
+}
+
+.fiscal-channel-advice-head strong {
+  color: var(--deep);
+  text-align: right;
+}
+
+.fiscal-channel-advice-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(152px, 1fr));
+  gap: 5px;
+}
+
+.fiscal-channel-advice-item {
+  min-width: 0;
+  padding: 6px;
+  border: 2px solid #b89752;
+  background: rgba(255, 246, 213, 0.74);
+  color: var(--deep);
+  font: inherit;
+  text-align: left;
+}
+
+button.fiscal-channel-advice-item {
+  cursor: pointer;
+}
+
+button.fiscal-channel-advice-item:hover,
+button.fiscal-channel-advice-item:focus-visible {
+  transform: translateY(-1px);
+  outline: 3px solid rgba(73, 119, 82, 0.45);
+  outline-offset: 2px;
+  box-shadow: 3px 3px 0 rgba(45, 40, 31, 0.24);
+}
+
+.fiscal-channel-advice-item.good {
+  border-color: #4f8d55;
+  background: #dcebb0;
+}
+
+.fiscal-channel-advice-item.warn,
+.fiscal-channel-advice-item.mixed {
+  border-color: #9b7134;
+  background: #f3d790;
+}
+
+.fiscal-channel-advice-item.danger {
+  border-color: #9f4639;
+  background: #eaa07c;
+}
+
+.fiscal-channel-advice-item.info {
+  border-color: var(--blue);
+  background: #dde5d9;
+}
+
+.fiscal-channel-advice-item span,
+.fiscal-channel-advice-item strong {
+  display: block;
+  font-size: 0.58rem;
+  font-weight: 900;
+  line-height: 1.08;
+}
+
+.fiscal-channel-advice-item span {
+  color: var(--muted);
+}
+
+.fiscal-channel-advice-item strong {
+  margin-top: 2px;
+  color: var(--deep);
+  overflow-wrap: anywhere;
+}
+
+.fiscal-channel-advice-item p {
+  margin: 5px 0 0;
+  color: #514632;
+  font-size: 0.56rem;
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
 .fiscal-channel-card {
   min-width: 0;
   padding: 6px;
@@ -5104,6 +5212,10 @@ button.fiscal-channel-card:focus-visible {
 .fiscal-channel-card.info {
   border-color: var(--blue);
   background: #dde5d9;
+}
+
+.fiscal-channel-card.recommended {
+  box-shadow: inset 0 0 0 2px rgba(73, 119, 82, 0.28), 3px 3px 0 rgba(45, 40, 31, 0.16);
 }
 
 .fiscal-channel-top {
@@ -8526,6 +8638,7 @@ button.strategy-debt {
   .ending-metrics,
   .ending-score-grid,
   .fiscal-grid,
+  .fiscal-channel-advice-list,
   .fiscal-channel-plan,
   .fiscal-roadmap {
     grid-template-columns: 1fr;

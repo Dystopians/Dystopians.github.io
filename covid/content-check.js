@@ -482,6 +482,7 @@ function validateRecoveryLevers() {
 function validateFiscalOutlook() {
   assert(typeof core.getFiscalOutlook === "function", "game-core.js must export getFiscalOutlook.");
   assert(typeof core.getFiscalChannelPlan === "function", "game-core.js must export getFiscalChannelPlan.");
+  assert(typeof core.getFiscalChannelAdvice === "function", "game-core.js must export getFiscalChannelAdvice.");
   const appJs = fs.readFileSync(path.join(rootDir, "app.js"), "utf8");
   const styles = fs.readFileSync(path.join(rootDir, "styles.css"), "utf8");
   const state = core.createGame({ difficulty: "normal", seed: 20260619 });
@@ -528,6 +529,19 @@ function validateFiscalOutlook() {
   assert(
     core.getFiscalChannelPlan(state).some((item) => item.next && item.next.id && item.next.pointId && item.next.mode),
     "Fiscal channel plan should carry focusable next actions when routes are available or locked.",
+  );
+  assert(Array.isArray(opening.channelAdvice) && opening.channelAdvice.length >= 2, "Fiscal outlook should expose state-sensitive channel advice.");
+  assert(
+    opening.channelAdvice.every((item) => item.id && item.label && item.reason && item.status && item.tone),
+    "Every channel advice item needs id, label, reason, status, and tone.",
+  );
+  assert(
+    opening.channelAdvice.some((item) => item.actionId && item.mode && item.pointId),
+    "Channel advice should carry focusable next actions.",
+  );
+  assert(
+    opening.channels.some((item) => item.recommended),
+    "Recommended channel advice should mark matching channel cards.",
   );
   assert(
     opening.items.every((item) => item.id && item.label && item.value !== undefined && item.detail && item.tone),
@@ -607,6 +621,9 @@ function validateFiscalOutlook() {
   assert(appJs.includes("renderFiscalNetwork"), "Fiscal panel should render fiscal/micro network readouts.");
   assert(styles.includes(".fiscal-runway"), "Budget runway needs dedicated styling.");
   assert(styles.includes(".fiscal-prescription"), "Daily fiscal prescription needs dedicated styling.");
+  assert(appJs.includes("renderFiscalChannelAdvice"), "Fiscal panel should render channel advice.");
+  assert(styles.includes(".fiscal-channel-advice"), "Channel advice needs dedicated styling.");
+  assert(styles.includes(".fiscal-channel-card.recommended"), "Recommended fiscal channel cards need a visible state.");
   assert(styles.includes(".fiscal-channel-card"), "Fiscal channel plan needs dedicated styling.");
   assert(styles.includes(".fiscal-network"), "Fiscal/micro network readouts need dedicated styling.");
 }

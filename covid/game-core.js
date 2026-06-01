@@ -9540,6 +9540,111 @@
     return FISCAL_CHANNEL_GROUPS.map((config) => buildFiscalChannelPlanItem(state, rows, config));
   }
 
+  function getFiscalChannelAdvice(state, channels = null) {
+    if (!state || state.ended) return [];
+    const items = (channels || getFiscalChannelPlan(state))
+      .map((channel) => {
+        const evaluation = evaluateFiscalChannelNeed(state, channel);
+        return {
+          id: channel.id,
+          label: channel.label,
+          tone: evaluation.tone,
+          score: evaluation.score,
+          reason: evaluation.reason,
+          status: channel.next
+            ? `${channel.next.bucket === "available" ? "可执行" : unlockPreviewLabel(channel.next.lockedReason)} · ${channel.next.label}`
+            : channel.status,
+          actionId: channel.next ? channel.next.id : "",
+          mode: channel.next ? channel.next.mode : "",
+          pointId: channel.next ? channel.next.pointId : "",
+          pointLabel: channel.next ? channel.next.pointLabel : "",
+          available: Boolean(channel.next && channel.next.bucket === "available"),
+        };
+      })
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label, "zh-Hans-CN"))
+      .slice(0, 3);
+    if (items.length) return items;
+    return (channels || getFiscalChannelPlan(state)).slice(0, 2).map((channel) => ({
+      id: channel.id,
+      label: channel.label,
+      tone: channel.tone || "info",
+      score: 0,
+      reason: "当前资金和活力暂时没有明显缺口，保持渠道铺垫即可。",
+      status: channel.next ? `${channel.next.status} · ${channel.next.label}` : channel.status,
+      actionId: channel.next ? channel.next.id : "",
+      mode: channel.next ? channel.next.mode : "",
+      pointId: channel.next ? channel.next.pointId : "",
+      pointLabel: channel.next ? channel.next.pointLabel : "",
+      available: Boolean(channel.next && channel.next.bucket === "available"),
+    }));
+  }
+
+  function evaluateFiscalChannelNeed(state, channel) {
+    const m = state.metrics;
+    const h = state.hidden;
+    const r = state.resources;
+    const available = channel.counts ? channel.counts.available || 0 : 0;
+    const established = channel.counts ? channel.counts.established || 0 : 0;
+    const target = channel.counts ? channel.counts.target || 1 : 1;
+    let score = available ? 10 : 0;
+    if (established < target) score += 4;
+    let tone = channel.tone || "info";
+    let reason = channel.detail || "根据当前资金和活力缺口选择渠道。";
+
+    if (channel.id === "appropriation") {
+      if (r.funds <= 55) score += 18;
+      if (state.day <= 12) score += 5;
+      if (m.trust >= 50) score += 4;
+      reason = r.funds <= 45
+        ? "现金流偏紧时，专项拨付是最温和的补资金路线，代价主要是填报和审计压力。"
+        : "开局先做可核验台账，能把后续资金缺口变成可批复项目。";
+      tone = "good";
+    } else if (channel.id === "mutualAid") {
+      if (m.trust >= 55 && (r.funds <= 60 || m.supplies <= 62 || h.publicMemory >= 8)) score += 18;
+      if (m.trust < 45) score -= 14;
+      reason = m.trust < 45
+        ? "信任偏低时，捐助和支援容易变成分配争议，先修复公开口径再动用。"
+        : "信任尚可时，社会协作能把捐助、物资和外部支援转成稳态补位。";
+      tone = m.trust < 45 ? "warn" : "good";
+    } else if (channel.id === "creditBridge") {
+      if (r.funds <= 35) score += 22;
+      if (r.funds <= 18) score += 10;
+      if (m.trust < 35) score -= 8;
+      reason = r.funds <= 25
+        ? "资金红线前，账期和授信能争取几天窗口，但必须准备后续还账。"
+        : "账期授信适合在大工程前铺垫，避免现金流突然断档。";
+      tone = r.funds <= 25 ? "warn" : "mixed";
+    } else if (channel.id === "lowContactVitality") {
+      if (m.economy <= 65 && m.infection < 70) score += 20;
+      if (h.detectedRate < 50) score -= 6;
+      if (h.policyStrictness >= 70) score -= 4;
+      reason = h.detectedRate < 50
+        ? "低接触活力能托住早期经济，但发现率不足会放大隐匿传播风险。"
+        : "感染尚未爆表时，低接触网点和线上流程是前期恢复活力的主路。";
+      tone = h.detectedRate < 50 ? "warn" : "info";
+    } else if (channel.id === "productionLoop") {
+      if (m.supplies <= 65 || m.economy <= 55) score += 18;
+      if (m.infection >= 75) score -= 16;
+      if (h.detectedRate >= 60) score += 3;
+      reason = m.infection >= 75
+        ? "感染高位时，产能和货运闭环要谨慎推进，先补监测或医疗缓冲。"
+        : "物资或活力承压时，保供产能能同时托住供应、就业和财政回款。";
+      tone = m.infection >= 75 ? "warn" : "mixed";
+    } else if (channel.id === "lastResort") {
+      if (r.funds <= 15) score += 32;
+      else if (r.funds <= 22) score += 10;
+      else score -= 24;
+      reason = r.funds <= 15
+        ? "资金触底时才考虑最后手段；它能救急，但会把代价转成信任、活力和创伤。"
+        : "最后手段不是常规收入，资金未触底时应优先温和渠道。";
+      tone = r.funds <= 15 ? "danger" : "mixed";
+    }
+
+    if (!available && channel.next) score = Math.max(0, score - 5);
+    return { score, tone, reason };
+  }
+
   function buildFiscalChannelPlanItem(state, rows, config) {
     const order = new Map(config.ids.map((id, index) => [id, index]));
     const groupRows = rows
@@ -9599,6 +9704,7 @@
         pointId: next.pointId,
         pointLabel: next.pointLabel,
         status: next.status,
+        lockedReason: next.lockedReason,
         bucket: next.bucket,
       } : null,
       counts: {
@@ -9938,6 +10044,8 @@
   function getFiscalOutlook(state) {
     const fiscal = calculateFiscalOutlook(state);
     const economy = calculateEconomyOutlook(state, {});
+    const channels = getFiscalChannelPlan(state);
+    const channelAdvice = getFiscalChannelAdvice(state, channels);
     const lockedByFunds = [
       ...getAvailableOperations(state),
       ...getAvailableResolutions(state),
@@ -9966,7 +10074,11 @@
       runway: getFiscalRunway(state, fiscal, economy, lockedByFunds),
       network: getRecoveryNetworkReadouts(state, fiscal, economy),
       roadmap: getRecoveryRoadmap(state),
-      channels: getFiscalChannelPlan(state),
+      channels: channels.map((channel) => ({
+        ...channel,
+        recommended: channelAdvice.some((item) => item.id === channel.id),
+      })),
+      channelAdvice,
       prescription: getFiscalPrescription(state, fiscal, economy, lockedByFunds),
       items: [
         {
@@ -10177,6 +10289,7 @@
     getCityActionOpportunities,
     getRecoveryLevers,
     getFiscalChannelPlan,
+    getFiscalChannelAdvice,
     getFiscalPrescription,
     getFiscalOutlook,
     getCityBadges,

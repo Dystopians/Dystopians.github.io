@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v170";
+  const ASSET_VERSION = "v171";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -1085,6 +1085,7 @@
       </div>
       ${renderFiscalRunway(report.runway)}
       ${renderFiscalPrescription(report.prescription)}
+      ${renderFiscalChannelAdvice(report.channelAdvice)}
       ${renderFiscalChannels(report.channels)}
       ${renderFiscalNetwork(report.network)}
       <div class="fiscal-grid">
@@ -1212,10 +1213,10 @@
             ? ` type="button" data-channel-point="${escapeHtml(next.pointId)}" data-channel-mode="${escapeHtml(next.mode)}" data-channel-action="${escapeHtml(next.id)}"`
             : "";
           return `
-            <${tagName} class="fiscal-channel-card ${escapeHtml(item.tone || "info")} ${actionable ? "actionable" : ""}"${actionAttrs} title="${escapeHtml([item.detail, item.warning].filter(Boolean).join(" "))}">
+            <${tagName} class="fiscal-channel-card ${escapeHtml(item.tone || "info")} ${item.recommended ? "recommended" : ""} ${actionable ? "actionable" : ""}"${actionAttrs} title="${escapeHtml([item.detail, item.warning].filter(Boolean).join(" "))}">
               <div class="fiscal-channel-top">
                 <span>${escapeHtml(item.label || "渠道")}</span>
-                <strong>${escapeHtml(item.status || "")}</strong>
+                <strong>${escapeHtml(item.recommended ? `建议 · ${item.status || ""}` : item.status || "")}</strong>
               </div>
               <div class="fiscal-channel-meter" aria-hidden="true">
                 <i style="width:${Math.max(0, Math.min(100, Number(item.progress) || 0))}%"></i>
@@ -1226,6 +1227,35 @@
             </${tagName}>
           `;
         }).join("")}
+      </div>
+    `;
+  }
+
+  function renderFiscalChannelAdvice(advice = []) {
+    const items = Array.isArray(advice) ? advice.slice(0, 3) : [];
+    if (!items.length) return "";
+    return `
+      <div class="fiscal-channel-advice" aria-label="资金与活力渠道处方">
+        <div class="fiscal-channel-advice-head">
+          <span>渠道处方</span>
+          <strong>${escapeHtml(items.length)}条优先线</strong>
+        </div>
+        <div class="fiscal-channel-advice-list">
+          ${items.map((item) => {
+            const actionable = item.actionId && item.pointId && item.mode;
+            const tagName = actionable ? "button" : "article";
+            const actionAttrs = actionable
+              ? ` type="button" data-channel-point="${escapeHtml(item.pointId)}" data-channel-mode="${escapeHtml(item.mode)}" data-channel-action="${escapeHtml(item.actionId)}"`
+              : "";
+            return `
+              <${tagName} class="fiscal-channel-advice-item ${escapeHtml(item.tone || "info")} ${actionable ? "actionable" : ""}"${actionAttrs} title="${escapeHtml(item.reason || "")}">
+                <span>${escapeHtml(item.label || "渠道")}</span>
+                <strong>${escapeHtml(item.status || "观察")}</strong>
+                <p>${escapeHtml(item.reason || "")}</p>
+              </${tagName}>
+            `;
+          }).join("")}
+        </div>
       </div>
     `;
   }
