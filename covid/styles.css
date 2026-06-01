@@ -3883,6 +3883,14 @@ label {
   overflow-wrap: anywhere;
 }
 
+.choice-settlement-confirm.has-risk {
+  border-color: var(--danger);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 226, 196, 0.58) 0 4px, rgba(168, 63, 50, 0.24) 4px 8px),
+    #eaa07c;
+  color: #5b1f18;
+}
+
 .choice-critical-confirm {
   display: block;
   margin-top: 6px;

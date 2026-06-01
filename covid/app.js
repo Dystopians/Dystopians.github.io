@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v152";
+  const ASSET_VERSION = "v154";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -1818,17 +1818,25 @@
         <div class="chips">${chips}</div>
         ${renderChoiceSettlementHint(choice)}
         ${renderChoiceSettlementConfirm(choice, awaitingSettlementConfirm)}
-        ${renderChoiceCriticalConfirm(choice, awaitingCriticalConfirm)}
+        ${renderChoiceCriticalConfirm(choice, awaitingCriticalConfirm && !awaitingSettlementConfirm)}
       `;
       button.addEventListener("click", () => {
         if (choice.available === false) return;
         if (shouldConfirmSettlementBeforeChoice(choice.id)) {
+          const risk = getCriticalChoiceRisk(choice.id);
           pendingSettlementChoice = {
             choiceId: choice.id,
             eventId: state.currentEventId,
             day: state.day,
           };
-          pendingCriticalChoice = null;
+          pendingCriticalChoice = risk
+            ? {
+                choiceId: choice.id,
+                eventId: state.currentEventId,
+                day: state.day,
+                label: risk.label,
+              }
+            : null;
           renderEvent();
           const focused = focusChoiceOption(choice.id);
           if (!focused && els.choiceList && typeof els.choiceList.scrollIntoView === "function") {
@@ -1953,9 +1961,14 @@
 
   function renderChoiceSettlementConfirm(choice, active) {
     if (!choice || choice.available === false || !active) return "";
+    const risk = getCriticalChoiceRisk(choice.id);
+    const riskText = risk ? `，并承受“${risk.label}”红线风险` : "";
+    const title = risk
+      ? `${risk.detail} 今日还有城市行动未用；再次点击这个事件选项会同时确认结算和红线风险。`
+      : "今日还有城市行动未用。再次点击这个事件选项才会结算当天。";
     return `
-      <small class="choice-settlement-confirm" title="今日还有城市行动未用。再次点击这个事件选项才会结算当天。">
-        再次点击确认结算；或先用上方“定位行动”处理城市行动
+      <small class="choice-settlement-confirm ${risk ? "has-risk" : ""}" title="${escapeHtml(title)}">
+        再次点击确认结算${escapeHtml(riskText)}；或先用上方“定位行动”处理城市行动
       </small>
     `;
   }

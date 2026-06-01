@@ -414,6 +414,7 @@ function validateTutorialCopy() {
     "红线风险",
     "高危二次确认",
     "危险倒计时",
+    "合并成一次确认",
     "有后账",
     "下一步队列",
     "今日首选",
@@ -675,6 +676,7 @@ function validateFiscalEconomyChannels() {
   const required = [
     "emergencyGapLedger",
     "fastGrantReport",
+    "bankCreditWindow",
     "publicDonationDrive",
     "donationClaimList",
     "platformLogisticsShare",
@@ -684,6 +686,8 @@ function validateFiscalEconomyChannels() {
     "neighborhoodPickupWindow",
     "onlineGovOvertime",
     "remoteApprovalDesk",
+    "microEnterpriseRoster",
+    "neighborhoodCommerceLedger",
     "serviceVoucherPilot",
     "essentialMaintenanceRoster",
     "communityRepairWhitelist",
@@ -716,7 +720,9 @@ function validateFiscalEconomyChannels() {
   const routeExpectations = {
     fiscalTransparencyLedger: "筹措资金",
     emergencyGapLedger: "筹措资金",
+    bankCreditWindow: "筹措资金",
     publicDonationDrive: "筹措资金",
+    microEnterpriseRoster: "低接触活力",
     remoteApprovalDesk: "低接触活力",
     essentialServicePermit: "低接触活力",
     temporaryTurnoverPool: "财政透支",
@@ -726,7 +732,7 @@ function validateFiscalEconomyChannels() {
     const tag = core.getChoiceRouteTag({ id });
     assert(tag && tag.label === label, `${id} should use the ${label} route tag.`);
   });
-  assert(openingAvailable.length >= 3, `Normal opening should expose at least 3 fiscal/economy recovery choices, found ${openingAvailable.length}.`);
+  assert(openingAvailable.length >= 5, `Normal opening should expose at least 5 fiscal/economy recovery choices, found ${openingAvailable.length}.`);
   assert(
     openingAvailable.some((item) => /资金/.test(item.impact)) && openingAvailable.some((item) => /活力/.test(item.impact)),
     "Normal opening recovery choices should include both fiscal and vitality routes.",
@@ -750,7 +756,7 @@ function validateFiscalEconomyChannels() {
   const resolutionStatuses = core.getAvailableResolutions(state).filter((item) => requiredResolutions.includes(item.id));
   const availableResolutions = resolutionStatuses.filter((item) => item.available);
   assert(statuses.length === required.length, "All new fiscal/economy operations should produce operation statuses.");
-  assert(available.length >= 4, `Expected at least 4 early fiscal/economy channels available, found ${available.length}.`);
+  assert(available.length >= 6, `Expected at least 6 early fiscal/economy channels available, found ${available.length}.`);
   assert(resolutionStatuses.length === requiredResolutions.length, "All fiscal/economy recovery resolutions should produce resolution statuses.");
   assert(availableResolutions.length >= 4, `Expected at least 4 early fiscal/economy recovery resolutions available, found ${availableResolutions.length}.`);
   const report = core.getRecoveryLevers(state);
@@ -1275,6 +1281,7 @@ function validateActionPreviewCoverage() {
   assert(appJs.includes("pendingCriticalChoice"), "Event choice clicks should track critical redline confirmations.");
   assert(appJs.includes("shouldConfirmCriticalChoice"), "Event choice clicks should guard high-risk redline choices.");
   assert(appJs.includes("renderChoiceCriticalConfirm"), "Event choices should render a visible critical-risk confirmation state.");
+  assert(appJs.includes("pendingCriticalChoice = risk"), "Unused-action settlement confirmation should merge critical redline confirmation when both apply.");
   assert(appJs.includes("data-pre-settlement-action"), "Top pre-settlement hints should expose an action focus hook.");
   assert(appJs.includes("data-pre-settlement-undo"), "Top pre-settlement hints should expose an undo hook after a city action.");
   assert(appJs.includes("focusRecoveryLever("), "Top pre-settlement action hints should focus the exact map action.");
@@ -1288,6 +1295,7 @@ function validateActionPreviewCoverage() {
   assert(styles.includes(".choice-settlement-confirm"), "Second-click settlement confirmation needs dedicated styling.");
   assert(styles.includes(".choice-button.choice-awaiting-risk"), "Critical redline choices awaiting confirmation need a visible guard state.");
   assert(styles.includes(".choice-critical-confirm"), "Critical redline confirmation needs dedicated styling.");
+  assert(styles.includes(".choice-settlement-confirm.has-risk"), "Merged settlement/risk confirmation needs a distinct danger style.");
   assert(styles.includes(".pre-settlement-hint"), "Top pre-settlement hints need dedicated styling.");
   assert(styles.includes(".pre-settlement-action"), "Top pre-settlement hint action buttons need dedicated styling.");
   assert(appJs.includes("renderCityBadgeGaps"), "City badge cards should render concrete remaining gaps.");
