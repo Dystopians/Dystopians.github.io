@@ -4117,6 +4117,108 @@ label {
   color: #5b1f18;
 }
 
+.fiscal-runway {
+  display: grid;
+  gap: 6px;
+  padding: 7px;
+  border: 2px solid #9b7134;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 248, 215, 0.44) 0 5px, rgba(232, 199, 121, 0.24) 5px 10px),
+    #f4dda0;
+  box-shadow: inset 1px 1px 0 rgba(255, 247, 209, 0.78);
+}
+
+.fiscal-runway.good {
+  border-color: var(--good);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 248, 215, 0.4) 0 5px, rgba(171, 207, 111, 0.27) 5px 10px),
+    #dcebac;
+}
+
+.fiscal-runway.warn,
+.fiscal-runway.mixed {
+  border-color: var(--warn);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 248, 215, 0.38) 0 5px, rgba(238, 198, 115, 0.32) 5px 10px),
+    #f2d48b;
+}
+
+.fiscal-runway.danger {
+  border-color: var(--danger);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 248, 215, 0.32) 0 5px, rgba(230, 161, 124, 0.34) 5px 10px),
+    #eab08d;
+}
+
+.fiscal-runway.info {
+  border-color: var(--blue);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 248, 215, 0.38) 0 5px, rgba(197, 210, 202, 0.3) 5px 10px),
+    #dde5d9;
+}
+
+.fiscal-runway p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.fiscal-runway > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.fiscal-runway-item {
+  min-width: 0;
+  padding: 5px;
+  border: 2px solid rgba(119, 82, 33, 0.58);
+  background: #fff1c8;
+  box-shadow: 1px 1px 0 rgba(95, 75, 42, 0.28);
+}
+
+.fiscal-runway-item.good {
+  border-color: var(--good);
+  background: #cfe49a;
+}
+
+.fiscal-runway-item.warn,
+.fiscal-runway-item.mixed {
+  border-color: var(--warn);
+  background: #f0ca75;
+}
+
+.fiscal-runway-item.danger {
+  border-color: var(--danger);
+  background: #eaa07c;
+}
+
+.fiscal-runway-item.info {
+  border-color: var(--blue);
+  background: #c8d7df;
+}
+
+.fiscal-runway-item span,
+.fiscal-runway-item strong {
+  display: block;
+  line-height: 1.08;
+}
+
+.fiscal-runway-item span {
+  color: var(--muted);
+  font-size: 0.56rem;
+  font-weight: 900;
+}
+
+.fiscal-runway-item strong {
+  margin-top: 3px;
+  color: var(--deep);
+  font-size: 0.74rem;
+  overflow-wrap: anywhere;
+}
+
 .fiscal-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

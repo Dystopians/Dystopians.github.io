@@ -8362,6 +8362,93 @@
     return "info";
   }
 
+  function getFiscalRunway(state, fiscal, economy, lockedByFunds) {
+    const funds = state.resources.funds;
+    const daily = fiscal.delta || 0;
+    const burn = Math.max(0, -daily);
+    const reserveFloor = state.metrics.hospitalLoad >= 80 || state.metrics.supplies <= 30 ? 24 : 18;
+    const runwayDays = burn > 0 ? clamp(Math.floor((funds - 8) / burn), 0, 9) : null;
+    const availableActions = [
+      ...getAvailableOperations(state),
+      ...getAvailableResolutions(state),
+    ].filter((item) => item.available);
+    const paidActions = availableActions
+      .map((item) => ({
+        label: item.label,
+        cost: Math.max(0, -(item.resources && item.resources.funds ? item.resources.funds : 0)),
+      }))
+      .filter((item) => item.cost > 0)
+      .sort((a, b) => b.cost - a.cost || a.label.localeCompare(b.label, "zh-Hans-CN"));
+    const safeSpend = Math.max(0, funds - reserveFloor);
+    const bridgeNeed = Math.max(0, 3 - (fiscal.activeAssets || []).length);
+    const recoveryBlocked = economy.delta < 0 || state.metrics.economy <= 30 || state.hidden.policyStrictness >= 75;
+    const runwayTone = funds <= 10 || (burn > 0 && runwayDays <= 1)
+      ? "danger"
+      : funds <= 25 || burn > 0
+        ? "warn"
+        : daily > 0
+          ? "good"
+          : "info";
+    const spendingTone = safeSpend <= 0
+      ? funds <= reserveFloor ? "warn" : "mixed"
+      : paidActions.length && safeSpend < paidActions[0].cost
+        ? "warn"
+        : "good";
+    const bridgeTone = recoveryBlocked
+      ? "warn"
+      : bridgeNeed > 0
+        ? "info"
+        : "good";
+    const summary = burn > 0
+      ? `当前账本每日净消耗 ${burn}，现金余量约 ${runwayDays} 天；花钱前建议保留 ${reserveFloor} 资金底线。`
+      : daily > 0
+        ? `当前账本每日回流 ${daily}，可以把一部分资金转成长期恢复资产。`
+        : `当前账本接近平衡，花钱前重点看 ${reserveFloor} 资金底线和恢复资产是否成网。`;
+    const spendDetail = paidActions.length
+      ? `今日可执行行动中最高资金成本为 ${paidActions[0].cost}（${paidActions[0].label}）；建议保留 ${reserveFloor} 作为医疗、保供和应急底线。`
+      : `今日可执行行动暂无直接资金成本；仍建议保留 ${reserveFloor} 作为应急底线。`;
+    return {
+      tone: runwayTone,
+      summary,
+      items: [
+        {
+          id: "runway",
+          label: "现金余量",
+          value: burn > 0 ? `${runwayDays}天` : daily > 0 ? "回流" : "持平",
+          tone: runwayTone,
+          detail: burn > 0
+            ? `按当前自然账本估算，资金 ${funds}、每日净消耗 ${burn}，约 ${runwayDays} 天会逼近底线。`
+            : daily > 0
+              ? `按当前自然账本估算，每日资金净回流 ${daily}。`
+              : "当前资金自然联动接近平衡，主要风险来自主动工程和事件选择。",
+        },
+        {
+          id: "safeSpend",
+          label: "可承受支出",
+          value: safeSpend > 0 ? String(safeSpend) : "留底",
+          tone: spendingTone,
+          detail: spendDetail,
+        },
+        {
+          id: "bridgeAssets",
+          label: "回流资产",
+          value: bridgeNeed > 0 ? `差${bridgeNeed}` : `${(fiscal.activeAssets || []).length}项`,
+          tone: bridgeTone,
+          detail: recoveryBlocked
+            ? "感染、管控、活力或疲劳正在压住资金/活力回流，恢复资产需要先解除阻力。"
+            : bridgeNeed > 0
+              ? `还差 ${bridgeNeed} 个有效财政或微循环节点，低资金时才更容易形成小额回流。`
+              : "恢复资产已经形成基础周转网，低资金时能提供更稳定的小额回流。",
+        },
+      ],
+      reserveFloor,
+      runwayDays,
+      safeSpend,
+      highestActionCost: paidActions[0] || null,
+      lockedByFunds,
+    };
+  }
+
   function getRecoveryRoadmap(state) {
     const rows = collectRecoveryLeverRows(state);
     return [
@@ -8504,6 +8591,7 @@
       detail,
       lockedByFunds,
       activeAssets: fiscal.activeAssets || [],
+      runway: getFiscalRunway(state, fiscal, economy, lockedByFunds),
       roadmap: getRecoveryRoadmap(state),
       items: [
         {

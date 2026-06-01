@@ -428,10 +428,19 @@ function validateRecoveryLevers() {
 
 function validateFiscalOutlook() {
   assert(typeof core.getFiscalOutlook === "function", "game-core.js must export getFiscalOutlook.");
+  const appJs = fs.readFileSync(path.join(rootDir, "app.js"), "utf8");
+  const styles = fs.readFileSync(path.join(rootDir, "styles.css"), "utf8");
   const state = core.createGame({ difficulty: "normal", seed: 20260619 });
   const opening = core.getFiscalOutlook(state);
   assert(opening && Array.isArray(opening.items), "getFiscalOutlook must return an object with items.");
   assert(opening.items.length === 3, "Fiscal outlook should expose funds, economy, and locked-action readouts.");
+  assert(opening.runway && Array.isArray(opening.runway.items), "Fiscal outlook should expose a budget runway readout.");
+  assert(opening.runway.items.length === 3, "Budget runway should expose cash runway, safe spend, and bridge assets.");
+  assert(
+    opening.runway.items.every((item) => item.id && item.label && item.value !== undefined && item.detail && item.tone),
+    "Every budget runway item needs id, label, value, detail, and tone.",
+  );
+  assert(!String(opening.runway.summary).includes("[object Object]"), "Budget runway summary must be readable text.");
   assert(Array.isArray(opening.roadmap) && opening.roadmap.length === 3, "Fiscal outlook should expose a three-part recovery roadmap.");
   assert(
     opening.roadmap.every((item) => item.id && item.label && item.stage && item.detail && item.counts && Number.isFinite(item.progress)),
@@ -461,6 +470,7 @@ function validateFiscalOutlook() {
   pressured.resources.funds = 9;
   const report = core.getFiscalOutlook(pressured);
   assert(report.tone === "danger", "Fiscal outlook should flag severe cashflow states as danger.");
+  assert(report.runway && report.runway.tone === "danger", "Budget runway should flag severe cashflow states as danger.");
   assert(report.items.some((item) => item.id === "locks"), "Fiscal outlook should include funding lock count.");
 
   const assetState = core.createGame({ difficulty: "normal", seed: 20260621 });
@@ -503,6 +513,8 @@ function validateFiscalOutlook() {
     "Two low-flow recovery assets should create a readable micro-recovery economy component.",
   );
   assert(microRoadmap.counts.established >= 2, "Micro-loop roadmap should count established low-contact vitality assets.");
+  assert(appJs.includes("renderFiscalRunway"), "Fiscal panel should render the budget runway.");
+  assert(styles.includes(".fiscal-runway"), "Budget runway needs dedicated styling.");
 }
 
 function validateCrisisDashboard() {

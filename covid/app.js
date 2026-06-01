@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v141";
+  const ASSET_VERSION = "v142";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -980,6 +980,7 @@
         </div>
         <strong class="${escapeHtml(report.tone || "info")}">${escapeHtml(report.lockedByFunds ? `${report.lockedByFunds}锁` : "账本")}</strong>
       </div>
+      ${renderFiscalRunway(report.runway)}
       <div class="fiscal-grid">
         ${items.map((item) => `
           <article class="fiscal-item ${escapeHtml(item.tone || "info")}" title="${escapeHtml(item.detail || "")}">
@@ -999,6 +1000,24 @@
         focusRecoveryLever(button.dataset.roadmapPoint, button.dataset.roadmapMode, button.dataset.roadmapAction);
       });
     });
+  }
+
+  function renderFiscalRunway(runway) {
+    const items = runway && Array.isArray(runway.items) ? runway.items.slice(0, 3) : [];
+    if (!items.length) return "";
+    return `
+      <div class="fiscal-runway ${escapeHtml(runway.tone || "info")}" aria-label="预算压力">
+        <p>${escapeHtml(runway.summary || "根据当前账本估算资金余量。")}</p>
+        <div>
+          ${items.map((item) => `
+            <article class="fiscal-runway-item ${escapeHtml(item.tone || "info")}" title="${escapeHtml(item.detail || "")}">
+              <span>${escapeHtml(item.label)}</span>
+              <strong>${escapeHtml(item.value)}</strong>
+            </article>
+          `).join("")}
+        </div>
+      </div>
+    `;
   }
 
   function renderFiscalRoadmap(roadmap = []) {
