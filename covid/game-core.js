@@ -7461,12 +7461,21 @@
       .sort((a, b) => a.day - b.day || (b.priority || 0) - (a.priority || 0))[0];
     if (upcoming) {
       const event = EVENTS.find((item) => item.id === upcoming.eventId);
+      const focusAction = getScheduledEventFocusAction(state, upcoming);
+      const actionDetail = focusAction
+        ? `${event ? event.title : upcoming.reason}；${focusAction.status || "准备"}：${focusAction.label}。`
+        : event ? event.title : upcoming.reason;
       add(
         "scheduled_soon",
         "info",
         upcoming.day === state.day + 1 ? "明日固定事件" : `第${upcoming.day}天固定事件`,
-        event ? event.title : upcoming.reason,
+        actionDetail,
         70 - (upcoming.day - state.day),
+        focusAction ? {
+          actionId: focusAction.id,
+          mode: focusAction.mode,
+          pointId: focusAction.pointId,
+        } : {},
       );
     }
 

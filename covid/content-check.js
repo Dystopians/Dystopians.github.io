@@ -688,6 +688,20 @@ function validateMicroRecoveryPressure() {
     "High-hospital pressure",
   );
 
+  const scheduledState = core.createGame({ difficulty: "normal", seed: 2026062405 });
+  scheduledState.day = 20;
+  scheduledState.phase = core.phaseForDay(scheduledState.day);
+  const scheduledSummary = core.getDailyPressureSummary(scheduledState);
+  assertActionablePressure(
+    scheduledSummary,
+    "scheduled_soon",
+    "Upcoming scheduled-event pressure",
+  );
+  assert(
+    scheduledSummary.some((item) => item.id === "scheduled_soon" && /可准备|差条件|已铺垫/.test(item.detail)),
+    "Upcoming scheduled-event pressure should name the preparation action status.",
+  );
+
   const inertiaState = core.createGame({ difficulty: "normal", seed: 20260626 });
   inertiaState.flags.actionUses.citywideSilence = 2;
   inertiaState.history.unshift({
