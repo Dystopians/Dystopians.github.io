@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v149";
+  const ASSET_VERSION = "v150";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -315,6 +315,7 @@
     pressureSummary: document.getElementById("pressureSummary"),
     dailyDirective: document.getElementById("dailyDirective"),
     trendPreview: document.getElementById("trendPreview"),
+    preSettlementHint: document.getElementById("preSettlementHint"),
     eventBody: document.getElementById("eventBody"),
     eventStageReview: document.getElementById("eventStageReview"),
     eventSource: document.getElementById("eventSource"),
@@ -1735,6 +1736,7 @@
     renderPressureSummary();
     renderDailyDirective();
     renderTrendPreview();
+    renderPreSettlementHint();
     els.eventBody.textContent = event.description || event.body;
     renderEventStageReview(event.stageReview);
     if (event.sourceNote) {
@@ -1891,6 +1893,60 @@
         选后结算：${escapeHtml(nextText)}；今日城市行动将定稿
       </small>
     `;
+  }
+
+  function renderPreSettlementHint() {
+    if (!els.preSettlementHint || !core.getEventSettlementHint) return;
+    const hint = core.getEventSettlementHint(state);
+    if (!hint) {
+      els.preSettlementHint.hidden = true;
+      els.preSettlementHint.innerHTML = "";
+      return;
+    }
+    const canLocate = hint.actionId && hint.pointId && hint.id !== "cityActionCommitted";
+    const canUndo = hint.id === "cityActionCommitted" && core.undoCityAction;
+    const action = canLocate
+      ? `
+        <button class="pre-settlement-action" type="button"
+          data-pre-settlement-point="${escapeHtml(hint.pointId)}"
+          data-pre-settlement-mode="${escapeHtml(hint.mode || "operations")}"
+          data-pre-settlement-action="${escapeHtml(hint.actionId)}">
+          定位行动
+        </button>
+      `
+      : canUndo
+        ? "<button class=\"pre-settlement-action\" type=\"button\" data-pre-settlement-undo>撤销行动</button>"
+        : "";
+    els.preSettlementHint.hidden = false;
+    els.preSettlementHint.className = `pre-settlement-hint ${escapeHtml(hint.tone || "info")}`;
+    els.preSettlementHint.innerHTML = `
+      <div>
+        <span>${escapeHtml(hint.label || "选前提醒")}</span>
+        <strong>${escapeHtml(hint.detail || "")}</strong>
+      </div>
+      ${action}
+    `;
+    const actionButton = els.preSettlementHint.querySelector("[data-pre-settlement-action]");
+    if (actionButton) {
+      bindCityActionPreview(actionButton, () => actionButton.dataset.preSettlementMode, () => actionButton.dataset.preSettlementAction);
+      actionButton.addEventListener("click", () => {
+        focusRecoveryLever(
+          actionButton.dataset.preSettlementPoint,
+          actionButton.dataset.preSettlementMode,
+          actionButton.dataset.preSettlementAction,
+        );
+      });
+    }
+    const undoButton = els.preSettlementHint.querySelector("[data-pre-settlement-undo]");
+    if (undoButton) {
+      undoButton.addEventListener("click", () => {
+        const undone = core.undoCityAction(state);
+        if (undone) {
+          save();
+          render();
+        }
+      });
+    }
   }
 
   function renderChoiceFit(choice) {

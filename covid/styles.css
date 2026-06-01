@@ -3072,6 +3072,93 @@ label {
   background: #cbd7d0;
 }
 
+.pre-settlement-hint {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin: -4px 0 10px;
+  padding: 7px;
+  border: 2px solid rgba(117, 82, 40, 0.58);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 244, 205, 0.46) 0 4px, rgba(227, 197, 128, 0.3) 4px 8px),
+    #f1d690;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 250, 226, 0.38),
+    2px 2px 0 rgba(80, 58, 30, 0.22);
+}
+
+.pre-settlement-hint[hidden] {
+  display: none;
+}
+
+.pre-settlement-hint > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.pre-settlement-hint span,
+.pre-settlement-hint strong {
+  display: block;
+}
+
+.pre-settlement-hint span {
+  margin-bottom: 3px;
+  color: #7b4b24;
+  font-size: 0.62rem;
+  font-weight: 900;
+}
+
+.pre-settlement-hint strong {
+  color: var(--deep);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.pre-settlement-hint.warn,
+.pre-settlement-hint.mixed {
+  border-color: var(--warn);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 242, 184, 0.54) 0 4px, rgba(216, 155, 55, 0.26) 4px 8px),
+    #efc463;
+}
+
+.pre-settlement-hint.info {
+  border-color: var(--blue);
+  background:
+    repeating-linear-gradient(90deg, rgba(222, 236, 232, 0.5) 0 4px, rgba(109, 148, 154, 0.18) 4px 8px),
+    #d9e6df;
+}
+
+.pre-settlement-hint.good {
+  border-color: var(--good);
+  background:
+    repeating-linear-gradient(90deg, rgba(231, 246, 197, 0.56) 0 4px, rgba(116, 160, 91, 0.22) 4px 8px),
+    #cfe3a2;
+}
+
+.pre-settlement-action {
+  align-self: center;
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 2px solid #755228;
+  background: #8e6330;
+  color: #fff1bf;
+  box-shadow: 2px 2px 0 rgba(70, 49, 25, 0.35);
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.pre-settlement-action:hover,
+.pre-settlement-action:focus-visible {
+  transform: translate(-1px, -1px);
+  background: #5f8154;
+  color: #f7ffd6;
+  outline: none;
+}
+
 .trend-chip {
   padding: 0 6px;
   background: #f5d88b;
@@ -7922,6 +8009,15 @@ button.fiscal-route-card:focus-visible {
 
   .choice-comparison-head strong {
     text-align: left;
+  }
+
+  .pre-settlement-hint {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pre-settlement-action {
+    align-self: stretch;
   }
 
   .choice-button {

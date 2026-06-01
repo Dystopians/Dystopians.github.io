@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>临江72日</title>
-    <link rel="stylesheet" href="./styles.css?v=149">
+    <link rel="stylesheet" href="./styles.css?v=150">
   </head>
   <body>
     <main class="app-shell">
@@ -180,6 +180,7 @@
                 <div id="pressureSummary" class="pressure-summary" aria-label="今日压力摘要"></div>
                 <div id="dailyDirective" class="daily-directive" aria-label="今日调度目标"></div>
                 <div id="trendPreview" class="trend-preview" aria-label="今晚趋势预报"></div>
+                <div id="preSettlementHint" class="pre-settlement-hint" aria-label="选前行动提醒" hidden></div>
                 <p id="eventBody"></p>
                 <div id="eventStageReview" class="event-stage-review" aria-label="阶段复盘" hidden></div>
                 <details id="eventSource" class="event-source">
@@ -313,7 +314,7 @@
           </section>
           <section>
             <h3>5. 处理事件</h3>
-            <p>每日事件会推进一天。先看三案对比、决策徽章和选前提醒：贴合目标、红线风险、有后账都会压成短标签；若还有城市行动未用，它会提示可先做的工程或决议；选后结算里的后果复盘会说明这是止血、换账、承压还是改善。</p>
+            <p>每日事件会推进一天。先看三案对比、决策徽章和顶部选前提醒：贴合目标、红线风险、有后账都会压成短标签；若还有城市行动未用，它会提示并可定位到先做的工程或决议；选后结算里的后果复盘会说明这是止血、换账、承压还是改善。</p>
           </section>
           <section>
             <h3>6. 托住账本</h3>
@@ -344,7 +345,7 @@
       </article>
     </section>
 
-    <script src="./game-core.js?v=149"></script>
-    <script src="./app.js?v=149"></script>
+    <script src="./game-core.js?v=150"></script>
+    <script src="./app.js?v=150"></script>
   </body>
 </html>

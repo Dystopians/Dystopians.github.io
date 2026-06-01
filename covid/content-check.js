@@ -415,8 +415,10 @@ function validateTutorialCopy() {
     "有后账",
     "下一步队列",
     "今日首选",
+    "顶部选前提醒",
     "选前提醒",
     "还有城市行动未用",
+    "可定位",
     "选后结算",
     "明日可排",
     "后续影响",
@@ -1261,12 +1263,19 @@ function validateActionPreviewCoverage() {
   assert(styles.includes(".choice-decision-tags"), "Choice decision tags need dedicated styling.");
   assert(styles.includes(".choice-button.choice-recommended"), "Recommended choice buttons should have a visible persistent state.");
   assert(appJs.includes("renderChoiceSettlementHint"), "Event choice buttons should explain that selecting them settles the day.");
+  assert(indexHtml.includes("id=\"preSettlementHint\""), "Event panel should expose a top pre-settlement hint container.");
+  assert(appJs.includes("renderPreSettlementHint"), "Event panel should render the top pre-settlement action hint.");
+  assert(appJs.includes("data-pre-settlement-action"), "Top pre-settlement hints should expose an action focus hook.");
+  assert(appJs.includes("data-pre-settlement-undo"), "Top pre-settlement hints should expose an undo hook after a city action.");
+  assert(appJs.includes("focusRecoveryLever("), "Top pre-settlement action hints should focus the exact map action.");
   assert(appJs.includes("core.getEventSettlementHint"), "Event choice settlement hints should use the core pre-settlement warning.");
   assert(appJs.includes("choice-settlement-hint ${escapeHtml(hint.tone"), "Event choice settlement hints should receive warning tone classes.");
   assert(coreJs.includes("getEventSettlementHint"), "Core should expose event settlement warnings for unused city action budget.");
   assert(appJs.includes("今日城市行动将定稿"), "Event choice settlement hint should warn that today's city actions become final.");
   assert(styles.includes(".choice-settlement-hint"), "Event settlement hints need dedicated styling.");
   assert(styles.includes(".choice-settlement-hint.warn"), "Unused-action settlement hints need a visible warning style.");
+  assert(styles.includes(".pre-settlement-hint"), "Top pre-settlement hints need dedicated styling.");
+  assert(styles.includes(".pre-settlement-action"), "Top pre-settlement hint action buttons need dedicated styling.");
   assert(appJs.includes("renderCityBadgeGaps"), "City badge cards should render concrete remaining gaps.");
   assert(styles.includes(".city-badge-gaps"), "City badge gap chips need dedicated styling.");
   assert(appJs.includes("focusCityActionCard"), "City action navigation should scroll to and highlight the exact target card.");
