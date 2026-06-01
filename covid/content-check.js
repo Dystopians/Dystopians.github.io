@@ -859,6 +859,11 @@ function validateStageReview() {
   midStage.day = 15;
   midStage.phase = core.phaseForDay(midStage.day);
   assert(core.getStageTransitionBrief(midStage) === null, "Stage transition brief should not stay visible deep into a phase.");
+  const openingObjectives = core.getStageObjectives(core.createGame({ difficulty: "normal", seed: 20260624 }), { includeFocusActions: true });
+  assert(
+    openingObjectives.some((objective) => !objective.done && objective.focusAction && objective.focusAction.id && objective.focusAction.pointId),
+    "Unfinished stage objectives should expose a concrete focus action when one is available.",
+  );
 }
 
 function validateChoiceRiskPreview() {
@@ -1181,6 +1186,13 @@ function validateActionPreviewCoverage() {
   assert(appJs.includes("data-badge-point"), "City badge cards should carry map target data attributes.");
   assert(styles.includes(".city-badge.actionable"), "Clickable city badges need dedicated styling.");
   assert(styles.includes(".city-badge-focus"), "City badge focus hints need dedicated styling.");
+  assert(appJs.includes("renderStageObjectiveAction"), "Stage objectives should render a concrete focus action when available.");
+  assert(appJs.includes("data-stage-action"), "Stage objective focus buttons need action data hooks.");
+  assert(
+    appJs.includes("bindCityActionPreview(button, () => button.dataset.stageMode, () => button.dataset.stageAction)"),
+    "Stage objective focus buttons should preview the exact city action.",
+  );
+  assert(styles.includes(".stage-objective-action"), "Stage objective focus buttons need dedicated styling.");
 }
 
 function run() {

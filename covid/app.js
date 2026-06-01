@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v139";
+  const ASSET_VERSION = "v140";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -836,7 +836,7 @@
 
   function renderStageObjectives() {
     if (!els.stageObjectives || !core.getStageObjectives) return;
-    const objectives = core.getStageObjectives(state);
+    const objectives = core.getStageObjectives(state, { includeFocusActions: true });
     if (!objectives.length) {
       els.stageObjectives.innerHTML = "";
       return;
@@ -850,9 +850,32 @@
           </div>
           <p>${escapeHtml(objective.detail)}</p>
           <em>${escapeHtml(objective.metricShort)} ${objective.value}</em>
+          ${renderStageObjectiveAction(objective)}
         </article>
       `)
       .join("");
+    els.stageObjectives.querySelectorAll("[data-stage-action]").forEach((button) => {
+      bindCityActionPreview(button, () => button.dataset.stageMode, () => button.dataset.stageAction);
+      button.addEventListener("click", () => {
+        focusRecoveryLever(button.dataset.stagePoint, button.dataset.stageMode, button.dataset.stageAction);
+      });
+    });
+  }
+
+  function renderStageObjectiveAction(objective) {
+    const action = objective && objective.focusAction;
+    if (!action || objective.done) return "";
+    return `
+      <button class="stage-objective-action" type="button"
+        data-stage-point="${escapeHtml(action.pointId)}"
+        data-stage-mode="${escapeHtml(action.mode)}"
+        data-stage-action="${escapeHtml(action.id)}"
+        title="${escapeHtml(action.detail || "")}">
+        <span>推进</span>
+        <strong>${escapeHtml(action.label)}</strong>
+        <em>${escapeHtml(action.impact || action.pointLabel || "")}</em>
+      </button>
+    `;
   }
 
   function renderEndingOutlook() {

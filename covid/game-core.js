@@ -3143,7 +3143,8 @@
     };
   }
 
-  function getStageObjectives(state) {
+  function getStageObjectives(state, options = {}) {
+    const includeFocusActions = Boolean(options.includeFocusActions);
     const phase = phaseForDay(state.day);
     const specs = STAGE_OBJECTIVES[phase] || [];
     return specs.map((spec) => {
@@ -3166,8 +3167,45 @@
         targetText: `${meta.short} ${spec.op} ${spec.target}`,
         done,
         tone: done ? "good" : danger ? "danger" : "warn",
+        focusAction: includeFocusActions && !done ? getStageObjectiveFocusAction(state, spec) : null,
       };
     });
+  }
+
+  function getStageObjectiveFocusAction(state, objective) {
+    if (!state || state.ended || !objective) return null;
+    const rows = [];
+    MAP_POINTS.forEach((pointDef) => {
+      const point = getMapPoint(state, pointDef.id);
+      [
+        { mode: "operations", kind: "工程", items: point.operations },
+        { mode: "resolutions", kind: "决议", items: point.resolutions },
+      ].forEach((group) => {
+        group.items
+          .filter((item) => item.available)
+          .forEach((item) => {
+            const preview = getCityActionOutcomePreview(state, group.mode, item.id);
+            const impact = preview.find((entry) => entry.metric === objective.metric);
+            if (!impact) return;
+            const improvement = objective.op === "<=" ? -impact.delta : impact.delta;
+            if (improvement <= 0) return;
+            rows.push({
+              id: item.id,
+              mode: group.mode,
+              kind: group.kind,
+              label: item.label,
+              pointId: pointDef.id,
+              pointLabel: pointDef.label,
+              impact: `${impact.short} ${impact.delta > 0 ? "+" : ""}${impact.delta}`,
+              detail: `推进阶段目标“${objective.label}”：${impact.detail}`,
+              score: improvement * 20 + (objective.tone === "danger" ? 30 : 0) + (group.mode === "operations" ? 3 : 0),
+            });
+          });
+      });
+    });
+    return rows
+      .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label, "zh-Hans-CN"))
+      .map(({ score, ...item }) => item)[0] || null;
   }
 
   function getStageReview(state) {

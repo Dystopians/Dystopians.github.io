@@ -919,6 +919,59 @@ label {
   color: #6d4a1e;
 }
 
+.stage-objective-action {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 5px;
+  align-items: center;
+  width: 100%;
+  margin-top: 6px;
+  padding: 4px 5px;
+  border: 2px solid rgba(72, 102, 86, 0.62);
+  background: #dcebac;
+  color: #244d35;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stage-objective-action:hover,
+.stage-objective-action:focus-visible {
+  transform: translateY(-1px);
+  outline: 3px solid rgba(73, 119, 82, 0.4);
+  outline-offset: 2px;
+  box-shadow: 2px 2px 0 rgba(45, 40, 31, 0.25);
+}
+
+.stage-objective-action span,
+.stage-objective-action strong,
+.stage-objective-action em {
+  margin: 0;
+  min-width: 0;
+  font-size: 0.6rem;
+  font-weight: 900;
+  line-height: 1.08;
+}
+
+.stage-objective-action span {
+  padding: 2px 4px;
+  border: 2px solid #4f8d55;
+  background: #eef7c9;
+  color: #244d35;
+}
+
+.stage-objective-action strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-objective-action em {
+  color: #4f6b32;
+  font-style: normal;
+  text-align: right;
+}
+
 .ending-outlook {
   margin: 0 0 9px;
 }
