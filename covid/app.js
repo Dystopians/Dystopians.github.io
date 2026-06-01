@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v176";
+  const ASSET_VERSION = "v177";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -3838,6 +3838,7 @@
     if (!match) return "";
     const metric = PREVIEW_METRIC_BY_SHORT[match[1].trim()];
     const meta = metric && (core.METRIC_META[metric] || core.RESOURCE_META[metric]);
+    if (metric && core.getDeltaHint) return core.getDeltaHint(state, metric, Number(match[2]));
     return meta ? meta.description : "";
   }
 

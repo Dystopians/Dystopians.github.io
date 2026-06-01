@@ -7,6 +7,7 @@ const core = require("./game-core.js");
 const rootDir = __dirname;
 const assetsDir = path.join(rootDir, "assets");
 const coreJs = fs.readFileSync(path.join(rootDir, "game-core.js"), "utf8");
+const appJs = fs.readFileSync(path.join(rootDir, "app.js"), "utf8");
 const failures = [];
 const warnings = [];
 
@@ -1396,6 +1397,7 @@ function validateSettlementBreakdown() {
 
 function validateMetricTrends() {
   assert(typeof core.getMetricTrend === "function", "game-core.js must export getMetricTrend.");
+  assert(typeof core.getDeltaHint === "function", "game-core.js must export contextual delta hints.");
   const state = core.createGame({ difficulty: "normal", seed: 20260611 });
   const event = core.getCurrentEvent(state);
   const choice = event.choices.find((item) => item.available !== false);
@@ -1410,6 +1412,14 @@ function validateMetricTrends() {
   mixedState.history.unshift({ changes: { policyStrictness: 5 } });
   const mixedTrend = core.getMetricTrend(mixedState, "policyStrictness", 6);
   assert(mixedTrend && mixedTrend.tone === "mixed", "Mixed-direction metrics such as policyStrictness should not be colored as purely good or bad.");
+
+  const openingHint = core.getDeltaHint(core.createGame({ difficulty: "normal", seed: 2026061201 }), "policyStrictness", 5);
+  assert(/感染未处高位|提前压风险/.test(openingHint), "PolicyStrictness positive deltas should explain low-infection tradeoffs.");
+  const highInfectionState = core.createGame({ difficulty: "normal", seed: 2026061202 });
+  highInfectionState.metrics.infection = 76;
+  const highInfectionHint = core.getDeltaHint(highInfectionState, "policyStrictness", 5);
+  assert(/感染较高|止血/.test(highInfectionHint), "PolicyStrictness positive deltas should explain high-infection control value.");
+  assert(appJs.includes("core.getDeltaHint(state, metric, Number(match[2]))"), "Preview chip tooltips should use contextual delta hints.");
 }
 
 function validateEndingStrategyReview() {

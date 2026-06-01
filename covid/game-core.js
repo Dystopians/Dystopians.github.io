@@ -8057,9 +8057,9 @@
     if (!state || state.ended) return [];
     const projection = calculateProjectedDailyDeltas(state);
     const rows = [
-      ...Object.entries(projection.metrics).map(([metric, delta]) => buildTrendItem(metric, delta, state.metrics[metric], projection.values.metrics[metric], "baseline")),
-      ...Object.entries(projection.hidden).map(([metric, delta]) => buildTrendItem(metric, delta, state.hidden[metric], projection.values.hidden[metric], "baseline")),
-      ...Object.entries(projection.resources).map(([metric, delta]) => buildTrendItem(metric, delta, state.resources[metric], projection.values.resources[metric], "baseline")),
+      ...Object.entries(projection.metrics).map(([metric, delta]) => buildTrendItem(metric, delta, state.metrics[metric], projection.values.metrics[metric], "baseline", state)),
+      ...Object.entries(projection.hidden).map(([metric, delta]) => buildTrendItem(metric, delta, state.hidden[metric], projection.values.hidden[metric], "baseline", state)),
+      ...Object.entries(projection.resources).map(([metric, delta]) => buildTrendItem(metric, delta, state.resources[metric], projection.values.resources[metric], "baseline", state)),
     ].filter(Boolean);
 
     return rankTrendItems(rows);
@@ -8077,7 +8077,7 @@
     const after = snapshotValues(projected);
     const changes = diffSnapshots(before, after);
     const rows = Object.entries(changes)
-      .map(([metric, delta]) => buildTrendItem(metric, delta, before[metric], after[metric], "choice"))
+      .map(([metric, delta]) => buildTrendItem(metric, delta, before[metric], after[metric], "choice", state))
       .filter(Boolean);
 
     return rankTrendItems(rows);
@@ -8465,7 +8465,7 @@
     };
     const changes = diffSnapshots(before, after);
     const rows = Object.entries(changes)
-      .map(([metric, delta]) => buildTrendItem(metric, delta, before[metric], after[metric], "action"))
+      .map(([metric, delta]) => buildTrendItem(metric, delta, before[metric], after[metric], "action", projected))
       .filter(Boolean);
 
     return rankTrendItems(rows);
@@ -8628,7 +8628,7 @@
       .map(({ priority, ...item }) => item);
   }
 
-  function buildTrendItem(metric, delta, before, after, mode = "baseline") {
+  function buildTrendItem(metric, delta, before, after, mode = "baseline", contextState = null) {
     if (!delta) return null;
     const meta = METRIC_META[metric] || RESOURCE_META[metric];
     if (!meta) return null;
@@ -8636,19 +8636,54 @@
     const good = isGoodDelta(metric, delta);
     const tone = good ? "good" : bad ? "bad" : "mixed";
     const abs = Math.abs(delta);
+    const baseDetail = mode === "choice"
+      ? `${meta.label}：若选择该策略，本日完整结算预计 ${before} → ${after}。`
+      : mode === "action"
+        ? `${meta.label}：若先执行该城市行动，不含今日事件选择，今晚趋势预计 ${before} → ${after}。`
+        : `${meta.label}：按当前状态且不计入即将选择的事件策略，今晚结算预计 ${before} → ${after}。`;
+    const contextHint = getDeltaContextHint(contextState, metric, delta);
     return {
       metric,
       label: meta.label,
       short: meta.short,
       delta,
       tone,
-      detail: mode === "choice"
-        ? `${meta.label}：若选择该策略，本日完整结算预计 ${before} → ${after}。`
-        : mode === "action"
-          ? `${meta.label}：若先执行该城市行动，不含今日事件选择，今晚趋势预计 ${before} → ${after}。`
-          : `${meta.label}：按当前状态且不计入即将选择的事件策略，今晚结算预计 ${before} → ${after}。`,
+      detail: contextHint ? `${baseDetail} ${contextHint}` : baseDetail,
       priority: (bad ? 80 : good ? 45 : 55) + abs * 8 + (["infection", "hospitalLoad", "staffFatigue", "funds"].includes(metric) ? 6 : 0),
     };
+  }
+
+  function getDeltaHint(state, metric, delta) {
+    const meta = METRIC_META[metric] || RESOURCE_META[metric];
+    if (!meta) return "";
+    const context = getDeltaContextHint(state, metric, delta);
+    return context ? `${meta.description} ${context}` : meta.description;
+  }
+
+  function getDeltaContextHint(state, metric, delta) {
+    if (!state || !metric || !delta) return "";
+    const m = state.metrics || {};
+    const h = state.hidden || {};
+    const r = state.resources || {};
+    if (metric === "policyStrictness") {
+      if (delta > 0) {
+        if ((m.infection || 0) >= 70) return "当前感染较高，增加管控更像止血：能压传播，但会继续消耗活力、信任和基层。";
+        if ((m.staffFatigue || 0) >= 70 || (m.economy || 100) <= 40) return "基层或活力已经吃紧，继续加管控会更快转成疲劳和经济代价。";
+        return "感染未处高位时，加管控更多是提前压风险，需要确认物资、信任和基层能承受。";
+      }
+      if (delta < 0) {
+        if ((m.infection || 0) >= 65) return "当前感染仍高，放松管控会给传播留窗口，最好有较高发现率或医疗余裕兜底。";
+        if ((m.economy || 100) <= 50 || (r.funds || 100) <= 30) return "放松管控能帮助活力和资金循环恢复，但仍要盯住发现率与感染反弹。";
+        return "管控下降会释放流动和活力，也会削弱后续感染压制。";
+      }
+    }
+    if (metric === "detectedRate" && delta < 0 && (h.detectedRate || 100) <= 45) {
+      return "发现率已低，继续下降会放大信息盲区，让复工和分区判断更冒险。";
+    }
+    if (metric === "publicMemory" && delta > 0 && (h.publicMemory || 0) >= 45) {
+      return "公共创伤已接近长期伤痕区，继续累积会压低信任恢复和结局评价。";
+    }
+    return "";
   }
 
   function isGoodDelta(metric, delta) {
@@ -10598,6 +10633,7 @@
     getChoiceFit,
     getChoiceComparison,
     getChoiceRouteTag,
+    getDeltaHint,
     getEndingOutlook,
     getCityActionOutcomePreview,
     getCityActionLockPreview,
