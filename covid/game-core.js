@@ -7282,25 +7282,25 @@
       if (streak > 0) add(`failure_${key}`, "danger", `${label} ${streak}/${limit}`, `${detail}，仍有补救窗口。`, 120 + streak);
     });
 
-    if (m.hospitalLoad >= 85) add("metric_hospital_high", "danger", "医疗红线", "医院负载高位会持续伤害信任并推高公共创伤。", m.hospitalLoad);
-    else if (m.hospitalLoad >= 75) add("metric_hospital_warn", "warn", "医疗接近高压", "急救、床位和转运需要优先分流。", m.hospitalLoad);
-    if (m.infection >= 80) add("metric_infection_high", "danger", "社区扩散", "感染压力会额外推高医疗负载。", m.infection);
-    else if (m.infection >= 70) add("metric_infection_warn", "warn", "传播高位", "检测和局部管控会更有价值。", m.infection);
-    if (m.supplies <= 25) add("metric_supply_low", "danger", "物资低位", "供应不足会同时伤害信任和基层疲劳。", 100 - m.supplies);
-    else if (m.supplies <= 35) add("metric_supply_warn", "warn", "供应偏紧", "保供链条开始限制医疗和社区执行。", 100 - m.supplies);
+    if (m.hospitalLoad >= 85) add("metric_hospital_high", "danger", "医疗红线", "医院负载高位会持续伤害信任并推高公共创伤。", m.hospitalLoad, pressureActionTarget(state, MEDICAL_PRESSURE_TARGETS));
+    else if (m.hospitalLoad >= 75) add("metric_hospital_warn", "warn", "医疗接近高压", "急救、床位和转运需要优先分流。", m.hospitalLoad, pressureActionTarget(state, MEDICAL_PRESSURE_TARGETS));
+    if (m.infection >= 80) add("metric_infection_high", "danger", "社区扩散", "感染压力会额外推高医疗负载。", m.infection, pressureActionTarget(state, DETECTION_PRESSURE_TARGETS));
+    else if (m.infection >= 70) add("metric_infection_warn", "warn", "传播高位", "检测和局部管控会更有价值。", m.infection, pressureActionTarget(state, DETECTION_PRESSURE_TARGETS));
+    if (m.supplies <= 25) add("metric_supply_low", "danger", "物资低位", "供应不足会同时伤害信任和基层疲劳。", 100 - m.supplies, pressureActionTarget(state, SUPPLY_PRESSURE_TARGETS));
+    else if (m.supplies <= 35) add("metric_supply_warn", "warn", "供应偏紧", "保供链条开始限制医疗和社区执行。", 100 - m.supplies, pressureActionTarget(state, SUPPLY_PRESSURE_TARGETS));
     if (m.trust <= 30) add("metric_trust_low", "danger", "低配合", "行动效率下降，谣言和拒检事件更容易出现。", 100 - m.trust);
     else if (m.trust <= 40) add("metric_trust_warn", "warn", "信任承压", "公开解释和可核验流程会更重要。", 100 - m.trust);
-    if (m.staffFatigue >= 80) add("metric_fatigue_high", "danger", "执行透支", "所有行动收益打折，发现率会被疲劳磨损。", m.staffFatigue);
-    else if (m.staffFatigue >= 70) add("metric_fatigue_warn", "warn", "排班偏紧", "继续加压会让后续政策变钝。", m.staffFatigue);
-    if (m.economy <= 25) add("metric_economy_low", "warn", "财政吃紧", "活力低位会拖慢保供恢复和医疗扩容。", 100 - m.economy);
-    else if (m.economy <= 45 && state.day >= 8 && m.infection < 70) add("metric_economy_recovery_window", "info", "小复苏窗口", "民生网点、闭环保供和稳岗类动作可以托住活力，但仍要看发现率。", 62);
-    if (r.funds <= 10) add("resource_funds_low", "danger", "财政透支", "高价工程和决议会被锁定。", 105 - r.funds);
-    else if (r.funds <= 20) add("resource_funds_warn", "warn", "资金偏低", "工程选择需要更克制。", 100 - r.funds);
-    else if (r.funds <= 45 && state.day >= 7) add("resource_fiscal_window", "info", "财政窗口", "账款清分、专项资金、捐助统筹或举债能补缺口，但会转化为信任、活力或审计压力。", 61);
+    if (m.staffFatigue >= 80) add("metric_fatigue_high", "danger", "执行透支", "所有行动收益打折，发现率会被疲劳磨损。", m.staffFatigue, pressureActionTarget(state, FATIGUE_PRESSURE_TARGETS));
+    else if (m.staffFatigue >= 70) add("metric_fatigue_warn", "warn", "排班偏紧", "继续加压会让后续政策变钝。", m.staffFatigue, pressureActionTarget(state, FATIGUE_PRESSURE_TARGETS));
+    if (m.economy <= 25) add("metric_economy_low", "warn", "财政吃紧", "活力低位会拖慢保供恢复和医疗扩容。", 100 - m.economy, pressureActionTarget(state, ECONOMY_PRESSURE_TARGETS));
+    else if (m.economy <= 45 && state.day >= 8 && m.infection < 70) add("metric_economy_recovery_window", "info", "小复苏窗口", "民生网点、闭环保供和稳岗类动作可以托住活力，但仍要看发现率。", 62, pressureActionTarget(state, ECONOMY_PRESSURE_TARGETS));
+    if (r.funds <= 10) add("resource_funds_low", "danger", "财政透支", "高价工程和决议会被锁定。", 105 - r.funds, pressureActionTarget(state, FUNDS_PRESSURE_TARGETS));
+    else if (r.funds <= 20) add("resource_funds_warn", "warn", "资金偏低", "工程选择需要更克制。", 100 - r.funds, pressureActionTarget(state, FUNDS_PRESSURE_TARGETS));
+    else if (r.funds <= 45 && state.day >= 7) add("resource_fiscal_window", "info", "财政窗口", "账款清分、专项资金、捐助统筹或举债能补缺口，但会转化为信任、活力或审计压力。", 61, pressureActionTarget(state, FUNDS_PRESSURE_TARGETS));
     if (getMicroRecoveryAssets(state).length >= 2 && h.detectedRate < 70 && m.infection >= 45) {
-      add("micro_flow_pressure", "warn", "微复苏流动压力", "发现率低于 70 时，多条微循环资产会带来额外传播缝隙。", 63);
+      add("micro_flow_pressure", "warn", "微复苏流动压力", "发现率低于 70 时，多条微循环资产会带来额外传播缝隙。", 63, pressureActionTarget(state, DETECTION_PRESSURE_TARGETS));
     }
-    if (h.detectedRate <= 35) add("hidden_detected_low", "warn", "信息盲区", "报告感染压力误差扩大，复工代价更高。", 100 - h.detectedRate);
+    if (h.detectedRate <= 35) add("hidden_detected_low", "warn", "信息盲区", "报告感染压力误差扩大，复工代价更高。", 100 - h.detectedRate, pressureActionTarget(state, DETECTION_PRESSURE_TARGETS));
     if (h.policyStrictness >= 80) add("hidden_policy_high", "warn", "高压管控", "感染压制增强，但活力和疲劳代价上升。", h.policyStrictness);
     if (h.publicMemory >= 60) add("hidden_memory_high", "danger", "长期伤痕", "信任恢复会变慢，结局更容易偏向沉重代价。", h.publicMemory);
 
@@ -7399,6 +7399,30 @@
       .sort((a, b) => b.score - a.score)
       .slice(0, 3)
       .map(({ score, ...item }) => item);
+  }
+
+  function pressureActionTarget(state, candidates = []) {
+    const budget = getCityActionBudget(state);
+    if (!budget || budget.remaining <= 0) return {};
+    for (const [mode, actionId] of candidates) {
+      const status = mode === "resolutions"
+        ? getResolutionStatus(state, actionId)
+        : getOperationStatus(state, actionId);
+      if (!status || !status.available) continue;
+      const point = findMapPointForCityAction(mode, actionId);
+      if (!point) continue;
+      return {
+        actionId,
+        mode,
+        pointId: point.id,
+      };
+    }
+    return {};
+  }
+
+  function findMapPointForCityAction(mode, actionId) {
+    const key = mode === "resolutions" ? "resolutions" : "operations";
+    return MAP_POINTS.find((point) => (point[key] || []).includes(actionId)) || null;
   }
 
   function getDailyTrendPreview(state) {
@@ -8370,6 +8394,63 @@
     "lowRiskWorkList",
     "elasticTransit",
   ]);
+
+  const MEDICAL_PRESSURE_TARGETS = [
+    ["operations", "triageNetwork"],
+    ["operations", "communityClinic"],
+    ["operations", "interProvinceSupport"],
+    ["operations", "buildShelterHospital"],
+    ["resolutions", "shelterAdmissionStandard"],
+    ["resolutions", "priorityMedicineRoute"],
+  ];
+
+  const DETECTION_PRESSURE_TARGETS = [
+    ["operations", "deployHealthCode"],
+    ["operations", "campusSentinel"],
+    ["operations", "triageNetwork"],
+    ["operations", "communityClinic"],
+    ["resolutions", "suppressRumorLine"],
+  ];
+
+  const SUPPLY_PRESSURE_TARGETS = [
+    ["operations", "supplyCorridor"],
+    ["operations", "donationCoordination"],
+    ["operations", "publicDonationDrive"],
+    ["operations", "donationClaimList"],
+    ["operations", "platformLogisticsShare"],
+    ["operations", "interProvinceSupport"],
+    ["resolutions", "hardWarehouse"],
+  ];
+
+  const FATIGUE_PRESSURE_TARGETS = [
+    ["operations", "mentalHealthLine"],
+    ["operations", "volunteerDispatch"],
+    ["operations", "interProvinceSupport"],
+    ["resolutions", "staffRotationOrder"],
+    ["resolutions", "communityAutonomy"],
+  ];
+
+  const ECONOMY_PRESSURE_TARGETS = [
+    ["operations", "remoteApprovalDesk"],
+    ["operations", "onlineVendorDesk"],
+    ["operations", "microEnterpriseRoster"],
+    ["operations", "essentialServicePermit"],
+    ["operations", "neighborhoodPickupWindow"],
+    ["resolutions", "lowContactBusinessPermit"],
+    ["resolutions", "lowRiskWorkList"],
+    ["resolutions", "elasticTransit"],
+  ];
+
+  const FUNDS_PRESSURE_TARGETS = [
+    ["operations", "fiscalTransparencyLedger"],
+    ["operations", "emergencyGapLedger"],
+    ["operations", "budgetFreezeReview"],
+    ["operations", "fastGrantReport"],
+    ["operations", "bankCreditWindow"],
+    ["operations", "insurancePreSettlement"],
+    ["resolutions", "temporaryTurnoverPool"],
+    ["resolutions", "emergencyLevy"],
+  ];
 
   const ACTION_OPPORTUNITY_LOCKS = new Set(["条件未满足", "资金不足", "财政透支", "今日调度已满"]);
 

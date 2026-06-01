@@ -588,6 +588,15 @@ function validateCrisisDashboard() {
 
 function validateMicroRecoveryPressure() {
   assert(typeof core.getDailyPressureSummary === "function", "game-core.js must export getDailyPressureSummary.");
+  const assertActionablePressure = (summary, id, message) => {
+    const item = summary.find((entry) => entry.id === id);
+    assert(item, `${message} should be present.`);
+    assert(
+      item.actionId && item.mode && item.pointId,
+      `${message} should carry a focusable city action target.`,
+    );
+  };
+
   const opening = core.createGame({ difficulty: "normal", seed: 20260625 });
   const openingSummary = core.getDailyPressureSummary(opening);
   assert(
@@ -614,6 +623,11 @@ function validateMicroRecoveryPressure() {
     summary.some((item) => item.id === "micro_flow_pressure"),
     "Low-detection micro-recovery route should surface its extra flow risk in the daily pressure summary.",
   );
+  assertActionablePressure(
+    summary,
+    "micro_flow_pressure",
+    "Low-detection micro-recovery pressure",
+  );
   const thresholdState = core.createGame({ difficulty: "normal", seed: 2026062401 });
   thresholdState.metrics.infection = 50;
   thresholdState.hidden.detectedRate = 65;
@@ -623,6 +637,35 @@ function validateMicroRecoveryPressure() {
   assert(
     thresholdSummary.some((item) => item.id === "micro_flow_pressure"),
     "Daily pressure summary should use the same detectedRate<70 micro-flow threshold as daily resolution.",
+  );
+
+  const fundsState = core.createGame({ difficulty: "normal", seed: 2026062402 });
+  fundsState.day = 8;
+  fundsState.resources.funds = 9;
+  assertActionablePressure(
+    core.getDailyPressureSummary(fundsState),
+    "resource_funds_low",
+    "Low-funds pressure",
+  );
+
+  const economyState = core.createGame({ difficulty: "normal", seed: 2026062403 });
+  economyState.day = 8;
+  economyState.metrics.economy = 20;
+  economyState.metrics.infection = 40;
+  economyState.resources.funds = 50;
+  assertActionablePressure(
+    core.getDailyPressureSummary(economyState),
+    "metric_economy_low",
+    "Low-economy pressure",
+  );
+
+  const hospitalState = core.createGame({ difficulty: "normal", seed: 2026062404 });
+  hospitalState.metrics.hospitalLoad = 88;
+  hospitalState.resources.funds = 80;
+  assertActionablePressure(
+    core.getDailyPressureSummary(hospitalState),
+    "metric_hospital_high",
+    "High-hospital pressure",
   );
 
   const inertiaState = core.createGame({ difficulty: "normal", seed: 20260626 });
