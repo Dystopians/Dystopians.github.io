@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v150";
+  const ASSET_VERSION = "v151";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -11,6 +11,7 @@
   let state = null;
   let actionMode = "operations";
   let postRenderFocus = "";
+  let pendingSettlementChoice = null;
   const MASCOT_FRAME_COUNT = 6;
   const MASCOT_ACTION_FRAME_MS = 118;
   const MASCOT_IDLE_FRAME_MS = 760;
@@ -454,6 +455,7 @@
 
   function startNewGame(difficulty, scenario = "standard") {
     state = core.createGame({ difficulty, scenario });
+    pendingSettlementChoice = null;
     resetMapView();
     save();
     render();
@@ -465,6 +467,7 @@
     if (!raw) return;
     try {
       state = core.importState(JSON.parse(raw));
+      pendingSettlementChoice = null;
       resetMapView();
       save();
       render();
@@ -478,6 +481,7 @@
 
   function showStart() {
     state = null;
+    pendingSettlementChoice = null;
     els.startScreen.hidden = false;
     els.gameScreen.hidden = true;
     els.endingScreen.hidden = true;
@@ -1758,6 +1762,10 @@
       els.eventVisual,
     );
     els.choiceList.innerHTML = "";
+    const settlementHint = core.getEventSettlementHint ? core.getEventSettlementHint(state) : null;
+    if (!settlementHint || settlementHint.id !== "cityActionUnused") {
+      pendingSettlementChoice = null;
+    }
     const comparisonReport = core.getChoiceComparison ? core.getChoiceComparison(state) : null;
     const comparisonByChoice = new Map((comparisonReport && comparisonReport.items ? comparisonReport.items : []).map((item) => [item.choiceId, item]));
     const comparison = renderChoiceComparison(comparisonReport);
@@ -1768,14 +1776,17 @@
 
     event.choices.forEach((choice) => {
       const comparisonItem = comparisonByChoice.get(choice.id);
+      const awaitingSettlementConfirm = isPendingSettlementChoice(choice.id);
       const button = document.createElement("button");
       button.className = [
         "choice-button",
         choiceButtonComparisonClass(comparisonItem),
+        awaitingSettlementConfirm ? "choice-awaiting-settlement" : "",
       ].filter(Boolean).join(" ");
       button.type = "button";
       button.disabled = choice.available === false;
       button.dataset.choiceId = choice.id;
+      if (awaitingSettlementConfirm) button.setAttribute("aria-pressed", "true");
       const chips = choice.effectPreview
         .map((item) => `<span class="chip ${chipClassForPreview(item)}" title="${escapeHtml(previewChipTitle(item))}">${escapeHtml(item)}</span>`)
         .join("");
@@ -1794,9 +1805,24 @@
         ${renderChoiceRiskPreview(choice)}
         <div class="chips">${chips}</div>
         ${renderChoiceSettlementHint(choice)}
+        ${renderChoiceSettlementConfirm(choice, awaitingSettlementConfirm)}
       `;
       button.addEventListener("click", () => {
         if (choice.available === false) return;
+        if (shouldConfirmSettlementBeforeChoice(choice.id)) {
+          pendingSettlementChoice = {
+            choiceId: choice.id,
+            eventId: state.currentEventId,
+            day: state.day,
+          };
+          renderEvent();
+          const focused = focusChoiceOption(choice.id);
+          if (!focused && els.choiceList && typeof els.choiceList.scrollIntoView === "function") {
+            els.choiceList.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+          return;
+        }
+        pendingSettlementChoice = null;
         core.resolveChoice(state, choice.id);
         postRenderFocus = "event-settlement";
         save();
@@ -1895,6 +1921,31 @@
     `;
   }
 
+  function renderChoiceSettlementConfirm(choice, active) {
+    if (!choice || choice.available === false || !active) return "";
+    return `
+      <small class="choice-settlement-confirm" title="今日还有城市行动未用。再次点击这个事件选项才会结算当天。">
+        再次点击确认结算；或先用上方“定位行动”处理城市行动
+      </small>
+    `;
+  }
+
+  function isPendingSettlementChoice(choiceId) {
+    return Boolean(
+      pendingSettlementChoice
+      && pendingSettlementChoice.choiceId === choiceId
+      && pendingSettlementChoice.eventId === state.currentEventId
+      && pendingSettlementChoice.day === state.day
+    );
+  }
+
+  function shouldConfirmSettlementBeforeChoice(choiceId) {
+    if (isPendingSettlementChoice(choiceId)) return false;
+    if (!core.getEventSettlementHint) return false;
+    const hint = core.getEventSettlementHint(state);
+    return Boolean(hint && hint.id === "cityActionUnused");
+  }
+
   function renderPreSettlementHint() {
     if (!els.preSettlementHint || !core.getEventSettlementHint) return;
     const hint = core.getEventSettlementHint(state);
@@ -1930,6 +1981,7 @@
     if (actionButton) {
       bindCityActionPreview(actionButton, () => actionButton.dataset.preSettlementMode, () => actionButton.dataset.preSettlementAction);
       actionButton.addEventListener("click", () => {
+        pendingSettlementChoice = null;
         focusRecoveryLever(
           actionButton.dataset.preSettlementPoint,
           actionButton.dataset.preSettlementMode,
@@ -1942,6 +1994,7 @@
       undoButton.addEventListener("click", () => {
         const undone = core.undoCityAction(state);
         if (undone) {
+          pendingSettlementChoice = null;
           save();
           render();
         }
@@ -2173,13 +2226,14 @@
   function focusChoiceOption(choiceId) {
     const target = [...els.choiceList.querySelectorAll(".choice-button")]
       .find((item) => item.dataset.choiceId === choiceId);
-    if (!target) return;
+    if (!target) return false;
     target.scrollIntoView({ behavior: "smooth", block: "center" });
     target.classList.add("is-recommended");
     const event = core.getCurrentEvent(state);
     const choice = event && event.choices.find((item) => item.id === choiceId);
     if (choice) renderTrendPreview(choice);
     setTimeout(() => target.classList.remove("is-recommended"), 1600);
+    return true;
   }
 
   function focusCityActionCard(actionId, options = {}) {
