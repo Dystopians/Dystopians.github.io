@@ -679,6 +679,8 @@ function validateFiscalEconomyChannels() {
     "emergencyGapLedger",
     "fastGrantReport",
     "bankCreditWindow",
+    "budgetFreezeReview",
+    "insurancePreSettlement",
     "publicDonationDrive",
     "donationClaimList",
     "platformLogisticsShare",
@@ -688,6 +690,8 @@ function validateFiscalEconomyChannels() {
     "neighborhoodPickupWindow",
     "onlineGovOvertime",
     "remoteApprovalDesk",
+    "onlineVendorDesk",
+    "neighborhoodErrandRoster",
     "microEnterpriseRoster",
     "neighborhoodCommerceLedger",
     "serviceVoucherPilot",
@@ -723,8 +727,12 @@ function validateFiscalEconomyChannels() {
     fiscalTransparencyLedger: "筹措资金",
     emergencyGapLedger: "筹措资金",
     bankCreditWindow: "筹措资金",
+    budgetFreezeReview: "筹措资金",
+    insurancePreSettlement: "筹措资金",
     publicDonationDrive: "筹措资金",
     microEnterpriseRoster: "低接触活力",
+    onlineVendorDesk: "低接触活力",
+    neighborhoodErrandRoster: "低接触活力",
     remoteApprovalDesk: "低接触活力",
     essentialServicePermit: "低接触活力",
     temporaryTurnoverPool: "财政透支",
@@ -762,7 +770,7 @@ function validateFiscalEconomyChannels() {
   assert(resolutionStatuses.length === requiredResolutions.length, "All fiscal/economy recovery resolutions should produce resolution statuses.");
   assert(availableResolutions.length >= 4, `Expected at least 4 early fiscal/economy recovery resolutions available, found ${availableResolutions.length}.`);
   const report = core.getRecoveryLevers(state);
-  assert(report.totalCount >= 40, `Recovery lever report should recognize expanded fiscal/economy channels, found ${report.totalCount}.`);
+  assert(report.totalCount >= 44, `Recovery lever report should recognize expanded fiscal/economy channels, found ${report.totalCount}.`);
 }
 
 function validateCityActionOpportunities() {

@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v156";
+  const ASSET_VERSION = "v157";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -143,6 +143,13 @@
       operation: "emergencyGapLedger",
     },
     {
+      id: "budgetFreezeReview",
+      label: "非急预算冻结评审",
+      kind: "财政",
+      detail: "非急迫项目预算被暂时冻结，前期现金流获得温和缓冲。",
+      operation: "budgetFreezeReview",
+    },
+    {
       id: "emergencyAccountClearing",
       label: "小额账款清分",
       kind: "财政",
@@ -211,6 +218,27 @@
       kind: "节点",
       detail: "采购报销、通行材料和小微申报先在线预审，街面不动但后台开始恢复。",
       operation: "remoteApprovalDesk",
+    },
+    {
+      id: "insurancePreSettlement",
+      label: "医保预结算窗口",
+      kind: "财政",
+      detail: "定点医院垫付费用被提前预结算，医疗和应急账本获得一口气。",
+      operation: "insurancePreSettlement",
+    },
+    {
+      id: "onlineVendorDesk",
+      label: "线上摊位登记台",
+      kind: "节点",
+      detail: "药店、菜摊和维修点转入无接触登记，前期活力获得低流动入口。",
+      operation: "onlineVendorDesk",
+    },
+    {
+      id: "neighborhoodErrandRoster",
+      label: "楼栋错峰服务单",
+      kind: "节点",
+      detail: "代买、送修、取药和取菜按楼栋错峰，城市微循环更早恢复。",
+      operation: "neighborhoodErrandRoster",
     },
     {
       id: "essentialMaintenanceRoster",

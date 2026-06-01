@@ -720,7 +720,11 @@
     specialFundingApplication: { label: "筹措资金", tone: "mixed" },
     donationCoordination: { label: "筹措资金", tone: "good" },
     interProvinceSupport: { label: "筹措资金", tone: "good" },
+    budgetFreezeReview: { label: "筹措资金", tone: "mixed" },
+    insurancePreSettlement: { label: "筹措资金", tone: "good" },
     microEnterpriseRoster: { label: "低接触活力", tone: "good" },
+    onlineVendorDesk: { label: "低接触活力", tone: "good" },
+    neighborhoodErrandRoster: { label: "低接触活力", tone: "mixed" },
     neighborhoodCommerceLedger: { label: "恢复财政", tone: "mixed" },
     rentDeferralCoordination: { label: "低接触活力", tone: "mixed" },
     serviceVoucherPilot: { label: "低接触活力", tone: "mixed" },
@@ -1676,7 +1680,7 @@
       x: 39,
       y: 81,
       description: "保供网络的关键节点。保障这里能明显改善物资，但会挤占财政和配送人手。",
-      operations: ["supplyCorridor", "essentialServicePermit", "contactlessLivelihoodStalls", "neighborhoodPickupWindow", "neighborhoodCommerceLedger", "publicDonationDrive", "donationClaimList", "donationCoordination", "platformLogisticsShare", "interProvinceSupport", "procurementCreditNegotiation", "supplierPaymentExtension", "rentDeferralCoordination", "serviceVoucherPilot", "livelihoodStaggeredReopen", "contactlessServiceRegistry"],
+      operations: ["supplyCorridor", "essentialServicePermit", "onlineVendorDesk", "contactlessLivelihoodStalls", "neighborhoodPickupWindow", "neighborhoodErrandRoster", "neighborhoodCommerceLedger", "publicDonationDrive", "donationClaimList", "donationCoordination", "platformLogisticsShare", "interProvinceSupport", "procurementCreditNegotiation", "supplierPaymentExtension", "rentDeferralCoordination", "serviceVoucherPilot", "livelihoodStaggeredReopen", "contactlessServiceRegistry"],
       resolutions: ["priorityMedicineRoute", "mutualAidFund", "supplyOrderPrepaySwap", "lowContactBusinessPermit", "hardWarehouse", "emergencyLevy", "nightFreightWindow"],
     },
     {
@@ -1686,7 +1690,7 @@
       x: 78,
       y: 70,
       description: "道路通行决定物资和复工效率。健康码和货运白名单都会在这里体现代价。",
-      operations: ["deployHealthCode", "supplyCorridor", "microFreightPermit", "remoteWorkGovServices", "onlineGovOvertime", "remoteApprovalDesk", "microEnterpriseRoster", "platformLogisticsShare"],
+      operations: ["deployHealthCode", "supplyCorridor", "microFreightPermit", "remoteWorkGovServices", "onlineGovOvertime", "remoteApprovalDesk", "microEnterpriseRoster", "onlineVendorDesk", "platformLogisticsShare"],
       resolutions: ["elasticTransit", "lowRiskWorkList", "lowContactBusinessPermit", "suppressRumorLine", "nightFreightWindow"],
     },
     {
@@ -1706,7 +1710,7 @@
       x: 86,
       y: 19,
       description: "城市活力和财政恢复来源。复工需要足够发现率和通行秩序支撑。",
-      operations: ["factoryClosedLoop", "taxFeeDeferralDesk", "fiscalTransparencyLedger", "emergencyGapLedger", "fastGrantReport", "bankCreditWindow", "emergencyAccountClearing", "specialFundingApplication", "microEnterpriseRoster", "closedLoopSmallShift", "remoteApprovalDesk", "budgetReallocationMeeting"],
+      operations: ["factoryClosedLoop", "taxFeeDeferralDesk", "fiscalTransparencyLedger", "emergencyGapLedger", "budgetFreezeReview", "fastGrantReport", "bankCreditWindow", "emergencyAccountClearing", "specialFundingApplication", "insurancePreSettlement", "microEnterpriseRoster", "closedLoopSmallShift", "remoteApprovalDesk", "budgetReallocationMeeting"],
       resolutions: ["lowRiskWorkList", "elasticTransit", "temporaryTurnoverPool", "enterpriseExemption", "jobSubsidyAdvance", "specialBondQuota", "deferProjectPayment"],
     },
     {
@@ -1716,7 +1720,7 @@
       x: 30,
       y: 24,
       description: "居民信任、药品配送和基层疲劳最容易在这里体现。",
-      operations: ["medicineRoute", "mentalHealthLine", "communityRepairWhitelist", "essentialMaintenanceRoster", "neighborhoodPickupWindow", "serviceVoucherPilot"],
+      operations: ["medicineRoute", "mentalHealthLine", "communityRepairWhitelist", "essentialMaintenanceRoster", "neighborhoodPickupWindow", "neighborhoodErrandRoster", "serviceVoucherPilot"],
       resolutions: ["priorityMedicineRoute", "publicReviewBrief", "communityAutonomy", "delayBadNews"],
     },
     {
@@ -1876,6 +1880,30 @@
             || state.metrics.economy <= 74);
       },
     },
+    budgetFreezeReview: {
+      label: "非急预算冻结评审",
+      location: "factory",
+      description: "把宣传、会务和非急迫项目临时冻结，先把现金拨给医疗、保供和基层窗口。它是前期最温和的现金入口之一，但会压低城市活力并引来“为什么现在才调整”的追问。",
+      resources: { funds: 3 },
+      effects: { economy: -1, trust: -2 },
+      hidden: { publicMemory: 1 },
+      delayed: {
+        delay: 3,
+        label: "冻结预算复核",
+        effects: { trust: 1 },
+        hidden: {},
+        condition: "trustAtLeast55",
+      },
+      maxUses: 1,
+      conditionText: "需要第3天后，且资金≤58、医疗负载≥55、物资≤58或城市活力≤66。",
+      condition(state) {
+        return state.day >= 3
+          && (state.resources.funds <= 58
+            || state.metrics.hospitalLoad >= 55
+            || state.metrics.supplies <= 58
+            || state.metrics.economy <= 66);
+      },
+    },
     fastGrantReport: {
       label: "专项资金快报",
       location: "factory",
@@ -1921,6 +1949,28 @@
         return state.day >= 2
           && state.metrics.trust >= 42
           && (state.resources.funds <= 66 || state.metrics.economy <= 70);
+      },
+    },
+    insurancePreSettlement: {
+      label: "医保预结算窗口",
+      location: "hospital",
+      description: "把定点医院垫付的急诊、慢病续方和防护费用先做预结算，给医疗系统和应急账本一口气。它能补现金流，也能稍微降低医院压力，但会增加财务、医保和医院后台的复核负担。",
+      resources: { funds: 4 },
+      effects: { hospitalLoad: -1, staffFatigue: 1 },
+      hidden: {},
+      delayed: {
+        delay: 4,
+        label: "医保预结算复核",
+        resources: { funds: -2 },
+        effects: {},
+      },
+      maxUses: 1,
+      conditionText: "需要第3天后，且资金≤64、医疗负载≥36或基层疲劳≥45。",
+      condition(state) {
+        return state.day >= 3
+          && (state.resources.funds <= 64
+            || state.metrics.hospitalLoad >= 36
+            || state.metrics.staffFatigue >= 45);
       },
     },
     publicDonationDrive: {
@@ -2330,6 +2380,61 @@
           && state.metrics.infection < 68
           && (state.metrics.supplies <= 60
             || state.metrics.economy <= 68
+            || state.hidden.policyStrictness >= 35);
+      },
+    },
+    onlineVendorDesk: {
+      label: "线上摊位登记台",
+      location: "market",
+      description: "把药店、菜摊、维修点和低风险小商户先登记成线上摊位，允许电话下单、门外取货和无接触结算。它几乎不放大街面流动，却能让前期活力和账目有一个低速入口。",
+      resources: { funds: -1 },
+      effects: { economy: 2 },
+      hidden: { detectedRate: 1 },
+      delayed: {
+        delay: 2,
+        label: "线上摊位跑通",
+        resources: { funds: 1 },
+        effects: { economy: 1 },
+        hidden: {},
+        condition: "trustAtLeast55",
+      },
+      maxUses: 1,
+      conditionText: "需要第2天后，感染压力<70，且城市活力≤68、资金≤58或管控强度≥35。",
+      condition(state) {
+        return state.day >= 2
+          && state.metrics.infection < 70
+          && (state.metrics.economy <= 68
+            || state.resources.funds <= 58
+            || state.hidden.policyStrictness >= 35);
+      },
+    },
+    neighborhoodErrandRoster: {
+      label: "楼栋错峰服务单",
+      location: "residents",
+      description: "让每栋楼只保留少量代买、送修、取药和取菜服务时段，居民按楼栋错峰交接。它能减少完全停摆感，也会让社区多一层排班和核验压力。",
+      resources: { funds: -2 },
+      effects(state) {
+        return {
+          economy: 2,
+          infection: state.hidden.detectedRate >= 55 ? 1 : 2,
+          staffFatigue: 1,
+        };
+      },
+      hidden: { policyStrictness: -1 },
+      delayed: {
+        delay: 2,
+        label: "楼栋服务单复核",
+        effects: { economy: 1, trust: 1 },
+        hidden: {},
+        condition: "detectedAtLeast50",
+      },
+      maxUses: 1,
+      conditionText: "需要第2天后，感染压力<68，且物资≤60、城市活力≤66或管控强度≥35。",
+      condition(state) {
+        return state.day >= 2
+          && state.metrics.infection < 68
+          && (state.metrics.supplies <= 60
+            || state.metrics.economy <= 66
             || state.hidden.policyStrictness >= 35);
       },
     },
@@ -3188,10 +3293,10 @@
 
   const TESTING_KEYS = ["expandTesting", "campusSentinel", "deployHealthCode", "triageNetwork", "communityClinic"];
   const CONTROL_KEYS = ["zoningControl", "citywideSilence", "suppressRumorLine", "deployHealthCode"];
-  const SUPPLY_KEYS = ["supplyPriority", "supplyCorridor", "volunteerDispatch", "hardWarehouse", "elasticTransit", "outsourceDelivery", "publicDonationDrive", "donationCoordination", "donationClaimList", "platformLogisticsShare", "interProvinceSupport", "closedLoopSmallShift", "essentialServicePermit", "contactlessServiceRegistry", "contactlessLivelihoodStalls", "neighborhoodPickupWindow", "neighborhoodCommerceLedger", "nightFreightWindow", "microFreightPermit"];
-  const MEDICAL_KEYS = ["medicalExpansion", "buildShelterHospital", "triageNetwork", "communityClinic", "shelterAdmissionStandard", "interProvinceSupport"];
+  const SUPPLY_KEYS = ["supplyPriority", "supplyCorridor", "volunteerDispatch", "hardWarehouse", "elasticTransit", "outsourceDelivery", "publicDonationDrive", "donationCoordination", "donationClaimList", "platformLogisticsShare", "interProvinceSupport", "closedLoopSmallShift", "essentialServicePermit", "contactlessServiceRegistry", "contactlessLivelihoodStalls", "neighborhoodPickupWindow", "neighborhoodErrandRoster", "neighborhoodCommerceLedger", "nightFreightWindow", "microFreightPermit"];
+  const MEDICAL_KEYS = ["medicalExpansion", "buildShelterHospital", "triageNetwork", "communityClinic", "shelterAdmissionStandard", "interProvinceSupport", "insurancePreSettlement"];
   const REST_KEYS = ["restPolicy", "mentalHealthLine", "staffRotationOrder", "communityAutonomy", "supportTeam", "compressAdmin", "forceSimplify"];
-  const REOPEN_KEYS = ["reopenPilot", "lowRiskWorkList", "factoryClosedLoop", "elasticTransit", "enterpriseExemption", "livelihoodStaggeredReopen", "closedLoopSmallShift", "essentialServicePermit", "contactlessServiceRegistry", "contactlessLivelihoodStalls", "neighborhoodPickupWindow", "neighborhoodCommerceLedger", "onlineGovOvertime", "remoteApprovalDesk", "microEnterpriseRoster", "communityRepairWhitelist", "essentialMaintenanceRoster", "remoteWorkGovServices", "serviceVoucherPilot", "nightFreightWindow", "jobSubsidyAdvance", "microFreightPermit", "rentDeferralCoordination", "taxFeeDeferralDesk", "platformLogisticsShare"];
+  const REOPEN_KEYS = ["reopenPilot", "lowRiskWorkList", "factoryClosedLoop", "elasticTransit", "enterpriseExemption", "livelihoodStaggeredReopen", "closedLoopSmallShift", "essentialServicePermit", "contactlessServiceRegistry", "contactlessLivelihoodStalls", "neighborhoodPickupWindow", "onlineVendorDesk", "neighborhoodErrandRoster", "neighborhoodCommerceLedger", "onlineGovOvertime", "remoteApprovalDesk", "microEnterpriseRoster", "communityRepairWhitelist", "essentialMaintenanceRoster", "remoteWorkGovServices", "serviceVoucherPilot", "nightFreightWindow", "jobSubsidyAdvance", "microFreightPermit", "rentDeferralCoordination", "taxFeeDeferralDesk", "platformLogisticsShare"];
   const VOLUNTEER_KEYS = ["volunteerDispatch", "mentalHealthLine", "supportTeam", "communityAutonomy", "interProvinceSupport"];
   const PUBLIC_REPAIR_KEYS = ["transparency", "publicReviewBrief"];
 
@@ -6230,6 +6335,8 @@
       operationUses.essentialServicePermit && "民生服务保留名录",
       operationUses.contactlessLivelihoodStalls && "无接触民生摊点",
       operationUses.neighborhoodPickupWindow && "社区预约取货",
+      operationUses.onlineVendorDesk && "线上摊位登记台",
+      operationUses.neighborhoodErrandRoster && "楼栋错峰服务单",
       operationUses.neighborhoodCommerceLedger && "社区团购结算台",
       operationUses.onlineGovOvertime && "线上政务加班窗口",
       operationUses.remoteApprovalDesk && "线上预审窗口",
@@ -6314,8 +6421,10 @@
     const assetSources = [
       [operationUses.fiscalTransparencyLedger && m.trust >= 55 && r.funds <= 55, "财政透明台账"],
       [operationUses.emergencyGapLedger && m.trust >= 50 && r.funds <= 55, "应急缺口清单"],
+      [operationUses.budgetFreezeReview && r.funds <= 52, "非急预算冻结评审"],
       [operationUses.fastGrantReport && m.trust >= 50 && r.funds <= 55, "专项资金快报"],
       [operationUses.bankCreditWindow && m.trust >= 45 && r.funds <= 55, "银行临时授信窗口"],
+      [operationUses.insurancePreSettlement && m.hospitalLoad <= 82 && r.funds <= 55, "医保预结算窗口"],
       [operationUses.publicDonationDrive && m.trust >= 50 && r.funds <= 60, "公开募捐专户"],
       [operationUses.donationClaimList && m.trust >= 50 && r.funds <= 55, "捐助认领清单"],
       [operationUses.donationCoordination && m.trust >= 50 && r.funds <= 55, "社会捐助统筹"],
@@ -6327,6 +6436,8 @@
       [operationUses.essentialServicePermit && m.economy >= 55 && r.funds <= 45, "民生服务保留名录"],
       [operationUses.contactlessLivelihoodStalls && m.economy >= 52 && r.funds <= 45, "无接触民生摊点"],
       [operationUses.neighborhoodPickupWindow && m.economy >= 52 && r.funds <= 45, "社区预约取货"],
+      [operationUses.onlineVendorDesk && m.economy >= 52 && r.funds <= 45, "线上摊位登记台"],
+      [operationUses.neighborhoodErrandRoster && m.economy >= 52 && r.funds <= 45, "楼栋错峰服务单"],
       [operationUses.neighborhoodCommerceLedger && m.economy >= 52 && r.funds <= 50, "社区团购结算台"],
       [operationUses.onlineGovOvertime && m.economy >= 52 && r.funds <= 50, "线上政务加班窗口"],
       [operationUses.remoteApprovalDesk && m.economy >= 52 && r.funds <= 50, "线上预审窗口"],
@@ -6375,7 +6486,7 @@
     const trustPenalty = m.trust < 30 ? 2 : m.trust < 45 ? 1 : 0;
     const strictControlEffect = h.policyStrictness >= 80 ? 1 : 0;
     const openFlowPressure = h.policyStrictness <= 15 ? 1 : 0;
-    const microFlowPressure = getMicroRecoveryAssets(state).length >= 2 && h.detectedRate < 62 && m.infection >= 45 ? 1 : 0;
+    const microFlowPressure = getMicroRecoveryAssets(state).length >= 2 && h.detectedRate < 70 && m.infection >= 45 ? 1 : 0;
     const infectionDelta = clamp(
       phasePressure + mobilityPressure - controlEffect - detectionEffect - strictControlEffect + openFlowPressure + microFlowPressure + fatiguePenalty + trustPenalty,
       -6,
@@ -7935,7 +8046,7 @@
     const strictControlEffect = projection.hidden.policyStrictness >= 80 ? 1 : 0;
     const openFlowPressure = projection.hidden.policyStrictness <= 15 ? 1 : 0;
     const projected = projectedState(projection);
-    const microFlowPressure = getMicroRecoveryAssets(projected).length >= 2 && projection.hidden.detectedRate < 62 && projection.metrics.infection >= 45 ? 1 : 0;
+    const microFlowPressure = getMicroRecoveryAssets(projected).length >= 2 && projection.hidden.detectedRate < 70 && projection.metrics.infection >= 45 ? 1 : 0;
     const infectionDelta = clamp(
       phasePressure + mobilityPressure - controlEffect - detectionEffect - strictControlEffect + openFlowPressure + microFlowPressure + fatiguePenalty + trustPenalty,
       -6,
@@ -8109,8 +8220,10 @@
     "specialFundingApplication",
     "fiscalTransparencyLedger",
     "emergencyGapLedger",
+    "budgetFreezeReview",
     "fastGrantReport",
     "bankCreditWindow",
+    "insurancePreSettlement",
     "publicDonationDrive",
     "donationClaimList",
     "donationCoordination",
@@ -8120,11 +8233,13 @@
     "supplierPaymentExtension",
     "emergencyAccountClearing",
     "microEnterpriseRoster",
+    "onlineVendorDesk",
     "factoryClosedLoop",
     "livelihoodStaggeredReopen",
     "essentialServicePermit",
     "contactlessLivelihoodStalls",
     "neighborhoodPickupWindow",
+    "neighborhoodErrandRoster",
     "neighborhoodCommerceLedger",
     "onlineGovOvertime",
     "remoteApprovalDesk",
@@ -8155,15 +8270,19 @@
   const EARLY_RECOVERY_IDS = new Set([
     "fiscalTransparencyLedger",
     "emergencyGapLedger",
+    "budgetFreezeReview",
     "fastGrantReport",
     "bankCreditWindow",
+    "insurancePreSettlement",
     "publicDonationDrive",
     "donationClaimList",
     "emergencyAccountClearing",
     "microEnterpriseRoster",
+    "onlineVendorDesk",
     "essentialServicePermit",
     "contactlessLivelihoodStalls",
     "neighborhoodPickupWindow",
+    "neighborhoodErrandRoster",
     "neighborhoodCommerceLedger",
     "onlineGovOvertime",
     "remoteApprovalDesk",
@@ -8199,8 +8318,10 @@
   const FISCAL_ROADMAP_IDS = new Set([
     "fiscalTransparencyLedger",
     "emergencyGapLedger",
+    "budgetFreezeReview",
     "fastGrantReport",
     "bankCreditWindow",
+    "insurancePreSettlement",
     "publicDonationDrive",
     "donationClaimList",
     "donationCoordination",
@@ -8221,9 +8342,11 @@
     "onlineGovOvertime",
     "remoteWorkGovServices",
     "microEnterpriseRoster",
+    "onlineVendorDesk",
     "essentialServicePermit",
     "contactlessLivelihoodStalls",
     "neighborhoodPickupWindow",
+    "neighborhoodErrandRoster",
     "neighborhoodCommerceLedger",
     "essentialMaintenanceRoster",
     "communityRepairWhitelist",
