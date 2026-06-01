@@ -7307,6 +7307,14 @@
     return "surfaceRecovery";
   }
 
+  function endingFocusActionDetailPrefix(focusAction = {}) {
+    if (focusAction.available !== false) return "可先定位";
+    if (focusAction.status === "明日可排") return "今日额度已满，可先定位明日可排项目";
+    if (focusAction.status === "等资金") return "资金卡住时，可先查看解锁条件";
+    if (focusAction.status === "财政透支") return "财政透支时，可先查看解锁条件";
+    return "条件未满足时，可先查看解锁条件";
+  }
+
   function getEndingOutlook(state) {
     if (!state || state.ended) return null;
     const score = calculateScore(state);
@@ -7326,7 +7334,7 @@
       .sort((a, b) => b.lost - a.lost || b.max - a.max)
       .slice(0, 3)
       .map((item) => {
-        const focusAction = pressureActionTarget(state, PENDING_PRESSURE_TARGETS[item.metric] || [], { includeQueued: true });
+        const focusAction = pressureActionTarget(state, PENDING_PRESSURE_TARGETS[item.metric] || [], { includeQueued: true, includeLocked: true });
         return {
           metric: item.metric,
           label: item.short,
@@ -7335,7 +7343,7 @@
           status: `扣 ${item.lost} 分`,
           tone: item.tone,
           detail: focusAction && focusAction.actionLabel
-            ? `${item.advice} ${focusAction.available === false ? "今日额度已满，可先定位明日可排项目" : "可先定位"}“${focusAction.actionLabel}”。`
+            ? `${item.advice} ${endingFocusActionDetailPrefix(focusAction)}“${focusAction.actionLabel}”。`
             : item.advice,
           focusAction: focusAction && focusAction.actionId ? focusAction : null,
         };
@@ -7861,6 +7869,7 @@
     const budget = getCityActionBudget(state);
     if (!budget) return null;
     let queued = null;
+    let locked = null;
     for (const [mode, actionId] of candidates) {
       const status = mode === "resolutions"
         ? getResolutionStatus(state, actionId)
@@ -7892,8 +7901,27 @@
           available: false,
         };
       }
+      if (
+        options.includeLocked
+        && !locked
+        && status
+        && ACTION_OPPORTUNITY_LOCKS.has(status.lockedReason)
+        && status.lockedReason !== "今日调度已满"
+      ) {
+        locked = {
+          actionId,
+          mode,
+          pointId: point.id,
+          actionLabel: status.label,
+          pointLabel: point.label,
+          status: unlockPreviewLabel(status.lockedReason),
+          lockedReason: status.lockedReason,
+          lockedDetail: status.lockedDetail || status.lockedReason || "",
+          available: false,
+        };
+      }
     }
-    return queued;
+    return queued || locked;
   }
 
   function pendingEffectSummaryDetail(state, pending, target = null) {

@@ -1529,6 +1529,11 @@ function validateEndingOutlook() {
     opening.drivers.some((item) => item.focusAction && item.focusAction.actionId && item.focusAction.mode && item.focusAction.pointId),
     "Ending outlook score drivers should expose at least one focusable recovery action when city action budget remains.",
   );
+  const supplyDriver = opening.drivers.find((item) => item.metric === "supplies");
+  assert(
+    supplyDriver && supplyDriver.focusAction && supplyDriver.focusAction.status === "差条件",
+    "Ending outlook should expose locked recovery targets for score drivers with no currently available action.",
+  );
   const queuedState = core.createGame({ difficulty: "normal", seed: 2026060901 });
   core.executeOperation(queuedState, "remoteApprovalDesk");
   const queuedOutlook = core.getEndingOutlook(queuedState);
