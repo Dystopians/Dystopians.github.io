@@ -216,6 +216,16 @@ input:focus-visible {
   padding: 0;
 }
 
+.icon-button:disabled {
+  opacity: 0.46;
+  filter: grayscale(0.55);
+  box-shadow: 2px 2px 0 #9a8254;
+}
+
+.icon-button.has-save {
+  background: linear-gradient(#f4cf78, #d4a74d);
+}
+
 .primary-button {
   min-height: 46px;
   padding: 10px 14px;

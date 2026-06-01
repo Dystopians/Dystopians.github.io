@@ -1302,6 +1302,12 @@ function validateActionPreviewCoverage() {
   assert(styles.includes(".pre-settlement-action"), "Top pre-settlement hint action buttons need dedicated styling.");
   assert(appJs.includes("renderCityBadgeGaps"), "City badge cards should render concrete remaining gaps.");
   assert(styles.includes(".city-badge-gaps"), "City badge gap chips need dedicated styling.");
+  assert(appJs.includes("readStoredSave"), "Continue button should parse saved games through a shared helper.");
+  assert(appJs.includes("summarizeStoredSave"), "Continue button should expose a readable save summary.");
+  assert(appJs.includes("继续第 "), "Continue button title should show saved day.");
+  assert(appJs.includes("没有可继续的存档"), "Continue button should clearly label missing saves.");
+  assert(styles.includes(".icon-button.has-save"), "Continue button with a save should be visually distinct.");
+  assert(styles.includes(".icon-button:disabled"), "Disabled topbar buttons should be visually muted.");
   assert(appJs.includes("focusCityActionCard"), "City action navigation should scroll to and highlight the exact target card.");
   assert(appJs.includes(".action-card.is-targeted"), "City action focus helper should mark the target card visibly.");
   assert(styles.includes(".action-card.is-targeted"), "Targeted city action cards need dedicated highlight styling.");

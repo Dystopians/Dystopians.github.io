@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v155";
+  const ASSET_VERSION = "v156";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -465,21 +465,18 @@
   }
 
   function continueGame() {
-    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("linjiang72-save-v1");
-    if (!raw) return;
-    try {
-      state = core.importState(JSON.parse(raw));
-      pendingSettlementChoice = null;
-      pendingCriticalChoice = null;
-      resetMapView();
-      save();
-      render();
-      resetPageScroll();
-    } catch (error) {
-      console.error(error);
-      localStorage.removeItem(STORAGE_KEY);
-      showStart();
+    const stored = readStoredSave(true);
+    if (!stored) {
+      updateContinueButton();
+      return;
     }
+    state = stored.state;
+    pendingSettlementChoice = null;
+    pendingCriticalChoice = null;
+    resetMapView();
+    save();
+    render();
+    resetPageScroll();
   }
 
   function showStart() {
@@ -539,9 +536,42 @@
   }
 
   function updateContinueButton() {
-    const hasSave = Boolean(localStorage.getItem(STORAGE_KEY) || localStorage.getItem("linjiang72-save-v1"));
+    const stored = readStoredSave(true);
+    const hasSave = Boolean(stored);
     els.continueBtn.disabled = !hasSave;
-    els.continueBtn.title = hasSave ? "继续存档" : "没有存档";
+    els.continueBtn.classList.toggle("has-save", hasSave);
+    const title = hasSave ? summarizeStoredSave(stored.state) : "没有可继续的存档";
+    els.continueBtn.title = title;
+    els.continueBtn.setAttribute("aria-label", title);
+  }
+
+  function readStoredSave(purgeInvalid = false) {
+    const entries = [
+      [STORAGE_KEY, localStorage.getItem(STORAGE_KEY)],
+      ["linjiang72-save-v1", localStorage.getItem("linjiang72-save-v1")],
+    ].filter(([, raw]) => raw);
+    for (const [key, raw] of entries) {
+      try {
+        return { key, state: core.importState(JSON.parse(raw)) };
+      } catch (error) {
+        console.error(error);
+        if (purgeInvalid) localStorage.removeItem(key);
+      }
+    }
+    return null;
+  }
+
+  function summarizeStoredSave(savedState) {
+    if (!savedState) return "继续存档";
+    const difficulty = core.DIFFICULTIES[savedState.difficulty] || core.DIFFICULTIES.normal;
+    const scenario = core.SCENARIOS && core.SCENARIOS[savedState.scenario] ? core.SCENARIOS[savedState.scenario] : null;
+    const phase = savedState.phase || 1;
+    const day = savedState.day || 1;
+    const suffix = savedState.ended
+      ? `已归档 · ${savedState.ending && savedState.ending.title ? savedState.ending.title : "结局"}`
+      : `阶段 ${phase} / 6`;
+    const setup = scenario ? `${difficulty.label} · ${scenario.label}` : difficulty.label;
+    return `继续第 ${day} 天 · ${suffix} · ${setup}`;
   }
 
   function save() {
