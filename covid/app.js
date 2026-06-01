@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v148";
+  const ASSET_VERSION = "v149";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -1877,6 +1877,15 @@
     if (!choice || choice.available === false) return "";
     const finalDay = state.day >= core.TOTAL_DAYS;
     const nextText = finalDay ? "进入结局归档" : `推进到第 ${state.day + 1} 天`;
+    const hint = core.getEventSettlementHint ? core.getEventSettlementHint(state) : null;
+    if (hint) {
+      return `
+        <small class="choice-settlement-hint ${escapeHtml(hint.tone || "info")}" title="${escapeHtml(hint.detail || "")}">
+          <strong>${escapeHtml(hint.label || "选前提醒")}</strong>
+          <span>${escapeHtml(hint.detail || `选后结算：${nextText}。`)}</span>
+        </small>
+      `;
+    }
     return `
       <small class="choice-settlement-hint" title="事件选择会完成本日结算并推进日期；处理事件后，今天已执行的城市行动将不能再撤销。">
         选后结算：${escapeHtml(nextText)}；今日城市行动将定稿

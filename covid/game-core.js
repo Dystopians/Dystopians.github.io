@@ -9158,6 +9158,59 @@
     ];
   }
 
+  function getEventSettlementHint(state) {
+    if (!state || state.ended) return null;
+    const budget = getCityActionBudget(state);
+    const finalDay = state.day >= TOTAL_DAYS;
+    const nextText = finalDay ? "进入结局归档" : `推进到第 ${state.day + 1} 天`;
+    const undo = getCityActionUndo(state);
+    if (undo) {
+      return {
+        id: "cityActionCommitted",
+        tone: "info",
+        label: "城市行动已做",
+        detail: `已执行“${undo.label}”。若要更换，可先撤销；处理事件后，本日城市行动将定稿并${nextText}。`,
+        nextText,
+        actionId: undo.actionId,
+        mode: undo.mode,
+        pointId: undo.pointId,
+      };
+    }
+
+    const opportunities = getCityActionOpportunities(state);
+    const bestAction = opportunities && opportunities.items ? opportunities.items[0] : null;
+    if (budget.remaining > 0 && bestAction) {
+      return {
+        id: "cityActionUnused",
+        tone: "warn",
+        label: "还有城市行动",
+        detail: `今日还剩 ${budget.remaining}/${budget.limit} 次城市调度，可先处理“${bestAction.label}”（${bestAction.kind} · ${bestAction.pointLabel}）再选择事件；选后将${nextText}。`,
+        nextText,
+        actionId: bestAction.id,
+        mode: bestAction.mode,
+        pointId: bestAction.pointId,
+      };
+    }
+
+    if (budget.remaining > 0) {
+      return {
+        id: "noActionWindow",
+        tone: "mixed",
+        label: "暂无可用行动",
+        detail: `今日仍有 ${budget.remaining}/${budget.limit} 次城市调度，但当前没有可立即执行的工程或决议；选择事件后将${nextText}。`,
+        nextText,
+      };
+    }
+
+    return {
+      id: "readyToSettle",
+      tone: "good",
+      label: "可以结算",
+      detail: `今日城市调度已用完，处理事件后将${nextText}。`,
+      nextText,
+    };
+  }
+
   function getCityActionBudget(state) {
     const used = clamp(state.flags && state.flags.cityActionsToday ? state.flags.cityActionsToday : 0, 0, CITY_ACTIONS_PER_DAY);
     const remaining = Math.max(0, CITY_ACTIONS_PER_DAY - used);
@@ -9233,6 +9286,7 @@
     getSettlementNarrative,
     getSettlementReview,
     getSystemReadouts,
+    getEventSettlementHint,
     getCityActionBudget,
     getCityActionUndo,
     undoCityAction,

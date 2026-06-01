@@ -3710,6 +3710,48 @@ label {
   overflow-wrap: anywhere;
 }
 
+.choice-settlement-hint strong,
+.choice-settlement-hint span {
+  display: block;
+}
+
+.choice-settlement-hint strong {
+  margin-bottom: 2px;
+  color: var(--deep);
+  font-size: 0.66rem;
+}
+
+.choice-settlement-hint.warn,
+.choice-settlement-hint.mixed {
+  border-color: var(--warn);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 242, 184, 0.52) 0 4px, rgba(216, 155, 55, 0.28) 4px 8px),
+    #efc463;
+}
+
+.choice-settlement-hint.info {
+  border-color: var(--blue);
+  background:
+    repeating-linear-gradient(90deg, rgba(222, 236, 232, 0.5) 0 4px, rgba(109, 148, 154, 0.2) 4px 8px),
+    #d9e6df;
+}
+
+.choice-settlement-hint.good {
+  border-color: var(--good);
+  background:
+    repeating-linear-gradient(90deg, rgba(231, 246, 197, 0.56) 0 4px, rgba(116, 160, 91, 0.24) 4px 8px),
+    #cfe3a2;
+  color: #27492f;
+}
+
+.choice-settlement-hint.danger {
+  border-color: var(--danger);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 214, 189, 0.56) 0 4px, rgba(164, 77, 58, 0.24) 4px 8px),
+    #e8a27d;
+  color: #5b1f18;
+}
+
 .choice-impact-list {
   display: flex;
   flex-wrap: wrap;

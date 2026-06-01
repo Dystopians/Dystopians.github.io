@@ -415,6 +415,8 @@ function validateTutorialCopy() {
     "有后账",
     "下一步队列",
     "今日首选",
+    "选前提醒",
+    "还有城市行动未用",
     "选后结算",
     "明日可排",
     "后续影响",
@@ -823,11 +825,20 @@ function validateCityActionOpportunities() {
 function validateCityActionUndo() {
   assert(typeof core.getCityActionUndo === "function", "game-core.js must export getCityActionUndo.");
   assert(typeof core.undoCityAction === "function", "game-core.js must export undoCityAction.");
+  assert(typeof core.getEventSettlementHint === "function", "game-core.js must export getEventSettlementHint.");
   const state = core.createGame({ difficulty: "normal", seed: 20260615 });
+  const openingHint = core.getEventSettlementHint(state);
+  assert(openingHint && openingHint.id === "cityActionUnused", "Event settlement hint should warn when today's city action budget is unused.");
+  assert(openingHint.actionId && openingHint.pointId && /可先处理/.test(openingHint.detail), "Unused-action settlement hint should name a concrete city action before event resolution.");
   const before = core.exportState(state);
   core.executeOperation(state, "campusSentinel");
   const undo = core.getCityActionUndo(state);
   assert(undo && undo.label === core.OPERATIONS.campusSentinel.label, "Executed city actions should expose an undo record.");
+  const committedHint = core.getEventSettlementHint(state);
+  assert(
+    committedHint && committedHint.id === "cityActionCommitted" && /撤销/.test(committedHint.detail),
+    "Event settlement hint should explain that an executed city action can still be undone before resolving the event.",
+  );
   assert(state.flags.cityActionsToday === 1, "Executing a city action should consume today's city action budget.");
   assert(state.history.length === 1, "Executing a city action should add one history row before undo.");
   const undoSummary = core.getDailyPressureSummary(state);
@@ -1250,8 +1261,12 @@ function validateActionPreviewCoverage() {
   assert(styles.includes(".choice-decision-tags"), "Choice decision tags need dedicated styling.");
   assert(styles.includes(".choice-button.choice-recommended"), "Recommended choice buttons should have a visible persistent state.");
   assert(appJs.includes("renderChoiceSettlementHint"), "Event choice buttons should explain that selecting them settles the day.");
+  assert(appJs.includes("core.getEventSettlementHint"), "Event choice settlement hints should use the core pre-settlement warning.");
+  assert(appJs.includes("choice-settlement-hint ${escapeHtml(hint.tone"), "Event choice settlement hints should receive warning tone classes.");
+  assert(coreJs.includes("getEventSettlementHint"), "Core should expose event settlement warnings for unused city action budget.");
   assert(appJs.includes("今日城市行动将定稿"), "Event choice settlement hint should warn that today's city actions become final.");
   assert(styles.includes(".choice-settlement-hint"), "Event settlement hints need dedicated styling.");
+  assert(styles.includes(".choice-settlement-hint.warn"), "Unused-action settlement hints need a visible warning style.");
   assert(appJs.includes("renderCityBadgeGaps"), "City badge cards should render concrete remaining gaps.");
   assert(styles.includes(".city-badge-gaps"), "City badge gap chips need dedicated styling.");
   assert(appJs.includes("focusCityActionCard"), "City action navigation should scroll to and highlight the exact target card.");
