@@ -5652,11 +5652,29 @@ button.fiscal-route-card:focus-visible {
 
 .strategy-debt {
   display: grid;
+  width: 100%;
   gap: 3px;
   padding: 7px 8px;
   border: 2px solid #9b7134;
   background: rgba(255, 241, 200, 0.74);
   box-shadow: inset 2px 2px 0 rgba(255, 247, 209, 0.62);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+button.strategy-debt {
+  cursor: pointer;
+}
+
+.strategy-debt.actionable:hover,
+.strategy-debt.actionable:focus-visible {
+  transform: translate(-1px, -1px);
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 247, 209, 0.62),
+    3px 3px 0 rgba(90, 60, 29, 0.24);
+  outline: 2px solid rgba(83, 122, 79, 0.55);
+  outline-offset: 1px;
 }
 
 .strategy-debt.warn {

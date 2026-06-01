@@ -4956,17 +4956,23 @@
     const pressure = strategyMetricDebtPressure(metric, value);
     const score = pressure * 18 + exposure;
     if (score < 54) return null;
+    const target = strategyDebtActionTarget(state, metric);
     return {
       id: `debt_${metric}`,
       metric,
       label: meta.short,
       value,
       tone: pressure >= 4 ? "danger" : pressure >= 3 ? "warn" : "info",
-      detail,
+      detail: target && target.actionLabel ? `${detail} 应对入口：“${target.actionLabel}”。` : detail,
       percent: exposure,
       status: pressure >= 4 ? "债务高位" : pressure >= 3 ? "正在积累" : "需要盯防",
+      ...target,
       score,
     };
+  }
+
+  function strategyDebtActionTarget(state, metric) {
+    return pressureActionTarget(state, PENDING_PRESSURE_TARGETS[metric] || []);
   }
 
   function strategyMetricDebtPressure(metric, value) {

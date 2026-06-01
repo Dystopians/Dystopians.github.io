@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v165";
+  const ASSET_VERSION = "v166";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -1360,12 +1360,19 @@
     const debtList = debts.length
       ? `
         <div class="strategy-debt-list" aria-label="路线债务">
-          ${debts.map((item) => `
-            <article class="strategy-debt ${escapeHtml(item.tone || "info")}" title="${escapeHtml(item.detail)}">
+          ${debts.map((item) => {
+            const actionable = item.actionId && item.pointId && item.mode;
+            const tagName = actionable ? "button" : "article";
+            const actionAttrs = actionable
+              ? ` type="button" data-debt-point="${escapeHtml(item.pointId)}" data-debt-mode="${escapeHtml(item.mode)}" data-debt-action="${escapeHtml(item.actionId)}"`
+              : "";
+            return `
+            <${tagName} class="strategy-debt ${escapeHtml(item.tone || "info")} ${actionable ? "actionable" : ""}" title="${escapeHtml(item.detail)}"${actionAttrs}>
               <span>${escapeHtml(item.status || "需要盯防")} · ${escapeHtml(item.label)} ${escapeHtml(String(item.value))}</span>
               <strong>${escapeHtml(item.detail)}</strong>
-            </article>
-          `).join("")}
+            </${tagName}>
+          `;
+          }).join("")}
         </div>
       `
       : "";
@@ -1424,6 +1431,12 @@
           focusCityActionCard(button.dataset.actionId);
           els.mapHint.textContent = `已定位配套建议：${core.getMapPoint(state, button.dataset.pointId).label}`;
         }
+      });
+    });
+    els.strategyProfile.querySelectorAll("[data-debt-action]").forEach((button) => {
+      bindCityActionPreview(button, () => button.dataset.debtMode, () => button.dataset.debtAction);
+      button.addEventListener("click", () => {
+        focusRecoveryLever(button.dataset.debtPoint, button.dataset.debtMode, button.dataset.debtAction);
       });
     });
   }

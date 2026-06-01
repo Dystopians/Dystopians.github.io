@@ -1375,6 +1375,10 @@ function validateEndingStrategyReview() {
     "Every route debt warning needs label, status, detail, and tone.",
   );
   assert(
+    profile.debts.some((item) => item.actionId && item.mode && item.pointId && /应对入口/.test(item.detail)),
+    "Route debt warnings should expose at least one focusable response action when the city still has action budget.",
+  );
+  assert(
     profile.recommendations.every((item) => item.kind && item.label && item.status && item.detail && item.routeLabel),
     "Every strategy recommendation needs kind, label, status, detail, and routeLabel.",
   );
@@ -1475,6 +1479,9 @@ function validateActionPreviewCoverage() {
   assert(styles.includes(".trend-summary"), "Trend preview summary needs dedicated styling.");
   assert(appJs.includes("strategy-inertia"), "Strategy profile should render route inertia warnings.");
   assert(styles.includes(".strategy-inertia"), "Route inertia warnings need dedicated styling.");
+  assert(appJs.includes("data-debt-action"), "Strategy debt warnings should expose focusable action hooks.");
+  assert(appJs.includes("focusRecoveryLever(button.dataset.debtPoint"), "Strategy debt clicks should focus the exact response action.");
+  assert(styles.includes(".strategy-debt.actionable"), "Clickable strategy debt warnings need dedicated styling.");
   assert(appJs.includes("renderStrategyLedger"), "Strategy profile should render a recent route ledger.");
   assert(styles.includes(".strategy-ledger"), "Recent route ledger needs dedicated styling.");
   assert(appJs.includes("renderActionFinderRouteTag"), "Action finder should render explicit strategy route tags.");
