@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v183";
+  const ASSET_VERSION = "v184";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -2103,7 +2103,7 @@
             choiceId: choice.id,
             eventId: state.currentEventId,
             day: state.day,
-            label: risk ? risk.label : "红线风险",
+            label: risk ? risk.label : "关键风险",
           };
           renderEvent();
           const focused = focusChoiceOption(choice.id);
@@ -2215,9 +2215,9 @@
   function renderChoiceSettlementConfirm(choice, active) {
     if (!choice || choice.available === false || !active) return "";
     const risk = getCriticalChoiceRisk(choice.id);
-    const riskText = risk ? `，并承受“${risk.label}”红线风险` : "";
+    const riskText = risk ? `，并承受“${risk.label}”关键风险` : "";
     const title = risk
-      ? `${risk.detail} 今日还有城市行动未用；再次点击这个事件选项会同时确认结算和红线风险。`
+      ? `${risk.detail} 今日还有城市行动未用；再次点击这个事件选项会同时确认结算和关键风险。`
       : "今日还有城市行动未用。再次点击这个事件选项才会结算当天。";
     return `
       <small class="choice-settlement-confirm ${risk ? "has-risk" : ""}" title="${escapeHtml(title)}">
@@ -2229,11 +2229,11 @@
   function renderChoiceCriticalConfirm(choice, active) {
     if (!choice || choice.available === false || !active) return "";
     const risk = getCriticalChoiceRisk(choice.id);
-    const label = risk ? risk.label : "红线风险";
-    const detail = risk ? risk.detail : "这项选择预计会推进失败倒计时。";
+    const label = risk ? risk.label : "关键风险";
+    const detail = risk ? risk.detail : "这项选择预计会触发关键风险。";
     return `
       <small class="choice-critical-confirm" title="${escapeHtml(detail)}">
-        高危确认：${escapeHtml(label)}。再次点击确认承受这个红线风险
+        高危确认：${escapeHtml(label)}。再次点击确认承受这个关键风险
       </small>
     `;
   }
@@ -2448,8 +2448,8 @@
     const items = core.getChoiceRiskPreview(state, choice.id).slice(0, 2);
     if (!items.length) return "";
     return `
-      <div class="choice-risk-preview" aria-label="红线预判">
-        <span>红线</span>
+      <div class="choice-risk-preview" aria-label="风险预判">
+        <span>风险</span>
         ${items.map((item) => `
           <em class="${item.tone || "warn"}" title="${escapeHtml(item.detail)}">
             ${escapeHtml(item.label)}

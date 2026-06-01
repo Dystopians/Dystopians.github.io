@@ -467,7 +467,7 @@ function validateTutorialCopy() {
     "后果复盘",
     "决策徽章",
     "贴合目标",
-    "红线风险",
+    "关键风险",
     "高危二次确认",
     "危险倒计时",
     "合并成一次确认",
@@ -1378,6 +1378,24 @@ function validateChoiceRiskPreview() {
   assert(
     comparison.items.filter((item) => item.available).some((item) => item.rank === 1),
     "Choice comparison should rank available choices.",
+  );
+  const fiscalRiskState = core.createGame({ difficulty: "normal", seed: 202606021 });
+  fiscalRiskState.currentEventId = "p1_market_closure";
+  fiscalRiskState.resources.funds = 12;
+  fiscalRiskState.metrics.economy = 28;
+  const fiscalRisk = core.getChoiceRiskPreview(fiscalRiskState, "p1_market_closure:c2");
+  assert(
+    fiscalRisk.some((item) => item.id === "funds_low" && item.label === "财政透支" && item.detail.includes("高价工程")),
+    "Choice risk preview should warn when a choice will push funds into fiscal overdraft.",
+  );
+  assert(
+    fiscalRisk.some((item) => item.id === "economy_warn" && item.detail.includes("低接触")),
+    "Choice risk preview should warn when a choice worsens low-city-vitality recovery risk.",
+  );
+  const fiscalComparison = core.getChoiceComparison(fiscalRiskState).items.find((item) => item.choiceId === "p1_market_closure:c2");
+  assert(
+    fiscalComparison && fiscalComparison.label === "关键风险" && fiscalComparison.decisionTags.some((tag) => tag.label === "关键风险" && tag.detail.includes("应急资金")),
+    "Choice comparison should score operational risk lines as key risks, not only failure countdowns.",
   );
 }
 

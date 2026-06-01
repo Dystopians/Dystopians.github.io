@@ -8292,6 +8292,77 @@
     },
   };
 
+  function addOperationalRiskPreviewRows(rows, beforeState, projectedState) {
+    const beforeFunds = beforeState.resources.funds;
+    const afterFunds = projectedState.resources.funds;
+    const beforeEconomy = beforeState.metrics.economy;
+    const afterEconomy = projectedState.metrics.economy;
+    const addValueRisk = (id, tone, label, detail, priority) => {
+      if (rows.some((item) => item.id === id || item.label === label)) return;
+      rows.push({ id, tone, label, detail, priority });
+    };
+
+    if (beforeFunds <= 10 && afterFunds > 10) {
+      addValueRisk(
+        "funds_recovered",
+        "good",
+        "脱离透支",
+        `应急资金预计 ${beforeFunds} → ${afterFunds}，高价工程锁定会缓和。`,
+        74,
+      );
+    } else if (afterFunds <= 10 && (beforeFunds > 10 || afterFunds < beforeFunds)) {
+      addValueRisk(
+        "funds_low",
+        "danger",
+        "财政透支",
+        `应急资金预计 ${beforeFunds} → ${afterFunds}，高价工程和部分决议会被锁定。`,
+        88 + Math.max(0, 10 - afterFunds),
+      );
+    } else if (afterFunds <= 20 && (beforeFunds > 20 || afterFunds < beforeFunds)) {
+      addValueRisk(
+        "funds_warn",
+        "warn",
+        "资金偏低",
+        `应急资金预计 ${beforeFunds} → ${afterFunds}，后续工程选择会收窄。`,
+        66 + Math.max(0, 20 - afterFunds),
+      );
+    }
+
+    if (beforeEconomy <= 25 && afterEconomy > 25) {
+      addValueRisk(
+        "economy_recovered",
+        "good",
+        "活力回温",
+        `城市活力预计 ${beforeEconomy} → ${afterEconomy}，保供、扩容和资金回流会更顺。`,
+        72,
+      );
+    } else if (afterEconomy <= 15 && (beforeEconomy > 15 || afterEconomy < beforeEconomy)) {
+      addValueRisk(
+        "economy_floor",
+        "danger",
+        "活力探底",
+        `城市活力预计 ${beforeEconomy} → ${afterEconomy}，长期结局和资金回流都会明显变差。`,
+        84 + Math.max(0, 15 - afterEconomy),
+      );
+    } else if (afterEconomy <= 25 && (beforeEconomy > 25 || afterEconomy < beforeEconomy)) {
+      addValueRisk(
+        "economy_low",
+        "warn",
+        "城市低温",
+        `城市活力预计 ${beforeEconomy} → ${afterEconomy}，保供恢复和医疗扩容会变慢。`,
+        70 + Math.max(0, 25 - afterEconomy),
+      );
+    } else if (afterEconomy <= 35 && (beforeEconomy > 35 || afterEconomy < beforeEconomy)) {
+      addValueRisk(
+        "economy_warn",
+        "warn",
+        "活力偏低",
+        `城市活力预计 ${beforeEconomy} → ${afterEconomy}，恢复路线需要提前铺低接触节点。`,
+        60 + Math.max(0, 35 - afterEconomy),
+      );
+    }
+  }
+
   function getChoiceRiskPreview(state, choiceId) {
     if (!state || state.ended || !choiceId) return [];
     const event = getCurrentEvent(state);
@@ -8335,6 +8406,7 @@
         });
       }
     });
+    addOperationalRiskPreviewRows(rows, state, projected);
 
     return rows
       .sort((a, b) => b.priority - a.priority)
@@ -8361,7 +8433,7 @@
     if (riskDanger) {
       return {
         tone: "danger",
-        label: "红线风险",
+        label: "关键风险",
         detail: riskDanger.detail,
       };
     }
@@ -8513,7 +8585,7 @@
     let label = "备选路线";
     if (worstRisk && worstRisk.tone === "danger") {
       tone = "danger";
-      label = "红线风险";
+      label = "关键风险";
     } else if (directiveFit && directiveFit.tone === "good") {
       tone = "good";
       label = "救今日目标";
@@ -8574,12 +8646,12 @@
       add(
         "risk",
         worstRisk.tone,
-        worstRisk.tone === "danger" ? "红线风险" : "红线承压",
+        worstRisk.tone === "danger" ? "关键风险" : "风险承压",
         worstRisk.detail,
         worstRisk.tone === "danger" ? 100 : 90,
       );
     } else if (score >= 18) {
-      add("riskStable", "good", "红线平稳", "预计不会推进失败倒计时。", 54);
+      add("riskStable", "good", "压力平稳", "预计不会推进失败倒计时或打穿关键运营线。", 54);
     }
     if (bestTrend) {
       add(
