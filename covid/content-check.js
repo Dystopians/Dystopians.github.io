@@ -1043,7 +1043,7 @@ function validateEndingStrategyReview() {
     routeTone: "danger",
     routeSource: "eventChoice",
     notes: [],
-    changes: {},
+    changes: { trust: -4, infection: -2 },
   });
   const profile = core.getStrategyProfile(activeState);
   assert(core.getChoiceRouteTag({ actionKey: "citywideSilence" }).label === "高压止血", "Base hard-control actions should count toward strategy routes.");
@@ -1053,6 +1053,16 @@ function validateEndingStrategyReview() {
   assert(profile.recommendations.length > 0, "Strategy recommendations should surface route complements under pressure.");
   assert(Array.isArray(profile.debts), "Strategy profile should expose route debt warnings.");
   assert(profile.debts.length > 0, "A dominant route under pressure should expose at least one route debt warning.");
+  assert(Array.isArray(profile.recentMoves), "Strategy profile should expose recent route moves.");
+  assert(profile.recentMoves.length > 0, "Strategy profile should show recent route ledger rows after history entries.");
+  assert(
+    profile.recentMoves.every((item) => item.day && item.sourceLabel && item.routeLabel && item.label && item.detail),
+    "Every recent route move needs day, sourceLabel, routeLabel, label, and detail.",
+  );
+  assert(
+    profile.recentMoves.some((item) => /代价|收益|变化/.test(item.detail)),
+    "Recent route moves should summarize visible impact, not only repeat the title.",
+  );
   assert(
     profile.debts.every((item) => item.label && item.status && item.detail && item.tone),
     "Every route debt warning needs label, status, detail, and tone.",
@@ -1158,6 +1168,8 @@ function validateActionPreviewCoverage() {
   assert(styles.includes(".trend-summary"), "Trend preview summary needs dedicated styling.");
   assert(appJs.includes("strategy-inertia"), "Strategy profile should render route inertia warnings.");
   assert(styles.includes(".strategy-inertia"), "Route inertia warnings need dedicated styling.");
+  assert(appJs.includes("renderStrategyLedger"), "Strategy profile should render a recent route ledger.");
+  assert(styles.includes(".strategy-ledger"), "Recent route ledger needs dedicated styling.");
   assert(appJs.includes("renderActionFinderRouteTag"), "Action finder should render explicit strategy route tags.");
   assert(appJs.includes("core.getChoiceRouteTag({ id: item.id })"), "City action cards should derive route tags from their action id.");
   assert(styles.includes(".action-finder-route"), "Action finder route tags need dedicated styling.");

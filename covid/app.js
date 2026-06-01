@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v142";
+  const ASSET_VERSION = "v143";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -1212,6 +1212,7 @@
         </div>
       `
       : "";
+    const ledger = renderStrategyLedger(profile.recentMoves || []);
     const recommendations = (profile.recommendations || []).slice(0, 3);
     const recommendationList = recommendations.length
       ? `
@@ -1237,6 +1238,7 @@
       <p>${escapeHtml(profile.detail)}</p>
       ${inertia}
       <div class="strategy-route-list">${routeList}</div>
+      ${ledger}
       ${blindSpot}
       ${debtList}
       <div class="strategy-recommendations">
@@ -1267,6 +1269,29 @@
         }
       });
     });
+  }
+
+  function renderStrategyLedger(moves = []) {
+    const items = moves.slice(0, 5);
+    if (!items.length) return "";
+    return `
+      <div class="strategy-ledger" aria-label="最近路线账本">
+        <div class="strategy-ledger-head">
+          <span>最近路线账本</span>
+          <strong>${escapeHtml(String(items.length))}</strong>
+        </div>
+        <div class="strategy-ledger-list">
+          ${items.map((item) => `
+            <article class="strategy-ledger-item ${escapeHtml(item.routeTone || "info")}" title="${escapeHtml(item.detail || "")}">
+              <span>第${escapeHtml(String(item.day || "?"))}天 · ${escapeHtml(item.sourceLabel || "记录")} · ${escapeHtml(item.status || "")}</span>
+              <strong>${escapeHtml(item.label || "")}</strong>
+              <em>${escapeHtml(item.routeLabel || "综合路线")}</em>
+              ${item.impact ? `<p>${escapeHtml(item.impact)}</p>` : ""}
+            </article>
+          `).join("")}
+        </div>
+      </div>
+    `;
   }
 
   function renderPendingItem(item) {

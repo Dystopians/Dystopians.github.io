@@ -4490,6 +4490,7 @@
       inertia: null,
       debts: [],
       recommendations: getStrategyRecommendations(state, null, null),
+      recentMoves: [],
       routes: [],
     };
     }
@@ -4509,6 +4510,7 @@
         inertia: null,
         debts: getStrategyDebts(state, dominant, routeMap),
         recommendations: getStrategyRecommendations(state, getStrategyBlindSpot(state, routeMap), dominant),
+        recentMoves: getRecentStrategyMoves(state),
         routes: routes.filter((route) => route.count > 0).slice(0, 5),
       };
     }
@@ -4535,8 +4537,56 @@
       inertia: getStrategyInertia(dominant),
       debts: getStrategyDebts(state, dominant, routeMap),
       recommendations: getStrategyRecommendations(state, blindSpot, dominant),
+      recentMoves: getRecentStrategyMoves(state),
       routes: routes.filter((route) => route.count > 0).slice(0, 5),
     };
+  }
+
+  function getRecentStrategyMoves(state, limit = 5) {
+    return (state.history || [])
+      .filter((entry) => entry && entry.routeLabel && entry.routeLabel !== "综合调度")
+      .slice(0, Math.max(limit * 2, 6))
+      .map((entry, index) => {
+        const meta = getHistoryEntryMeta(entry);
+        const impact = summarizeStrategyMoveImpact(entry.changes);
+        return {
+          id: `strategy_move_${entry.day || 0}_${index}`,
+          day: entry.day || 0,
+          sourceLabel: meta.sourceLabel || "记录",
+          status: meta.status || "",
+          routeLabel: entry.routeLabel || "综合路线",
+          routeTone: entry.routeTone || "info",
+          label: entry.choice || entry.title || "未命名决策",
+          title: entry.title || meta.label || "历史记录",
+          detail: impact ? `${entry.title || meta.label || "历史记录"}；${impact}` : (entry.title || meta.detail || "路线记录"),
+          impact,
+        };
+      })
+      .slice(0, limit);
+  }
+
+  function summarizeStrategyMoveImpact(changes = {}) {
+    const rows = Object.entries(changes || {})
+      .map(([metric, delta]) => {
+        const meta = METRIC_META[metric] || RESOURCE_META[metric];
+        if (!meta || !delta) return null;
+        const good = isGoodDelta(metric, delta);
+        const bad = isBadDelta(metric, delta);
+        return {
+          metric,
+          delta,
+          label: meta.short,
+          tone: good ? "收益" : bad ? "代价" : "变化",
+          score: Math.abs(delta) * (bad ? 3 : good ? 2 : 1),
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.score - a.score || Math.abs(b.delta) - Math.abs(a.delta));
+    if (!rows.length) return "";
+    return rows
+      .slice(0, 3)
+      .map((item) => `${item.tone}${item.label} ${item.delta > 0 ? "+" : ""}${item.delta}`)
+      .join(" / ");
   }
 
   function getStrategyInertia(dominant) {

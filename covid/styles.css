@@ -4930,6 +4930,115 @@ button.fiscal-route-card:focus-visible {
     var(--danger);
 }
 
+.strategy-ledger {
+  display: grid;
+  gap: 6px;
+  padding: 7px;
+  border: 2px solid #9b7134;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 244, 202, 0.34) 0 6px, transparent 6px 12px),
+    #f4dda0;
+  box-shadow: inset 1px 1px 0 rgba(255, 247, 209, 0.76);
+}
+
+.strategy-ledger-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.strategy-ledger-head span {
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 900;
+}
+
+.strategy-ledger-head strong {
+  min-width: 22px;
+  padding: 2px 5px;
+  border: 2px solid #76568a;
+  background: #d7c5e3;
+  color: #3a2748;
+  font-size: 0.62rem;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.strategy-ledger-list {
+  display: grid;
+  gap: 5px;
+}
+
+.strategy-ledger-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 5px;
+  padding: 6px;
+  border: 2px solid #b89752;
+  background: #fff1c8;
+}
+
+.strategy-ledger-item.good {
+  border-color: var(--good);
+  background: #dcebac;
+}
+
+.strategy-ledger-item.info {
+  border-color: var(--blue);
+  background: #dde5d9;
+}
+
+.strategy-ledger-item.warn,
+.strategy-ledger-item.mixed {
+  border-color: var(--warn);
+  background: #f2d48b;
+}
+
+.strategy-ledger-item.danger {
+  border-color: var(--danger);
+  background: #eab08d;
+}
+
+.strategy-ledger-item span,
+.strategy-ledger-item em {
+  color: var(--muted);
+  font-size: 0.58rem;
+  font-weight: 900;
+  line-height: 1.08;
+}
+
+.strategy-ledger-item span {
+  grid-column: 1 / -1;
+}
+
+.strategy-ledger-item strong {
+  min-width: 0;
+  color: var(--deep);
+  font-size: 0.68rem;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+
+.strategy-ledger-item em {
+  align-self: start;
+  padding: 1px 5px;
+  border: 2px solid rgba(119, 82, 33, 0.5);
+  background: rgba(255, 241, 200, 0.75);
+  color: var(--deep);
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.strategy-ledger-item p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.6rem;
+  font-weight: 800;
+  line-height: 1.28;
+}
+
 .strategy-empty,
 .strategy-blindspot {
   margin: 0;
