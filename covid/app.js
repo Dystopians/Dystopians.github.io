@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v177";
+  const ASSET_VERSION = "v178";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -1023,7 +1023,7 @@
         data-ending-action="${escapeHtml(action.actionId)}"
         title="${escapeHtml(item.detail || "")}">
         <span>${escapeHtml(label)}</span>
-        <strong>${escapeHtml(action.actionLabel || "追分行动")}</strong>
+        <strong>${escapeHtml(action.available === false ? `${action.status || "明日可排"}：${action.actionLabel || "追分行动"}` : action.actionLabel || "追分行动")}</strong>
       </button>
     `;
   }

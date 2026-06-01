@@ -1529,6 +1529,13 @@ function validateEndingOutlook() {
     opening.drivers.some((item) => item.focusAction && item.focusAction.actionId && item.focusAction.mode && item.focusAction.pointId),
     "Ending outlook score drivers should expose at least one focusable recovery action when city action budget remains.",
   );
+  const queuedState = core.createGame({ difficulty: "normal", seed: 2026060901 });
+  core.executeOperation(queuedState, "remoteApprovalDesk");
+  const queuedOutlook = core.getEndingOutlook(queuedState);
+  assert(
+    queuedOutlook.drivers.some((item) => item.focusAction && item.focusAction.status === "明日可排"),
+    "Ending outlook should keep tomorrow-queue recovery actions after today's city action budget is exhausted.",
+  );
 
   state.metrics.hospitalLoad = 96;
   state.metrics.supplies = 22;
@@ -1721,6 +1728,7 @@ function validateActionPreviewCoverage() {
   assert(styles.includes(".stage-schedule-action"), "Stage schedule preparation buttons need dedicated styling.");
   assert(appJs.includes("renderEndingDriverItem"), "Ending outlook score drivers should render as focusable action chips.");
   assert(appJs.includes("data-ending-action"), "Ending outlook driver actions need exact map-action data hooks.");
+  assert(appJs.includes("明日可排"), "Ending outlook driver actions should label tomorrow-queue recovery actions.");
   assert(
     appJs.includes("bindCityActionPreview(button, () => button.dataset.endingMode, () => button.dataset.endingAction)"),
     "Ending outlook driver actions should preview their target city action.",

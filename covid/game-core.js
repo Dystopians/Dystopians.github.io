@@ -7326,7 +7326,7 @@
       .sort((a, b) => b.lost - a.lost || b.max - a.max)
       .slice(0, 3)
       .map((item) => {
-        const focusAction = pressureActionTarget(state, PENDING_PRESSURE_TARGETS[item.metric] || []);
+        const focusAction = pressureActionTarget(state, PENDING_PRESSURE_TARGETS[item.metric] || [], { includeQueued: true });
         return {
           metric: item.metric,
           label: item.short,
@@ -7335,7 +7335,7 @@
           status: `扣 ${item.lost} 分`,
           tone: item.tone,
           detail: focusAction && focusAction.actionLabel
-            ? `${item.advice} 可先定位“${focusAction.actionLabel}”。`
+            ? `${item.advice} ${focusAction.available === false ? "今日额度已满，可先定位明日可排项目" : "可先定位"}“${focusAction.actionLabel}”。`
             : item.advice,
           focusAction: focusAction && focusAction.actionId ? focusAction : null,
         };
@@ -7853,29 +7853,47 @@
       .map(({ score, ...item }) => item);
   }
 
-  function pressureActionTarget(state, candidates = []) {
-    return pressureActionTargetDetail(state, candidates) || {};
+  function pressureActionTarget(state, candidates = [], options = {}) {
+    return pressureActionTargetDetail(state, candidates, options) || {};
   }
 
-  function pressureActionTargetDetail(state, candidates = []) {
+  function pressureActionTargetDetail(state, candidates = [], options = {}) {
     const budget = getCityActionBudget(state);
-    if (!budget || budget.remaining <= 0) return null;
+    if (!budget) return null;
+    let queued = null;
     for (const [mode, actionId] of candidates) {
       const status = mode === "resolutions"
         ? getResolutionStatus(state, actionId)
         : getOperationStatus(state, actionId);
-      if (!status || !status.available) continue;
       const point = findMapPointForCityAction(mode, actionId);
       if (!point) continue;
-      return {
+      if (status && status.available) return {
         actionId,
         mode,
         pointId: point.id,
         actionLabel: status.label,
         pointLabel: point.label,
+        status: "可执行",
+        available: true,
       };
+      if (
+        options.includeQueued
+        && !queued
+        && status
+        && status.lockedReason === "今日调度已满"
+      ) {
+        queued = {
+          actionId,
+          mode,
+          pointId: point.id,
+          actionLabel: status.label,
+          pointLabel: point.label,
+          status: "明日可排",
+          available: false,
+        };
+      }
     }
-    return null;
+    return queued;
   }
 
   function pendingEffectSummaryDetail(state, pending, target = null) {
