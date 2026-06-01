@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v127";
+  const ASSET_VERSION = "v128";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -990,6 +990,7 @@
         ${items.map((item) => `
           <button class="recovery-item ${escapeHtml(item.tone || "info")} ${escapeHtml(item.bucket || "locked")}" type="button"
             data-recovery-point="${escapeHtml(item.pointId)}" data-recovery-mode="${escapeHtml(item.mode)}"
+            data-recovery-action="${escapeHtml(item.id)}"
             title="${escapeHtml(item.detail)}">
             <span>${escapeHtml(item.status)} · ${escapeHtml(item.pointLabel)} · ${escapeHtml(item.route)}</span>
             <strong>${escapeHtml(item.label)}</strong>
@@ -1001,8 +1002,9 @@
     `;
 
     els.recoveryLevers.querySelectorAll("[data-recovery-point]").forEach((button) => {
+      bindCityActionPreview(button, () => button.dataset.recoveryMode, () => button.dataset.recoveryAction);
       button.addEventListener("click", () => {
-        focusRecoveryLever(button.dataset.recoveryPoint, button.dataset.recoveryMode);
+        focusRecoveryLever(button.dataset.recoveryPoint, button.dataset.recoveryMode, button.dataset.recoveryAction);
       });
     });
   }
@@ -1015,18 +1017,21 @@
     return `<small class="recovery-unlock">${escapeHtml(prefix)}：${escapeHtml(detail)}</small>`;
   }
 
-  function focusRecoveryLever(pointId, preferredMode = "operations") {
+  function focusRecoveryLever(pointId, preferredMode = "operations", actionId = "") {
     if (!pointId) return;
     core.selectMapPoint(state, pointId);
     const point = core.getMapPoint(state, pointId);
-    actionMode = chooseCrisisActionMode(point, preferredMode);
+    actionMode = actionId
+      ? (preferredMode === "resolutions" ? "resolutions" : "operations")
+      : chooseCrisisActionMode(point, preferredMode);
     save();
     renderMap();
     renderActionMode();
     renderCityAssets();
     renderCrisisBoard();
+    previewCityAction(actionMode, actionId);
     const pointLabel = point ? point.label : "恢复节点";
-    els.mapHint.textContent = `已定位：${pointLabel} · 查看${actionMode === "resolutions" ? "决议" : "工程"}恢复渠道`;
+    els.mapHint.textContent = `已定位恢复渠道：${pointLabel} · ${actionMode === "resolutions" ? "决议" : "工程"}`;
     if (els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
       els.operationsList.scrollIntoView({ block: "nearest" });
     }

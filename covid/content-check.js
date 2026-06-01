@@ -1070,6 +1070,15 @@ function validateActionPreviewCoverage() {
   assert(coreJs.includes("focusActionId"), "Crisis dashboard should expose focusActionId for previewing primary relief.");
   assert(appJs.includes("renderRecoveryUnlockHint"), "Recovery lever UI should expose readable unlock hints for locked channels.");
   assert(appJs.includes("(report.items || []).slice(0, 7)"), "Recovery lever UI should render the expanded seven-item shortlist.");
+  assert(appJs.includes("data-recovery-action"), "Recovery lever cards should carry exact action ids for click-through preview.");
+  assert(
+    appJs.includes("bindCityActionPreview(button, () => button.dataset.recoveryMode, () => button.dataset.recoveryAction)"),
+    "Recovery lever cards should preview the exact recovery action on hover/focus.",
+  );
+  assert(
+    appJs.includes("focusRecoveryLever(button.dataset.recoveryPoint, button.dataset.recoveryMode, button.dataset.recoveryAction)"),
+    "Recovery lever clicks should focus the exact recovery action, not only the map point.",
+  );
   assert(styles.includes(".recovery-unlock"), "Recovery unlock hints need dedicated styling.");
   assert(appJs.includes("pendingImpactSummary"), "Pending timeline should expose readable delayed-effect impact summaries.");
   assert(appJs.includes("\"若触发\""), "Conditional pending effects should be labeled as conditional rather than certain.");
