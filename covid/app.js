@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v182";
+  const ASSET_VERSION = "v183";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -2808,6 +2808,7 @@
     const changes = renderChangeChips(entry.changes, 7);
     const narrative = renderSettlementNarrative(entry);
     const review = renderSettlementReview(entry);
+    const ledger = renderSettlementLedger(entry);
     const highlights = renderSettlementHighlights(entry);
     const breakdown = renderBreakdownRows(entry.breakdown, 4);
     const undoAction = renderSettlementUndoAction(meta);
@@ -2825,6 +2826,7 @@
       <p><b>${escapeHtml(entry.choice)}</b> / ${escapeHtml(entry.title)}</p>
       ${narrative}
       ${review}
+      ${ledger}
       ${renderHistoryBadges(meta, "settlement-tags")}
       ${highlights}
       <div class="change-list">${changes}</div>
@@ -3596,6 +3598,7 @@
       const changes = renderChangeChips(entry.changes, 8);
       const narrative = renderSettlementNarrative(entry);
       const review = renderSettlementReview(entry, true);
+      const ledger = renderSettlementLedger(entry, true);
       const breakdown = renderBreakdownRows(entry.breakdown, 2);
       const notes = (entry.notes || [])
         .filter(Boolean)
@@ -3608,6 +3611,7 @@
         <p>${escapeHtml(entry.title)}</p>
         ${narrative}
         ${review}
+        ${ledger}
         ${renderHistoryBadges(meta)}
         <div class="change-list">${changes}</div>
         ${breakdown}
@@ -3794,6 +3798,29 @@
             `).join("")}
           </div>
         ` : ""}
+      </div>
+    `;
+  }
+
+  function renderSettlementLedger(entry, compact = false) {
+    if (!core.getSettlementLedger) return "";
+    const items = core.getSettlementLedger(entry).slice(0, compact ? 1 : 2);
+    if (!items.length) return "";
+    return `
+      <div class="settlement-ledger" aria-label="资金与活力账本">
+        <span>账本复盘</span>
+        ${items.map((item) => `
+          <article class="${escapeHtml(item.tone || "info")}">
+            <div>
+              <strong>${escapeHtml(item.label)}</strong>
+              <em>${escapeHtml(item.value || "0")}</em>
+            </div>
+            <p>${escapeHtml(item.detail || "")}</p>
+            ${(item.sources || []).length ? `
+              <small>${item.sources.map((source) => escapeHtml(source.label || "")).join(" / ")}</small>
+            ` : ""}
+          </article>
+        `).join("")}
       </div>
     `;
   }

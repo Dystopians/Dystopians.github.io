@@ -6648,6 +6648,55 @@
     };
   }
 
+  function getSettlementLedger(entry) {
+    if (!entry || !entry.changes) return [];
+    const tracked = [
+      { metric: "funds", label: "资金账本" },
+      { metric: "economy", label: "活力账本" },
+    ];
+    return tracked
+      .map(({ metric, label }) => {
+        const meta = getObjectiveMeta(metric);
+        const net = entry.changes[metric] || 0;
+        const sources = (entry.breakdown || [])
+          .filter((item) => item && item.deltas && item.deltas[metric])
+          .map((item) => {
+            const source = item.source || "未知来源";
+            return {
+              source,
+              delta: item.deltas[metric],
+              tone: changeIsBad(metric, item.deltas[metric]) ? "warn" : "good",
+              label: `${source} ${signedDelta(item.deltas[metric])}`,
+            };
+          })
+          .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta) || a.source.localeCompare(b.source, "zh-Hans-CN"));
+        if (!net && !sources.length) return null;
+        const tone = !net
+          ? "info"
+          : changeIsBad(metric, net)
+            ? "warn"
+            : "good";
+        const sourceText = sources.length
+          ? `主要来自${sources.slice(0, 2).map((item) => item.label).join("、")}。`
+          : "没有可拆出的单项来源。";
+        const directionText = net > 0
+          ? `${meta.short}净增 ${signedDelta(net)}`
+          : net < 0
+            ? `${meta.short}净减 ${signedDelta(net)}`
+            : `${meta.short}持平`;
+        return {
+          id: `${metric}Ledger`,
+          metric,
+          label,
+          tone,
+          value: signedDelta(net),
+          detail: `${directionText}，${sourceText}`,
+          sources: sources.slice(0, 3),
+        };
+      })
+      .filter(Boolean);
+  }
+
   function getHistoryEntryMeta(entry = {}) {
     const source = entry.routeSource || "";
     const routeLabel = entry.routeLabel || "综合路线";
@@ -10825,6 +10874,7 @@
     getSettlementHighlights,
     getSettlementNarrative,
     getSettlementReview,
+    getSettlementLedger,
     getSystemReadouts,
     getEventSettlementHint,
     getCityActionBudget,

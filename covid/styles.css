@@ -7599,6 +7599,73 @@ button.strategy-debt {
   color: #244258;
 }
 
+.settlement-ledger {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.settlement-ledger > span {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 900;
+}
+
+.settlement-ledger article {
+  min-width: 0;
+  padding: 6px 7px;
+  border: 2px solid #b89752;
+  background: rgba(255, 246, 214, 0.62);
+  box-shadow: inset 1px 1px 0 rgba(255, 247, 209, 0.7);
+}
+
+.settlement-ledger article.good {
+  border-color: var(--good);
+  background: #dceba9;
+}
+
+.settlement-ledger article.warn {
+  border-color: var(--warn);
+  background: #f2d48b;
+}
+
+.settlement-ledger article.info {
+  border-color: var(--blue);
+  background: #dde5d9;
+}
+
+.settlement-ledger div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.settlement-ledger strong,
+.settlement-ledger em {
+  color: var(--deep);
+  font-size: 0.66rem;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.settlement-ledger p,
+.settlement-ledger small {
+  display: block;
+  margin: 4px 0 0;
+  color: #5d4a2f;
+  font-size: 0.58rem;
+  font-weight: 850;
+  line-height: 1.3;
+}
+
+.settlement-ledger small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
 .settlement-tags,
 .history-tags {
   display: flex;
@@ -8770,6 +8837,10 @@ button.strategy-debt {
   }
 
   .settlement-highlights {
+    grid-template-columns: 1fr;
+  }
+
+  .settlement-ledger {
     grid-template-columns: 1fr;
   }
 

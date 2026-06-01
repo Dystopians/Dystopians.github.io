@@ -389,10 +389,13 @@ function validateSettlementNarrativeUi() {
   [
     "renderSettlementNarrative",
     "renderSettlementReview",
+    "renderSettlementLedger",
     "getSettlementNarrative",
     "getSettlementReview",
+    "getSettlementLedger",
     "settlement-cause",
     "settlement-review",
+    "settlement-ledger",
   ].forEach((text) => {
     assert(appJs.includes(text), `app.js should render settlement narrative UI for ${text}.`);
   });
@@ -402,6 +405,8 @@ function validateSettlementNarrativeUi() {
     ".settlement-cause.warn",
     ".settlement-review",
     ".settlement-review-chips",
+    ".settlement-ledger",
+    ".settlement-ledger article",
   ].forEach((text) => {
     assert(styles.includes(text), `styles.css should style settlement narrative state: ${text}.`);
   });
@@ -1427,14 +1432,32 @@ function validateSettlementBreakdown() {
   assert(typeof core.getSettlementHighlights === "function", "game-core.js must export getSettlementHighlights.");
   assert(typeof core.getSettlementNarrative === "function", "game-core.js must export getSettlementNarrative.");
   assert(typeof core.getSettlementReview === "function", "game-core.js must export getSettlementReview.");
+  assert(typeof core.getSettlementLedger === "function", "game-core.js must export getSettlementLedger.");
   assert(typeof core.getHistoryEntryMeta === "function", "game-core.js must export getHistoryEntryMeta.");
   const highlights = core.getSettlementHighlights(entry);
   const narrative = core.getSettlementNarrative(entry);
   const review = core.getSettlementReview(entry);
+  const ledger = core.getSettlementLedger({
+    changes: { funds: -5, economy: 3 },
+    breakdown: [
+      { source: "事件策略", deltas: { funds: -8, economy: 5 }, weight: 13 },
+      { source: "财政联动", deltas: { funds: 3 }, weight: 3 },
+      { source: "活力联动", deltas: { economy: -2 }, weight: 2 },
+    ],
+  });
   assert(Array.isArray(highlights), "Settlement highlights should return an array.");
   assert(highlights.length > 0, "Settlement highlights should include at least one readable battle-report item.");
   assert(narrative && narrative.label && narrative.detail && narrative.tone, "Settlement narrative should summarize the main cause in readable text.");
   assert(review && review.label && review.detail && review.tone && Array.isArray(review.items), "Settlement review should summarize consequence type in readable text.");
+  assert(Array.isArray(ledger) && ledger.length === 2, "Settlement ledger should expose funds and economy ledger rows when they change.");
+  assert(
+    ledger.every((item) => item.id && item.label && item.value && item.detail && item.tone && Array.isArray(item.sources)),
+    "Every settlement ledger row needs id, label, value, detail, tone, and sources.",
+  );
+  assert(
+    ledger.some((item) => item.metric === "funds" && item.detail.includes("事件策略") && item.detail.includes("财政联动")),
+    "Funds ledger should explain both immediate and fiscal-link sources.",
+  );
   assert(!String(narrative.detail).includes("[object Object]"), "Settlement narrative details must render readable text.");
   assert(!String(review.detail).includes("[object Object]"), "Settlement review details must render readable text.");
   assert(
@@ -1452,6 +1475,10 @@ function validateSettlementBreakdown() {
   assert(
     review.items.every((item) => !String(item.detail).includes("[object Object]")),
     "Settlement review item details must render readable text.",
+  );
+  assert(
+    ledger.every((item) => !String(item.detail).includes("[object Object]") && item.sources.every((source) => !String(source.label).includes("[object Object]"))),
+    "Settlement ledger details must render readable text.",
   );
   const eventMeta = core.getHistoryEntryMeta(entry);
   assert(eventMeta && eventMeta.label === "最新结算" && eventMeta.status === "日期推进", "Event history should be labeled as daily settlement.");
