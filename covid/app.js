@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v132";
+  const ASSET_VERSION = "v133";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -1627,6 +1627,7 @@
         ${renderChoiceForecast(choice)}
         ${renderChoiceRiskPreview(choice)}
         <div class="chips">${chips}</div>
+        ${renderChoiceSettlementHint(choice)}
       `;
       button.addEventListener("click", () => {
         if (choice.available === false) return;
@@ -1690,6 +1691,17 @@
     const label = item.recommended ? "建议" : item.rank ? `#${item.rank}` : "";
     if (!label) return "";
     return `<span class="choice-rank-badge ${escapeHtml(item.tone || "info")}" title="${escapeHtml(item.detail || "")}">${escapeHtml(label)}</span>`;
+  }
+
+  function renderChoiceSettlementHint(choice) {
+    if (!choice || choice.available === false) return "";
+    const finalDay = state.day >= core.TOTAL_DAYS;
+    const nextText = finalDay ? "进入结局归档" : `推进到第 ${state.day + 1} 天`;
+    return `
+      <small class="choice-settlement-hint" title="事件选择会完成本日结算并推进日期；处理事件后，今天已执行的城市行动将不能再撤销。">
+        选后结算：${escapeHtml(nextText)}；今日城市行动将定稿
+      </small>
+    `;
   }
 
   function renderChoiceFit(choice) {

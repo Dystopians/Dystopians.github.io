@@ -1107,6 +1107,9 @@ function validateActionPreviewCoverage() {
   assert(appJs.includes("choiceButtonComparisonClass"), "Event choice buttons should inherit comparison tone classes.");
   assert(styles.includes(".choice-rank-badge"), "Choice recommendation badges need dedicated styling.");
   assert(styles.includes(".choice-button.choice-recommended"), "Recommended choice buttons should have a visible persistent state.");
+  assert(appJs.includes("renderChoiceSettlementHint"), "Event choice buttons should explain that selecting them settles the day.");
+  assert(appJs.includes("今日城市行动将定稿"), "Event choice settlement hint should warn that today's city actions become final.");
+  assert(styles.includes(".choice-settlement-hint"), "Event settlement hints need dedicated styling.");
   assert(appJs.includes("renderCityBadgeGaps"), "City badge cards should render concrete remaining gaps.");
   assert(styles.includes(".city-badge-gaps"), "City badge gap chips need dedicated styling.");
   assert(appJs.includes("focusCityActionCard"), "City action navigation should scroll to and highlight the exact target card.");
