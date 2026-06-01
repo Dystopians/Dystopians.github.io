@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v137";
+  const ASSET_VERSION = "v138";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -2450,9 +2450,11 @@
     if (!item.available || !core.getCityActionOutcomePreview) return "";
     const items = core.getCityActionOutcomePreview(state, mode, item.id).slice(0, 4);
     if (!items.length) return "";
+    const summary = summarizeTrendItems(items, "is-action");
     return `
       <div class="action-forecast" aria-label="行动后趋势">
         <span>行动后趋势</span>
+        <strong class="action-forecast-summary ${escapeHtml(summary.tone || "neutral")}" title="${escapeHtml(summary.detail || "")}">${escapeHtml(summary.text || "")}</strong>
         ${items.map((forecast) => `
           <em class="${forecast.tone || "neutral"}" title="${escapeHtml(forecast.detail)}">
             ${escapeHtml(forecast.short)} ${forecast.delta > 0 ? "+" : ""}${forecast.delta}

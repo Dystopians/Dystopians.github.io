@@ -1150,6 +1150,8 @@ function validateActionPreviewCoverage() {
   assert(appJs.includes("renderActionExecutionHint"), "Available city action cards should explain immediate execution and budget cost.");
   assert(appJs.includes("事件前可撤销"), "Available city action cards should remind players that city actions are undoable before the daily event.");
   assert(styles.includes(".action-execution-hint"), "Execution/budget hints need dedicated styling.");
+  assert(appJs.includes("action-forecast-summary"), "City action forecast chips should include a readable summary.");
+  assert(styles.includes(".action-forecast-summary"), "City action forecast summaries need dedicated styling.");
   assert(appJs.includes("renderSettlementUndoAction"), "Immediate city action recaps should expose a visible undo action.");
   assert(appJs.includes("data-settlement-undo"), "Settlement undo buttons need a dedicated data hook.");
   assert(styles.includes(".settlement-undo-action"), "Settlement undo buttons need dedicated styling.");

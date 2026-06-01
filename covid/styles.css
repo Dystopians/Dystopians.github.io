@@ -3795,6 +3795,7 @@ label {
 .choice-risk-preview span,
 .choice-risk-preview em,
 .action-forecast span,
+.action-forecast strong,
 .action-forecast em,
 .action-directive span,
 .action-directive strong {
@@ -3819,6 +3820,7 @@ label {
 
 .choice-forecast em,
 .choice-risk-preview em,
+.action-forecast strong,
 .action-forecast em,
 .action-directive strong {
   background: #f4d68a;
@@ -3827,6 +3829,7 @@ label {
 
 .choice-forecast em.good,
 .choice-risk-preview em.good,
+.action-forecast strong.good,
 .action-forecast em.good {
   border-color: var(--good);
   background: #c9dd91;
@@ -3835,6 +3838,7 @@ label {
 
 .choice-forecast em.bad,
 .choice-risk-preview em.danger,
+.action-forecast strong.bad,
 .action-forecast em.bad {
   border-color: var(--danger);
   background: #e6a17c;
@@ -3843,10 +3847,25 @@ label {
 
 .choice-forecast em.mixed,
 .choice-risk-preview em.warn,
+.action-forecast strong.mixed,
 .action-forecast em.mixed {
   border-color: var(--warn);
   background: #eec673;
   color: #583b15;
+}
+
+.action-forecast-summary {
+  flex: 1 1 150px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.action-forecast-summary.neutral {
+  border-color: var(--blue);
+  background: #c5d2ca;
 }
 
 .action-directive.good {
