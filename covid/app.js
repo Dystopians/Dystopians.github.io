@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v147";
+  const ASSET_VERSION = "v148";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -2511,6 +2511,7 @@
         <div class="action-card-main">
           <strong>${escapeHtml(item.label)}</strong>
           ${renderActionFinderRouteTag(item)}
+          ${renderActionDecisionTags(item, actionMode)}
           <p>${escapeHtml(item.description)}</p>
           <div class="chips">${preview}</div>
           ${renderActionDirectiveFit(item, actionMode)}
@@ -2555,6 +2556,21 @@
       <small class="action-lock-hint" title="${escapeHtml(detail)}">
         ${escapeHtml(prefix)}：${escapeHtml(detail)}
       </small>
+    `;
+  }
+
+  function renderActionDecisionTags(item, mode) {
+    if (!item || !core.getCityActionDecisionTags) return "";
+    const tags = core.getCityActionDecisionTags(state, mode, item.id);
+    if (!tags.length) return "";
+    return `
+      <div class="action-decision-tags" aria-label="城市行动决策徽章">
+        ${tags.map((tag) => `
+          <em class="${escapeHtml(tag.tone || "info")}" title="${escapeHtml(tag.detail || "")}">
+            ${escapeHtml(tag.label || "")}
+          </em>
+        `).join("")}
+      </div>
     `;
   }
 

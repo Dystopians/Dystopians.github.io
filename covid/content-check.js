@@ -405,6 +405,9 @@ function validateTutorialCopy() {
     "今日调度目标",
     "今晚趋势",
     "对准目标",
+    "城市行动决策徽章",
+    "耗资金",
+    "铺资产",
     "后果复盘",
     "决策徽章",
     "贴合目标",
@@ -748,6 +751,7 @@ function validateFiscalEconomyChannels() {
 
 function validateCityActionOpportunities() {
   assert(typeof core.getCityActionOpportunities === "function", "game-core.js must export getCityActionOpportunities.");
+  assert(typeof core.getCityActionDecisionTags === "function", "game-core.js must export getCityActionDecisionTags.");
   const state = core.createGame({ difficulty: "normal", seed: 20260604 });
   state.day = 14;
   state.metrics.hospitalLoad = 76;
@@ -772,6 +776,13 @@ function validateCityActionOpportunities() {
     report.items.every((item) => item.available === true),
     "Available action opportunities should expose available=true for UI badges.",
   );
+  const actionTags = core.getCityActionDecisionTags(state, "operations", "triageNetwork");
+  assert(Array.isArray(actionTags), "City action decision tags should return an array.");
+  assert(actionTags.length > 0, "Available city actions should expose compact decision tags.");
+  assert(
+    actionTags.every((tag) => tag.id && tag.label && tag.detail && tag.tone),
+    "Every city action decision tag needs id, label, detail, and tone.",
+  );
 
   const fullBudget = core.createGame({ difficulty: "normal", seed: 20260605 });
   fullBudget.flags.cityActionsToday = core.getCityActionBudget(fullBudget).limit;
@@ -789,6 +800,11 @@ function validateCityActionOpportunities() {
   assert(
     (fullReport.lockedItems || []).every((item) => item.lockedReason !== "今日调度已满"),
     "Condition/funding locked preview should not mix in tomorrow-queue actions.",
+  );
+  const queuedTags = core.getCityActionDecisionTags(fullBudget, "operations", "triageNetwork");
+  assert(
+    queuedTags.some((tag) => /明日可排|等资金|差条件|已处理/.test(tag.label)),
+    "Locked or queued city actions should expose the lock reason as a decision tag.",
   );
 
   assert(typeof core.getCityActionLockPreview === "function", "game-core.js must export getCityActionLockPreview.");

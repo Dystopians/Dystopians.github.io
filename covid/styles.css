@@ -5859,6 +5859,53 @@ button.fiscal-route-card:focus-visible {
   margin: 4px 0 5px;
 }
 
+.action-decision-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 7px;
+}
+
+.action-decision-tags em {
+  display: inline-flex;
+  max-width: 100%;
+  min-height: 20px;
+  padding: 2px 5px;
+  border: 2px solid #9b7134;
+  background: #fff1c8;
+  color: var(--deep);
+  font-size: 0.58rem;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.action-decision-tags em.good {
+  border-color: var(--good);
+  background: #cde2a3;
+  color: #244d35;
+}
+
+.action-decision-tags em.warn,
+.action-decision-tags em.mixed {
+  border-color: var(--warn);
+  background: #f1c45f;
+  color: #5b3715;
+}
+
+.action-decision-tags em.danger {
+  border-color: var(--danger);
+  background: #eaa07c;
+  color: #5b1f18;
+}
+
+.action-decision-tags em.info {
+  border-color: var(--blue);
+  background: #d6e4df;
+  color: #244258;
+}
+
 .action-finder-item strong {
   display: block;
   margin: 2px 0 5px;

@@ -7634,6 +7634,85 @@
     };
   }
 
+  function getCityActionDecisionTags(state, mode, actionId) {
+    if (!state || state.ended || !actionId) return [];
+    const normalizedMode = mode === "resolutions" ? "resolutions" : "operations";
+    const status = getCityActionStatusByMode(state, normalizedMode, actionId);
+    if (!status) return [];
+    const tags = [];
+    const add = (id, tone, label, detail, priority) => {
+      if (!label || tags.some((item) => item.id === id || item.label === label)) return;
+      tags.push({ id, tone, label, detail, priority });
+    };
+    const routeTag = getChoiceRouteTag({ id: actionId });
+
+    if (!status.available) {
+      const lockTone = status.lockedReason === "资金不足" || status.lockedReason === "财政透支"
+        ? "warn"
+        : status.lockedReason === "已通过" || status.lockedReason === "次数已用完"
+          ? "good"
+          : "mixed";
+      add("lock", lockTone, unlockPreviewLabel(status.lockedReason), status.lockedDetail || status.lockedReason || "当前条件不足。", 100);
+      const lockPreview = getCityActionLockPreview(state, normalizedMode, actionId);
+      const impact = lockPreview && lockPreview.items
+        ? lockPreview.items.find((item) => item.metric && item.tone === "good")
+          || lockPreview.items.find((item) => item.metric)
+        : null;
+      if (impact) {
+        add(
+          "lockedImpact",
+          impact.tone === "good" ? "good" : impact.tone === "bad" ? "danger" : "info",
+          impact.tone === "good" ? `可得${impact.short}` : `影响${impact.short}`,
+          impact.detail || impact.display || "",
+          72,
+        );
+      }
+      if (routeTag && routeTag.label && routeTag.label !== "综合调度") add("route", routeTag.tone || "info", routeTag.label, "治理路线标签。", 42);
+      return tags
+        .sort((a, b) => b.priority - a.priority || a.label.localeCompare(b.label, "zh-Hans-CN"))
+        .slice(0, 4)
+        .map(({ priority, ...item }) => item);
+    }
+
+    const directiveFit = getCityActionDirectiveFit(state, normalizedMode, actionId);
+    if (directiveFit) {
+      add(
+        "directive",
+        directiveFit.tone,
+        directiveFit.tone === "good" ? "贴今日目标" : directiveFit.tone === "danger" ? "偏离目标" : "目标有代价",
+        directiveFit.detail,
+        directiveFit.tone === "good" ? 96 : 82,
+      );
+    }
+    const forecast = getCityActionOutcomePreview(state, normalizedMode, actionId);
+    const topGood = forecast.find((item) => item.tone === "good");
+    const topBad = forecast.find((item) => item.tone === "bad" || item.tone === "danger");
+    if (topGood) add("gain", "good", `收益${topGood.short}`, topGood.detail, 78);
+    if (topBad) add("cost", topBad.delta && Math.abs(topBad.delta) >= 5 ? "danger" : "warn", `代价${topBad.short}`, topBad.detail, 76);
+
+    const fundsNow = (status.resources && status.resources.funds) || 0;
+    const fundsLater = (status.delayed && status.delayed.resources && status.delayed.resources.funds) || 0;
+    if (fundsNow < 0) add("fundsCost", "warn", `耗资金 ${Math.abs(fundsNow)}`, "执行这项行动会立即消耗应急资金。", 70 + Math.min(18, Math.abs(fundsNow)));
+    else if (fundsNow > 0 || fundsLater > 0) add("fundsGain", "good", "补资金", `资金 ${signedDelta(fundsNow + Math.max(0, fundsLater))}`, 70);
+
+    if (status.delayed) {
+      add(
+        "delayed",
+        status.delayed.completeProject ? "good" : "warn",
+        status.delayed.completeProject ? "铺资产" : "有后续",
+        `${status.delayed.delay || "后续"}日后：${status.delayed.label || "后续影响"}`,
+        status.delayed.completeProject ? 68 : 64,
+      );
+    }
+    if (!status.delayed && status.maxUses === 1) add("oneShot", "info", "一次性", "每局或本节点只能执行有限次数。", 52);
+    if (routeTag && routeTag.label && routeTag.label !== "综合调度") add("route", routeTag.tone || "info", routeTag.label, "治理路线标签。", 42);
+
+    return tags
+      .sort((a, b) => b.priority - a.priority || a.label.localeCompare(b.label, "zh-Hans-CN"))
+      .slice(0, 4)
+      .map(({ priority, ...item }) => item);
+  }
+
   function getCityActionStatusByMode(state, normalizedMode, actionId) {
     return normalizedMode === "resolutions"
       ? getResolutionStatus(state, actionId)
@@ -9143,6 +9222,7 @@
     getEndingOutlook,
     getCityActionOutcomePreview,
     getCityActionLockPreview,
+    getCityActionDecisionTags,
     getCityActionDirectiveFit,
     getCityActionOpportunities,
     getRecoveryLevers,
