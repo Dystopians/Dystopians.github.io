@@ -298,11 +298,21 @@ function validateMapAndCityActions() {
 }
 
 function validateNewsAssets() {
+  const newsItems = core.NEWS_POOL || [];
+  const newsIds = new Set();
+  const newsImages = new Set();
+  assert(newsItems.length >= 30, `Expected at least 30 random news items, found ${newsItems.length}.`);
   (core.NEWS_POOL || []).forEach((item) => {
     assert(item.id && item.title && item.body, "Every news item needs id/title/body.");
+    assert(!newsIds.has(item.id), `Duplicate news id: ${item.id}.`);
+    newsIds.add(item.id);
+    assert(Array.isArray(item.tags) && item.tags.length >= 2, `${item.id} news item needs at least two pressure tags.`);
+    assert(Array.isArray(item.phases) && item.phases.length >= 1, `${item.id} news item needs phase weighting.`);
     assert(assetExists(item.image), `${item.id} news image is missing: covid/assets/${item.image}.`);
     assertPngQuality(item.image, { minWidth: 900, minHeight: 900, minRatio: 0.9, maxRatio: 1.1 });
+    newsImages.add(item.image);
   });
+  assert(newsImages.size >= 28, `Random news should use diverse thumbnail images, found ${newsImages.size}.`);
 }
 
 function validateCacheVersions() {
