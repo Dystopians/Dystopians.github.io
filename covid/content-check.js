@@ -785,6 +785,51 @@ function validateMicroRecoveryPressure() {
   );
 }
 
+function validateStatusEffectActions() {
+  assert(typeof core.getStatusEffects === "function", "game-core.js must export getStatusEffects.");
+  const assertActionableStatus = (state, id, message) => {
+    const item = core.getStatusEffects(state).find((entry) => entry.id === id);
+    assert(item, `${message} should be present.`);
+    assert(
+      item && item.actionId && item.mode && item.pointId,
+      `${message} should carry a focusable city action target.`,
+    );
+    assert(
+      item && /应对入口/.test(item.description),
+      `${message} should explain the linked preparation action in its description.`,
+    );
+  };
+
+  const hospitalState = core.createGame({ difficulty: "normal", seed: 2026062501 });
+  hospitalState.metrics.hospitalLoad = 88;
+  hospitalState.resources.funds = 80;
+  assertActionableStatus(hospitalState, "hospitalHigh", "High-hospital status effect");
+
+  const fundsState = core.createGame({ difficulty: "normal", seed: 2026062502 });
+  fundsState.resources.funds = 8;
+  assertActionableStatus(fundsState, "fundsLow", "Low-funds status effect");
+
+  const economyState = core.createGame({ difficulty: "normal", seed: 2026062503 });
+  economyState.day = 8;
+  economyState.phase = core.phaseForDay(economyState.day);
+  economyState.metrics.economy = 20;
+  economyState.metrics.infection = 40;
+  economyState.resources.funds = 50;
+  assertActionableStatus(economyState, "economyLow", "Low-economy status effect");
+
+  const infectionWindowState = core.createGame({ difficulty: "normal", seed: 2026062504 });
+  infectionWindowState.day = 8;
+  infectionWindowState.phase = core.phaseForDay(infectionWindowState.day);
+  infectionWindowState.metrics.infection = 20;
+  infectionWindowState.metrics.economy = 55;
+  infectionWindowState.resources.funds = 50;
+  assertActionableStatus(infectionWindowState, "infectionLow", "Low-infection opportunity status effect");
+
+  const appJs = fs.readFileSync(path.join(rootDir, "app.js"), "utf8");
+  assert(appJs.includes("data-status-action"), "Status-effect UI should render focusable action buttons.");
+  assert(appJs.includes("focusRecoveryLever(button.dataset.statusPoint"), "Status-effect action buttons should focus the linked city action.");
+}
+
 function validateCityBadges() {
   assert(typeof core.getCityBadges === "function", "game-core.js must export getCityBadges.");
   const state = core.createGame({ difficulty: "normal", seed: 20260617 });
@@ -1548,6 +1593,7 @@ function run() {
   validateFiscalOutlook();
   validateCrisisDashboard();
   validateMicroRecoveryPressure();
+  validateStatusEffectActions();
   validateCityBadges();
   validateFiscalEconomyChannels();
   validateCityActionOpportunities();

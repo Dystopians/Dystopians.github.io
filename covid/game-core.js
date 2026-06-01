@@ -3993,7 +3993,13 @@
     const h = state.hidden;
     const r = state.resources;
     const effects = [];
-    const add = (id, label, tone, description) => effects.push({ id, label, tone, description });
+    const add = (id, label, tone, description) => {
+      const target = statusEffectActionTarget(state, id);
+      const targetText = target && target.actionLabel
+        ? ` 应对入口：“${target.actionLabel}”。`
+        : "";
+      effects.push({ id, label, tone, description: `${description}${targetText}`, ...target });
+    };
 
     if (m.infection >= 80) add("infectionHigh", "社区扩散", "danger", "医疗负载额外承压，检测和管控相关事件更容易出现。");
     if (m.infection <= 25) add("infectionLow", "低传播窗口", "good", "复工类行动的感染反弹代价降低。");
@@ -7588,6 +7594,10 @@
     return false;
   }
 
+  function statusEffectActionTarget(state, effectId) {
+    return pressureActionTarget(state, STATUS_EFFECT_TARGETS[effectId] || []);
+  }
+
   function findMapPointForCityAction(mode, actionId) {
     const key = mode === "resolutions" ? "resolutions" : "operations";
     return MAP_POINTS.find((point) => (point[key] || []).includes(actionId)) || null;
@@ -8702,6 +8712,30 @@
     detectedRate: DETECTION_PRESSURE_TARGETS,
     policyStrictness: POLICY_PRESSURE_TARGETS,
     publicMemory: MEMORY_PRESSURE_TARGETS,
+  };
+
+  const STATUS_EFFECT_TARGETS = {
+    infectionHigh: DETECTION_PRESSURE_TARGETS,
+    infectionLow: ECONOMY_PRESSURE_TARGETS,
+    hospitalHigh: MEDICAL_PRESSURE_TARGETS,
+    hospitalLow: FATIGUE_PRESSURE_TARGETS,
+    suppliesHigh: POLICY_PRESSURE_TARGETS,
+    suppliesLow: SUPPLY_PRESSURE_TARGETS,
+    trustHigh: DETECTION_PRESSURE_TARGETS,
+    trustLow: TRUST_PRESSURE_TARGETS,
+    economyHigh: FUNDS_PRESSURE_TARGETS,
+    economyLow: ECONOMY_PRESSURE_TARGETS,
+    fatigueHigh: FATIGUE_PRESSURE_TARGETS,
+    fatigueFuse: FATIGUE_PRESSURE_TARGETS,
+    fatigueLow: MEDICAL_PRESSURE_TARGETS,
+    fundsLow: FUNDS_PRESSURE_TARGETS,
+    fundsHigh: MEDICAL_PRESSURE_TARGETS,
+    detectedHigh: ECONOMY_PRESSURE_TARGETS,
+    detectedLow: DETECTION_PRESSURE_TARGETS,
+    policyHigh: POLICY_PRESSURE_TARGETS,
+    policyLow: DETECTION_PRESSURE_TARGETS,
+    memoryHigh: MEMORY_PRESSURE_TARGETS,
+    memoryLow: TRUST_PRESSURE_TARGETS,
   };
 
   const ACTION_OPPORTUNITY_LOCKS = new Set(["条件未满足", "资金不足", "财政透支", "今日调度已满"]);

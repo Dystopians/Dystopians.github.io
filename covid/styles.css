@@ -1662,10 +1662,33 @@ label {
 }
 
 .status-effect {
+  display: block;
+  width: 100%;
   padding: 8px;
   border: 2px solid #b89752;
   background: #f8e9bd;
   box-shadow: inset 2px 2px 0 rgba(255, 247, 209, 0.78);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+button.status-effect {
+  cursor: pointer;
+}
+
+.status-effect.actionable {
+  position: relative;
+}
+
+.status-effect.actionable:hover,
+.status-effect.actionable:focus-visible {
+  transform: translate(-1px, -1px);
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 247, 209, 0.78),
+    3px 3px 0 rgba(90, 60, 29, 0.26);
+  outline: 2px solid rgba(83, 122, 79, 0.56);
+  outline-offset: 1px;
 }
 
 .status-effect.good {

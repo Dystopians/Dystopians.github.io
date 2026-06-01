@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v164";
+  const ASSET_VERSION = "v165";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -755,19 +755,32 @@
 
   function renderStatusEffects() {
     if (!els.statusEffects) return;
-    const effects = state.statusEffects || (core.getStatusEffects ? core.getStatusEffects(state) : []);
+    const effects = core.getStatusEffects ? core.getStatusEffects(state) : (state.statusEffects || []);
     if (!effects.length) {
       els.statusEffects.innerHTML = "<p class=\"empty-state\">暂无高低位状态。</p>";
       return;
     }
     els.statusEffects.innerHTML = effects
-      .map((effect) => `
-        <article class="status-effect ${escapeHtml(effect.tone)}">
+      .map((effect) => {
+        const actionable = effect.actionId && effect.pointId && effect.mode;
+        const tagName = actionable ? "button" : "article";
+        const actionAttrs = actionable
+          ? ` type="button" data-status-point="${escapeHtml(effect.pointId)}" data-status-mode="${escapeHtml(effect.mode)}" data-status-action="${escapeHtml(effect.actionId)}"`
+          : "";
+        return `
+        <${tagName} class="status-effect ${escapeHtml(effect.tone)} ${actionable ? "actionable" : ""}" title="${escapeHtml(effect.description)}"${actionAttrs}>
           <strong>${escapeHtml(effect.label)}</strong>
           <p>${escapeHtml(effect.description)}</p>
-        </article>
-      `)
+        </${tagName}>
+      `;
+      })
       .join("");
+    els.statusEffects.querySelectorAll("[data-status-action]").forEach((button) => {
+      bindCityActionPreview(button, () => button.dataset.statusMode, () => button.dataset.statusAction);
+      button.addEventListener("click", () => {
+        focusRecoveryLever(button.dataset.statusPoint, button.dataset.statusMode, button.dataset.statusAction);
+      });
+    });
   }
 
   function renderCrisisBoard() {
