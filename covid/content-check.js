@@ -1097,6 +1097,10 @@ function validateActionPreviewCoverage() {
   assert(styles.includes(".choice-button.choice-recommended"), "Recommended choice buttons should have a visible persistent state.");
   assert(appJs.includes("renderCityBadgeGaps"), "City badge cards should render concrete remaining gaps.");
   assert(styles.includes(".city-badge-gaps"), "City badge gap chips need dedicated styling.");
+  assert(appJs.includes("focusCityActionCard"), "City action navigation should scroll to and highlight the exact target card.");
+  assert(appJs.includes(".action-card.is-targeted"), "City action focus helper should mark the target card visibly.");
+  assert(styles.includes(".action-card.is-targeted"), "Targeted city action cards need dedicated highlight styling.");
+  assert(styles.includes("@keyframes actionTargetPulse"), "Targeted city action cards should pulse briefly after navigation.");
   assert(appJs.includes("focusCityBadgeAction"), "City badge cards should be clickable map-action targets.");
   assert(appJs.includes("data-badge-point"), "City badge cards should carry map target data attributes.");
   assert(styles.includes(".city-badge.actionable"), "Clickable city badges need dedicated styling.");

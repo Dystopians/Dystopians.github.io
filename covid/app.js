@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v128";
+  const ASSET_VERSION = "v129";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -748,6 +748,7 @@
     renderCityAssets();
     renderCrisisBoard();
     previewCityAction(actionMode, actionId);
+    focusCityActionCard(actionId);
     const pointLabel = point ? point.label : "补救节点";
     els.mapHint.textContent = `已定位：${pointLabel} · 查看${actionMode === "resolutions" ? "决议" : "工程"}`;
     if (els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
@@ -1030,6 +1031,7 @@
     renderCityAssets();
     renderCrisisBoard();
     previewCityAction(actionMode, actionId);
+    focusCityActionCard(actionId);
     const pointLabel = point ? point.label : "恢复节点";
     els.mapHint.textContent = `已定位恢复渠道：${pointLabel} · ${actionMode === "resolutions" ? "决议" : "工程"}`;
     if (els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
@@ -1159,8 +1161,8 @@
           renderMap();
           renderActionMode();
           previewCityAction(actionMode, button.dataset.actionId);
+          focusCityActionCard(button.dataset.actionId);
           els.mapHint.textContent = `已定位配套建议：${core.getMapPoint(state, button.dataset.pointId).label}`;
-          els.cityMapWrap.scrollIntoView({ behavior: "smooth", block: "center" });
         }
       });
     });
@@ -1410,6 +1412,7 @@
         actionMode = button.dataset.mode === "resolutions" ? "resolutions" : "operations";
         renderActionMode();
         previewCityAction(actionMode, button.dataset.actionId);
+        focusCityActionCard(button.dataset.actionId);
       });
     });
   }
@@ -1900,6 +1903,7 @@
         renderActionMode();
         renderCityAssets();
         previewCityAction(actionMode, button.dataset.directiveAction);
+        focusCityActionCard(button.dataset.directiveAction);
         const point = core.getMapPoint(state, pointId);
         els.mapHint.textContent = `已定位今日目标候选：${point ? point.label : "城市节点"}`;
         if (els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
@@ -1919,6 +1923,25 @@
     const choice = event && event.choices.find((item) => item.id === choiceId);
     if (choice) renderTrendPreview(choice);
     setTimeout(() => target.classList.remove("is-recommended"), 1600);
+  }
+
+  function focusCityActionCard(actionId, options = {}) {
+    if (!actionId || !els.operationsList) return;
+    const target = [...els.operationsList.querySelectorAll(".action-card")]
+      .find((item) => item.dataset.actionId === actionId);
+    if (!target) return;
+    els.operationsList.querySelectorAll(".action-card.is-targeted").forEach((item) => {
+      item.classList.remove("is-targeted");
+    });
+    target.classList.add("is-targeted");
+    target.scrollIntoView({
+      behavior: options.behavior || "smooth",
+      block: options.block || "center",
+    });
+    clearTimeout(focusCityActionCard.timer);
+    focusCityActionCard.timer = setTimeout(() => {
+      target.classList.remove("is-targeted");
+    }, options.duration || 1800);
   }
 
   function getCurrentChoiceById(choiceId) {
@@ -2211,6 +2234,7 @@
         renderActionMode();
         renderCityAssets();
         previewCityAction(actionMode, button.dataset.nextAction);
+        focusCityActionCard(button.dataset.nextAction);
         const point = core.getMapPoint(state, pointId);
         els.mapHint.textContent = `已定位下一步候选：${point ? point.label : "城市节点"}`;
         if (els.operationsList && typeof els.operationsList.scrollIntoView === "function") {
@@ -2413,6 +2437,7 @@
         renderActionMode();
         renderCrisisBoard();
         previewCityAction(actionMode, button.dataset.actionId);
+        focusCityActionCard(button.dataset.actionId);
         els.mapHint.textContent = `已定位行动窗口：${core.getMapPoint(state, button.dataset.pointId).label}`;
       });
     });
@@ -2556,6 +2581,7 @@
     renderActionMode();
     renderCityAssets();
     previewCityAction(actionMode, actionId);
+    focusCityActionCard(actionId);
     const point = core.getMapPoint(state, pointId);
     els.mapHint.textContent = `已定位城市档案目标：${point ? point.label : "城市节点"}`;
     if (els.operationsList && typeof els.operationsList.scrollIntoView === "function") {

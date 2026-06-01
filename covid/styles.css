@@ -5442,6 +5442,31 @@ label {
     #f8e9bd;
 }
 
+.action-card.is-targeted {
+  position: relative;
+  border-color: #2f6f73;
+  box-shadow:
+    0 0 0 3px rgba(86, 142, 130, 0.24),
+    4px 4px 0 rgba(70, 62, 42, 0.26),
+    inset 2px 2px 0 rgba(255, 247, 209, 0.88);
+  animation: actionTargetPulse 0.9s steps(2) 2;
+}
+
+@keyframes actionTargetPulse {
+  0%,
+  100% {
+    background:
+      linear-gradient(90deg, rgba(255, 244, 202, 0.72), rgba(248, 233, 189, 0.96)),
+      #f8e9bd;
+  }
+
+  50% {
+    background:
+      linear-gradient(90deg, rgba(209, 232, 208, 0.92), rgba(255, 241, 190, 0.95)),
+      #d9e8c6;
+  }
+}
+
 .action-card.locked {
   opacity: 0.66;
   filter: grayscale(0.25);
