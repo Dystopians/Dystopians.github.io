@@ -7268,9 +7268,9 @@
     const limit = getFailureLimit(state);
     const streaks = state.flags.failureStreaks || {};
     const entries = [];
-    const add = (id, tone, label, detail, score) => {
+    const add = (id, tone, label, detail, score, extra = {}) => {
       if (entries.some((item) => item.id === id || item.label === label)) return;
-      entries.push({ id, tone, label, detail, score });
+      entries.push({ id, tone, label, detail, score, ...extra });
     };
 
     [
@@ -7337,6 +7337,11 @@
         "行动可撤销",
         `刚执行“${undo.label}”，今日事件仍未处理；如果判断有误，可先撤销再选择别的城市行动。`,
         83,
+        {
+          actionId: undo.actionId,
+          mode: undo.mode,
+          pointId: undo.pointId,
+        },
       );
     }
 
@@ -7351,6 +7356,11 @@
           "城市行动窗口",
           `今日调度还剩 ${actionBudget.remaining}/${actionBudget.limit}，可先执行“${bestAction.label}”，再处理今日事件。`,
           bestAction.priority >= 48 ? 79 : 57,
+          {
+            actionId: bestAction.id,
+            mode: bestAction.mode,
+            pointId: bestAction.pointId,
+          },
         );
       }
     }

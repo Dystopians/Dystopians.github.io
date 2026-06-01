@@ -594,6 +594,11 @@ function validateMicroRecoveryPressure() {
     openingSummary.some((item) => item.id === "city_action_window" && /今日调度还剩/.test(item.detail)),
     "Daily pressure summary should remind players when a no-advance city action is still available before the event.",
   );
+  const openingActionWindow = openingSummary.find((item) => item.id === "city_action_window");
+  assert(
+    openingActionWindow && openingActionWindow.actionId && openingActionWindow.mode && openingActionWindow.pointId,
+    "Daily pressure action-window summary should carry a focusable city action target.",
+  );
 
   const state = core.createGame({ difficulty: "normal", seed: 20260624 });
   state.day = 10;
@@ -1306,6 +1311,16 @@ function validateActionPreviewCoverage() {
   assert(appJs.includes("renderChoiceSettlementHint"), "Event choice buttons should explain that selecting them settles the day.");
   assert(indexHtml.includes("id=\"preSettlementHint\""), "Event panel should expose a top pre-settlement hint container.");
   assert(appJs.includes("renderPreSettlementHint"), "Event panel should render the top pre-settlement action hint.");
+  assert(appJs.includes("data-pressure-action"), "Pressure summary action chips should carry exact action ids.");
+  assert(
+    appJs.includes("bindCityActionPreview(button, () => button.dataset.pressureMode, () => button.dataset.pressureAction)"),
+    "Pressure summary action chips should preview their target city action on hover/focus.",
+  );
+  assert(
+    appJs.includes("focusRecoveryLever(button.dataset.pressurePoint, button.dataset.pressureMode, button.dataset.pressureAction)"),
+    "Pressure summary action chips should focus the exact city action on click.",
+  );
+  assert(styles.includes("button.pressure-chip"), "Actionable pressure summary chips need button-specific styling.");
   assert(appJs.includes("pendingSettlementChoice"), "Event choice clicks should track a pending settlement confirmation.");
   assert(appJs.includes("shouldConfirmSettlementBeforeChoice"), "Event choice clicks should guard against settling with unused city action budget.");
   assert(appJs.includes("renderChoiceSettlementConfirm"), "Event choices should render a visible second-click confirmation state.");

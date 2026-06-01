@@ -2802,6 +2802,20 @@ label {
   box-shadow: 2px 2px 0 rgba(95, 75, 42, 0.32);
 }
 
+button.pressure-chip {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.pressure-chip:hover,
+button.pressure-chip:focus-visible {
+  transform: translateY(-1px);
+  outline: 3px solid rgba(73, 119, 82, 0.5);
+  outline-offset: 2px;
+  box-shadow: 3px 3px 0 rgba(95, 75, 42, 0.4);
+}
+
 .pressure-chip strong,
 .pressure-chip em {
   overflow: hidden;

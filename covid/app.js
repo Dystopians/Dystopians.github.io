@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v158";
+  const ASSET_VERSION = "v159";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -2291,13 +2291,26 @@
     }
     els.pressureSummary.hidden = false;
     els.pressureSummary.innerHTML = items
-      .map((item) => `
-        <span class="pressure-chip ${item.tone || "info"}" title="${escapeHtml(item.detail)}">
+      .map((item) => {
+        const actionable = item.actionId && item.pointId && item.mode;
+        const tagName = actionable ? "button" : "span";
+        const actionAttrs = actionable
+          ? ` type="button" data-pressure-point="${escapeHtml(item.pointId)}" data-pressure-mode="${escapeHtml(item.mode)}" data-pressure-action="${escapeHtml(item.actionId)}"`
+          : "";
+        return `
+        <${tagName} class="pressure-chip ${item.tone || "info"} ${actionable ? "actionable" : ""}" title="${escapeHtml(item.detail)}"${actionAttrs}>
           <strong>${escapeHtml(item.label)}</strong>
           <em>${escapeHtml(item.detail)}</em>
-        </span>
-      `)
+        </${tagName}>
+      `;
+      })
       .join("");
+    els.pressureSummary.querySelectorAll("[data-pressure-action]").forEach((button) => {
+      bindCityActionPreview(button, () => button.dataset.pressureMode, () => button.dataset.pressureAction);
+      button.addEventListener("click", () => {
+        focusRecoveryLever(button.dataset.pressurePoint, button.dataset.pressureMode, button.dataset.pressureAction);
+      });
+    });
   }
 
   function renderDailyDirective() {
