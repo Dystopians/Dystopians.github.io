@@ -5056,6 +5056,128 @@ button.fiscal-route-card:focus-visible {
   overflow-wrap: anywhere;
 }
 
+.fiscal-channel-plan {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 6px;
+}
+
+.fiscal-channel-card {
+  min-width: 0;
+  padding: 6px;
+  border: 2px solid #b89752;
+  background: rgba(255, 244, 207, 0.68);
+  box-shadow: inset 1px 1px 0 rgba(255, 250, 219, 0.85);
+  color: var(--deep);
+  font: inherit;
+  text-align: left;
+}
+
+button.fiscal-channel-card {
+  cursor: pointer;
+}
+
+button.fiscal-channel-card:hover,
+button.fiscal-channel-card:focus-visible {
+  transform: translateY(-1px);
+  outline: 3px solid rgba(73, 119, 82, 0.45);
+  outline-offset: 2px;
+  box-shadow: inset 1px 1px 0 rgba(255, 250, 219, 0.85), 3px 3px 0 rgba(45, 40, 31, 0.26);
+}
+
+.fiscal-channel-card.good {
+  border-color: #4f8d55;
+  background: #dcebb0;
+}
+
+.fiscal-channel-card.warn,
+.fiscal-channel-card.mixed {
+  border-color: #9b7134;
+  background: #f3d790;
+}
+
+.fiscal-channel-card.danger {
+  border-color: #9f4639;
+  background: #eaa07c;
+}
+
+.fiscal-channel-card.info {
+  border-color: var(--blue);
+  background: #dde5d9;
+}
+
+.fiscal-channel-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+}
+
+.fiscal-channel-top span,
+.fiscal-channel-card em,
+.fiscal-channel-card small {
+  color: var(--muted);
+  font-size: 0.55rem;
+  font-weight: 900;
+  line-height: 1.08;
+}
+
+.fiscal-channel-top strong {
+  flex: 0 0 auto;
+  max-width: 56%;
+  color: var(--deep);
+  font-size: 0.55rem;
+  line-height: 1.04;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.fiscal-channel-meter {
+  position: relative;
+  height: 7px;
+  margin: 5px 0;
+  border: 2px solid #7b6239;
+  background: rgba(95, 80, 49, 0.18);
+  overflow: hidden;
+}
+
+.fiscal-channel-meter i {
+  display: block;
+  height: 100%;
+  background: repeating-linear-gradient(
+    90deg,
+    #7f9f55 0,
+    #7f9f55 5px,
+    #abc072 5px,
+    #abc072 8px
+  );
+}
+
+.fiscal-channel-card p {
+  margin: 0 0 4px;
+  color: #514632;
+  font-size: 0.56rem;
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.fiscal-channel-card em {
+  display: block;
+  font-style: normal;
+}
+
+.fiscal-channel-card small {
+  display: inline-flex;
+  max-width: 100%;
+  margin-top: 4px;
+  padding: 2px 4px;
+  border: 2px solid #7b6239;
+  background: rgba(255, 241, 200, 0.62);
+  color: #4e4028;
+  overflow-wrap: anywhere;
+}
+
 .fiscal-assets {
   display: flex;
   flex-wrap: wrap;
@@ -8404,6 +8526,7 @@ button.strategy-debt {
   .ending-metrics,
   .ending-score-grid,
   .fiscal-grid,
+  .fiscal-channel-plan,
   .fiscal-roadmap {
     grid-template-columns: 1fr;
   }

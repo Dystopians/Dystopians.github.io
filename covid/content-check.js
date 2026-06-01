@@ -481,6 +481,7 @@ function validateRecoveryLevers() {
 
 function validateFiscalOutlook() {
   assert(typeof core.getFiscalOutlook === "function", "game-core.js must export getFiscalOutlook.");
+  assert(typeof core.getFiscalChannelPlan === "function", "game-core.js must export getFiscalChannelPlan.");
   const appJs = fs.readFileSync(path.join(rootDir, "app.js"), "utf8");
   const styles = fs.readFileSync(path.join(rootDir, "styles.css"), "utf8");
   const state = core.createGame({ difficulty: "normal", seed: 20260619 });
@@ -514,6 +515,19 @@ function validateFiscalOutlook() {
   assert(
     opening.roadmap.some((item) => item.id === "fiscalChain") && opening.roadmap.some((item) => item.id === "microLoop"),
     "Recovery roadmap should distinguish the fiscal chain from the low-contact micro-loop.",
+  );
+  assert(Array.isArray(opening.channels) && opening.channels.length === 6, "Fiscal outlook should expose a six-part funds/economy channel plan.");
+  assert(
+    opening.channels.every((item) => item.id && item.label && item.status && item.detail && item.warning && item.counts && Number.isFinite(item.progress)),
+    "Every fiscal channel plan item needs id, label, status, detail, warning, counts, and progress.",
+  );
+  assert(
+    ["appropriation", "mutualAid", "creditBridge", "lowContactVitality", "productionLoop", "lastResort"].every((id) => opening.channels.some((item) => item.id === id)),
+    "Fiscal channel plan should distinguish appropriation, mutual aid, credit, vitality, production, and last-resort routes.",
+  );
+  assert(
+    core.getFiscalChannelPlan(state).some((item) => item.next && item.next.id && item.next.pointId && item.next.mode),
+    "Fiscal channel plan should carry focusable next actions when routes are available or locked.",
   );
   assert(
     opening.items.every((item) => item.id && item.label && item.value !== undefined && item.detail && item.tone),
@@ -584,9 +598,16 @@ function validateFiscalOutlook() {
   );
   assert(appJs.includes("renderFiscalRunway"), "Fiscal panel should render the budget runway.");
   assert(appJs.includes("renderFiscalPrescription"), "Fiscal panel should render the daily prescription.");
+  assert(appJs.includes("renderFiscalChannels"), "Fiscal panel should render the funds/economy channel plan.");
+  assert(appJs.includes("data-channel-action"), "Fiscal channel cards should carry exact next-action ids.");
+  assert(
+    appJs.includes("bindCityActionPreview(button, () => button.dataset.channelMode, () => button.dataset.channelAction)"),
+    "Fiscal channel cards should preview their next action on hover/focus.",
+  );
   assert(appJs.includes("renderFiscalNetwork"), "Fiscal panel should render fiscal/micro network readouts.");
   assert(styles.includes(".fiscal-runway"), "Budget runway needs dedicated styling.");
   assert(styles.includes(".fiscal-prescription"), "Daily fiscal prescription needs dedicated styling.");
+  assert(styles.includes(".fiscal-channel-card"), "Fiscal channel plan needs dedicated styling.");
   assert(styles.includes(".fiscal-network"), "Fiscal/micro network readouts need dedicated styling.");
 }
 

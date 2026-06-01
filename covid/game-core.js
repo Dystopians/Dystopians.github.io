@@ -8706,6 +8706,75 @@
     "elasticTransit",
   ]);
 
+  const FISCAL_CHANNEL_GROUPS = [
+    {
+      id: "appropriation",
+      label: "专项拨付",
+      target: 2,
+      tone: "good",
+      ids: ["fiscalTransparencyLedger", "emergencyGapLedger", "fastGrantReport", "specialFundingApplication", "insurancePreSettlement", "budgetFreezeReview"],
+      empty: "缺少可核验材料时，资金只能靠事件或透支救急。",
+      available: "先用台账、缺口清单或专项快报把现金流做成可批复项目。",
+      ready: "拨付链条已经铺开，低资金时更容易形成小额回流。",
+      risk: "代价通常是填报、审计和一点活力摩擦。",
+    },
+    {
+      id: "mutualAid",
+      label: "社会协作",
+      target: 2,
+      tone: "good",
+      ids: ["publicDonationDrive", "donationClaimList", "donationCoordination", "mutualAidFund", "interProvinceSupport", "platformLogisticsShare"],
+      empty: "社会捐助和外部支援还没有被转成可调度账本。",
+      available: "信任尚可时，可以把捐助、平台运力和省际支援做成公开清单。",
+      ready: "社会协作已有抓手，物资、资金和人手能互相补位。",
+      risk: "低信任会让登记、公示和分配争议反噬。",
+    },
+    {
+      id: "creditBridge",
+      label: "账期授信",
+      target: 2,
+      tone: "mixed",
+      ids: ["bankCreditWindow", "procurementCreditNegotiation", "supplierPaymentExtension", "emergencyAccountClearing", "temporaryTurnoverPool"],
+      empty: "短期信用桥还没打开，遇到大工程时容易现金断档。",
+      available: "用授信、账期谈判和小额清分换取几天周转窗口。",
+      ready: "信用桥已经形成，短期能缓冲工程支出。",
+      risk: "这不是免费资金，后续会以还款、信任或供应压力回流。",
+    },
+    {
+      id: "lowContactVitality",
+      label: "低接触活力",
+      target: 3,
+      tone: "info",
+      ids: ["microEnterpriseRoster", "remoteApprovalDesk", "onlineGovOvertime", "remoteWorkGovServices", "onlineVendorDesk", "essentialServicePermit", "contactlessLivelihoodStalls", "neighborhoodPickupWindow", "neighborhoodErrandRoster", "neighborhoodCommerceLedger", "essentialMaintenanceRoster", "communityRepairWhitelist", "serviceVoucherPilot", "lowContactBusinessPermit"],
+      empty: "前期活力主要靠自然结算，缺少低流动恢复节点。",
+      available: "优先铺线上预审、民生名录、预约取货或低接触许可。",
+      ready: "低接触微循环已经成网，活力恢复更稳。",
+      risk: "发现率不足时，微循环会把传播压力带回每日结算。",
+    },
+    {
+      id: "productionLoop",
+      label: "保供产能",
+      target: 2,
+      tone: "mixed",
+      ids: ["supplyCorridor", "microFreightPermit", "closedLoopSmallShift", "factoryClosedLoop", "livelihoodStaggeredReopen", "supplyOrderPrepaySwap", "nightFreightWindow"],
+      empty: "物流和产能还没形成闭环，供应与活力会互相拖累。",
+      available: "用保供专线、货运微循环或闭环小班托住物资和产能。",
+      ready: "保供产能链已经成形，供应、活力和资金能彼此支撑。",
+      risk: "它比纯线上恢复更强，也更容易带来感染和排班压力。",
+    },
+    {
+      id: "lastResort",
+      label: "最后手段",
+      target: 1,
+      tone: "danger",
+      ids: ["budgetReallocationMeeting", "specialBondQuota", "deferProjectPayment", "emergencyLevy"],
+      empty: "透支类选项应留给资金红线，不适合当常规收入。",
+      available: "资金见底时，可以用预算重排、专项债或摊派救急。",
+      ready: "已经动用过透支工具，后续要尽快用温和渠道还账。",
+      risk: "收益直接，但会转化为信任、活力、创伤或后续账单。",
+    },
+  ];
+
   const MEDICAL_PRESSURE_TARGETS = [
     ["operations", "triageNetwork"],
     ["operations", "communityClinic"],
@@ -9239,6 +9308,8 @@
             impact: recoveryLeverImpact(item),
             status: recoveryLeverStatus(item, bucket),
             detail: item.available ? item.description : item.lockedDetail || item.lockedReason || item.description,
+            lockedReason: item.lockedReason || "",
+            lockedDetail: item.lockedDetail || "",
             bucket,
             tone: recoveryLeverTone(item, bucket, value),
             priority: recoveryLeverPriority(state, item, bucket, value),
@@ -9462,6 +9533,81 @@
       }),
       buildRecoveryGateItem(state),
     ];
+  }
+
+  function getFiscalChannelPlan(state) {
+    const rows = collectRecoveryLeverRows(state);
+    return FISCAL_CHANNEL_GROUPS.map((config) => buildFiscalChannelPlanItem(state, rows, config));
+  }
+
+  function buildFiscalChannelPlanItem(state, rows, config) {
+    const order = new Map(config.ids.map((id, index) => [id, index]));
+    const groupRows = rows
+      .filter((item) => order.has(item.id))
+      .sort((a, b) => {
+        if (a.bucket !== b.bucket) return recoveryBucketRank(a.bucket) - recoveryBucketRank(b.bucket);
+        if (b.priority !== a.priority) return b.priority - a.priority;
+        return (order.get(a.id) || 0) - (order.get(b.id) || 0);
+      });
+    const established = groupRows.filter((item) => item.bucket === "established");
+    const available = groupRows.filter((item) => item.bucket === "available");
+    const locked = groupRows.filter((item) => item.bucket === "locked");
+    const next = available[0] || locked[0] || null;
+    const target = Math.max(1, config.target || 2);
+    const progress = established.length >= target
+      ? 100
+      : clamp(Math.round((Math.min(established.length, target) / target) * 72 + Math.min(available.length, 3) * 7), 0, 94);
+    const status = established.length >= target
+      ? "已成形"
+      : established.length
+        ? "铺垫中"
+        : available.length
+          ? "可启动"
+          : "待解锁";
+    const tone = established.length >= target
+      ? "good"
+      : available.length
+        ? (config.tone || "info")
+        : config.id === "lastResort" && state.resources.funds > 20
+          ? "mixed"
+          : state.resources.funds <= 18 || state.metrics.economy <= 30
+            ? "warn"
+            : "mixed";
+    const nextText = next
+      ? `${next.bucket === "available" ? "可做" : unlockPreviewLabel(next.lockedReason)}：${next.label}`
+      : "暂无下一步";
+    const detail = established.length >= target
+      ? config.ready
+      : available.length
+        ? `${config.available} ${nextText}。`
+        : next
+          ? `${config.empty} 下一步${nextText}。`
+          : config.empty;
+    const warning = config.risk || "";
+    return {
+      id: config.id,
+      label: config.label,
+      status,
+      tone,
+      progress,
+      detail,
+      warning,
+      next: next ? {
+        id: next.id,
+        label: next.label,
+        mode: next.mode,
+        pointId: next.pointId,
+        pointLabel: next.pointLabel,
+        status: next.status,
+        bucket: next.bucket,
+      } : null,
+      counts: {
+        established: established.length,
+        available: available.length,
+        locked: locked.length,
+        target,
+      },
+    };
   }
 
   function getRecoveryNetworkReadouts(state, fiscal, economy) {
@@ -9820,6 +9966,7 @@
       runway: getFiscalRunway(state, fiscal, economy, lockedByFunds),
       network: getRecoveryNetworkReadouts(state, fiscal, economy),
       roadmap: getRecoveryRoadmap(state),
+      channels: getFiscalChannelPlan(state),
       prescription: getFiscalPrescription(state, fiscal, economy, lockedByFunds),
       items: [
         {
@@ -10029,6 +10176,7 @@
     getCityActionDirectiveFit,
     getCityActionOpportunities,
     getRecoveryLevers,
+    getFiscalChannelPlan,
     getFiscalPrescription,
     getFiscalOutlook,
     getCityBadges,

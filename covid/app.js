@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v169";
+  const ASSET_VERSION = "v170";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -1085,6 +1085,7 @@
       </div>
       ${renderFiscalRunway(report.runway)}
       ${renderFiscalPrescription(report.prescription)}
+      ${renderFiscalChannels(report.channels)}
       ${renderFiscalNetwork(report.network)}
       <div class="fiscal-grid">
         ${items.map((item) => `
@@ -1109,6 +1110,12 @@
       bindCityActionPreview(button, () => button.dataset.prescriptionMode, () => button.dataset.prescriptionAction);
       button.addEventListener("click", () => {
         focusRecoveryLever(button.dataset.prescriptionPoint, button.dataset.prescriptionMode, button.dataset.prescriptionAction);
+      });
+    });
+    els.fiscalOutlook.querySelectorAll("[data-channel-action]").forEach((button) => {
+      bindCityActionPreview(button, () => button.dataset.channelMode, () => button.dataset.channelAction);
+      button.addEventListener("click", () => {
+        focusRecoveryLever(button.dataset.channelPoint, button.dataset.channelMode, button.dataset.channelAction);
       });
     });
   }
@@ -1187,6 +1194,37 @@
             ${actionable ? `<small>${escapeHtml(next.status || "下一步")} · ${escapeHtml(next.pointLabel || "")}</small>` : ""}
           </${tagName}>
         `;
+        }).join("")}
+      </div>
+    `;
+  }
+
+  function renderFiscalChannels(channels = []) {
+    const items = Array.isArray(channels) ? channels.slice(0, 6) : [];
+    if (!items.length) return "";
+    return `
+      <div class="fiscal-channel-plan" aria-label="资金与活力渠道图谱">
+        ${items.map((item) => {
+          const next = item.next || {};
+          const actionable = next.id && next.pointId && next.mode;
+          const tagName = actionable ? "button" : "article";
+          const actionAttrs = actionable
+            ? ` type="button" data-channel-point="${escapeHtml(next.pointId)}" data-channel-mode="${escapeHtml(next.mode)}" data-channel-action="${escapeHtml(next.id)}"`
+            : "";
+          return `
+            <${tagName} class="fiscal-channel-card ${escapeHtml(item.tone || "info")} ${actionable ? "actionable" : ""}"${actionAttrs} title="${escapeHtml([item.detail, item.warning].filter(Boolean).join(" "))}">
+              <div class="fiscal-channel-top">
+                <span>${escapeHtml(item.label || "渠道")}</span>
+                <strong>${escapeHtml(item.status || "")}</strong>
+              </div>
+              <div class="fiscal-channel-meter" aria-hidden="true">
+                <i style="width:${Math.max(0, Math.min(100, Number(item.progress) || 0))}%"></i>
+              </div>
+              <p>${escapeHtml(item.detail || "")}</p>
+              ${item.warning ? `<em>${escapeHtml(item.warning)}</em>` : ""}
+              ${item.counts ? `<small>${escapeHtml(String(item.counts.established || 0))}/${escapeHtml(String(item.counts.target || 0))} 已铺垫 · ${escapeHtml(String(item.counts.available || 0))} 可做</small>` : ""}
+            </${tagName}>
+          `;
         }).join("")}
       </div>
     `;
