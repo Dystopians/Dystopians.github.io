@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v160";
+  const ASSET_VERSION = "v161";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -1010,9 +1010,32 @@
             <strong>${escapeHtml(item.title)}</strong>
             <em>${escapeHtml(item.status)}</em>
             ${item.conditionDetail ? `<p class="${escapeHtml(item.conditionTone || "waiting")}">${escapeHtml(item.conditionLabel || "条件")} · ${escapeHtml(item.conditionDetail)}</p>` : ""}
+            ${renderStageScheduleAction(item)}
           </article>
         `).join("")}
       </div>
+    `;
+    els.stageSchedule.querySelectorAll("[data-schedule-action]").forEach((button) => {
+      bindCityActionPreview(button, () => button.dataset.scheduleMode, () => button.dataset.scheduleAction);
+      button.addEventListener("click", () => {
+        focusRecoveryLever(button.dataset.schedulePoint, button.dataset.scheduleMode, button.dataset.scheduleAction);
+      });
+    });
+  }
+
+  function renderStageScheduleAction(item) {
+    const action = item && item.focusAction;
+    if (!action || !action.id || !action.pointId || !action.mode) return "";
+    return `
+      <button class="stage-schedule-action ${action.available ? "available" : action.established ? "established" : "locked"}" type="button"
+        data-schedule-point="${escapeHtml(action.pointId)}"
+        data-schedule-mode="${escapeHtml(action.mode)}"
+        data-schedule-action="${escapeHtml(action.id)}"
+        title="${escapeHtml(action.detail || "")}">
+        <span>${escapeHtml(action.status || "准备")}</span>
+        <strong>${escapeHtml(action.label || "准备行动")}</strong>
+        <em>${escapeHtml(action.pointLabel || "")}</em>
+      </button>
     `;
   }
 

@@ -1572,6 +1572,43 @@
 
   const SCHEDULED_EVENT_IDS = new Set(SCHEDULED_EVENTS.map((item) => item.eventId));
 
+  const SCHEDULE_CONDITION_FOCUS_CANDIDATES = {
+    feverNightPressure: [["operations", "triageNetwork"], ["operations", "communityClinic"], ["operations", "deployHealthCode"]],
+    labSupportWindow: [["operations", "campusSentinel"], ["operations", "deployHealthCode"]],
+    warehouseDisputePressure: [["operations", "fiscalTransparencyLedger"], ["operations", "donationCoordination"], ["operations", "donationClaimList"]],
+    medicalTeamNeed: [["operations", "interProvinceSupport"], ["operations", "volunteerDispatch"], ["operations", "mentalHealthLine"]],
+    shelterNeed: [["operations", "buildShelterHospital"], ["operations", "triageNetwork"], ["resolutions", "shelterAdmissionStandard"]],
+    transferNeed: [["operations", "triageNetwork"], ["operations", "communityClinic"], ["operations", "buildShelterHospital"]],
+    plasmaResearchWindow: [["operations", "communityClinic"], ["operations", "campusSentinel"], ["resolutions", "priorityMedicineRoute"]],
+    dischargeDebateWindow: [["resolutions", "shelterAdmissionStandard"], ["operations", "triageNetwork"], ["resolutions", "publicReviewBrief"]],
+    onlineConsultNeed: [["operations", "communityClinic"], ["operations", "remoteWorkGovServices"], ["resolutions", "priorityMedicineRoute"]],
+    healthCodeRisk: [["operations", "deployHealthCode"], ["operations", "campusSentinel"], ["resolutions", "suppressRumorLine"]],
+    enterpriseWhiteListPressure: [["operations", "microEnterpriseRoster"], ["resolutions", "lowRiskWorkList"], ["resolutions", "lowContactBusinessPermit"], ["resolutions", "enterpriseExemption"]],
+    silentControlWindow: [["operations", "deployHealthCode"], ["operations", "supplyCorridor"], ["resolutions", "nightFreightWindow"]],
+    massTestingNeed: [["operations", "deployHealthCode"], ["operations", "campusSentinel"], ["operations", "triageNetwork"]],
+    vegetableConvoyNeed: [["operations", "supplyCorridor"], ["operations", "interProvinceSupport"], ["operations", "platformLogisticsShare"]],
+    groupBuyPressure: [["operations", "neighborhoodCommerceLedger"], ["operations", "onlineVendorDesk"], ["operations", "platformLogisticsShare"]],
+    dataDelayPressure: [["resolutions", "publicReviewBrief"], ["operations", "fiscalTransparencyLedger"], ["resolutions", "delayBadNews"]],
+    feverMedicinePressure: [["resolutions", "priorityMedicineRoute"], ["operations", "medicineRoute"], ["operations", "communityClinic"]],
+    procurementAuditPressure: [["operations", "fiscalTransparencyLedger"], ["operations", "budgetFreezeReview"], ["operations", "emergencyAccountClearing"]],
+    recoveryGrantNeed: [["operations", "specialFundingApplication"], ["operations", "fastGrantReport"], ["resolutions", "jobSubsidyAdvance"]],
+    memorialPressure: [["resolutions", "publicReviewBrief"], ["operations", "mentalHealthLine"], ["resolutions", "priorityMedicineRoute"]],
+  };
+
+  const SCHEDULE_EVENT_FOCUS_CANDIDATES = {
+    p1_notice_eight_rumor: [["operations", "campusSentinel"], ["operations", "fiscalTransparencyLedger"], ["resolutions", "publicReviewBrief"]],
+    p1_first_press_conference: [["resolutions", "publicReviewBrief"], ["operations", "fiscalTransparencyLedger"], ["operations", "campusSentinel"]],
+    p2_midnight_transport_stop: [["operations", "deployHealthCode"], ["operations", "microFreightPermit"], ["resolutions", "nightFreightWindow"]],
+    p2_multi_province_volunteer_team: [["operations", "interProvinceSupport"], ["operations", "volunteerDispatch"]],
+    p2_traceable_donation_account: [["operations", "publicDonationDrive"], ["operations", "donationClaimList"], ["operations", "fiscalTransparencyLedger"]],
+    p2_li_liang_death: [["resolutions", "publicReviewBrief"], ["operations", "mentalHealthLine"], ["operations", "fiscalTransparencyLedger"]],
+    p4_health_code_launch: [["operations", "deployHealthCode"], ["operations", "campusSentinel"]],
+    p4_vaccine_trial_greenlight: [["operations", "campusSentinel"], ["resolutions", "publicReviewBrief"], ["operations", "communityClinic"]],
+    p5_neighboring_vegetable_convoy: [["operations", "supplyCorridor"], ["operations", "interProvinceSupport"], ["operations", "platformLogisticsShare"]],
+    p6_policy_optimization_notice: [["resolutions", "publicReviewBrief"], ["resolutions", "lowRiskWorkList"], ["resolutions", "lowContactBusinessPermit"]],
+    p6_aid_team_handoff: [["operations", "mentalHealthLine"], ["resolutions", "publicReviewBrief"], ["operations", "interProvinceSupport"]],
+  };
+
   const NEWS_POOL = [
     {
       id: "news_hospital_queue",
@@ -3575,6 +3612,7 @@
         const isMissed = missed.has(key) || (!isSeen && schedule.day < state.day);
         const conditionOk = scheduledConditionMet(state, schedule.condition);
         const conditionHint = scheduledConditionHint(state, schedule.condition, conditionOk);
+        const focusAction = getScheduledEventFocusAction(state, schedule);
         let tone = "upcoming";
         let status = schedule.day === state.day ? "今日" : `第${schedule.day}天`;
         if (isCurrent) {
@@ -3609,8 +3647,56 @@
           conditionLabel: conditionHint.label,
           conditionDetail: conditionHint.detail,
           conditionTone: conditionHint.tone,
+          focusAction,
         };
       });
+  }
+
+  function getScheduledEventFocusAction(state, schedule) {
+    if (!state || !schedule) return null;
+    const candidates = [
+      ...(SCHEDULE_EVENT_FOCUS_CANDIDATES[schedule.eventId] || []),
+      ...(SCHEDULE_CONDITION_FOCUS_CANDIDATES[schedule.condition] || []),
+    ];
+    const rows = candidates
+      .map(([mode, actionId]) => {
+        const status = mode === "resolutions"
+          ? getResolutionStatus(state, actionId)
+          : getOperationStatus(state, actionId);
+        if (!status) return null;
+        const established = status.lockedReason === "次数已用完" || status.lockedReason === "已通过";
+        return {
+          mode,
+          status,
+          established,
+        };
+      })
+      .filter(Boolean);
+    const selected = rows.find((row) => row.status.available)
+      || rows.find((row) => !row.established)
+      || rows[0];
+    if (!selected) return null;
+    const pointId = mapPointIdForAction(selected.mode, selected.status.id, selected.status.location);
+    const point = getMapPoint(state, pointId);
+    const detail = selected.status.available
+      ? selected.status.description
+      : selected.status.lockedDetail || selected.status.lockedReason || selected.status.description;
+    const statusLabel = selected.status.available
+      ? "可准备"
+      : selected.established
+        ? "已铺垫"
+        : unlockPreviewLabel(selected.status.lockedReason);
+    return {
+      id: selected.status.id,
+      mode: selected.mode,
+      pointId,
+      pointLabel: point ? point.label : "",
+      label: selected.status.label,
+      status: statusLabel,
+      detail,
+      available: Boolean(selected.status.available),
+      established: selected.established,
+    };
   }
 
   function scheduledConditionHint(state, condition, conditionOk = scheduledConditionMet(state, condition)) {

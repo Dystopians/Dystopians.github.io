@@ -222,11 +222,29 @@ function validateSchedule(eventIds) {
     stageSchedule.every((item) => item.conditionLabel && item.conditionDetail && item.conditionTone),
     "Every stage schedule item should expose readable condition hints.",
   );
+  assert(
+    stageSchedule.every((item) => item.focusAction && item.focusAction.id && item.focusAction.mode && item.focusAction.pointId && item.focusAction.label),
+    "Every stage schedule item should expose a focusable preparation action.",
+  );
   const onlineConsult = stageSchedule.find((item) => item.id === "p4_online_consultation_open");
   assert(
     onlineConsult && /线上分流/.test(onlineConsult.conditionLabel) && !String(onlineConsult.conditionDetail).includes("[object Object]"),
     "Online consultation fixed window should explain its trigger condition.",
   );
+  assert(
+    onlineConsult.focusAction && /社区临时门诊|线上政务与远程办公|重点人群药品直送/.test(onlineConsult.focusAction.label),
+    "Online consultation fixed window should point to a plausible preparation action.",
+  );
+  core.SCHEDULED_EVENTS.forEach((schedule) => {
+    const state = core.createGame({ difficulty: "normal", seed: 20260700 + schedule.day });
+    state.day = schedule.day;
+    state.phase = core.phaseForDay(state.day);
+    const row = core.getStageSchedule(state).find((item) => item.id === schedule.eventId);
+    assert(
+      row && row.focusAction && row.focusAction.id && row.focusAction.mode && row.focusAction.pointId,
+      `Scheduled event ${schedule.eventId} should expose a preparation focus action on its phase calendar.`,
+    );
+  });
 }
 
 function validateMapAndCityActions() {
@@ -441,6 +459,8 @@ function validateTutorialCopy() {
     "财政透支",
     "治理路线",
     "最近路线账本",
+    "本阶段公共节点",
+    "准备行动",
     "归档预估",
   ].forEach((text) => {
     assert(indexHtml.includes(text), `Tutorial copy should explain "${text}".`);
@@ -1429,6 +1449,13 @@ function validateActionPreviewCoverage() {
     "Stage objective focus buttons should preview the exact city action.",
   );
   assert(styles.includes(".stage-objective-action"), "Stage objective focus buttons need dedicated styling.");
+  assert(appJs.includes("renderStageScheduleAction"), "Stage schedule should render a concrete preparation action when available.");
+  assert(appJs.includes("data-schedule-action"), "Stage schedule preparation buttons need action data hooks.");
+  assert(
+    appJs.includes("bindCityActionPreview(button, () => button.dataset.scheduleMode, () => button.dataset.scheduleAction)"),
+    "Stage schedule preparation buttons should support hover previews.",
+  );
+  assert(styles.includes(".stage-schedule-action"), "Stage schedule preparation buttons need dedicated styling.");
 }
 
 function run() {

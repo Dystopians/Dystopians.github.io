@@ -1181,8 +1181,8 @@ label {
   box-shadow: 1px 1px 0 rgba(95, 75, 42, 0.24);
 }
 
-.stage-schedule-item span,
-.stage-schedule-item em {
+.stage-schedule-item > span,
+.stage-schedule-item > em {
   padding: 2px 4px;
   border: 2px solid #b89752;
   background: #ead19a;
@@ -1219,6 +1219,66 @@ label {
 
 .stage-schedule-item p.waiting {
   color: #77501d;
+}
+
+.stage-schedule-action {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 5px;
+  align-items: center;
+  margin-top: 1px;
+  padding: 4px 5px;
+  border: 2px solid #7fa36d;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 247, 209, 0.42) 0 6px, transparent 6px 12px),
+    #e4f0bd;
+  color: #254528;
+  text-align: left;
+  box-shadow: 2px 2px 0 rgba(74, 37, 22, 0.18);
+  cursor: pointer;
+}
+
+.stage-schedule-action.locked {
+  border-color: #b89752;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 247, 209, 0.34) 0 6px, transparent 6px 12px),
+    #ead19a;
+  color: #69461c;
+}
+
+.stage-schedule-action.established {
+  border-color: #7fa36d;
+  background: #dbeaa8;
+}
+
+.stage-schedule-action:hover,
+.stage-schedule-action:focus-visible {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 rgba(74, 37, 22, 0.28);
+  outline: 2px solid rgba(244, 180, 73, 0.55);
+  outline-offset: 2px;
+}
+
+.stage-schedule-action span,
+.stage-schedule-action em {
+  padding: 2px 4px;
+  border: 2px solid currentColor;
+  background: rgba(255, 247, 209, 0.66);
+  font-size: 0.56rem;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.stage-schedule-action strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.62rem;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .stage-schedule-item.today {
