@@ -5857,6 +5857,97 @@
     };
   }
 
+  function getSettlementReview(entry) {
+    if (!entry || !entry.changes) return null;
+    const changes = settlementChangeRows(entry);
+    if (!changes.length) return null;
+    const byScore = (a, b) => b.score - a.score || a.meta.short.localeCompare(b.meta.short, "zh-Hans-CN");
+    const gains = changes.filter((item) => !item.bad && !item.mixed).sort(byScore);
+    const costs = changes.filter((item) => item.bad).sort(byScore);
+    const mixed = changes.filter((item) => item.mixed).sort(byScore);
+    const gainScore = gains.reduce((sum, item) => sum + item.score, 0);
+    const costScore = costs.reduce((sum, item) => sum + item.score, 0);
+    const topGain = gains[0] || null;
+    const topCost = costs[0] || null;
+    const source = (entry.breakdown || [])
+      .filter((item) => item && item.source && item.deltas && Object.keys(item.deltas).length)
+      .sort((a, b) => (b.weight || 0) - (a.weight || 0))[0];
+    const relief = gains.some((item) => ["infection", "hospitalLoad"].includes(item.metric));
+    const recovery = gains.some((item) => ["funds", "economy"].includes(item.metric));
+    const socialCost = costs.some((item) => ["trust", "economy", "staffFatigue", "publicMemory", "funds", "supplies", "infection"].includes(item.metric));
+
+    let label = "温和波动";
+    let tone = "info";
+    let detail = "今日变化较分散，继续观察下一天的压力方向。";
+    if (relief && socialCost) {
+      label = "短期止血";
+      tone = "mixed";
+      detail = `压住了${topGain ? topGain.meta.short : "关键风险"}，但代价转向${topCost ? topCost.meta.short : "其他系统"}。`;
+    } else if (recovery && socialCost) {
+      label = "恢复换账";
+      tone = "mixed";
+      detail = `恢复面有收益，但${topCost ? topCost.meta.short : "风险"}正在积累，后续需要配套承接。`;
+    } else if (costScore > gainScore * 1.25 && costs.length) {
+      label = "系统承压";
+      tone = "danger";
+      detail = `代价集中在${topCost ? topCost.meta.short : "关键指标"}，需要下一步优先修补。`;
+    } else if (gainScore > costScore * 1.25 && gains.length) {
+      label = "稳步改善";
+      tone = "good";
+      detail = `主要改善来自${topGain ? topGain.meta.short : "关键指标"}，当前没有同等规模的反向代价。`;
+    } else if (gains.length && costs.length) {
+      label = "风险转移";
+      tone = "warn";
+      detail = `改善 ${gains.length} 项、代价 ${costs.length} 项，重点盯住${topCost ? topCost.meta.short : "后续压力"}。`;
+    } else if (mixed.length && !gains.length && !costs.length) {
+      label = "口径调整";
+      tone = "info";
+      detail = `变化主要落在${mixed[0].meta.short}等双向指标上，需要结合当前目标判断好坏。`;
+    }
+
+    const items = [];
+    if (topGain) {
+      items.push({
+        id: "gain",
+        tone: "good",
+        label: "主要收益",
+        detail: `${topGain.meta.short} ${signedDelta(topGain.delta)}`,
+      });
+    }
+    if (topCost) {
+      items.push({
+        id: "cost",
+        tone: "danger",
+        label: "主要代价",
+        detail: `${topCost.meta.short} ${signedDelta(topCost.delta)}`,
+      });
+    }
+    if (entry.routeLabel) {
+      items.push({
+        id: "route",
+        tone: entry.routeTone || "info",
+        label: "路线",
+        detail: entry.routeLabel,
+      });
+    }
+    if (source) {
+      items.push({
+        id: "source",
+        tone: "info",
+        label: "来源",
+        detail: source.source,
+      });
+    }
+
+    return {
+      id: "settlementReview",
+      tone,
+      label,
+      detail,
+      items: items.slice(0, 4),
+    };
+  }
+
   function getHistoryEntryMeta(entry = {}) {
     const source = entry.routeSource || "";
     const routeLabel = entry.routeLabel || "综合路线";
@@ -8984,6 +9075,7 @@
     getCityBadges,
     getSettlementHighlights,
     getSettlementNarrative,
+    getSettlementReview,
     getSystemReadouts,
     getCityActionBudget,
     getCityActionUndo,
