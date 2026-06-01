@@ -2268,7 +2268,8 @@ button.status-effect {
 }
 
 .map-status-chip strong,
-.map-status-chip em {
+.map-status-chip em,
+.map-status-chip small {
   display: inline-flex;
   align-items: center;
   min-height: 16px;
@@ -2285,6 +2286,12 @@ button.status-effect {
 .map-status-chip em {
   border-left: 2px solid #95723d;
   background: rgba(255, 241, 200, 0.8);
+}
+
+.map-status-chip small {
+  border-left: 2px solid #95723d;
+  background: rgba(130, 91, 38, 0.14);
+  font-style: normal;
 }
 
 .map-status-chip.good {
@@ -2316,6 +2323,26 @@ button.status-effect {
 .map-status-chip.danger em {
   border-left-color: var(--danger);
   background: #e6a17c;
+}
+
+.map-status-trend.good {
+  color: #244d35;
+  background: #c9dd91;
+}
+
+.map-status-trend.bad {
+  color: #5b1f18;
+  background: #e6a17c;
+}
+
+.map-status-trend.mixed {
+  color: #223f55;
+  background: #b9cfe0;
+}
+
+.map-status-trend.neutral {
+  color: #5c3d17;
+  background: #ead19a;
 }
 
 .map-signal-dot {

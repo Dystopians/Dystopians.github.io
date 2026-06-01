@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v166";
+  const ASSET_VERSION = "v167";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -1573,14 +1573,16 @@
         ? `，可用${availableOps ? `${availableOps}项工程` : ""}${availableOps && availableRes ? "、" : ""}${availableRes ? `${availableRes}项决议` : ""}`
         : "";
       const statusHint = pointStatus ? `，${pointStatus.label}${pointStatus.value}` : "";
-      button.title = `${point.label}${statusHint}${actionHint}`;
-      button.setAttribute("aria-label", `${point.label}${statusHint}${actionHint}`);
+      const trendHint = pointStatus && pointStatus.trend ? `，走势${pointStatus.trend.summary}` : "";
+      button.title = `${point.label}${statusHint}${trendHint}${actionHint}`;
+      button.setAttribute("aria-label", `${point.label}${statusHint}${trendHint}${actionHint}`);
       button.innerHTML = `
         <span class="map-hotspot-label">${escapeHtml(point.label)}</span>
         ${pointStatus ? `
           <span class="map-status-chip ${escapeHtml(pointStatus.tone)}" title="${escapeHtml(pointStatus.detail)}">
             <strong>${escapeHtml(pointStatus.short)}</strong>
             <em>${escapeHtml(String(pointStatus.value))}</em>
+            ${pointStatus.trend ? `<small class="map-status-trend ${escapeHtml(pointStatus.trend.tone)}" title="${escapeHtml(pointStatus.trend.detail)}">${escapeHtml(pointStatus.trend.summary)}</small>` : ""}
           </span>
         ` : ""}
         ${pointSignal ? `<span class="map-signal-dot ${escapeHtml(pointSignal.tone)}" title="${escapeHtml(pointSignal.detail)}">!</span>` : ""}
@@ -1588,7 +1590,7 @@
       `;
       const showHighlight = () => {
         setMapHighlight(point.id);
-        els.mapHint.textContent = `悬停：${point.label}${pointSignal ? ` · ${pointSignal.label}` : ""}${pointStatus ? ` · ${pointStatus.short} ${pointStatus.value}` : ""}${availableTotal ? ` · 可用行动 ${availableTotal}` : ""} · ${cityActionBudgetText()}`;
+        els.mapHint.textContent = `悬停：${point.label}${pointSignal ? ` · ${pointSignal.label}` : ""}${pointStatus ? ` · ${pointStatus.short} ${pointStatus.value}` : ""}${pointStatus && pointStatus.trend ? ` · 走势 ${pointStatus.trend.summary}` : ""}${availableTotal ? ` · 可用行动 ${availableTotal}` : ""} · ${cityActionBudgetText()}`;
       };
       const hideHighlight = () => {
         setMapHighlight(null);

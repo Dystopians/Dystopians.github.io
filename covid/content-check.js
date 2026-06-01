@@ -1105,6 +1105,13 @@ function validateMapSignals() {
   state.metrics.supplies = 24;
   state.metrics.staffFatigue = 82;
   state.resources.funds = 14;
+  state.history.unshift({
+    day: 2,
+    phase: 1,
+    title: "地图趋势校验",
+    choice: "地图趋势校验",
+    changes: { hospitalLoad: 5, supplies: -4, staffFatigue: 3 },
+  });
   const signals = core.getMapSignals(state);
   assert(Array.isArray(signals), "getMapSignals must return an array.");
   assert(signals.length > 0 && signals.length <= 3, "Map signals should surface 1-3 top entries under pressure.");
@@ -1113,12 +1120,19 @@ function validateMapSignals() {
     "Every map signal needs id, pointId, pointLabel, label, detail, tone, and status.",
   );
   assert(core.getMapPointStatus(state, "hospital").tone === "danger", "Hospital map status should reflect a medical redline.");
+  const hospitalStatus = core.getMapPointStatus(state, "hospital");
+  assert(
+    hospitalStatus.trend && hospitalStatus.trend.delta === 5 && hospitalStatus.trend.tone === "bad",
+    "Hospital map status should expose a compact worsening trend when recent history changed the metric.",
+  );
   const appJs = fs.readFileSync(path.join(rootDir, "app.js"), "utf8");
   const styles = fs.readFileSync(path.join(rootDir, "styles.css"), "utf8");
   assert(appJs.includes("status-${pointStatus.tone}"), "Map hotspots should receive status tone classes.");
+  assert(appJs.includes("map-status-trend"), "Map status chips should render compact trend deltas.");
   ["status-danger", "status-warn", "status-good"].forEach((className) => {
     assert(styles.includes(`.map-hotspot.${className}::before`), `Missing map pressure halo style for ${className}.`);
   });
+  assert(styles.includes(".map-status-trend.bad"), "Map trend chip needs a visible worsening style.");
 }
 
 function validateStageReview() {

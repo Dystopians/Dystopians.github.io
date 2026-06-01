@@ -4382,13 +4382,21 @@
   function buildMapMetricStatus(state, metric, short, detail) {
     const value = getObjectiveValue(state, metric);
     const meta = getObjectiveMeta(metric);
+    const trend = getMetricTrend(state, metric, 4);
+    const trendDelta = trend && trend.values && trend.values.length > 1 && trend.delta !== 0 ? trend.delta : 0;
     return {
       metric,
       label: meta.label,
       short,
       value,
       tone: mapStatusTone(metric, value),
-      detail,
+      detail: trendDelta ? `${detail} ${trend.detail}` : detail,
+      trend: trendDelta ? {
+        delta: trendDelta,
+        tone: trend.tone,
+        summary: signedDelta(trendDelta),
+        detail: trend.detail,
+      } : null,
     };
   }
 
