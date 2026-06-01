@@ -10601,6 +10601,44 @@
     };
   }
 
+  function stableAssetId(prefix, label) {
+    return `${prefix}_${String(label || "").replace(/[^\w\u4e00-\u9fa5]+/g, "_")}`;
+  }
+
+  function getStrategicAssetReadouts(state) {
+    const rows = [];
+    const seen = new Set();
+    const add = (id, kind, label, status, detail, statusTone = "ready") => {
+      if (!label || seen.has(`${kind}:${label}`)) return;
+      seen.add(`${kind}:${label}`);
+      rows.push({ id, kind, label, status, detail, statusTone });
+    };
+
+    (calculateFiscalOutlook(state).activeAssets || []).forEach((label) => {
+      add(
+        stableAssetId("fiscal", label),
+        "财政回流",
+        label,
+        "计入回流",
+        "当前纳入资金回流链；在资金偏低且信任、活力条件允许时，会提供小额现金缓冲。",
+        "ready",
+      );
+    });
+
+    getMicroRecoveryAssets(state).forEach((label) => {
+      add(
+        stableAssetId("micro", label),
+        "微循环",
+        label,
+        "托住活力",
+        "当前纳入低接触复苏网络；能托住城市活力，但发现率不足或感染高位时会带来流动风险。",
+        "passed",
+      );
+    });
+
+    return rows.slice(0, 18);
+  }
+
   function getCityBadges(state) {
     const badges = CITY_BADGE_RULES.map((rule) => {
       const earned = Boolean(rule.condition(state));
@@ -10782,6 +10820,7 @@
     getFiscalChannelAdvice,
     getFiscalPrescription,
     getFiscalOutlook,
+    getStrategicAssetReadouts,
     getCityBadges,
     getSettlementHighlights,
     getSettlementNarrative,

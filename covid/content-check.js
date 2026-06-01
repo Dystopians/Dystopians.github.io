@@ -512,6 +512,7 @@ function validateRecoveryLevers() {
 
 function validateFiscalOutlook() {
   assert(typeof core.getFiscalOutlook === "function", "game-core.js must export getFiscalOutlook.");
+  assert(typeof core.getStrategicAssetReadouts === "function", "game-core.js must export getStrategicAssetReadouts.");
   assert(typeof core.getFiscalChannelPlan === "function", "game-core.js must export getFiscalChannelPlan.");
   assert(typeof core.getFiscalChannelAdvice === "function", "game-core.js must export getFiscalChannelAdvice.");
   const appJs = fs.readFileSync(path.join(rootDir, "app.js"), "utf8");
@@ -605,6 +606,12 @@ function validateFiscalOutlook() {
   const assetReport = core.getFiscalOutlook(assetState);
   assert(Array.isArray(assetReport.activeAssets), "Fiscal outlook should expose active fiscal assets.");
   assert(assetReport.activeAssets.length >= 2, "Fiscal outlook should surface active recovery assets after setup actions.");
+  const assetReadouts = core.getStrategicAssetReadouts(assetState);
+  assert(Array.isArray(assetReadouts), "Strategic asset readouts should return a list.");
+  assert(
+    assetReadouts.some((item) => item.kind === "财政回流" && item.status && item.detail),
+    "Strategic asset readouts should surface active fiscal recovery assets.",
+  );
 
   const bridgeState = core.createGame({ difficulty: "normal", seed: 20260622 });
   bridgeState.metrics.economy = 58;
@@ -641,6 +648,11 @@ function validateFiscalOutlook() {
     microReport.network.some((item) => item.id === "microNetwork" && item.tone === "warn" && item.detail.includes("发现率")),
     "Micro network readout should warn when low detection makes micro-recovery risky.",
   );
+  const microReadouts = core.getStrategicAssetReadouts(microState);
+  assert(
+    microReadouts.some((item) => item.kind === "微循环" && item.status && item.detail),
+    "Strategic asset readouts should surface established low-contact micro-recovery assets.",
+  );
   assert(appJs.includes("renderFiscalRunway"), "Fiscal panel should render the budget runway.");
   assert(appJs.includes("renderFiscalPrescription"), "Fiscal panel should render the daily prescription.");
   assert(appJs.includes("renderFiscalChannels"), "Fiscal panel should render the funds/economy channel plan.");
@@ -650,6 +662,7 @@ function validateFiscalOutlook() {
     "Fiscal channel cards should preview their next action on hover/focus.",
   );
   assert(appJs.includes("renderFiscalNetwork"), "Fiscal panel should render fiscal/micro network readouts.");
+  assert(appJs.includes("core.getStrategicAssetReadouts"), "City asset panel should merge strategic fiscal/micro asset readouts.");
   assert(styles.includes(".fiscal-runway"), "Budget runway needs dedicated styling.");
   assert(styles.includes(".fiscal-prescription"), "Daily fiscal prescription needs dedicated styling.");
   assert(appJs.includes("renderFiscalChannelAdvice"), "Fiscal panel should render channel advice.");
@@ -1703,6 +1716,7 @@ function validateActionPreviewCoverage() {
   assert(appJs.includes("renderChoiceSettlementHint"), "Event choice buttons should explain that selecting them settles the day.");
   assert(indexHtml.includes("id=\"preSettlementHint\""), "Event panel should expose a top pre-settlement hint container.");
   assert(appJs.includes("renderPreSettlementHint"), "Event panel should render the top pre-settlement action hint.");
+  assert(indexHtml.includes("已生效资产"), "City asset panel heading should cover projects, fiscal routes, micro-loops, and resolutions.");
   assert(appJs.includes("data-pressure-action"), "Pressure summary action chips should carry exact action ids.");
   assert(
     appJs.includes("bindCityActionPreview(button, () => button.dataset.pressureMode, () => button.dataset.pressureAction)"),

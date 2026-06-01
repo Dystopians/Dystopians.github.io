@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v181";
+  const ASSET_VERSION = "v182";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -3446,13 +3446,39 @@
         .map((item) => [item.completeProject, item])
     );
     const assets = [];
+    const assetKeys = new Map();
+
+    const mergeText = (left, right, separator = " / ") => {
+      if (!right || left === right) return left || right || "";
+      if (!left) return right;
+      return left.includes(right) ? left : `${left}${separator}${right}`;
+    };
+
+    const toneRank = { pending: 0, ready: 1, passed: 2 };
+    const addAsset = (asset) => {
+      if (!asset || !asset.label) return;
+      const key = asset.label;
+      const existingIndex = assetKeys.get(key);
+      if (existingIndex === undefined) {
+        assetKeys.set(key, assets.length);
+        assets.push(asset);
+        return;
+      }
+      const existing = assets[existingIndex];
+      existing.kind = mergeText(existing.kind, asset.kind);
+      existing.status = mergeText(existing.status, asset.status);
+      existing.detail = mergeText(existing.detail, asset.detail, " ");
+      if ((toneRank[asset.statusTone] || 0) > (toneRank[existing.statusTone] || 0)) {
+        existing.statusTone = asset.statusTone;
+      }
+    };
 
     CITY_ASSET_REGISTRY.forEach((item) => {
       const pending = item.completeProject ? pendingProjects.get(item.completeProject) : null;
       const completed = item.completeProject ? Boolean(state.completedProjects[item.completeProject]) : false;
       const deployed = item.operation ? Boolean((state.flags.operationUses || {})[item.operation]) : false;
       if (!pending && !completed && !deployed) return;
-      assets.push({
+      addAsset({
         ...item,
         status: pending && !completed
           ? `${Math.max(0, pending.dueDay - state.day)}日后启用`
@@ -3463,11 +3489,15 @@
       });
     });
 
+    if (typeof core.getStrategicAssetReadouts === "function") {
+      core.getStrategicAssetReadouts(state).forEach((asset) => addAsset(asset));
+    }
+
     Object.entries(state.flags.resolutions || {})
       .filter(([, used]) => used)
       .forEach(([id]) => {
         const resolution = core.RESOLUTIONS[id];
-        assets.push({
+        addAsset({
           id: `resolution-${id}`,
           kind: "决议",
           label: resolution ? resolution.label : id,
@@ -3477,7 +3507,7 @@
         });
       });
 
-    return assets.slice(0, 12);
+    return assets.slice(0, 16);
   }
 
   function renderEffectChips(item) {
