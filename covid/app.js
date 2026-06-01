@@ -3,13 +3,14 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v134";
+  const ASSET_VERSION = "v135";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
 
   let state = null;
   let actionMode = "operations";
+  let postRenderFocus = "";
   const MASCOT_FRAME_COUNT = 6;
   const MASCOT_ACTION_FRAME_MS = 118;
   const MASCOT_IDLE_FRAME_MS = 760;
@@ -309,6 +310,7 @@
     mapInspector: document.getElementById("mapInspector"),
     mapHint: document.getElementById("mapHint"),
     eventType: document.getElementById("eventType"),
+    eventPanel: document.getElementById("eventPanel"),
     eventTitle: document.getElementById("eventTitle"),
     pressureSummary: document.getElementById("pressureSummary"),
     dailyDirective: document.getElementById("dailyDirective"),
@@ -587,6 +589,24 @@
     renderCityAssets();
     renderNews();
     renderHistory();
+    applyPostRenderFocus();
+  }
+
+  function applyPostRenderFocus() {
+    if (!postRenderFocus) return;
+    const target = postRenderFocus === "event-settlement"
+      ? els.eventPanel || document.querySelector(".event-panel")
+      : null;
+    postRenderFocus = "";
+    if (!target || typeof target.scrollIntoView !== "function") return;
+    target.scrollIntoView({ behavior: "auto", block: "start" });
+    target.classList.add("is-settlement-focus");
+    window.setTimeout(() => target.classList.remove("is-settlement-focus"), 1800);
+    const recap = els.alerts && els.alerts.querySelector(".settlement-recap");
+    if (recap) {
+      recap.classList.add("just-settled");
+      window.setTimeout(() => recap.classList.remove("just-settled"), 1800);
+    }
   }
 
   function renderMetrics() {
@@ -1632,6 +1652,7 @@
       button.addEventListener("click", () => {
         if (choice.available === false) return;
         core.resolveChoice(state, choice.id);
+        postRenderFocus = "event-settlement";
         save();
         render();
       });

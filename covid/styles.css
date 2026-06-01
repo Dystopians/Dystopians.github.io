@@ -5665,6 +5665,29 @@ label {
   border-color: var(--warn);
 }
 
+.event-panel.is-settlement-focus .event-card {
+  outline: 4px solid rgba(73, 119, 82, 0.46);
+  outline-offset: 4px;
+  animation: settlementFocusPulse 1.8s steps(2) 1;
+}
+
+.settlement-recap.just-settled {
+  outline: 4px solid rgba(73, 119, 82, 0.58);
+  outline-offset: 3px;
+  animation: settlementFocusPulse 1.8s steps(2) 1;
+}
+
+@keyframes settlementFocusPulse {
+  0%,
+  100% {
+    filter: none;
+  }
+
+  50% {
+    filter: brightness(1.08) saturate(1.06);
+  }
+}
+
 .settlement-head {
   display: flex;
   justify-content: space-between;

@@ -1070,6 +1070,7 @@ function validateActionPreviewCoverage() {
   const appJs = fs.readFileSync(path.join(rootDir, "app.js"), "utf8");
   const coreJs = fs.readFileSync(path.join(rootDir, "game-core.js"), "utf8");
   const styles = fs.readFileSync(path.join(rootDir, "styles.css"), "utf8");
+  const indexHtml = fs.readFileSync(path.join(rootDir, "index.html"), "utf8");
   [
     "data-crisis-action",
     "data-action-id",
@@ -1129,6 +1130,10 @@ function validateActionPreviewCoverage() {
   assert(appJs.includes("renderSettlementUndoAction"), "Immediate city action recaps should expose a visible undo action.");
   assert(appJs.includes("data-settlement-undo"), "Settlement undo buttons need a dedicated data hook.");
   assert(styles.includes(".settlement-undo-action"), "Settlement undo buttons need dedicated styling.");
+  assert(indexHtml.includes("id=\"eventPanel\""), "Event panel should expose a stable scroll target after daily settlement.");
+  assert(appJs.includes("postRenderFocus = \"event-settlement\""), "Event choices should mark the post-render event settlement focus.");
+  assert(appJs.includes("applyPostRenderFocus()"), "Render pass should apply post-settlement focus after rebuilding UI.");
+  assert(styles.includes(".event-panel.is-settlement-focus"), "Event panel should receive a visible settlement focus highlight.");
   assert(appJs.includes("focusCityBadgeAction"), "City badge cards should be clickable map-action targets.");
   assert(appJs.includes("data-badge-point"), "City badge cards should carry map target data attributes.");
   assert(styles.includes(".city-badge.actionable"), "Clickable city badges need dedicated styling.");
