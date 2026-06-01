@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v171";
+  const ASSET_VERSION = "v172";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -1985,7 +1985,7 @@
       els.eventSource.open = false;
       els.eventSourceNote.textContent = "";
     }
-    els.eventVisual.dataset.motion = motionForEventImage(event.image, event.imageKey);
+    els.eventVisual.dataset.motion = motionForEventImage(event);
     els.eventVisual.dataset.key = event.imageKey || "default";
     setManagedImage(
       els.eventImage,
@@ -2732,12 +2732,27 @@
     return true;
   }
 
-  function motionForEventImage(image, imageKey = "") {
-    if (["notice", "code"].includes(imageKey)) return "code";
-    if (["clinic", "hospital"].includes(imageKey)) return "medical";
-    if (["market", "community"].includes(imageKey)) return "supply";
-    if (["station", "transport", "factory", "budget"].includes(imageKey)) return "factory";
-    if (["shelter", "memory"].includes(imageKey)) return "shelter";
+  function motionForEventImage(eventOrImage, imageKey = "") {
+    const event = eventOrImage && typeof eventOrImage === "object" ? eventOrImage : null;
+    const image = String(event ? event.image || "" : eventOrImage || "").toLowerCase();
+    const key = String(event ? event.imageKey || "" : imageKey || "").toLowerCase();
+    const id = String(event ? event.id || "" : "").toLowerCase();
+    const title = String(event ? event.title || "" : "").toLowerCase();
+    const tags = event && Array.isArray(event.tags) ? event.tags.join(" ").toLowerCase() : "";
+    const text = `${id} ${title} ${image} ${key} ${tags}`;
+    if (/health_code|green_code|code|扫码|健康码/.test(text)) return "code";
+    if (/vaccine|sample|lab|test_kit|ct_|clinical|positive_retest|cold_chain|sentinel|asymptomatic|antigen|核酸|检测|样本|试剂|疫苗|冷链/.test(text)) return "lab";
+    if (/ambulance|transport|station|ticket|highway|pass|flight|bus|convoy|vehicle|freight|courier|transfer|通行|车|交通|航班|货运|转运/.test(text)) return "convoy";
+    if (/donation|fund|budget|procurement|audit|grant|finance|warehouse|price|account|ledger|财政|捐|审计|资金|拨付|仓库|价格|台账/.test(text)) return "ledger";
+    if (/school|student|campus|online_school|class|学校|学生|校园|网课|返校/.test(text)) return "school";
+    if (/press|notice|rumor|dashboard|data_delay|announcement|release|optimization|通告|发布会|谣言|数据|口径|公告/.test(text)) return "broadcast";
+    if (/medicine|elder|child|hotline|psych|memorial|death|care|er_blocked|normal_clinic|fever|药|老人|儿童|热线|悼念|急诊|门诊/.test(text)) return "care";
+    if (["notice"].includes(key)) return "broadcast";
+    if (["clinic", "hospital"].includes(key)) return "medical";
+    if (["market", "community"].includes(key)) return "supply";
+    if (["station", "transport", "factory", "budget"].includes(key)) return "factory";
+    if (["shelter", "memory"].includes(key)) return "shelter";
+    if (["code"].includes(key)) return "code";
     if (!image) return "default";
     if (image.includes("hospital")) return "medical";
     if (image.includes("supply")) return "supply";

@@ -345,10 +345,24 @@ function validateRuntimeImageFallbacks() {
     ".event-image.is-loading",
     ".event-image.is-error",
     ".event-visual.image-error",
+    '.event-visual[data-motion="lab"]',
+    '.event-visual[data-motion="convoy"]',
+    '.event-visual[data-motion="ledger"]',
+    '.event-visual[data-motion="broadcast"]',
     ".news-card.image-loading img",
     ".news-card.image-error img",
   ].forEach((text) => {
     assert(styles.includes(text), `styles.css should style image loading/error state: ${text}.`);
+  });
+  [
+    'return "lab"',
+    'return "convoy"',
+    'return "ledger"',
+    'return "broadcast"',
+    'return "care"',
+    'return "school"',
+  ].forEach((text) => {
+    assert(appJs.includes(text), `Event motion classifier should include ${text}.`);
   });
 }
 
