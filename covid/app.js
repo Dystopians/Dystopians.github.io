@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v131";
+  const ASSET_VERSION = "v132";
   const EVENT_IMAGE_FALLBACK = "news-hospital.png";
   const NEWS_IMAGE_FALLBACK = "news-supply.png";
   const core = window.Linjiang72;
@@ -2297,6 +2297,7 @@
           <div class="chips">${preview}</div>
           ${renderActionDirectiveFit(item, actionMode)}
           ${renderActionForecast(item, actionMode)}
+          ${renderActionExecutionHint(item)}
           ${renderActionLockHint(item)}
         </div>
         <button class="small-action" type="button" ${item.available ? "" : "aria-disabled=\"true\""} ${lockDetail ? `title="${escapeHtml(lockDetail)}"` : ""}>
@@ -2335,6 +2336,17 @@
     return `
       <small class="action-lock-hint" title="${escapeHtml(detail)}">
         ${escapeHtml(prefix)}：${escapeHtml(detail)}
+      </small>
+    `;
+  }
+
+  function renderActionExecutionHint(item) {
+    if (!item || !item.available || !core.getCityActionBudget) return "";
+    const budget = core.getCityActionBudget(state);
+    const afterRemaining = Math.max(0, (budget.remaining || 0) - 1);
+    return `
+      <small class="action-execution-hint" title="工程和决议即时生效，不会推进日期；在处理今日事件前可以撤销最近一次城市行动。">
+        即时生效：消耗 1 次今日调度，执行后剩余 ${afterRemaining}/${escapeHtml(String(budget.limit || 1))}；事件前可撤销
       </small>
     `;
   }

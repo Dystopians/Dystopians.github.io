@@ -5499,6 +5499,21 @@ label {
   overflow-wrap: anywhere;
 }
 
+.action-execution-hint {
+  display: block;
+  margin-top: 6px;
+  padding: 5px 6px;
+  border: 2px solid rgba(48, 101, 104, 0.58);
+  background:
+    repeating-linear-gradient(90deg, rgba(219, 236, 220, 0.46) 0 4px, rgba(179, 209, 199, 0.34) 4px 8px),
+    #d8e7c8;
+  color: #254e4f;
+  font-size: 0.66rem;
+  font-weight: 900;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
 .action-card.locked[data-lock-detail] {
   position: relative;
   cursor: help;
