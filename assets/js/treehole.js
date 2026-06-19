@@ -346,6 +346,30 @@
       content.textContent = message.content || '';
 
       article.append(meta, content);
+
+      if (message.owner_reply) {
+        var reply = document.createElement('div');
+        reply.className = 'treehole-note__reply';
+
+        var replyLabel = document.createElement('span');
+        replyLabel.className = 'treehole-note__reply-label';
+        replyLabel.textContent = text('replyLabel');
+
+        var replyText = document.createElement('p');
+        replyText.textContent = message.owner_reply;
+
+        reply.append(replyLabel, replyText);
+
+        if (message.owner_reply_at) {
+          var replyTime = document.createElement('time');
+          replyTime.dateTime = message.owner_reply_at;
+          replyTime.textContent = formatDate(message.owner_reply_at);
+          reply.append(replyTime);
+        }
+
+        article.append(reply);
+      }
+
       fragment.append(article);
     });
 
@@ -423,7 +447,7 @@
         config.supabaseUrl +
         '/rest/v1/' +
         config.table +
-        '?select=id,nickname,content,created_at&status=eq.published&order=created_at.desc&limit=60';
+        '?select=id,nickname,content,created_at,owner_reply,owner_reply_at&status=eq.published&order=created_at.desc&limit=60';
       var response = await fetch(url, {
         headers: {
           apikey: config.anonKey,

@@ -447,6 +447,36 @@ body:has(.treehole-shell) .page__content {
   overflow-wrap: anywhere;
 }
 
+.treehole-note__reply {
+  display: grid;
+  gap: 0.32rem;
+  margin-top: 0.78rem;
+  padding: 0.68rem 0.74rem;
+  border: 1px solid rgba(97, 127, 150, 0.16);
+  border-radius: 8px;
+  background: rgba(244, 247, 249, 0.72);
+}
+
+.treehole-note__reply-label {
+  color: var(--treehole-blue);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.treehole-note__reply p {
+  margin: 0;
+  color: #2d3932;
+  font-family: "Noto Serif SC", "Songti SC", "Noto Sans SC", serif;
+  line-height: 1.72;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.treehole-note__reply time {
+  color: var(--treehole-muted);
+  font-size: 0.7rem;
+}
+
 .treehole-empty {
   align-self: center;
   justify-self: center;
