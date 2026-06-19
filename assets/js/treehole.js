@@ -3,79 +3,106 @@
 
   var config = {
     supabaseUrl: 'https://wdszjpxvelycmohewvgk.supabase.co',
-    publishableKey: 'sb_publishable_5I7bn53-MdadL1aTjddfNw_-GlgDUfu',
+    anonKey: 'sb_publishable_5I7bn53-MdadL1aTjddfNw_-GlgDUfu',
     table: 'treehole_messages',
-    submitFunction: 'treehole-submit'
+    submitFunction: 'treehole-submit',
+    secretLookupFunction: 'treehole-secret-lookup'
   };
+
+  var maxContentLength = 800;
 
   var copy = {
     zh: {
-      htmlLang: 'zh-CN',
       kicker: '何人斯',
       heroTitle: '究竟是什么人？在外面的声音',
       heroLead: '只可能在外面。你的心地幽深莫测',
-      toggle: 'EN',
-      toggleLabel: 'Switch to English',
-      writeTitle: '写一张纸条',
-      writeMeta: '邮箱选填',
-      nameLabel: '署名',
-      emailLabel: '邮箱（选填）',
-      noteLabel: '内容',
-      namePlaceholder: '匿名',
-      emailPlaceholder: 'you@example.com',
-      notePlaceholder: '写下你要留下的话。',
-      post: '投递',
-      posting: '投递中...',
-      boardTitle: '留言',
-      boardLead: '最近提交',
+      formTitle: '留下你的话',
+      formLead: '公开留言会出现在右侧。秘密留言只凭四位密码查看。',
+      nameLabel: '名字',
+      emailLabel: '邮箱（可选）',
+      messageLabel: '留言',
+      secretLabel: '秘密',
+      passcodeLabel: '四位数密码',
+      passcodeHint: '请留下四位数密码。',
+      boardTitle: '回声',
+      boardLead: '公开留言会在这里慢慢浮上来。',
       refresh: '刷新',
-      refreshLabel: '刷新留言',
-      loading: '加载中...',
-      empty: '暂无留言。',
-      unavailable: '暂时无法读取留言。',
-      tooShort: '再多写一点点。',
-      invalidEmail: '邮箱格式不正确。',
-      posted: '已提交。',
-      saved: '已保存。',
-      requestFailed: '提交失败，请稍后再试。',
-      cooldown: '请稍等一分钟再留言。',
-      dailyLimit: '今天的留言次数已达到上限。',
-      invalidSession: '会话状态失效，请刷新页面后再试。',
-      anonymous: '匿名'
-    },
-    en: {
-      htmlLang: 'en',
-      kicker: 'Who is there',
-      heroTitle: 'Who is it? The voice outside',
-      heroLead: 'Can only remain outside. Your inner ground is deep and unknowable.',
-      toggle: '中',
-      toggleLabel: '切换到中文',
-      writeTitle: 'Write a note',
-      writeMeta: 'Email optional',
-      nameLabel: 'Name',
-      emailLabel: 'Email (optional)',
-      noteLabel: 'Note',
+      loading: '正在听...',
+      empty: '还没有公开留言。',
+      submit: '投递',
+      submitting: '投递中...',
+      posted: '已投递。',
+      secretPosted: '已投递。请记住四位数密码。',
+      hiddenPosted: '已投递，正在等待公开。',
+      invalidContent: '留言需要 2 到 800 个字。',
+      invalidEmail: '邮箱格式不太对。',
+      invalidPasscode: '请输入四位数字。',
+      submitError: '暂时投递不了。',
+      loadError: '暂时听不到回声。',
+      duplicate: '这句话刚刚已经投递过。',
+      tooMany: '投递太频繁了，稍后再试。',
+      anonymous: '匿名',
+      languageButton: 'English',
       namePlaceholder: 'Anonymous',
       emailPlaceholder: 'you@example.com',
-      notePlaceholder: 'Write what you want to leave here.',
-      post: 'Post',
-      posting: 'Posting...',
-      boardTitle: 'Messages',
-      boardLead: 'Recent submissions',
+      messagePlaceholder: '写在这里',
+      passcodePlaceholder: '0000',
+      secretReaderTitle: '查看秘密回复',
+      secretReaderLead: '输入四位数密码。',
+      secretLookupLabel: '四位数密码',
+      secretLookupSubmit: '查看',
+      secretLookupLoading: '查询中...',
+      secretLookupEmpty: '没有找到对应的秘密留言。',
+      secretLookupFound: '找到了。',
+      secretLookupError: '暂时无法查看。',
+      noReplyYet: '尚未回复。',
+      replyLabel: '回复'
+    },
+    en: {
+      kicker: 'TreeHole',
+      heroTitle: 'Who is there? The outside voice',
+      heroLead: 'can only remain outside. Your inner ground is deep and unknowable.',
+      formTitle: 'Leave a note',
+      formLead: 'Public notes appear on the right. Secret notes can be opened only with a four-digit code.',
+      nameLabel: 'Name',
+      emailLabel: 'Email (optional)',
+      messageLabel: 'Message',
+      secretLabel: 'Secret',
+      passcodeLabel: 'Four-digit code',
+      passcodeHint: 'Leave a four-digit code.',
+      boardTitle: 'Echoes',
+      boardLead: 'Public notes will surface here.',
       refresh: 'Refresh',
-      refreshLabel: 'Refresh notes',
-      loading: 'Loading...',
-      empty: 'No messages yet.',
-      unavailable: 'The board is unavailable right now.',
-      tooShort: 'Leave at least two characters.',
-      invalidEmail: 'Use a valid email address.',
-      posted: 'Posted.',
-      saved: 'Saved.',
-      requestFailed: 'Unable to post. Please try again later.',
-      cooldown: 'Please wait a minute before leaving another note.',
-      dailyLimit: 'Daily note limit reached.',
-      invalidSession: 'Session expired. Refresh and try again.',
-      anonymous: 'Anonymous'
+      loading: 'Listening...',
+      empty: 'No public notes yet.',
+      submit: 'Send',
+      submitting: 'Sending...',
+      posted: 'Sent.',
+      secretPosted: 'Sent. Remember the four-digit code.',
+      hiddenPosted: 'Sent and waiting to be published.',
+      invalidContent: 'Message must be 2 to 800 characters.',
+      invalidEmail: 'Email format looks wrong.',
+      invalidPasscode: 'Enter four digits.',
+      submitError: 'Could not send right now.',
+      loadError: 'Could not load echoes.',
+      duplicate: 'This note was just sent.',
+      tooMany: 'Too many messages. Try again later.',
+      anonymous: 'Anonymous',
+      languageButton: '中文',
+      namePlaceholder: 'Anonymous',
+      emailPlaceholder: 'you@example.com',
+      messagePlaceholder: 'Write here',
+      passcodePlaceholder: '0000',
+      secretReaderTitle: 'Read Secret Reply',
+      secretReaderLead: 'Enter the four-digit code.',
+      secretLookupLabel: 'Four-digit code',
+      secretLookupSubmit: 'Read',
+      secretLookupLoading: 'Checking...',
+      secretLookupEmpty: 'No secret note was found for that code.',
+      secretLookupFound: 'Found.',
+      secretLookupError: 'Could not check right now.',
+      noReplyYet: 'No reply yet.',
+      replyLabel: 'Reply'
     }
   };
 
@@ -86,15 +113,23 @@
   var nicknameInput = root.querySelector('[data-treehole-nickname]');
   var emailInput = root.querySelector('[data-treehole-email]');
   var contentInput = root.querySelector('[data-treehole-content]');
+  var websiteInput = root.querySelector('[data-treehole-website]');
+  var secretCheckbox = root.querySelector('[data-treehole-secret]');
+  var passcodeField = root.querySelector('[data-treehole-passcode-field]');
+  var passcodeInput = root.querySelector('[data-treehole-passcode]');
   var countLabel = root.querySelector('[data-treehole-count]');
   var statusLabel = root.querySelector('[data-treehole-status]');
   var submitButton = root.querySelector('[data-treehole-submit]');
   var refreshButton = root.querySelector('[data-treehole-refresh]');
   var languageToggle = root.querySelector('[data-treehole-lang-toggle]');
   var list = root.querySelector('[data-treehole-list]');
-  var language = 'zh';
-  var lastMessages = [];
-  var isLoading = false;
+  var secretLookupForm = root.querySelector('[data-treehole-secret-lookup-form]');
+  var lookupPasscodeInput = root.querySelector('[data-treehole-lookup-passcode]');
+  var lookupButton = root.querySelector('[data-treehole-secret-lookup-submit]');
+  var secretStatus = root.querySelector('[data-treehole-secret-status]');
+  var secretResults = root.querySelector('[data-treehole-secret-results]');
+
+  var language = root.dataset.treeholeLang === 'en' ? 'en' : 'zh';
 
   function text(key) {
     return copy[language][key] || copy.zh[key] || key;
@@ -102,127 +137,172 @@
 
   function applyLanguage() {
     root.dataset.treeholeLang = language;
-    document.documentElement.lang = text('htmlLang');
 
-    root.querySelectorAll('[data-i18n]').forEach(function (element) {
-      var key = element.getAttribute('data-i18n');
-      element.textContent = text(key);
+    root.querySelectorAll('[data-i18n]').forEach(function (node) {
+      var key = node.getAttribute('data-i18n');
+      node.textContent = text(key);
     });
 
-    nicknameInput.placeholder = text('namePlaceholder');
-    emailInput.placeholder = text('emailPlaceholder');
-    contentInput.placeholder = text('notePlaceholder');
-    submitButton.textContent = isLoading ? text('posting') : text('post');
-    refreshButton.setAttribute('aria-label', text('refreshLabel'));
-    languageToggle.textContent = text('toggle');
-    languageToggle.setAttribute('aria-label', text('toggleLabel'));
-    renderMessages(lastMessages);
+    if (languageToggle) {
+      languageToggle.textContent = text('languageButton');
+      languageToggle.setAttribute('aria-label', language === 'zh' ? 'Switch to English' : '切换到中文');
+    }
+
+    if (nicknameInput) nicknameInput.placeholder = text('namePlaceholder');
+    if (emailInput) emailInput.placeholder = text('emailPlaceholder');
+    if (contentInput) contentInput.placeholder = text('messagePlaceholder');
+    if (passcodeInput) passcodeInput.placeholder = text('passcodePlaceholder');
+    if (lookupPasscodeInput) lookupPasscodeInput.placeholder = text('passcodePlaceholder');
+    if (submitButton) submitButton.textContent = text('submit');
+
+    var visibleEmpty = list && list.querySelector('.treehole-empty');
+    if (visibleEmpty) {
+      var emptyKey = visibleEmpty.dataset.emptyKey || 'empty';
+      visibleEmpty.textContent = text(emptyKey);
+    }
+
+    var visibleReplyPlaceholders = root.querySelectorAll('[data-treehole-no-reply]');
+    visibleReplyPlaceholders.forEach(function (node) {
+      node.textContent = text('noReplyYet');
+    });
   }
 
   function setStatus(message, type) {
+    if (!statusLabel) return;
     statusLabel.textContent = message || '';
     statusLabel.dataset.state = type || '';
   }
 
-  function setLoading(nextIsLoading) {
-    isLoading = nextIsLoading;
-    submitButton.disabled = isLoading;
-    submitButton.textContent = isLoading ? text('posting') : text('post');
+  function setSecretStatus(message, type) {
+    if (!secretStatus) return;
+    secretStatus.textContent = message || '';
+    secretStatus.dataset.state = type || '';
+  }
+
+  function setSubmitting(isSubmitting) {
+    if (!submitButton) return;
+    submitButton.disabled = isSubmitting;
+    submitButton.textContent = isSubmitting ? text('submitting') : text('submit');
+  }
+
+  function setLookingUp(isLookingUp) {
+    if (!lookupButton) return;
+    lookupButton.disabled = isLookingUp;
+    lookupButton.textContent = isLookingUp ? text('secretLookupLoading') : text('secretLookupSubmit');
   }
 
   function getSessionId() {
     var key = 'treehole_session_id';
-    var saved = window.localStorage.getItem(key);
-    if (saved) return saved;
-
-    var id = window.crypto && window.crypto.randomUUID
-      ? window.crypto.randomUUID()
-      : String(Date.now()) + '-' + Math.random().toString(16).slice(2);
-    window.localStorage.setItem(key, id);
-    return id;
+    try {
+      var existing = window.localStorage.getItem(key);
+      if (existing) return existing;
+      var created =
+        (window.crypto && window.crypto.randomUUID && window.crypto.randomUUID()) ||
+        String(Date.now()) + '-' + Math.random().toString(16).slice(2);
+      window.localStorage.setItem(key, created);
+      return created;
+    } catch (_error) {
+      return String(Date.now()) + '-' + Math.random().toString(16).slice(2);
+    }
   }
 
-  function updateCount() {
-    countLabel.textContent = String(contentInput.value.length) + ' / 800';
-  }
+  function getClientMeta() {
+    var screenSize = window.screen
+      ? String(window.screen.width) + 'x' + String(window.screen.height) + '@' + String(window.devicePixelRatio || 1)
+      : '';
+    var viewport = String(window.innerWidth || 0) + 'x' + String(window.innerHeight || 0);
 
-  function isValidEmail(value) {
-    if (!value) return true;
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-  }
-
-  function collectClientMeta() {
-    var screenInfo = window.screen || {};
-    var nav = window.navigator || {};
-    var connection = nav.connection || nav.mozConnection || nav.webkitConnection || {};
     return {
-      page_url: window.location.href,
-      page_path: window.location.pathname,
-      page_title: document.title,
-      referrer: document.referrer || '',
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
-      timezone_offset: new Date().getTimezoneOffset(),
-      language: nav.language || '',
-      languages: Array.isArray(nav.languages) ? nav.languages.slice(0, 12) : [],
-      platform: nav.platform || '',
-      vendor: nav.vendor || '',
-      user_agent: nav.userAgent || '',
-      cookie_enabled: Boolean(nav.cookieEnabled),
-      do_not_track: nav.doNotTrack || window.doNotTrack || '',
-      hardware_concurrency: nav.hardwareConcurrency || null,
-      device_memory: nav.deviceMemory || null,
-      max_touch_points: nav.maxTouchPoints || 0,
-      connection: {
-        effective_type: connection.effectiveType || '',
-        downlink: connection.downlink || null,
-        rtt: connection.rtt || null,
-        save_data: Boolean(connection.saveData)
-      },
-      screen: {
-        width: screenInfo.width || null,
-        height: screenInfo.height || null,
-        avail_width: screenInfo.availWidth || null,
-        avail_height: screenInfo.availHeight || null,
-        color_depth: screenInfo.colorDepth || null,
-        pixel_depth: screenInfo.pixelDepth || null
-      },
-      viewport: {
-        width: window.innerWidth,
-        height: window.innerHeight,
-        device_pixel_ratio: window.devicePixelRatio || 1
-      }
+      language: navigator.language || '',
+      languages: Array.isArray(navigator.languages) ? navigator.languages.slice(0, 6) : [],
+      platform: navigator.platform || '',
+      screen: screenSize,
+      viewport: viewport,
+      hardwareConcurrency: navigator.hardwareConcurrency || '',
+      deviceMemory: navigator.deviceMemory || ''
     };
   }
 
-  function clearNode(node) {
-    while (node.firstChild) node.removeChild(node.firstChild);
+  function normalizeContent(value) {
+    return String(value || '')
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .split('\n')
+      .map(function (line) {
+        return line.trim();
+      })
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
   }
 
-  function renderEmpty(message) {
-    clearNode(list);
+  function normalizePasscodeInput(input) {
+    if (!input) return '';
+    var normalized = String(input.value || '').replace(/\D/g, '').slice(0, 4);
+    if (input.value !== normalized) input.value = normalized;
+    return normalized;
+  }
+
+  function validateEmail(email) {
+    if (!email) return true;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  function validatePasscode(value) {
+    return /^\d{4}$/.test(String(value || '').trim());
+  }
+
+  function updateCount() {
+    if (!countLabel || !contentInput) return;
+    countLabel.textContent = String(contentInput.value.length) + ' / ' + String(maxContentLength);
+  }
+
+  function toggleSecret() {
+    if (!secretCheckbox || !passcodeField || !passcodeInput) return;
+    var enabled = secretCheckbox.checked;
+    passcodeField.hidden = !enabled;
+    passcodeInput.required = enabled;
+    if (!enabled) {
+      passcodeInput.value = '';
+    }
+  }
+
+  function authHeaders() {
+    return {
+      apikey: config.anonKey,
+      Authorization: 'Bearer ' + config.anonKey,
+      'Content-Type': 'application/json'
+    };
+  }
+
+  function renderEmpty(key) {
+    if (!list) return;
     var empty = document.createElement('p');
     empty.className = 'treehole-empty';
-    empty.textContent = message;
-    list.appendChild(empty);
+    empty.dataset.emptyKey = key || 'empty';
+    empty.textContent = text(empty.dataset.emptyKey);
+    list.replaceChildren(empty);
   }
 
   function formatDate(value) {
     try {
       return new Intl.DateTimeFormat(language === 'zh' ? 'zh-CN' : 'en', {
-        month: language === 'zh' ? 'long' : 'short',
+        year: 'numeric',
+        month: 'short',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit'
       }).format(new Date(value));
-    } catch (_) {
+    } catch (_error) {
       return '';
     }
   }
 
   function renderMessages(messages) {
-    clearNode(list);
-    if (!messages.length) {
-      renderEmpty(text('empty'));
+    if (!list) return;
+    if (!messages || !messages.length) {
+      renderEmpty('empty');
       return;
     }
 
@@ -234,7 +314,7 @@
       var meta = document.createElement('div');
       meta.className = 'treehole-note__meta';
 
-      var name = document.createElement('span');
+      var name = document.createElement('strong');
       name.className = 'treehole-note__name';
       name.textContent = message.nickname || text('anonymous');
 
@@ -242,121 +322,259 @@
       time.dateTime = message.created_at || '';
       time.textContent = formatDate(message.created_at);
 
-      meta.appendChild(name);
-      meta.appendChild(time);
+      meta.append(name, time);
 
       var content = document.createElement('p');
       content.className = 'treehole-note__content';
       content.textContent = message.content || '';
 
-      article.appendChild(meta);
-      article.appendChild(content);
-      fragment.appendChild(article);
+      article.append(meta, content);
+      fragment.append(article);
     });
 
-    list.appendChild(fragment);
+    list.replaceChildren(fragment);
   }
 
-  async function requestJson(url, options) {
-    var response = await fetch(url, options);
-    var payload = await response.json().catch(function () {
-      return {};
-    });
-    if (!response.ok) {
-      throw new Error(payload.error || 'Request failed.');
+  function renderSecretResults(messages) {
+    if (!secretResults) return;
+
+    if (!messages || !messages.length) {
+      secretResults.replaceChildren();
+      setSecretStatus(text('secretLookupEmpty'), 'error');
+      return;
     }
-    return payload;
-  }
 
-  function localizeError(error) {
-    var message = error && error.message ? error.message : '';
-    if (message.indexOf('Please wait a minute') !== -1) return text('cooldown');
-    if (message.indexOf('Daily note limit') !== -1) return text('dailyLimit');
-    if (message.indexOf('Message is too short') !== -1) return text('tooShort');
-    if (message.indexOf('Invalid email') !== -1) return text('invalidEmail');
-    if (message.indexOf('Invalid session') !== -1) return text('invalidSession');
-    return text('requestFailed');
+    var fragment = document.createDocumentFragment();
+    messages.forEach(function (message) {
+      var article = document.createElement('article');
+      article.className = 'treehole-secret-card';
+
+      var meta = document.createElement('div');
+      meta.className = 'treehole-note__meta';
+
+      var name = document.createElement('strong');
+      name.className = 'treehole-note__name';
+      name.textContent = message.nickname || text('anonymous');
+
+      var time = document.createElement('time');
+      time.dateTime = message.created_at || '';
+      time.textContent = formatDate(message.created_at);
+
+      meta.append(name, time);
+
+      var content = document.createElement('p');
+      content.className = 'treehole-note__content';
+      content.textContent = message.content || '';
+
+      var reply = document.createElement('div');
+      reply.className = 'treehole-secret-card__reply';
+
+      var replyLabel = document.createElement('span');
+      replyLabel.className = 'treehole-secret-card__reply-label';
+      replyLabel.textContent = text('replyLabel');
+
+      var replyText = document.createElement('p');
+      if (message.owner_reply) {
+        replyText.textContent = message.owner_reply;
+      } else {
+        replyText.dataset.treeholeNoReply = 'true';
+        replyText.textContent = text('noReplyYet');
+      }
+
+      reply.append(replyLabel, replyText);
+
+      if (message.owner_reply_at) {
+        var replyTime = document.createElement('time');
+        replyTime.dateTime = message.owner_reply_at;
+        replyTime.textContent = formatDate(message.owner_reply_at);
+        reply.append(replyTime);
+      }
+
+      article.append(meta, content, reply);
+      fragment.append(article);
+    });
+
+    secretResults.replaceChildren(fragment);
+    setSecretStatus(text('secretLookupFound'), 'success');
   }
 
   async function loadMessages() {
-    renderEmpty(text('loading'));
-    var endpoint = config.supabaseUrl +
-      '/rest/v1/' +
-      config.table +
-      '?select=id,nickname,content,created_at&status=eq.published&order=created_at.desc&limit=60';
-
+    if (!list) return;
+    renderEmpty('loading');
     try {
-      var messages = await requestJson(endpoint, {
+      var url =
+        config.supabaseUrl +
+        '/rest/v1/' +
+        config.table +
+        '?select=id,nickname,content,created_at&status=eq.published&order=created_at.desc&limit=60';
+      var response = await fetch(url, {
         headers: {
-          apikey: config.publishableKey
+          apikey: config.anonKey,
+          Authorization: 'Bearer ' + config.anonKey
         }
       });
-      lastMessages = Array.isArray(messages) ? messages : [];
-      renderMessages(lastMessages);
-    } catch (error) {
-      lastMessages = [];
-      renderEmpty(text('unavailable'));
+
+      if (!response.ok) throw new Error('load failed');
+
+      var messages = await response.json();
+      renderMessages(messages);
+    } catch (_error) {
+      renderEmpty('loadError');
     }
   }
 
   async function submitMessage(event) {
     event.preventDefault();
+    setStatus('', '');
 
-    var content = contentInput.value.trim();
-    var email = emailInput.value.trim();
-    if (content.length < 2) {
-      setStatus(text('tooShort'), 'error');
+    var content = normalizeContent(contentInput && contentInput.value);
+    var email = emailInput && emailInput.value ? emailInput.value.trim().toLowerCase() : '';
+    var isSecret = Boolean(secretCheckbox && secretCheckbox.checked);
+    var passcode = normalizePasscodeInput(passcodeInput);
+
+    if (content.length < 2 || content.length > maxContentLength) {
+      setStatus(text('invalidContent'), 'error');
       return;
     }
-    if (!isValidEmail(email)) {
+
+    if (!validateEmail(email)) {
       setStatus(text('invalidEmail'), 'error');
       return;
     }
 
-    setLoading(true);
-    setStatus('', '');
+    if (isSecret && !validatePasscode(passcode)) {
+      setStatus(text('invalidPasscode'), 'error');
+      if (passcodeInput) passcodeInput.focus();
+      return;
+    }
+
+    setSubmitting(true);
 
     try {
-      var endpoint = config.supabaseUrl + '/functions/v1/' + config.submitFunction;
-      var payload = await requestJson(endpoint, {
+      var response = await fetch(config.supabaseUrl + '/functions/v1/' + config.submitFunction, {
         method: 'POST',
-        headers: {
-          apikey: config.publishableKey,
-          'Content-Type': 'application/json'
-        },
+        headers: authHeaders(),
         body: JSON.stringify({
-          nickname: nicknameInput.value,
+          nickname: nicknameInput && nicknameInput.value ? nicknameInput.value.trim() : '',
           email: email,
           content: content,
+          isSecret: isSecret,
+          passcode: isSecret ? passcode : '',
+          website: websiteInput && websiteInput.value ? websiteInput.value : '',
           sessionId: getSessionId(),
-          clientMeta: collectClientMeta()
+          clientMeta: getClientMeta()
         })
       });
 
-      contentInput.value = '';
+      var payload = await response.json().catch(function () {
+        return {};
+      });
+
+      if (!response.ok) {
+        if (response.status === 409) throw new Error('duplicate');
+        if (response.status === 429) throw new Error('tooMany');
+        if (response.status === 400 && payload.error === 'Invalid passcode.') throw new Error('invalidPasscode');
+        throw new Error('submit');
+      }
+
+      if (form) form.reset();
       updateCount();
-      setStatus(payload.message && payload.message.status === 'hidden'
-        ? text('saved')
-        : text('posted'),
-      'success');
-      await loadMessages();
+      toggleSecret();
+
+      if (isSecret) {
+        setStatus(text('secretPosted'), 'success');
+      } else if (payload.message && payload.message.status === 'hidden') {
+        setStatus(text('hiddenPosted'), 'success');
+      } else {
+        setStatus(text('posted'), 'success');
+        await loadMessages();
+      }
     } catch (error) {
-      setStatus(localizeError(error), 'error');
+      var key = error && error.message === 'duplicate'
+        ? 'duplicate'
+        : error && error.message === 'tooMany'
+          ? 'tooMany'
+          : error && error.message === 'invalidPasscode'
+            ? 'invalidPasscode'
+            : 'submitError';
+      setStatus(text(key), 'error');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   }
 
-  function toggleLanguage() {
-    language = language === 'zh' ? 'en' : 'zh';
-    applyLanguage();
+  async function lookupSecret(event) {
+    event.preventDefault();
+    setSecretStatus('', '');
+    if (secretResults) secretResults.replaceChildren();
+
+    var passcode = normalizePasscodeInput(lookupPasscodeInput);
+    if (!validatePasscode(passcode)) {
+      setSecretStatus(text('invalidPasscode'), 'error');
+      if (lookupPasscodeInput) lookupPasscodeInput.focus();
+      return;
+    }
+
+    setLookingUp(true);
+
+    try {
+      var response = await fetch(config.supabaseUrl + '/functions/v1/' + config.secretLookupFunction, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          passcode: passcode,
+          sessionId: getSessionId(),
+          clientMeta: getClientMeta()
+        })
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) throw new Error('tooMany');
+        throw new Error('lookup');
+      }
+
+      var payload = await response.json();
+      renderSecretResults(payload.messages || []);
+    } catch (error) {
+      var key = error && error.message === 'tooMany' ? 'tooMany' : 'secretLookupError';
+      setSecretStatus(text(key), 'error');
+    } finally {
+      setLookingUp(false);
+    }
   }
 
-  contentInput.addEventListener('input', updateCount);
-  form.addEventListener('submit', submitMessage);
-  refreshButton.addEventListener('click', loadMessages);
-  languageToggle.addEventListener('click', toggleLanguage);
-  updateCount();
+  if (contentInput) {
+    contentInput.addEventListener('input', updateCount);
+    updateCount();
+  }
+
+  if (passcodeInput) {
+    passcodeInput.addEventListener('input', function () {
+      normalizePasscodeInput(passcodeInput);
+    });
+  }
+
+  if (lookupPasscodeInput) {
+    lookupPasscodeInput.addEventListener('input', function () {
+      normalizePasscodeInput(lookupPasscodeInput);
+    });
+  }
+
+  if (secretCheckbox) {
+    secretCheckbox.addEventListener('change', toggleSecret);
+    toggleSecret();
+  }
+
+  if (form) form.addEventListener('submit', submitMessage);
+  if (secretLookupForm) secretLookupForm.addEventListener('submit', lookupSecret);
+  if (refreshButton) refreshButton.addEventListener('click', loadMessages);
+  if (languageToggle) {
+    languageToggle.addEventListener('click', function () {
+      language = language === 'zh' ? 'en' : 'zh';
+      applyLanguage();
+    });
+  }
+
   applyLanguage();
   loadMessages();
-}());
+})();

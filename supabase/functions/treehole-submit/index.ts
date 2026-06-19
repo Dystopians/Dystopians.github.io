@@ -4,177 +4,233 @@ type MessageBody = {
   nickname?: unknown;
   email?: unknown;
   content?: unknown;
+  isSecret?: unknown;
+  passcode?: unknown;
+  website?: unknown;
+  turnstileToken?: unknown;
   sessionId?: unknown;
   clientMeta?: unknown;
-  turnstileToken?: unknown;
 };
 
-const allowedOrigins = new Set([
-  'http://127.0.0.1:4000',
-  'http://localhost:4000',
-  'https://caipeilin.com',
-  'https://www.caipeilin.com',
-  'https://dystopians.github.io',
-]);
+type RateLimitResult = {
+  ok: boolean;
+  retryAfterSeconds?: number;
+};
 
-const contentMinLength = 2;
-const contentMaxLength = 800;
-const nicknameMaxLength = 24;
-const emailMaxLength = 254;
-const cooldownMs = 60_000;
-const dailySessionLimit = 12;
-const dailyIpLimit = 40;
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
 
-const corsHeaders = (req: Request) => {
-  const origin = req.headers.get('origin') || '';
-  const allowOrigin = allowedOrigins.has(origin) ? origin : 'https://caipeilin.com';
+const maxNicknameLength = 32;
+const maxEmailLength = 254;
+const maxContentLength = 800;
+const passcodeLength = 4;
+const rateLimitWindowMs = 60 * 60 * 1000;
+const maxMessagesPerWindow = 8;
 
-  return {
-    'Access-Control-Allow-Origin': allowOrigin,
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Vary': 'Origin',
-  };
+const parseKeyMap = (value?: string | null): Record<string, string> => {
+  if (!value) return {};
+
+  try {
+    const parsed = JSON.parse(value);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return Object.fromEntries(
+        Object.entries(parsed).filter((entry): entry is [string, string] => typeof entry[1] === 'string'),
+      );
+    }
+  } catch (_error) {
+    // Fall through to the comma-separated parser.
+  }
+
+  return Object.fromEntries(
+    value
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .map((part) => {
+        const separator = part.indexOf(':');
+        if (separator === -1) return ['default', part] as const;
+        return [part.slice(0, separator).trim(), part.slice(separator + 1).trim()] as const;
+      })
+      .filter((entry) => entry[1]),
+  );
 };
 
 const json = (req: Request, body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
     headers: {
-      ...corsHeaders(req),
-      'Content-Type': 'application/json',
+      ...corsHeaders,
+      'Access-Control-Allow-Origin': req.headers.get('origin') || '*',
+      'Content-Type': 'application/json; charset=utf-8',
     },
   });
 
-const parseKeyMap = (value: string | undefined) => {
-  if (!value) return {};
-  try {
-    const parsed = JSON.parse(value);
-    return parsed && typeof parsed === 'object' ? parsed as Record<string, string> : {};
-  } catch {
-    return {};
-  }
-};
-
 const getSecretKey = () => {
-  const legacyServiceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (legacyServiceRole) return legacyServiceRole;
+  const direct =
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ||
+    Deno.env.get('SERVICE_ROLE_KEY') ||
+    Deno.env.get('SB_SERVICE_ROLE_KEY');
+  if (direct) return direct;
 
   const secretKeys = parseKeyMap(Deno.env.get('SUPABASE_SECRET_KEYS'));
   return secretKeys.default || Object.values(secretKeys)[0] || '';
 };
 
 const hasAllowedApiKey = (req: Request) => {
-  const publishableKeys = parseKeyMap(Deno.env.get('SUPABASE_PUBLISHABLE_KEYS'));
-  const knownKeys = Object.values(publishableKeys).filter(Boolean);
-  if (knownKeys.length === 0) return true;
-
-  const providedKey = req.headers.get('apikey') || '';
-  return knownKeys.includes(providedKey);
+  const supplied = req.headers.get('apikey') || '';
+  const publishable = Deno.env.get('SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_PUBLISHABLE_KEY') || '';
+  const extraKeys = parseKeyMap(Deno.env.get('SUPABASE_PUBLISHABLE_KEYS'));
+  return (
+    Boolean(supplied) &&
+    (supplied === publishable || Object.values(extraKeys).some((key) => supplied === key))
+  );
 };
 
-const cleanNickname = (value: unknown) => {
-  const raw = typeof value === 'string' ? value : '';
-  const normalized = raw.normalize('NFKC')
-    .replace(/[<>{}[\]\\]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-  return (normalized || 'Anonymous').slice(0, nicknameMaxLength);
+const normalizeText = (value: unknown, fallback = '') =>
+  typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : fallback;
+
+const normalizeMultilineText = (value: unknown) =>
+  typeof value === 'string'
+    ? value
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n')
+        .split('\n')
+        .map((line) => line.trim())
+        .join('\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim()
+    : '';
+
+const normalizeEmail = (value: unknown) => {
+  if (typeof value !== 'string') return '';
+  return value.trim().toLowerCase();
 };
 
-const cleanContent = (value: unknown) => {
-  const raw = typeof value === 'string' ? value : '';
-  return raw.normalize('NFKC')
-    .replace(/\u0000/g, '')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
-    .slice(0, contentMaxLength);
-};
-
-const cleanEmail = (value: unknown) => {
-  const raw = typeof value === 'string' ? value : '';
-  const email = raw.normalize('NFKC').trim().toLowerCase().slice(0, emailMaxLength);
-  if (!email) return { email: null, valid: true };
+const cleanPasscode = (value: unknown) => {
+  const passcode = typeof value === 'string' ? value.trim() : '';
   return {
-    email,
-    valid: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
+    passcode,
+    valid: new RegExp(`^\\d{${passcodeLength}}$`).test(passcode),
   };
 };
 
-const cleanString = (value: unknown, maxLength = 500) => {
-  if (typeof value !== 'string') return null;
-  const text = value.normalize('NFKC').replace(/\u0000/g, '').trim();
-  return text ? text.slice(0, maxLength) : null;
+const isValidEmail = (email: string) => {
+  if (!email) return true;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 };
 
-const cleanNumber = (value: unknown) => {
-  return typeof value === 'number' && Number.isFinite(value) ? value : null;
-};
+const toClientMeta = (value: unknown) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const source = value as Record<string, unknown>;
+  const allowedKeys = [
+    'timezone',
+    'language',
+    'languages',
+    'platform',
+    'screen',
+    'viewport',
+    'hardwareConcurrency',
+    'deviceMemory',
+  ];
 
-const pruneMetadata = (value: unknown, depth = 0): unknown => {
-  if (depth > 4) return null;
-  if (value === null) return null;
-  if (typeof value === 'string') return cleanString(value, 800);
-  if (typeof value === 'number') return cleanNumber(value);
-  if (typeof value === 'boolean') return value;
-  if (Array.isArray(value)) {
-    return value.slice(0, 24).map((item) => pruneMetadata(item, depth + 1));
-  }
-  if (typeof value === 'object') {
-    const output: Record<string, unknown> = {};
-    for (const [key, item] of Object.entries(value).slice(0, 80)) {
-      output[key.slice(0, 80)] = pruneMetadata(item, depth + 1);
-    }
-    return output;
-  }
-  return null;
-};
-
-const stringifyMetadataPart = (value: unknown, maxLength = 1000) => {
-  if (value === null || value === undefined) return null;
-  try {
-    return JSON.stringify(value).slice(0, maxLength);
-  } catch {
-    return null;
-  }
+  return Object.fromEntries(
+    allowedKeys
+      .map((key) => {
+        const item = source[key];
+        if (typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean') {
+          return [key, item] as const;
+        }
+        if (Array.isArray(item)) {
+          return [
+            key,
+            item
+              .filter((entry) => typeof entry === 'string')
+              .slice(0, 6)
+              .join(', '),
+          ] as const;
+        }
+        if (item && typeof item === 'object') {
+          return [key, JSON.stringify(item).slice(0, 240)] as const;
+        }
+        return null;
+      })
+      .filter((entry): entry is readonly [string, string | number | boolean] => Boolean(entry)),
+  );
 };
 
 const getClientIp = (req: Request) => {
-  const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
-  return req.headers.get('cf-connecting-ip') || forwarded || 'unknown';
+  const forwarded = req.headers.get('x-forwarded-for') || '';
+  const firstForwarded = forwarded.split(',')[0]?.trim();
+  return (
+    req.headers.get('cf-connecting-ip') ||
+    req.headers.get('x-real-ip') ||
+    firstForwarded ||
+    ''
+  ).slice(0, 120);
 };
 
 const hash = async (value: string) => {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
   return Array.from(new Uint8Array(digest))
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('');
 };
 
-const verifyTurnstile = async (token: unknown, req: Request) => {
+const verifyTurnstile = async (token: unknown, ip: string) => {
   const secret = Deno.env.get('TREEHOLE_TURNSTILE_SECRET_KEY') || Deno.env.get('TURNSTILE_SECRET_KEY');
   if (!secret) return { ok: true };
+  if (typeof token !== 'string' || !token.trim()) return { ok: false, status: 400, error: 'Missing verification.' };
 
-  if (typeof token !== 'string' || token.length === 0) {
-    return { ok: false, error: 'Verification is required.' };
-  }
-
-  const form = new URLSearchParams();
+  const form = new FormData();
   form.set('secret', secret);
   form.set('response', token);
-  form.set('remoteip', getClientIp(req));
+  if (ip) form.set('remoteip', ip);
 
   const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
     method: 'POST',
     body: form,
   });
-  const result = await response.json().catch(() => null);
-  return result?.success ? { ok: true } : { ok: false, error: 'Verification failed.' };
+  const result = await response.json().catch(() => ({}));
+  return result.success ? { ok: true } : { ok: false, status: 403, error: 'Verification failed.' };
+};
+
+const checkRateLimit = async (
+  supabase: ReturnType<typeof createClient>,
+  ipHash: string,
+  sessionHash: string,
+): Promise<RateLimitResult> => {
+  const since = new Date(Date.now() - rateLimitWindowMs).toISOString();
+  const query = supabase
+    .from('treehole_messages')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', since);
+
+  if (sessionHash) {
+    query.or(`ip_hash.eq.${ipHash},session_hash.eq.${sessionHash}`);
+  } else {
+    query.eq('ip_hash', ipHash);
+  }
+
+  const { count, error } = await query;
+  if (error) throw error;
+  if ((count || 0) >= maxMessagesPerWindow) {
+    return { ok: false, retryAfterSeconds: Math.ceil(rateLimitWindowMs / 1000) };
+  }
+  return { ok: true };
 };
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders(req) });
+    return new Response('ok', {
+      headers: {
+        ...corsHeaders,
+        'Access-Control-Allow-Origin': req.headers.get('origin') || '*',
+      },
+    });
   }
 
   if (req.method !== 'POST') {
@@ -182,156 +238,150 @@ Deno.serve(async (req) => {
   }
 
   if (!hasAllowedApiKey(req)) {
-    return json(req, { error: 'Unauthorized request.' }, 401);
+    return json(req, { error: 'Unauthorized.' }, 401);
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
   const secretKey = getSecretKey();
   if (!supabaseUrl || !secretKey) {
-    return json(req, { error: 'Missing server configuration.' }, 500);
+    return json(req, { error: 'Server is not configured.' }, 500);
   }
 
   let body: MessageBody;
   try {
     body = await req.json();
-  } catch {
-    return json(req, { error: 'Invalid JSON body.' }, 400);
+  } catch (_error) {
+    return json(req, { error: 'Invalid JSON.' }, 400);
   }
 
-  const nickname = cleanNickname(body.nickname);
-  const emailResult = cleanEmail(body.email);
-  const content = cleanContent(body.content);
-  const sessionId = typeof body.sessionId === 'string' ? body.sessionId.trim() : '';
-
-  if (sessionId.length < 8 || sessionId.length > 128) {
-    return json(req, { error: 'Invalid session.' }, 400);
+  if (typeof body.website === 'string' && body.website.trim()) {
+    return json(req, { ok: true });
   }
 
-  if (!emailResult.valid) {
-    return json(req, { error: 'Invalid email.' }, 400);
-  }
-
-  if (content.length < contentMinLength) {
-    return json(req, { error: 'Message is too short.' }, 400);
-  }
-
-  const turnstile = await verifyTurnstile(body.turnstileToken, req);
-  if (!turnstile.ok) {
-    return json(req, { error: turnstile.error || 'Verification failed.' }, 403);
-  }
-
-  const salt = Deno.env.get('TREEHOLE_HASH_SALT') || supabaseUrl;
   const ip = getClientIp(req);
-  const userAgent = req.headers.get('user-agent') || 'unknown';
-  const acceptLanguage = req.headers.get('accept-language') || null;
-  const referer = req.headers.get('referer') || null;
-  const origin = req.headers.get('origin') || null;
-  const cfCountry = req.headers.get('cf-ipcountry') || null;
-  const clientMeta = pruneMetadata(body.clientMeta) as Record<string, unknown> | null;
-  const sessionHash = await hash(`${salt}:session:${sessionId}`);
-  const ipHash = await hash(`${salt}:ip:${ip}`);
-  const userAgentHash = await hash(`${salt}:ua:${userAgent}`);
+  const verification = await verifyTurnstile(body.turnstileToken, ip);
+  if (!verification.ok) {
+    return json(req, { error: verification.error }, verification.status);
+  }
+
+  const nickname = normalizeText(body.nickname, 'Anonymous') || 'Anonymous';
+  const email = normalizeEmail(body.email);
+  const content = normalizeMultilineText(body.content);
+  const providedSessionId = normalizeText(body.sessionId);
+  const clientMeta = toClientMeta(body.clientMeta);
+  const isSecret = body.isSecret === true;
+  const passcodeResult = cleanPasscode(body.passcode);
+
+  if (nickname.length > maxNicknameLength) {
+    return json(req, { error: 'Nickname is too long.' }, 400);
+  }
+
+  if (email.length > maxEmailLength || !isValidEmail(email)) {
+    return json(req, { error: 'Email is invalid.' }, 400);
+  }
+
+  if (content.length < 2 || content.length > maxContentLength) {
+    return json(req, { error: 'Message must be between 2 and 800 characters.' }, 400);
+  }
+
+  if (isSecret && !passcodeResult.valid) {
+    return json(req, { error: 'Invalid passcode.' }, 400);
+  }
 
   const supabase = createClient(supabaseUrl, secretKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
+    auth: { persistSession: false },
   });
 
-  const recentSince = new Date(Date.now() - cooldownMs).toISOString();
-  const { data: recentRows, error: recentError } = await supabase
-    .from('treehole_messages')
-    .select('id')
-    .or(`session_hash.eq.${sessionHash},ip_hash.eq.${ipHash}`)
-    .gte('created_at', recentSince)
-    .limit(1);
+  const userAgent = (req.headers.get('user-agent') || '').slice(0, 500);
+  const salt = Deno.env.get('TREEHOLE_HASH_SALT') || supabaseUrl;
+  const sessionId =
+    providedSessionId ||
+    `${ip || 'unknown-ip'}:${userAgent || 'unknown-agent'}:${crypto.randomUUID()}`;
+  const ipHash = ip ? await hash(`${salt}:ip:${ip}`) : '';
+  const sessionHash = await hash(`${salt}:session:${sessionId}`);
+  const passcodeHash = isSecret ? await hash(`${salt}:passcode:${passcodeResult.passcode}`) : null;
 
-  if (recentError) {
-    return json(req, { error: 'Unable to check rate limit.' }, 500);
+  try {
+    const rateLimit = await checkRateLimit(supabase, ipHash, sessionHash);
+    if (!rateLimit.ok) {
+      return json(
+        req,
+        {
+          error: 'Too many messages. Please try again later.',
+          retryAfterSeconds: rateLimit.retryAfterSeconds,
+        },
+        429,
+      );
+    }
+  } catch (error) {
+    console.error('Rate limit error', error);
+    return json(req, { error: 'Could not verify request.' }, 500);
   }
 
-  if (recentRows && recentRows.length > 0) {
-    return json(req, { error: 'Please wait a minute before leaving another note.' }, 429);
-  }
-
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-
-  const { count: sessionCount, error: sessionCountError } = await supabase
-    .from('treehole_messages')
-    .select('id', { count: 'exact', head: true })
-    .eq('session_hash', sessionHash)
-    .gte('created_at', today.toISOString());
-
-  if (sessionCountError) {
-    return json(req, { error: 'Unable to check daily limit.' }, 500);
-  }
-
-  if ((sessionCount || 0) >= dailySessionLimit) {
-    return json(req, { error: 'Daily note limit reached.' }, 429);
-  }
-
-  const { count: ipCount, error: ipCountError } = await supabase
+  const recentCutoff = new Date(Date.now() - 30_000).toISOString();
+  const { count: duplicateCount, error: duplicateError } = await supabase
     .from('treehole_messages')
     .select('id', { count: 'exact', head: true })
-    .eq('ip_hash', ipHash)
-    .gte('created_at', today.toISOString());
+    .eq('content_hash', await hash(`${salt}:content:${content}`))
+    .gte('created_at', recentCutoff);
 
-  if (ipCountError) {
-    return json(req, { error: 'Unable to check daily limit.' }, 500);
+  if (duplicateError) {
+    console.error('Duplicate check error', duplicateError);
+    return json(req, { error: 'Could not submit message.' }, 500);
   }
 
-  if ((ipCount || 0) >= dailyIpLimit) {
-    return json(req, { error: 'Daily note limit reached.' }, 429);
+  if ((duplicateCount || 0) > 0) {
+    return json(req, { error: 'Duplicate message.' }, 409);
   }
 
-  const defaultStatus = Deno.env.get('TREEHOLE_DEFAULT_STATUS') === 'hidden'
+  const acceptLanguage = (req.headers.get('accept-language') || '').slice(0, 240);
+  const referer = (req.headers.get('referer') || '').slice(0, 500);
+  const origin = (req.headers.get('origin') || '').slice(0, 240);
+  const cfCountry = (req.headers.get('cf-ipcountry') || '').slice(0, 12);
+  const metadata = {
+    client: clientMeta,
+    headers: {
+      host: req.headers.get('host') || '',
+      forwardedProto: req.headers.get('x-forwarded-proto') || '',
+    },
+  };
+  const defaultStatus = isSecret
     ? 'hidden'
-    : 'published';
+    : Deno.env.get('TREEHOLE_DEFAULT_STATUS') === 'hidden'
+      ? 'hidden'
+      : 'published';
 
   const { data, error } = await supabase
     .from('treehole_messages')
     .insert({
       nickname,
-      email: emailResult.email,
+      email: email || null,
       content,
-      status: defaultStatus,
+      content_hash: await hash(`${salt}:content:${content}`),
+      ip_hash: ipHash || null,
       session_hash: sessionHash,
-      ip_hash: ipHash,
-      user_agent_hash: userAgentHash,
-      client_ip: ip === 'unknown' ? null : ip,
-      user_agent: userAgent,
-      accept_language: acceptLanguage,
-      referer,
-      origin,
-      cf_country: cfCountry,
-      client_timezone: cleanString(clientMeta?.timezone, 100),
-      client_language: cleanString(clientMeta?.language, 80),
-      client_platform: cleanString(clientMeta?.platform, 120),
-      client_screen: stringifyMetadataPart(clientMeta?.screen, 600),
-      client_viewport: stringifyMetadataPart(clientMeta?.viewport, 600),
-      metadata: {
-        client: clientMeta || {},
-        request: {
-          ip,
-          user_agent: userAgent,
-          accept_language: acceptLanguage,
-          referer,
-          origin,
-          cf_country: cfCountry,
-          cf_ray: req.headers.get('cf-ray') || null,
-          x_forwarded_for: req.headers.get('x-forwarded-for') || null,
-          x_real_ip: req.headers.get('x-real-ip') || null,
-          host: req.headers.get('host') || null,
-        },
-      },
+      status: defaultStatus,
+      is_secret: isSecret,
+      passcode_hash: passcodeHash,
+      client_ip: ip || null,
+      user_agent: userAgent || null,
+      accept_language: acceptLanguage || null,
+      referer: referer || null,
+      origin: origin || null,
+      cf_country: cfCountry || null,
+      client_timezone: typeof clientMeta.timezone === 'string' ? clientMeta.timezone : null,
+      client_language: typeof clientMeta.language === 'string' ? clientMeta.language : null,
+      client_platform: typeof clientMeta.platform === 'string' ? clientMeta.platform : null,
+      client_screen: typeof clientMeta.screen === 'string' ? clientMeta.screen : null,
+      client_viewport: typeof clientMeta.viewport === 'string' ? clientMeta.viewport : null,
+      metadata,
     })
-    .select('id, nickname, content, created_at, status')
+    .select('id, nickname, content, created_at, status, is_secret')
     .single();
 
-  if (error || !data) {
-    return json(req, { error: 'Unable to save message.' }, 500);
+  if (error) {
+    console.error('Insert error', error);
+    return json(req, { error: 'Could not submit message.' }, 500);
   }
 
   return json(req, {
@@ -341,6 +391,7 @@ Deno.serve(async (req) => {
       content: data.content,
       created_at: data.created_at,
       status: data.status,
+      is_secret: data.is_secret,
     },
   });
 });

@@ -19,33 +19,33 @@ classes: wide
       class="treehole-lang-toggle"
       type="button"
       data-treehole-lang-toggle
-      aria-label="Switch to English"
+      aria-label="Switch language"
     >
-      EN
+      English
     </button>
   </header>
 
   <div class="treehole-grid">
     <form class="treehole-form" data-treehole-form>
       <div class="treehole-section-heading">
-        <span data-i18n="writeTitle">写一张纸条</span>
-        <small data-i18n="writeMeta">无需登录</small>
+        <strong data-i18n="formTitle">留下你的话</strong>
+        <small data-i18n="formLead">公开留言会出现在右侧。秘密留言只凭四位密码查看。</small>
       </div>
 
       <div class="treehole-field-row">
         <label class="treehole-field">
-          <span data-i18n="nameLabel">署名</span>
+          <span data-i18n="nameLabel">名字</span>
           <input
             data-treehole-nickname
             type="text"
-            maxlength="24"
+            maxlength="32"
             autocomplete="nickname"
-            placeholder="匿名"
+            placeholder="Anonymous"
           />
         </label>
 
         <label class="treehole-field">
-          <span data-i18n="emailLabel">邮箱（选填）</span>
+          <span data-i18n="emailLabel">邮箱（可选）</span>
           <input
             data-treehole-email
             type="email"
@@ -57,14 +57,39 @@ classes: wide
       </div>
 
       <label class="treehole-field treehole-field--message">
-        <span data-i18n="noteLabel">内容</span>
+        <span data-i18n="messageLabel">留言</span>
         <textarea
           data-treehole-content
           maxlength="800"
-          rows="8"
+          rows="9"
           required
-          placeholder="写给树洞，也写给未来某个会读到的人。"
+          placeholder="写在这里"
         ></textarea>
+      </label>
+
+      <div class="treehole-secret-options">
+        <label class="treehole-secret-check">
+          <input data-treehole-secret type="checkbox" />
+          <span data-i18n="secretLabel">秘密</span>
+        </label>
+
+        <label class="treehole-field treehole-passcode-field" data-treehole-passcode-field hidden>
+          <span data-i18n="passcodeLabel">四位数密码</span>
+          <input
+            data-treehole-passcode
+            type="text"
+            inputmode="numeric"
+            maxlength="4"
+            pattern="[0-9]{4}"
+            autocomplete="one-time-code"
+            placeholder="0000"
+          />
+        </label>
+      </div>
+
+      <label class="treehole-honeypot" aria-hidden="true">
+        <span>Website</span>
+        <input data-treehole-website type="text" tabindex="-1" autocomplete="off" />
       </label>
 
       <div class="treehole-form-footer">
@@ -75,20 +100,53 @@ classes: wide
       <p class="treehole-status" data-treehole-status aria-live="polite"></p>
     </form>
 
-    <section class="treehole-board" aria-label="树洞留言">
-      <div class="treehole-board-header">
-        <div>
-          <h2 data-i18n="boardTitle">最近的纸条</h2>
-          <p data-i18n="boardLead">风会慢慢把它们吹到这里。</p>
+    <div class="treehole-side">
+      <section class="treehole-board" aria-label="树洞留言">
+        <div class="treehole-board-header">
+          <div>
+            <h2 data-i18n="boardTitle">回声</h2>
+            <p data-i18n="boardLead">公开留言会在这里慢慢浮上来。</p>
+          </div>
+          <button class="treehole-refresh" type="button" data-treehole-refresh aria-label="刷新留言">
+            <span data-i18n="refresh">刷新</span>
+          </button>
         </div>
-        <button class="treehole-refresh" type="button" data-treehole-refresh aria-label="刷新留言">
-          <span data-i18n="refresh">刷新</span>
-        </button>
-      </div>
-      <div class="treehole-list" data-treehole-list>
-        <p class="treehole-empty">正在听...</p>
-      </div>
-    </section>
+
+        <div class="treehole-list" data-treehole-list>
+          <p class="treehole-empty" data-i18n="loading">正在听...</p>
+        </div>
+      </section>
+
+      <section class="treehole-secret-reader" aria-label="查看秘密回复">
+        <div class="treehole-board-header">
+          <div>
+            <h2 data-i18n="secretReaderTitle">查看秘密回复</h2>
+            <p data-i18n="secretReaderLead">输入四位数密码。</p>
+          </div>
+        </div>
+
+        <form class="treehole-secret-lookup-form" data-treehole-secret-lookup-form>
+          <label class="treehole-field">
+            <span data-i18n="secretLookupLabel">四位数密码</span>
+            <input
+              data-treehole-lookup-passcode
+              type="text"
+              inputmode="numeric"
+              maxlength="4"
+              pattern="[0-9]{4}"
+              autocomplete="one-time-code"
+              placeholder="0000"
+            />
+          </label>
+          <button class="treehole-refresh treehole-secret-lookup-submit" type="submit" data-treehole-secret-lookup-submit>
+            <span data-i18n="secretLookupSubmit">查看</span>
+          </button>
+        </form>
+
+        <p class="treehole-status treehole-secret-status" data-treehole-secret-status aria-live="polite"></p>
+        <div class="treehole-secret-results" data-treehole-secret-results></div>
+      </section>
+    </div>
   </div>
 </div>
 
