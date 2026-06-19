@@ -1,0 +1,76 @@
+---
+layout: single
+title: "TreeHole"
+permalink: /treehole/
+author_profile: false
+classes: wide
+---
+
+{% include base_path %}
+
+<div class="treehole-shell" data-treehole-root>
+  <header class="treehole-header">
+    <p class="treehole-kicker">TreeHole</p>
+    <h1>Leave a small note in the quiet.</h1>
+  </header>
+
+  <div class="treehole-grid">
+    <form class="treehole-form" data-treehole-form>
+      <div class="treehole-field-row">
+        <label class="treehole-field">
+          <span>Name</span>
+          <input
+            data-treehole-nickname
+            type="text"
+            maxlength="24"
+            autocomplete="nickname"
+            placeholder="Anonymous"
+          />
+        </label>
+
+        <label class="treehole-field">
+          <span>Mood</span>
+          <select data-treehole-mood>
+            <option value="whisper">Whisper</option>
+            <option value="spark">Spark</option>
+            <option value="rain">Rain</option>
+            <option value="memory">Memory</option>
+            <option value="question">Question</option>
+          </select>
+        </label>
+      </div>
+
+      <label class="treehole-field treehole-field--message">
+        <span>Note</span>
+        <textarea
+          data-treehole-content
+          maxlength="800"
+          rows="8"
+          required
+          placeholder="Put it here..."
+        ></textarea>
+      </label>
+
+      <div class="treehole-form-footer">
+        <span class="treehole-count" data-treehole-count>0 / 800</span>
+        <button class="treehole-submit" type="submit" data-treehole-submit>Post</button>
+      </div>
+
+      <p class="treehole-status" data-treehole-status aria-live="polite"></p>
+    </form>
+
+    <section class="treehole-board" aria-label="TreeHole notes">
+      <div class="treehole-board-header">
+        <h2>Recent Notes</h2>
+        <button class="treehole-refresh" type="button" data-treehole-refresh aria-label="Refresh notes">
+          Refresh
+        </button>
+      </div>
+      <div class="treehole-list" data-treehole-list>
+        <p class="treehole-empty">Loading...</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="{{ '/assets/js/treehole.js' | relative_url }}" defer></script>
