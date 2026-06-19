@@ -7,16 +7,13 @@
 {% endif %}
 
 <div class="list__item">
-  <dl class="pub" itemscope itemtype="http://schema.org/CreativeWork">
-    <dt>
-      {% if post.thumb %}
+  <article class="pub{% unless post.thumb %} pub--text-only{% endunless %}" itemscope itemtype="http://schema.org/CreativeWork">
+    {% if post.thumb %}
+      <div class="pub__media">
         <img src="{{ post.thumb }}" alt="{{ post.conference_label | default: post.venue }}" class="pub__thumb">
-      {% endif %}
-      {% if post.conference_label %}
-        <span class="conference-label">{{ post.conference_label }}</span>
-      {% endif %}
-    </dt>
-    <dd>
+      </div>
+    {% endif %}
+    <div class="pub__body">
       {% assign href = nil %}
       {% if post.projecturl %}
         {% assign href = post.projecturl %}
@@ -29,10 +26,14 @@
       {% else %}
         {% assign href = base_path | append: post.url %}
       {% endif %}
-      <a href="{{ href }}"{% if href contains 'http' %} target="_blank" rel="noopener"{% endif %}><strong>{{ title }}</strong></a>
-    </dd>
+      {% if post.conference_label %}
+        <span class="conference-label">{{ post.conference_label }}</span>
+      {% endif %}
+      <h3 class="pub__title">
+        <a href="{{ href }}"{% if href contains 'http' %} target="_blank" rel="noopener"{% endif %}><strong>{{ title }}</strong></a>
+      </h3>
     {% if post.authors %}
-      <dd class="pub__authors">
+      <p class="pub__authors">
         {% for a in post.authors %}
           {% assign name = a %}
           {% if name == 'Peilin Cai' %}
@@ -41,14 +42,14 @@
             {{ name }}{% unless forloop.last %}, {% endunless %}
           {% endif %}
         {% endfor %}
-      </dd>
+      </p>
     {% endif %}
-    <dd class="pub__venue">
+    <p class="pub__venue">
       {% if post.presentation_note %}<strong class="co-first"><i>{{ post.presentation_note }}</i></strong> {% endif %}
       {% if post.venue %}in {{ post.venue }}{% endif %}{% if post.date %}, {{ post.date | date: "%Y" }}{% endif %}
-    </dd>
+    </p>
     {% if post.projecturl or post.paperurl or post.arxiv or post.codeurl or post.dataurl %}
-      <dd class="pub__links">
+      <nav class="pub__links" aria-label="Publication links">
         {% if post.projecturl %}
           <a href="{{ post.projecturl }}" target="_blank" rel="noopener">Project</a>
         {% endif %}
@@ -64,9 +65,8 @@
         {% if post.dataurl %}
           <a href="{{ post.dataurl }}" target="_blank" rel="noopener">Data</a>
         {% endif %}
-      </dd>
+      </nav>
     {% endif %}
-  </dl>
+    </div>
+  </article>
 </div>
-
-

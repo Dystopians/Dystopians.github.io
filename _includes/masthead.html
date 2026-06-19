@@ -6,7 +6,12 @@
       <nav id="site-nav" class="greedy-nav">
         <button class="hidden" aria-label="Open navigation menu"><div class="navicon"></div></button>
         <ul class="visible-links">
-          <li class="masthead__menu-item masthead__menu-item--lg persist"><a href="{{ base_path }}/">{{ site.title }}</a></li>
+          <li class="masthead__menu-item masthead__menu-item--lg persist">
+            <a class="site-brand" href="{{ base_path }}/">
+              <img class="site-brand__mark" src="{{ '/images/logo-peilin.svg' | relative_url }}" alt="" aria-hidden="true" />
+              <span class="site-brand__name">{{ site.title }}</span>
+            </a>
+          </li>
           {% for link in site.data.navigation.main %}
             {% if link.children %}
               <li class="masthead__menu-item masthead__menu-item--dropdown">

@@ -134,6 +134,10 @@
 }
 
 .pub {
+  display: grid;
+  grid-template-columns: minmax(170px, 200px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
   margin: 1rem 0;
   padding: 1.15rem 1.15rem 1rem;
   border: 1px solid var(--global-border-color);
@@ -149,38 +153,65 @@
   }
 }
 
-.pub dt {
-  margin-bottom: .35rem;
+.pub--text-only {
+  grid-template-columns: 1fr;
 }
 
-.pub dd {
-  margin-left: 220px;
+.pub__media,
+.pub__body {
+  min-width: 0;
+}
+
+.pub__title {
+  margin: 0;
+  border-bottom: 0;
+  font-family: $sans-serif-narrow;
+  font-size: $type-size-4;
+  line-height: 1.28;
+}
+
+.pub__title a,
+.pub__title strong,
+.pub__authors,
+.pub__venue {
+  overflow-wrap: anywhere;
 }
 
 .pub__thumb {
-  float: left;
-  width: 200px;
+  display: block;
+  width: 100%;
   height: auto;
-  margin-right: 16px;
+  margin: 0;
   border-radius: 14px;
   box-shadow: 0 16px 28px -24px rgba(15, 23, 42, 0.35);
 }
 
 .conference-label {
   display: inline-block;
-  margin-bottom: .5rem;
+  max-width: 100%;
+  margin-bottom: 0.55rem;
   padding: .2rem .6rem;
   border-radius: 999px;
   font-size: $type-size-7;
   font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
   background: rgba(31, 111, 130, 0.1);
   color: var(--global-link-color);
 }
 
+.pub__authors {
+  margin: 0.48rem 0 0;
+  color: var(--global-text-color);
+  font-size: $type-size-6;
+  line-height: 1.52;
+}
+
 .pub__venue {
-  margin-top: .35rem;
+  margin: 0.42rem 0 0;
   color: var(--global-text-color-light);
   font-size: $type-size-6;
+  line-height: 1.45;
 }
 
 .pub__links {
@@ -216,6 +247,79 @@
   margin-top: 1.15rem;
   padding-top: 1rem;
   border-top: none;
+}
+
+@include breakpoint(max-width $small) {
+  .pub {
+    grid-template-columns: 5.9rem minmax(0, 1fr);
+    gap: 0.72rem;
+    margin: 0.85rem 0;
+    padding: 0.78rem;
+    border-radius: 14px;
+  }
+
+  .pub--text-only {
+    display: block;
+  }
+
+  .pub__thumb {
+    border-radius: 10px;
+    box-shadow: 0 14px 24px -22px rgba(15, 23, 42, 0.42);
+  }
+
+  .conference-label {
+    margin-bottom: 0.38rem;
+    padding: 0.18rem 0.5rem;
+    border-radius: 8px;
+    font-size: 0.64rem;
+    line-height: 1.25;
+  }
+
+  .pub__title {
+    font-size: 0.95rem;
+    line-height: 1.34;
+  }
+
+  .pub__authors {
+    margin-top: 0.34rem;
+    font-size: 0.78rem;
+    line-height: 1.46;
+  }
+
+  .pub__venue {
+    margin-top: 0.28rem;
+    font-size: 0.72rem;
+    line-height: 1.42;
+  }
+
+  .pub__links {
+    gap: 0.32rem;
+    margin-top: 0.58rem;
+
+    a {
+      min-height: 1.68rem;
+      padding: 0.22rem 0.5rem;
+      font-size: 0.66rem;
+    }
+  }
+}
+
+@media (max-width: 360px) {
+  .pub {
+    grid-template-columns: 4.85rem minmax(0, 1fr);
+    gap: 0.55rem;
+    padding: 0.7rem;
+  }
+
+  .pub__links {
+    gap: 0.22rem;
+
+    a {
+      padding-left: 0.36rem;
+      padding-right: 0.36rem;
+      font-size: 0.62rem;
+    }
+  }
 }
 
 html[data-theme="dark"] .pub {
