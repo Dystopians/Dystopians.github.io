@@ -29,11 +29,15 @@ main:
   - title: "CV"
     url: /#cv
 
-  - title: "Fish 🐟"
-    url: /byte-fisher/build/
+  - title: "Game"
+    children:
+      - title: "Fish"
+        url: /byte-fisher/build/
+      - title: "Covid"
+        url: /covid/
 
-  - title: "Covid"
-    url: /covid/
+  - title: "Empty Chair"
+    url: /EmptyChair/
     
   # - title: "CV"
   #   url: /cv-json/

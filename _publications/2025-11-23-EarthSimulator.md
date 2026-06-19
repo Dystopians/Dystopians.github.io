@@ -6,8 +6,7 @@ permalink: /publication/2025-11-05-earth-simulator
 excerpt: 'The Earth Simulator is a generative street-view world model that combines a 3D Gaussian spatial memory with camera-controlled video generation to synthesize long-horizon exploration videos from sparse pose-free images.'
 date: 2025-11-05
 venue: 'Submission'
-paperurl: '/files/earth-simulator-cvpr26.pdf'
-graphpdf: '/files/earth-simulator-graph.pdf'
+graphpdf: '/files/thumbs/fig-overview-v2.pdf'
 arxiv: ''
 conference_label: 'In Submission'
 thumb: '/files/thumbs/png/fig-overview-v2_p1.png'

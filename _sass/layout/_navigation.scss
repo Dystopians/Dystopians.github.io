@@ -258,6 +258,13 @@
     }
   }
 
+  .visible-links .masthead__submenu-menu li,
+  .visible-links .masthead__submenu-menu li:first-child {
+    display: block;
+    margin-right: 0;
+    font-weight: inherit;
+  }
+
   .hidden-links {
     position: absolute;
     top: 100%;
