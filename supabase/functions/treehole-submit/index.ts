@@ -2,9 +2,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 type MessageBody = {
   nickname?: unknown;
+  email?: unknown;
   content?: unknown;
-  mood?: unknown;
   sessionId?: unknown;
+  clientMeta?: unknown;
   turnstileToken?: unknown;
 };
 
@@ -16,10 +17,10 @@ const allowedOrigins = new Set([
   'https://dystopians.github.io',
 ]);
 
-const allowedMoods = new Set(['whisper', 'spark', 'rain', 'memory', 'question']);
 const contentMinLength = 2;
 const contentMaxLength = 800;
 const nicknameMaxLength = 24;
+const emailMaxLength = 254;
 const cooldownMs = 60_000;
 const dailySessionLimit = 12;
 const dailyIpLimit = 40;
@@ -90,9 +91,52 @@ const cleanContent = (value: unknown) => {
     .slice(0, contentMaxLength);
 };
 
-const cleanMood = (value: unknown) => {
-  const mood = typeof value === 'string' ? value : 'whisper';
-  return allowedMoods.has(mood) ? mood : 'whisper';
+const cleanEmail = (value: unknown) => {
+  const raw = typeof value === 'string' ? value : '';
+  const email = raw.normalize('NFKC').trim().toLowerCase().slice(0, emailMaxLength);
+  if (!email) return { email: null, valid: true };
+  return {
+    email,
+    valid: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
+  };
+};
+
+const cleanString = (value: unknown, maxLength = 500) => {
+  if (typeof value !== 'string') return null;
+  const text = value.normalize('NFKC').replace(/\u0000/g, '').trim();
+  return text ? text.slice(0, maxLength) : null;
+};
+
+const cleanNumber = (value: unknown) => {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+};
+
+const pruneMetadata = (value: unknown, depth = 0): unknown => {
+  if (depth > 4) return null;
+  if (value === null) return null;
+  if (typeof value === 'string') return cleanString(value, 800);
+  if (typeof value === 'number') return cleanNumber(value);
+  if (typeof value === 'boolean') return value;
+  if (Array.isArray(value)) {
+    return value.slice(0, 24).map((item) => pruneMetadata(item, depth + 1));
+  }
+  if (typeof value === 'object') {
+    const output: Record<string, unknown> = {};
+    for (const [key, item] of Object.entries(value).slice(0, 80)) {
+      output[key.slice(0, 80)] = pruneMetadata(item, depth + 1);
+    }
+    return output;
+  }
+  return null;
+};
+
+const stringifyMetadataPart = (value: unknown, maxLength = 1000) => {
+  if (value === null || value === undefined) return null;
+  try {
+    return JSON.stringify(value).slice(0, maxLength);
+  } catch {
+    return null;
+  }
 };
 
 const getClientIp = (req: Request) => {
@@ -155,12 +199,16 @@ Deno.serve(async (req) => {
   }
 
   const nickname = cleanNickname(body.nickname);
+  const emailResult = cleanEmail(body.email);
   const content = cleanContent(body.content);
-  const mood = cleanMood(body.mood);
   const sessionId = typeof body.sessionId === 'string' ? body.sessionId.trim() : '';
 
   if (sessionId.length < 8 || sessionId.length > 128) {
     return json(req, { error: 'Invalid session.' }, 400);
+  }
+
+  if (!emailResult.valid) {
+    return json(req, { error: 'Invalid email.' }, 400);
   }
 
   if (content.length < contentMinLength) {
@@ -175,6 +223,11 @@ Deno.serve(async (req) => {
   const salt = Deno.env.get('TREEHOLE_HASH_SALT') || supabaseUrl;
   const ip = getClientIp(req);
   const userAgent = req.headers.get('user-agent') || 'unknown';
+  const acceptLanguage = req.headers.get('accept-language') || null;
+  const referer = req.headers.get('referer') || null;
+  const origin = req.headers.get('origin') || null;
+  const cfCountry = req.headers.get('cf-ipcountry') || null;
+  const clientMeta = pruneMetadata(body.clientMeta) as Record<string, unknown> | null;
   const sessionHash = await hash(`${salt}:session:${sessionId}`);
   const ipHash = await hash(`${salt}:ip:${ip}`);
   const userAgentHash = await hash(`${salt}:ua:${userAgent}`);
@@ -241,17 +294,40 @@ Deno.serve(async (req) => {
     .from('treehole_messages')
     .insert({
       nickname,
+      email: emailResult.email,
       content,
-      mood,
       status: defaultStatus,
       session_hash: sessionHash,
       ip_hash: ipHash,
       user_agent_hash: userAgentHash,
+      client_ip: ip === 'unknown' ? null : ip,
+      user_agent: userAgent,
+      accept_language: acceptLanguage,
+      referer,
+      origin,
+      cf_country: cfCountry,
+      client_timezone: cleanString(clientMeta?.timezone, 100),
+      client_language: cleanString(clientMeta?.language, 80),
+      client_platform: cleanString(clientMeta?.platform, 120),
+      client_screen: stringifyMetadataPart(clientMeta?.screen, 600),
+      client_viewport: stringifyMetadataPart(clientMeta?.viewport, 600),
       metadata: {
-        referrer: req.headers.get('referer') || null,
+        client: clientMeta || {},
+        request: {
+          ip,
+          user_agent: userAgent,
+          accept_language: acceptLanguage,
+          referer,
+          origin,
+          cf_country: cfCountry,
+          cf_ray: req.headers.get('cf-ray') || null,
+          x_forwarded_for: req.headers.get('x-forwarded-for') || null,
+          x_real_ip: req.headers.get('x-real-ip') || null,
+          host: req.headers.get('host') || null,
+        },
       },
     })
-    .select('id, nickname, content, mood, created_at, status')
+    .select('id, nickname, content, created_at, status')
     .single();
 
   if (error || !data) {
@@ -263,7 +339,6 @@ Deno.serve(async (req) => {
       id: data.id,
       nickname: data.nickname,
       content: data.content,
-      mood: data.mood,
       created_at: data.created_at,
       status: data.status,
     },

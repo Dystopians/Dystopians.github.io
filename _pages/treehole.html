@@ -1,6 +1,6 @@
 ---
 layout: single
-title: "TreeHole"
+title: "何人斯"
 permalink: /treehole/
 author_profile: false
 classes: wide
@@ -8,66 +8,85 @@ classes: wide
 
 {% include base_path %}
 
-<div class="treehole-shell" data-treehole-root>
-  <header class="treehole-header">
-    <p class="treehole-kicker">TreeHole</p>
-    <h1>Leave a small note in the quiet.</h1>
+<div class="treehole-shell" data-treehole-root data-treehole-lang="zh">
+  <header class="treehole-hero">
+    <div class="treehole-hero__copy">
+      <p class="treehole-kicker" data-i18n="kicker">何人斯</p>
+      <h1 data-i18n="heroTitle">究竟是什么人？在外面的声音</h1>
+      <p class="treehole-lead" data-i18n="heroLead">只可能在外面。你的心地幽深莫测</p>
+    </div>
+    <button
+      class="treehole-lang-toggle"
+      type="button"
+      data-treehole-lang-toggle
+      aria-label="Switch to English"
+    >
+      EN
+    </button>
   </header>
 
   <div class="treehole-grid">
     <form class="treehole-form" data-treehole-form>
+      <div class="treehole-section-heading">
+        <span data-i18n="writeTitle">写一张纸条</span>
+        <small data-i18n="writeMeta">无需登录</small>
+      </div>
+
       <div class="treehole-field-row">
         <label class="treehole-field">
-          <span>Name</span>
+          <span data-i18n="nameLabel">署名</span>
           <input
             data-treehole-nickname
             type="text"
             maxlength="24"
             autocomplete="nickname"
-            placeholder="Anonymous"
+            placeholder="匿名"
           />
         </label>
 
         <label class="treehole-field">
-          <span>Mood</span>
-          <select data-treehole-mood>
-            <option value="whisper">Whisper</option>
-            <option value="spark">Spark</option>
-            <option value="rain">Rain</option>
-            <option value="memory">Memory</option>
-            <option value="question">Question</option>
-          </select>
+          <span data-i18n="emailLabel">邮箱（选填）</span>
+          <input
+            data-treehole-email
+            type="email"
+            maxlength="254"
+            autocomplete="email"
+            placeholder="you@example.com"
+          />
         </label>
       </div>
 
       <label class="treehole-field treehole-field--message">
-        <span>Note</span>
+        <span data-i18n="noteLabel">内容</span>
         <textarea
           data-treehole-content
           maxlength="800"
           rows="8"
           required
-          placeholder="Put it here..."
+          placeholder="写给树洞，也写给未来某个会读到的人。"
         ></textarea>
       </label>
 
       <div class="treehole-form-footer">
         <span class="treehole-count" data-treehole-count>0 / 800</span>
-        <button class="treehole-submit" type="submit" data-treehole-submit>Post</button>
+        <button class="treehole-submit" type="submit" data-treehole-submit>投递</button>
       </div>
 
       <p class="treehole-status" data-treehole-status aria-live="polite"></p>
     </form>
 
-    <section class="treehole-board" aria-label="TreeHole notes">
+    <section class="treehole-board" aria-label="树洞留言">
       <div class="treehole-board-header">
-        <h2>Recent Notes</h2>
-        <button class="treehole-refresh" type="button" data-treehole-refresh aria-label="Refresh notes">
-          Refresh
+        <div>
+          <h2 data-i18n="boardTitle">最近的纸条</h2>
+          <p data-i18n="boardLead">风会慢慢把它们吹到这里。</p>
+        </div>
+        <button class="treehole-refresh" type="button" data-treehole-refresh aria-label="刷新留言">
+          <span data-i18n="refresh">刷新</span>
         </button>
       </div>
       <div class="treehole-list" data-treehole-list>
-        <p class="treehole-empty">Loading...</p>
+        <p class="treehole-empty">正在听...</p>
       </div>
     </section>
   </div>
