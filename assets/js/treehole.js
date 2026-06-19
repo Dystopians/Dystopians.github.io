@@ -261,6 +261,10 @@
 
   function resizeContentInput() {
     if (!contentInput) return;
+    if (!contentInput.value) {
+      contentInput.style.height = '';
+      return;
+    }
     contentInput.style.height = 'auto';
     contentInput.style.height = String(contentInput.scrollHeight) + 'px';
   }
@@ -273,6 +277,12 @@
     if (!enabled) {
       passcodeInput.value = '';
     }
+  }
+
+  function resetSecretDefault() {
+    if (!secretCheckbox || !passcodeInput) return;
+    secretCheckbox.checked = false;
+    passcodeInput.value = '';
   }
 
   function authHeaders() {
@@ -568,6 +578,7 @@
   }
 
   if (secretCheckbox) {
+    resetSecretDefault();
     secretCheckbox.addEventListener('change', toggleSecret);
     toggleSecret();
   }

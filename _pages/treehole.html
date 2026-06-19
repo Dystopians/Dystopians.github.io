@@ -26,7 +26,7 @@ classes: wide
   </header>
 
   <div class="treehole-grid">
-    <form class="treehole-form" data-treehole-form>
+    <form class="treehole-form" data-treehole-form autocomplete="off">
       <div class="treehole-section-heading">
         <strong data-i18n="formTitle">留下你的话</strong>
         <small data-i18n="formLead">公开留言会在审核后出现在右侧。秘密留言只凭四位密码查看。</small>
@@ -61,7 +61,7 @@ classes: wide
         <textarea
           data-treehole-content
           maxlength="100"
-          rows="4"
+          rows="2"
           required
           placeholder="写在这里"
         ></textarea>
@@ -69,7 +69,7 @@ classes: wide
 
       <div class="treehole-secret-options">
         <label class="treehole-secret-check">
-          <input data-treehole-secret type="checkbox" />
+          <input data-treehole-secret type="checkbox" autocomplete="off" />
           <span data-i18n="secretLabel">秘密</span>
         </label>
 
