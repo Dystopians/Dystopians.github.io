@@ -18,7 +18,9 @@
     </dt>
     <dd>
       {% assign href = nil %}
-      {% if post.arxiv %}
+      {% if post.projecturl %}
+        {% assign href = post.projecturl %}
+      {% elsif post.arxiv %}
         {% assign href = post.arxiv %}
       {% elsif post.link %}
         {% assign href = post.link %}
@@ -45,6 +47,25 @@
       {% if post.presentation_note %}<strong class="co-first"><i>{{ post.presentation_note }}</i></strong> {% endif %}
       {% if post.venue %}in {{ post.venue }}{% endif %}{% if post.date %}, {{ post.date | date: "%Y" }}{% endif %}
     </dd>
+    {% if post.projecturl or post.paperurl or post.arxiv or post.codeurl or post.dataurl %}
+      <dd class="pub__links">
+        {% if post.projecturl %}
+          <a href="{{ post.projecturl }}" target="_blank" rel="noopener">Project</a>
+        {% endif %}
+        {% if post.paperurl %}
+          <a href="{{ post.paperurl }}"{% if post.paperurl contains 'http' %} target="_blank" rel="noopener"{% endif %}>Paper</a>
+        {% endif %}
+        {% if post.arxiv %}
+          <a href="{{ post.arxiv }}" target="_blank" rel="noopener">arXiv</a>
+        {% endif %}
+        {% if post.codeurl %}
+          <a href="{{ post.codeurl }}" target="_blank" rel="noopener">Code</a>
+        {% endif %}
+        {% if post.dataurl %}
+          <a href="{{ post.dataurl }}" target="_blank" rel="noopener">Data</a>
+        {% endif %}
+      </dd>
+    {% endif %}
   </dl>
 </div>
 
