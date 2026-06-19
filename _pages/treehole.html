@@ -29,7 +29,7 @@ classes: wide
     <form class="treehole-form" data-treehole-form>
       <div class="treehole-section-heading">
         <strong data-i18n="formTitle">留下你的话</strong>
-        <small data-i18n="formLead">公开留言会出现在右侧。秘密留言只凭四位密码查看。</small>
+        <small data-i18n="formLead">公开留言会在审核后出现在右侧。秘密留言只凭四位密码查看。</small>
       </div>
 
       <div class="treehole-field-row">
@@ -60,8 +60,8 @@ classes: wide
         <span data-i18n="messageLabel">留言</span>
         <textarea
           data-treehole-content
-          maxlength="800"
-          rows="9"
+          maxlength="100"
+          rows="4"
           required
           placeholder="写在这里"
         ></textarea>
@@ -93,7 +93,7 @@ classes: wide
       </label>
 
       <div class="treehole-form-footer">
-        <span class="treehole-count" data-treehole-count>0 / 800</span>
+        <span class="treehole-count" data-treehole-count>0 / 100</span>
         <button class="treehole-submit" type="submit" data-treehole-submit>投递</button>
       </div>
 
@@ -105,7 +105,7 @@ classes: wide
         <div class="treehole-board-header">
           <div>
             <h2 data-i18n="boardTitle">回声</h2>
-            <p data-i18n="boardLead">公开留言会在这里慢慢浮上来。</p>
+            <p data-i18n="boardLead">审核后的公开留言会在这里慢慢浮上来。</p>
           </div>
           <button class="treehole-refresh" type="button" data-treehole-refresh aria-label="刷新留言">
             <span data-i18n="refresh">刷新</span>

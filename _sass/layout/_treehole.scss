@@ -179,9 +179,10 @@ body:has(.treehole-shell) .page__content {
 }
 
 .treehole-field textarea {
-  min-height: 15.5rem;
+  min-height: 6.5rem;
   padding: 0.8rem 0.85rem;
-  resize: vertical;
+  overflow: hidden;
+  resize: none;
   font-family: "Noto Serif SC", "Songti SC", "Noto Sans SC", serif;
   line-height: 1.85;
 }

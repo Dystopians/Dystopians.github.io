@@ -9,7 +9,7 @@
     secretLookupFunction: 'treehole-secret-lookup'
   };
 
-  var maxContentLength = 800;
+  var maxContentLength = 100;
 
   var copy = {
     zh: {
@@ -17,7 +17,7 @@
       heroTitle: '究竟是什么人？在外面的声音',
       heroLead: '只可能在外面。你的心地幽深莫测',
       formTitle: '留下你的话',
-      formLead: '公开留言会出现在右侧。秘密留言只凭四位密码查看。',
+      formLead: '公开留言会在审核后出现在右侧。秘密留言只凭四位密码查看。',
       nameLabel: '名字',
       emailLabel: '邮箱（可选）',
       messageLabel: '留言',
@@ -25,7 +25,7 @@
       passcodeLabel: '四位数密码',
       passcodeHint: '请留下四位数密码。',
       boardTitle: '回声',
-      boardLead: '公开留言会在这里慢慢浮上来。',
+      boardLead: '审核后的公开留言会在这里慢慢浮上来。',
       refresh: '刷新',
       loading: '正在听...',
       empty: '还没有公开留言。',
@@ -33,8 +33,8 @@
       submitting: '投递中...',
       posted: '已投递。',
       secretPosted: '已投递。请记住四位数密码。',
-      hiddenPosted: '已投递，正在等待公开。',
-      invalidContent: '留言需要 2 到 800 个字。',
+      hiddenPosted: '已投递，审核后公开。',
+      invalidContent: '留言需要 2 到 100 个字。',
       invalidEmail: '邮箱格式不太对。',
       invalidPasscode: '请输入四位数字。',
       submitError: '暂时投递不了。',
@@ -63,7 +63,7 @@
       heroTitle: 'Who is there? The outside voice',
       heroLead: 'can only remain outside. Your inner ground is deep and unknowable.',
       formTitle: 'Leave a note',
-      formLead: 'Public notes appear on the right. Secret notes can be opened only with a four-digit code.',
+      formLead: 'Public notes appear on the right after review. Secret notes can be opened only with a four-digit code.',
       nameLabel: 'Name',
       emailLabel: 'Email (optional)',
       messageLabel: 'Message',
@@ -71,7 +71,7 @@
       passcodeLabel: 'Four-digit code',
       passcodeHint: 'Leave a four-digit code.',
       boardTitle: 'Echoes',
-      boardLead: 'Public notes will surface here.',
+      boardLead: 'Reviewed public notes will surface here.',
       refresh: 'Refresh',
       loading: 'Listening...',
       empty: 'No public notes yet.',
@@ -79,8 +79,8 @@
       submitting: 'Sending...',
       posted: 'Sent.',
       secretPosted: 'Sent. Remember the four-digit code.',
-      hiddenPosted: 'Sent and waiting to be published.',
-      invalidContent: 'Message must be 2 to 800 characters.',
+      hiddenPosted: 'Sent and waiting for review.',
+      invalidContent: 'Message must be 2 to 100 characters.',
       invalidEmail: 'Email format looks wrong.',
       invalidPasscode: 'Enter four digits.',
       submitError: 'Could not send right now.',
@@ -256,6 +256,13 @@
   function updateCount() {
     if (!countLabel || !contentInput) return;
     countLabel.textContent = String(contentInput.value.length) + ' / ' + String(maxContentLength);
+    resizeContentInput();
+  }
+
+  function resizeContentInput() {
+    if (!contentInput) return;
+    contentInput.style.height = 'auto';
+    contentInput.style.height = String(contentInput.scrollHeight) + 'px';
   }
 
   function toggleSecret() {

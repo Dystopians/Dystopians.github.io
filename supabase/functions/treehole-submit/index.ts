@@ -25,7 +25,7 @@ const corsHeaders = {
 
 const maxNicknameLength = 32;
 const maxEmailLength = 254;
-const maxContentLength = 800;
+const maxContentLength = 100;
 const passcodeLength = 4;
 const rateLimitWindowMs = 60 * 60 * 1000;
 const maxMessagesPerWindow = 8;
@@ -281,7 +281,7 @@ Deno.serve(async (req) => {
   }
 
   if (content.length < 2 || content.length > maxContentLength) {
-    return json(req, { error: 'Message must be between 2 and 800 characters.' }, 400);
+    return json(req, { error: 'Message must be between 2 and 100 characters.' }, 400);
   }
 
   if (isSecret && !passcodeResult.valid) {
