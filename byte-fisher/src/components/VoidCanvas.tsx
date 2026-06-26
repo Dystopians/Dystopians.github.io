@@ -227,6 +227,30 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
       return true;
     };
 
+    const drawGeneratedArtAnchored = (
+      assetId: string,
+      anchorX: number,
+      anchorY: number,
+      width: number,
+      height: number,
+      anchorNormX: number,
+      anchorNormY: number,
+      alpha = 1,
+      rotation = 0
+    ) => {
+      const image = artImagesRef.current[assetId];
+      if (!image?.complete || image.naturalWidth === 0) return false;
+
+      ctx.save();
+      ctx.translate(anchorX, anchorY);
+      ctx.rotate(rotation);
+      ctx.globalAlpha = alpha;
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(image, -anchorNormX * width, -anchorNormY * height, width, height);
+      ctx.restore();
+      return true;
+    };
+
     const drawCharacter = (t: number) => {
       const s = scalePx(4); // pixel scale
 
@@ -275,14 +299,21 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
       ctx.fillRect(x - shadowSize/2, dockY, shadowSize, scalePx(5)); 
 
       {
-      drawGeneratedArt(
-        `equipment_barSize_${Math.min(Math.max(backpackLvl, 1), 5)}`,
-        x - scalePx(35),
-        y + scalePx(70),
-        scalePx(50),
-        scalePx(50),
-        0.95
-      );
+      const normalizedBackpackLvl = Math.min(Math.max(backpackLvl, 1), 5);
+      const normalizedBootsLvl = Math.min(Math.max(bootsLvl, 1), 5);
+      const normalizedHeadLvl = Math.min(Math.max(headLvl, 1), 5);
+      const normalizedRodLvl = Math.min(Math.max(rodLvl, 1), 5);
+
+      if (normalizedBackpackLvl > 1) {
+        drawGeneratedArt(
+          `equipment_barSize_${normalizedBackpackLvl}`,
+          x - scalePx(42),
+          y + scalePx(72),
+          scalePx(36),
+          scalePx(36),
+          0.86
+        );
+      }
 
       const characterDrawn = drawGeneratedArt('fisher', x - scalePx(4), y + scalePx(58), scalePx(92), scalePx(116), 1);
       if (!characterDrawn) {
@@ -292,49 +323,55 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
         ctx.fillRect(x - scalePx(24), y + scalePx(6), scalePx(48), scalePx(12));
       }
 
-      drawGeneratedArt(
-        `equipment_stability_${Math.min(Math.max(bootsLvl, 1), 5)}`,
-        x + scalePx(2),
-        y + scalePx(112),
-        scalePx(62),
-        scalePx(44),
-        0.98
-      );
-      drawGeneratedArt(
-        `equipment_luck_${Math.min(Math.max(headLvl, 1), 5)}`,
-        x - scalePx(4),
-        y + scalePx(22),
-        scalePx(60),
-        scalePx(46),
-        0.98
-      );
+      if (normalizedBootsLvl > 1) {
+        drawGeneratedArt(
+          `equipment_stability_${normalizedBootsLvl}`,
+          x + scalePx(2),
+          y + scalePx(113),
+          scalePx(42),
+          scalePx(28),
+          0.88
+        );
+      }
+      if (normalizedHeadLvl > 1) {
+        drawGeneratedArt(
+          `equipment_luck_${normalizedHeadLvl}`,
+          x - scalePx(4),
+          y + scalePx(21),
+          scalePx(42),
+          scalePx(30),
+          0.9
+        );
+      }
 
-      const shoulderX = x + scalePx(35);
-      const shoulderY = y + scalePx(48);
-      const rodLen = scalePx(112);
-      const tipX = shoulderX + Math.cos(armAngle) * rodLen;
-      const tipY = shoulderY + Math.sin(armAngle) * rodLen;
-      const sourceRodAngle = -Math.PI / 4;
-      const rodDrawn = drawGeneratedArt(
-        `equipment_netStrength_${Math.min(Math.max(rodLvl, 1), 5)}`,
-        shoulderX + Math.cos(armAngle) * rodLen * 0.42,
-        shoulderY + Math.sin(armAngle) * rodLen * 0.42,
-        scalePx(132),
-        scalePx(88),
+      const handX = x + scalePx(25);
+      const handY = y + scalePx(55);
+      const rodLen = scalePx(106);
+      const tipX = handX + Math.cos(armAngle) * rodLen;
+      const tipY = handY + Math.sin(armAngle) * rodLen;
+      const sourceRodAngle = -0.82;
+      const rodDrawn = drawGeneratedArtAnchored(
+        `equipment_netStrength_${normalizedRodLvl}`,
+        handX,
+        handY,
+        scalePx(116),
+        scalePx(77),
+        0.24,
+        0.9,
         1,
         armAngle - sourceRodAngle
       );
       if (!rodDrawn) {
         const rodColors = ['#00f3ff', '#39ff14', '#fdfd00', '#ff00ff', '#ffffff'];
-        ctx.strokeStyle = rodColors[Math.min(rodLvl, 5) - 1];
+        ctx.strokeStyle = rodColors[normalizedRodLvl - 1];
         ctx.lineWidth = scalePx(3);
         ctx.beginPath();
-        ctx.moveTo(shoulderX, shoulderY);
+        ctx.moveTo(handX, handY);
         ctx.lineTo(tipX, tipY);
         ctx.stroke();
         ctx.fillStyle = '#05070d';
-        const reelX = shoulderX + Math.cos(armAngle) * scalePx(15);
-        const reelY = shoulderY + Math.sin(armAngle) * scalePx(15);
+        const reelX = handX + Math.cos(armAngle) * scalePx(15);
+        const reelY = handY + Math.sin(armAngle) * scalePx(15);
         ctx.beginPath();
         ctx.arc(reelX, reelY, scalePx(5), 0, Math.PI * 2);
         ctx.fill();
