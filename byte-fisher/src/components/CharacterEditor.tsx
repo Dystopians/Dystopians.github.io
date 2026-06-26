@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { TEXT } from '../locales';
 import PixelEditor from './PixelEditor';
-import { createDefaultSkeleton, CharacterSkeleton } from '../utils/characterParts';
+import { createDefaultSkeleton } from '../utils/characterParts';
 import { CharacterRenderer } from '../utils/characterRenderer';
 
 interface CharacterEditorProps {
@@ -31,7 +30,7 @@ const EDITABLE_PARTS: PartDefinition[] = [
   { id: 'headgear_lv2', name: 'VR Goggles (Lv2)', width: 28, height: 8, category: 'headgear' },
   { id: 'headgear_lv3', name: 'Golden Visor (Lv3)', width: 28, height: 8, category: 'headgear' },
   { id: 'headgear_lv4', name: 'Cyber Glasses (Lv4)', width: 28, height: 8, category: 'headgear' },
-  { id: 'headgear_lv5', name: 'Halo (Lv5)', width: 48, height: 32, category: 'headgear' },
+  { id: 'headgear_lv5', name: 'Holo Halo (Lv5)', width: 48, height: 32, category: 'headgear' },
 
   // 靴子
   { id: 'boots_lv1', name: 'Basic Shoes (Lv1)', width: 32, height: 8, category: 'boots' },
@@ -54,8 +53,6 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({ onClose, lang, embedd
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'base' | 'headgear' | 'boots' | 'backpack' | 'rod'>('all');
 
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
-  const t = TEXT[lang];
-
   useEffect(() => {
     updatePreview();
   }, [partImages]);
@@ -82,6 +79,17 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({ onClose, lang, embedd
     // 创建骨架
     const skeleton = createDefaultSkeleton(canvas.width / 2, 150, 1);
     const renderer = new CharacterRenderer(ctx, skeleton);
+    renderer.render({
+      bootsLevel: 1,
+      headLevel: 1,
+      backpackLevel: 1,
+      rodLevel: 1,
+      time: performance.now() / 1000,
+      armAngle: -0.55,
+      floatOffset: 0,
+      colorTheme: 'default',
+      glowIntensities: { boots: 0.1, head: 0.1, backpack: 0, rod: 0.1 },
+    });
 
     // 应用自定义图像（简化版本，只显示当前编辑的部件）
     // 这里可以扩展为完整的角色渲染
@@ -175,13 +183,13 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({ onClose, lang, embedd
                 onClick={handleImportTemplate}
                 className="min-h-10 px-3 sm:px-4 py-2 border border-cyber-green text-cyber-green hover:bg-cyber-green hover:text-black text-xs sm:text-sm leading-tight"
               >
-                📂 IMPORT TEMPLATE
+                IMPORT TEMPLATE
               </button>
               <button
                 onClick={handleExportAll}
                 className="min-h-10 px-3 sm:px-4 py-2 border border-cyber-yellow text-cyber-yellow hover:bg-cyber-yellow hover:text-black text-xs sm:text-sm leading-tight"
               >
-                💾 EXPORT ALL ({partImages.size})
+                EXPORT ALL ({partImages.size})
               </button>
               <button onClick={onClose} className="col-span-2 sm:col-span-1 min-h-10 px-3 sm:px-4 py-2 border border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:text-black font-bold text-xs sm:text-sm leading-tight">
                 [X] CLOSE
@@ -228,7 +236,7 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({ onClose, lang, embedd
                         <div className="flex-1 min-w-0">
                           <div className="text-sm text-white flex items-center gap-2 min-w-0">
                             <span className="truncate">{part.name}</span>
-                            {hasCustom && <span className="text-xs text-cyber-green">✓</span>}
+                            {hasCustom && <span className="text-xs text-cyber-green">OK</span>}
                           </div>
                           <div className="text-xs text-gray-500">{part.width}×{part.height}px</div>
                         </div>
@@ -280,7 +288,6 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({ onClose, lang, embedd
                   {partImages.size === 0 && (
                     <div className="absolute inset-0 flex items-center justify-center p-4">
                       <div className="text-center text-gray-600 text-sm sm:text-base">
-                        <div className="text-4xl mb-2">🎨</div>
                         <div>Create your first part to see preview</div>
                       </div>
                     </div>
@@ -290,7 +297,7 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({ onClose, lang, embedd
 
               {/* Instructions */}
               <div className="border border-cyber-gray p-4">
-                <h3 className="text-cyber-yellow mb-2 text-sm">💡 TIPS</h3>
+                <h3 className="text-cyber-yellow mb-2 text-sm">TIPS</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs text-gray-400">
                   <div>
                     <strong className="text-cyber-green">Import Images:</strong>

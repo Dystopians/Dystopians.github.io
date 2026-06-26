@@ -37,6 +37,7 @@ export interface PlayerStats {
   caughtCount: number;
   unlockedItems: string[]; // List of itemId's caught
   catchStats: Record<string, number>; // itemId -> quantity caught
+  completedContracts: string[];
 }
 
 export interface Upgrades {
@@ -53,6 +54,13 @@ export interface UpgradeConfig {
   baseCost: number;
   costMultiplier: number;
   maxLevel: number;
+}
+
+export interface ContractConfig {
+  id: string;
+  itemId: string;
+  target: number;
+  reward: number;
 }
 
 export interface LeaderboardEntry {

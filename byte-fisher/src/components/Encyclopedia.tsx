@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ALL_LOOT_DEFINITIONS } from '../constants';
 import { TEXT } from '../locales';
 import { LootType } from '../types';
+import { LOOT_ART } from '../assets/generated/manifest';
 
 interface EncyclopediaProps {
   unlockedItems: string[];
@@ -16,8 +17,7 @@ const Encyclopedia: React.FC<EncyclopediaProps> = ({ unlockedItems, catchStats, 
 
   // Helper to get translated item info
   const getItemInfo = (itemId: string, fallbackName: string) => {
-    // @ts-ignore
-    const info = t.items[itemId];
+    const info = (t.items as Record<string, { name: string; desc: string }>)[itemId];
     if (info) return info;
     return { name: fallbackName, desc: '...' };
   };
@@ -28,13 +28,13 @@ const Encyclopedia: React.FC<EncyclopediaProps> = ({ unlockedItems, catchStats, 
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-3 sm:p-6">
-      <div className="bg-cyber-dark border-2 border-cyber-cyan w-full max-w-4xl p-4 sm:p-6 shadow-[0_0_30px_rgba(0,243,255,0.3)] flex flex-col h-[85vh] sm:h-[80vh] crt">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#05070d]/82 backdrop-blur-md p-3 sm:p-6">
+      <div className="ui-panel w-full max-w-4xl p-4 sm:p-6 flex flex-col h-[85vh] sm:h-[80vh] crt">
         
         {/* Header */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 border-b border-cyber-cyan pb-2">
-          <h2 className="text-2xl sm:text-3xl font-bold text-cyber-cyan glitch-text">{t.codex}</h2>
-          <button onClick={onClose} className="self-start sm:self-auto text-cyber-cyan hover:text-white font-bold text-lg sm:text-xl">[{t.close}]</button>
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 border-b border-cyber-cyan/60 pb-3">
+          <h2 className="ui-section-title text-2xl sm:text-3xl glitch-text">{t.codex}</h2>
+          <button onClick={onClose} className="ui-button self-start sm:self-auto px-3 py-1 text-sm">{t.close}</button>
         </div>
 
         {/* Filter Tabs */}
@@ -43,7 +43,7 @@ const Encyclopedia: React.FC<EncyclopediaProps> = ({ unlockedItems, catchStats, 
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-3 py-1 text-sm sm:text-base border ${filter === f ? 'bg-cyber-cyan text-black border-cyber-cyan' : 'border-gray-600 text-gray-500 hover:text-cyber-cyan'}`}
+              className={`ui-button px-3 py-1 text-sm sm:text-base ${filter === f ? 'ui-button-primary' : ''}`}
             >
               {f === 'ALL' ? 'ALL' : f}
             </button>
@@ -57,60 +57,71 @@ const Encyclopedia: React.FC<EncyclopediaProps> = ({ unlockedItems, catchStats, 
             const isUnlocked = unlockedItems.includes(item.itemId!);
             const info = getItemInfo(item.itemId!, item.name!);
             const count = catchStats[item.itemId!] || 0;
+            const art = LOOT_ART[item.itemId!] || LOOT_ART.fish_neon_guppy;
 
             return (
               <div 
                 key={item.itemId} 
-                className={`border p-4 flex flex-col gap-2 transition-colors relative overflow-hidden
+                className={`rounded-md border-2 p-4 flex flex-col gap-2 transition-colors relative overflow-hidden
                   ${isUnlocked 
-                    ? 'border-cyber-green bg-black/50' 
-                    : 'border-gray-800 bg-gray-900/50 grayscale opacity-70'}`}
+                    ? 'border-cyber-cyan bg-[#071322]/92 text-cyber-cyan shadow-[0_0_16px_rgba(0,243,255,0.18)]' 
+                    : 'border-cyber-gray/70 bg-[#05070d]/70 grayscale opacity-70'}`}
               >
                 <div className="flex justify-between items-start">
-                  <span className={`font-bold text-base sm:text-lg ${isUnlocked ? 'text-cyber-yellow' : 'text-gray-600'}`}>
+                  <span className={`font-black text-base sm:text-lg ${isUnlocked ? 'text-cyber-cyan' : 'text-cyber-cyan/40'}`}>
                     {isUnlocked ? info.name : '???'}
                   </span>
                   {isUnlocked && (
-                    <span className="text-xs bg-cyber-gray px-1 text-white border border-gray-600">
+                    <span className="ui-badge px-2 py-0.5 text-xs">
                       ${item.value}
                     </span>
                   )}
                 </div>
 
-                <div className="text-sm text-gray-400 min-h-[40px]">
+                <div className={`text-sm min-h-[40px] ${isUnlocked ? 'text-cyber-cyan/80' : 'text-cyber-cyan/45'}`}>
                   {isUnlocked ? info.desc : t.locked}
+                </div>
+
+                <div className="flex justify-center py-1">
+                  <img
+                    src={art}
+                    alt=""
+                    draggable={false}
+                    className={`h-20 w-20 object-contain [image-rendering:pixelated] ${isUnlocked ? 'drop-shadow-[0_0_14px_rgba(57,255,20,0.45)]' : 'brightness-0 opacity-60'}`}
+                  />
                 </div>
 
                 {/* Footer: Rarity & Stats */}
                 <div className="flex justify-between items-end mt-2">
                   <div className="flex items-center gap-2">
                     <div className={`w-2 h-2 rounded-full 
-                      ${item.rarity === 'legendary' ? 'bg-cyber-yellow shadow-[0_0_5px_yellow]' : 
+                      ${item.rarity === 'legendary' ? 'bg-cyber-yellow' : 
                         item.rarity === 'rare' ? 'bg-cyber-pink' :
                         item.rarity === 'uncommon' ? 'bg-cyber-cyan' : 'bg-gray-500'}`} 
                     />
-                    <span className="text-xs uppercase text-gray-500">{t.rarity[item.rarity as keyof typeof t.rarity]}</span>
+                    <span className={`text-xs uppercase ${isUnlocked ? 'text-cyber-yellow' : 'text-cyber-cyan/40'}`}>{t.rarity[item.rarity as keyof typeof t.rarity]}</span>
                   </div>
                   
                   {isUnlocked && (
-                    <div className="text-xs text-cyber-green text-right">
+                    <div className="text-xs text-cyber-green text-right font-bold">
                        {t.timesCaught}: {count}
                     </div>
                   )}
                 </div>
-
-                {/* Visual Icon Placeholder (Emoji) */}
-                <div className="absolute bottom-2 right-2 text-4xl opacity-20 pointer-events-none">
-                  {item.type === LootType.FISH ? '🐠' : item.type === LootType.SPECIAL ? '🎁' : '📄'}
-                </div>
+                <img
+                  src={art}
+                  alt=""
+                  draggable={false}
+                  className="absolute bottom-1 right-1 h-14 w-14 object-contain opacity-10 [image-rendering:pixelated] pointer-events-none"
+                />
               </div>
             );
             })}
           </div>
         </div>
         
-        <div className="mt-4 text-xs text-center text-gray-600">
-          DATABASE_VER_2.5 // TOTAL_ENTRIES: {ALL_LOOT_DEFINITIONS.length} // UNLOCKED: {unlockedItems.filter(id => !id.startsWith('char')).length}
+        <div className="mt-4 text-xs text-center text-cyber-cyan/65">
+          {ALL_LOOT_DEFINITIONS.length} entries · {unlockedItems.filter(id => !id.startsWith('char')).length} found
         </div>
 
       </div>

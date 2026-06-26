@@ -147,26 +147,27 @@ export class CharacterRenderer {
    */
   private drawDock() {
     const { ctx } = this;
-    const { centerX, centerY, scale } = this.skeleton;
+    const { centerY, scale } = this.skeleton;
     const s = scale * 4;
     const dockY = centerY + 24 * s;
     const canvasWidth = ctx.canvas.width;
-    const canvasHeight = ctx.canvas.height;
+    const dockHeight = 30 * scale;
 
     // 支柱
-    ctx.fillStyle = '#0f0f0f';
-    for (let px = 0; px < canvasWidth; px += 100 * scale) {
-      ctx.fillRect(px + 10 * scale, dockY, 10 * scale, canvasHeight - dockY);
-      ctx.fillStyle = '#1a1a1a';
-      ctx.fillRect(px, dockY, 15 * scale, canvasHeight - dockY);
-      ctx.fillStyle = '#0f0f0f';
-    }
+    ctx.fillStyle = '#05070d';
+    ctx.fillRect(0, dockY, canvasWidth, dockHeight);
 
     // 平台
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(0, dockY, canvasWidth, 20 * scale);
-    ctx.fillStyle = '#3a3a3a';
-    ctx.fillRect(0, dockY, canvasWidth, 5 * scale);
+    ctx.fillStyle = '#0b1020';
+    ctx.fillRect(0, dockY + 5 * scale, canvasWidth, 18 * scale);
+    ctx.fillStyle = '#00f3ff';
+    for (let py = dockY + 7 * scale; py < dockY + dockHeight; py += 9 * scale) {
+      ctx.fillRect(0, py, canvasWidth, 2 * scale);
+    }
+    ctx.fillStyle = '#ff00ff';
+    for (let px = 16 * scale; px < canvasWidth; px += 64 * scale) {
+      ctx.fillRect(px, dockY + 3 * scale, 6 * scale, dockHeight - 6 * scale);
+    }
 
     return dockY;
   }
@@ -288,7 +289,6 @@ export class CharacterRenderer {
   private drawBasket(dockY: number) {
     const { ctx } = this;
     const { centerX, scale } = this.skeleton;
-    const s = scale * 4;
 
     const basketX = centerX + 50 * scale;
     const basketY = dockY - 20 * scale;

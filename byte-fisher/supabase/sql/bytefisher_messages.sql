@@ -1,9 +1,3 @@
-create table if not exists public.byrefisher_placeholder (
-  id uuid primary key default gen_random_uuid()
-);
-
-drop table if exists public.byrefisher_placeholder;
-
 create table if not exists public.bytefisher_messages (
   id uuid primary key default gen_random_uuid(),
   created_at timestamptz not null default now(),
@@ -12,9 +6,28 @@ create table if not exists public.bytefisher_messages (
   session_id text not null
 );
 
-alter table public.bytefisher_messages
-  add constraint bytefisher_name_len check (length(name) <= 12),
-  add constraint bytefisher_message_len check (length(message) <= 50);
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'bytefisher_name_len'
+      and conrelid = 'public.bytefisher_messages'::regclass
+  ) then
+    alter table public.bytefisher_messages
+      add constraint bytefisher_name_len check (length(name) <= 12);
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'bytefisher_message_len'
+      and conrelid = 'public.bytefisher_messages'::regclass
+  ) then
+    alter table public.bytefisher_messages
+      add constraint bytefisher_message_len check (length(message) <= 50);
+  end if;
+end $$;
 
 create index if not exists bytefisher_messages_created_at_idx
   on public.bytefisher_messages (created_at desc);

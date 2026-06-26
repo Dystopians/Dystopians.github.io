@@ -22,6 +22,17 @@ const getSessionId = (): string => {
   return next;
 };
 
+const readLocalJson = <T,>(key: string, fallback: T): T => {
+  const raw = localStorage.getItem(key);
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    localStorage.removeItem(key);
+    return fallback;
+  }
+};
+
 interface TerminalProps {
   inventory: LootItem[];
   history: HistoryEvent[];
@@ -48,20 +59,11 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
   const turnstileIdRef = useRef<string | null>(null);
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
   const sessionIdRef = useRef<string>(getSessionId());
-  const requiresTurnstile = Boolean(isSupabaseConfigured && turnstileSiteKey);
-  const canUpload = !isValidating && composedMsg.length > 0 && !!playerName && (!requiresTurnstile || !!turnstileToken);
+  const requiresTurnstile = isSupabaseConfigured;
+  const canUseRemoteUpload = !isSupabaseConfigured || Boolean(turnstileSiteKey);
+  const canUpload = !isValidating && canUseRemoteUpload && composedMsg.length > 0 && !!playerName && (!requiresTurnstile || !!turnstileToken);
   
   const t = TEXT[lang];
-
-  // Helper to get item name
-  const getItemName = (item: LootItem) => {
-    if (item.itemId) {
-      // @ts-ignore
-      const translation = t.items[item.itemId];
-      if (translation) return translation.name;
-    }
-    return item.name;
-  };
 
   // Simulated IP Helper
   const getSimulatedIP = () => {
@@ -74,8 +76,7 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
   };
 
   const checkRateLimit = (ip: string): { allowed: boolean; reason?: 'cooldown' | 'limit' } => {
-    const historyStr = localStorage.getItem('bytefisher_upload_history');
-    const history = historyStr ? JSON.parse(historyStr) : {};
+    const history = readLocalJson<Record<string, { lastUpload: number; count: number; date: string }>>('bytefisher_upload_history', {});
     
     if (!history[ip]) return { allowed: true };
 
@@ -104,8 +105,7 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
   };
 
   const recordUpload = (ip: string) => {
-    const historyStr = localStorage.getItem('bytefisher_upload_history');
-    const history = historyStr ? JSON.parse(historyStr) : {};
+    const history = readLocalJson<Record<string, { lastUpload: number; count: number; date: string }>>('bytefisher_upload_history', {});
     
     const today = new Date().toDateString();
     
@@ -156,12 +156,7 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
 
   const loadMessages = async () => {
     if (!isSupabaseConfigured) {
-      const saved = localStorage.getItem('bytefisher_logs');
-      if (saved) {
-        setServerLog(JSON.parse(saved));
-      } else {
-        setServerLog(MOCK_LEADERBOARD);
-      }
+      setServerLog(readLocalJson<LeaderboardEntry[]>('bytefisher_logs', MOCK_LEADERBOARD));
       return;
     }
 
@@ -243,6 +238,10 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
 
   const handlePublishClick = () => {
      if (!canUpload) {
+       if (isSupabaseConfigured && !turnstileSiteKey) {
+         setUploadStatus('ERROR: CAPTCHA NOT CONFIGURED');
+         return;
+       }
        if (requiresTurnstile && turnstileIdRef.current) {
          const response = window.turnstile?.getResponse(turnstileIdRef.current);
          if (!response) {
@@ -322,6 +321,11 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
     }
 
     if (isSupabaseConfigured) {
+      if (!turnstileSiteKey) {
+        setUploadStatus('ERROR: CAPTCHA NOT CONFIGURED');
+        return;
+      }
+
       let tokenToUse = turnstileToken;
       if (turnstileSiteKey) {
         const response =
@@ -390,7 +394,7 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
 
   // Filter items
   const allChars = inventory.filter(i => i.type === LootType.CHAR).sort((a,b) => (a.char || '').localeCompare(b.char || ''));
-  const displayChar = (item: LootItem) => (item.char === ' ' ? '␠' : item.char);
+  const displayChar = (item: LootItem) => (item.char === ' ' ? (lang === 'zh' ? '空' : 'SP') : item.char);
   
   // Exclude characters that are currently in the composer to prevent reusing the same item instance
   const availableChars = allChars.filter(c => !composedMsg.find(m => m.id === c.id));
@@ -400,8 +404,7 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
 
   const getEventItemName = (event: HistoryEvent) => {
     if (event.data.itemId && event.data.itemId !== 'char_byte') {
-      // @ts-ignore
-      const translation = t.items[event.data.itemId];
+      const translation = (t.items as Record<string, { name: string; desc: string }>)[event.data.itemId];
       if (translation) return translation.name;
     }
     return event.data.itemName || t.unknown;
@@ -440,10 +443,10 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
   };
 
   return (
-    <div className="fixed inset-0 z-40 h-[100dvh] bg-cyber-black/95 flex flex-col p-3 sm:p-4 md:p-10 font-mono text-cyber-green crt overflow-hidden">
+    <div className="fixed inset-0 z-40 h-[100dvh] bg-[#05070d]/96 flex flex-col p-3 sm:p-4 md:p-10 font-sans text-cyber-cyan crt overflow-hidden">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center border-b-2 border-cyber-green pb-3 sm:pb-4 mb-3 sm:mb-4 shrink-0">
-        <h1 className="text-xl sm:text-3xl font-bold glitch-text break-words">TERMINAL_ACCESS</h1>
+      <div className="ui-panel flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center p-3 sm:p-4 mb-3 sm:mb-4 shrink-0">
+        <h1 className="ui-section-title text-xl sm:text-3xl glitch-text break-words">{t.terminal}</h1>
         <div className="grid grid-cols-2 sm:flex gap-2 sm:items-center">
           <button
             onClick={() =>
@@ -455,10 +458,10 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
                     : 'simple'
               )
             }
-            className={`border px-3 py-1 text-xs sm:text-sm ${
+            className={`ui-button px-3 py-1 text-xs sm:text-sm ${
               difficulty === 'hardcore'
-                ? 'border-cyber-pink text-transparent bg-clip-text bg-gradient-to-r from-cyber-cyan via-cyber-pink to-cyber-yellow'
-                : 'border-cyber-green text-cyber-green hover:bg-cyber-green hover:text-black'
+                ? 'ui-button-coral'
+                : ''
             } whitespace-nowrap overflow-hidden text-ellipsis`}
           >
             {difficulty === 'simple' ? t.modeSimple : difficulty === 'hard' ? t.modeHard : t.modeHardcore}
@@ -472,16 +475,16 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
               setConfirmReset(false);
               onReset();
             }}
-            className={`border px-3 py-1 text-xs sm:text-sm ${
+            className={`ui-button px-3 py-1 text-xs sm:text-sm ${
               confirmReset
-                ? 'border-red-500 text-red-500 hover:bg-red-500 hover:text-black'
-                : 'border-red-900 text-red-900 hover:bg-red-500 hover:text-black'
+                ? 'ui-button-coral'
+                : 'opacity-80'
             } whitespace-nowrap overflow-hidden text-ellipsis`}
           >
             {confirmReset ? t.resetConfirm : t.reset}
           </button>
-          <button onClick={onClose} className="col-span-2 sm:col-span-1 text-cyber-pink hover:bg-cyber-pink hover:text-black px-4 py-1 border border-cyber-pink text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis">
-            [X] {t.disconnect}
+          <button onClick={onClose} className="ui-button ui-button-coral col-span-2 sm:col-span-1 px-4 py-1 text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis">
+            {t.disconnect}
           </button>
         </div>
       </div>
@@ -490,25 +493,25 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3 mb-3 sm:mb-6 shrink-0">
         <button
           onClick={() => setActiveTab('INVENTORY')}
-          className={`px-3 sm:px-4 py-2 text-xs sm:text-base border whitespace-nowrap overflow-hidden text-ellipsis ${activeTab === 'INVENTORY' ? 'bg-cyber-green text-black' : 'border-cyber-green text-cyber-green hover:bg-cyber-green/20'}`}
+          className={`ui-button px-3 sm:px-4 py-2 text-xs sm:text-base whitespace-nowrap overflow-hidden text-ellipsis ${activeTab === 'INVENTORY' ? 'ui-button-primary' : ''}`}
         >
           {t.inventory}
         </button>
         <button
           onClick={() => setActiveTab('COMPOSE')}
-          className={`px-3 sm:px-4 py-2 text-xs sm:text-base border whitespace-nowrap overflow-hidden text-ellipsis ${activeTab === 'COMPOSE' ? 'bg-cyber-green text-black' : 'border-cyber-green text-cyber-green hover:bg-cyber-green/20'}`}
+          className={`ui-button px-3 sm:px-4 py-2 text-xs sm:text-base whitespace-nowrap overflow-hidden text-ellipsis ${activeTab === 'COMPOSE' ? 'ui-button-primary' : ''}`}
         >
           {t.composer}
         </button>
         <button
           onClick={() => setActiveTab('NETWORK')}
-          className={`px-3 sm:px-4 py-2 text-xs sm:text-base border whitespace-nowrap overflow-hidden text-ellipsis ${activeTab === 'NETWORK' ? 'bg-cyber-green text-black' : 'border-cyber-green text-cyber-green hover:bg-cyber-green/20'}`}
+          className={`ui-button px-3 sm:px-4 py-2 text-xs sm:text-base whitespace-nowrap overflow-hidden text-ellipsis ${activeTab === 'NETWORK' ? 'ui-button-primary' : ''}`}
         >
           {t.network}
         </button>
         <button
           onClick={() => setActiveTab('CHAR_EDITOR')}
-          className={`px-3 sm:px-4 py-2 text-xs sm:text-base border whitespace-nowrap overflow-hidden text-ellipsis ${activeTab === 'CHAR_EDITOR' ? 'bg-purple-600 text-white' : 'border-purple-600 text-purple-400 hover:bg-purple-600/20'}`}
+          className={`ui-button px-3 sm:px-4 py-2 text-xs sm:text-base whitespace-nowrap overflow-hidden text-ellipsis ${activeTab === 'CHAR_EDITOR' ? 'ui-button-coral' : ''}`}
         >
           {t.characterEditor}
         </button>
@@ -520,21 +523,21 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
         {activeTab === 'INVENTORY' && (
           <>
             {/* Loot List */}
-            <div className="flex-1 border border-cyber-gray p-4 overflow-y-auto">
-              <h3 className="text-lg sm:text-xl mb-4 text-cyber-cyan">{'>'} {t.historyTitle}</h3>
+            <div className="ui-panel flex-1 p-4 overflow-y-auto">
+              <h3 className="text-lg sm:text-xl mb-4 text-cyber-yellow font-bold">{t.historyTitle}</h3>
               <div className="flex flex-col gap-2">
                 {history.map(event => (
-                  <div key={event.id} className="border border-cyber-gray bg-cyber-dark p-2 sm:p-3">
-                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                  <div key={event.id} className="rounded-md border border-cyber-cyan/45 bg-cyber-cyan/8 p-2 sm:p-3">
+                    <div className="flex justify-between text-xs text-cyber-cyan/55 mb-1">
                       <span>{new Date(event.at).toLocaleString()}</span>
                       <span>{t.history.tags[event.type]}</span>
                     </div>
-                    <div className="text-sm sm:text-base text-white">
+                    <div className="text-sm sm:text-base text-cyber-cyan">
                       {formatEvent(event)}
                     </div>
                   </div>
                 ))}
-                {history.length === 0 && <div className="text-gray-500 italic">{t.historyEmpty}</div>}
+                {history.length === 0 && <div className="text-cyber-cyan/55 italic">{t.historyEmpty}</div>}
               </div>
             </div>
           </>
@@ -542,35 +545,35 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
 
         {activeTab === 'COMPOSE' && (
           <div className="flex-1 flex flex-col gap-4 min-h-0">
-            <div className="border border-cyber-gray p-4 flex-1 overflow-y-auto">
-               <h3 className="text-lg sm:text-xl mb-4 text-cyber-cyan">{'>'} ASCII_CACHE</h3>
+            <div className="ui-panel p-4 flex-1 overflow-y-auto">
+               <h3 className="text-lg sm:text-xl mb-4 text-cyber-yellow font-bold">{t.byteFish}</h3>
                <div className="flex flex-wrap gap-2">
                  {availableChars.map(item => (
                    <button 
                      key={item.id}
                      onClick={() => addToCompose(item)}
-                     className="w-10 h-10 border border-cyber-gray flex items-center justify-center text-xl hover:bg-cyber-green hover:text-black font-bold"
+                     className="ui-button w-10 h-10 flex items-center justify-center text-xl font-bold"
                    >
                      {displayChar(item)}
                    </button>
                  ))}
-                 {availableChars.length === 0 && <div className="text-gray-500 italic">{t.noBytes}</div>}
+                 {availableChars.length === 0 && <div className="text-cyber-cyan/55 italic">{t.noBytes}</div>}
                </div>
             </div>
 
             {/* Composer */}
-            <div className={`border p-4 min-h-[160px] flex flex-col transition-colors ${uploadStatus.includes('ERROR') ? 'border-red-600 bg-red-900/10' : 'border-cyber-pink'}`}>
+            <div className={`ui-panel p-4 min-h-[160px] flex flex-col transition-colors ${uploadStatus.includes('ERROR') ? 'border-red-600 bg-red-900/10' : ''}`}>
               <div className="flex justify-between items-center mb-2">
-                <h3 className={`${uploadStatus.includes('ERROR') ? 'text-red-500' : 'text-cyber-pink'}`}>{uploadStatus.includes('ERROR') ? t.securityAlert : t.composer}</h3>
+                <h3 className={`font-bold ${uploadStatus.includes('ERROR') ? 'text-red-500' : 'text-cyber-yellow'}`}>{uploadStatus.includes('ERROR') ? t.securityAlert : t.composer}</h3>
                 {uploadStatus && (
-                  <span className={`text-xs px-2 py-1 font-bold animate-pulse ${uploadStatus.includes('FAILED') || uploadStatus.includes('ERROR') ? 'bg-red-900 text-white' : 'bg-cyber-green text-black'}`}>
+                  <span className={`rounded-full text-xs px-2 py-1 font-bold ${uploadStatus.includes('FAILED') || uploadStatus.includes('ERROR') ? 'bg-red-900 text-white' : 'bg-cyber-green text-black'}`}>
                     {uploadStatus}
                   </span>
                 )}
               </div>
               
-              <div className="flex-1 bg-cyber-dark p-2 mb-2 flex flex-wrap gap-1 items-start content-start border border-dashed border-cyber-gray relative">
-                 {isValidating && <div className="absolute inset-0 bg-black/50 z-10 flex items-center justify-center text-cyber-green animate-pulse">{t.integrityCheck}</div>}
+              <div className="flex-1 rounded-md bg-cyber-cyan/8 p-2 mb-2 flex flex-wrap gap-1 items-start content-start border border-dashed border-cyber-cyan/70 relative">
+                 {isValidating && <div className="absolute inset-0 bg-[#05070d]/78 z-10 flex items-center justify-center text-cyber-yellow animate-pulse">{t.integrityCheck}</div>}
                  {composedMsg.map((item, idx) => (
                    <span 
                       key={idx} 
@@ -580,7 +583,7 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
                      {displayChar(item)}
                    </span>
                  ))}
-                 {composedMsg.length === 0 && <span className="text-gray-600 animate-pulse">{t.waitingInput}</span>}
+                 {composedMsg.length === 0 && <span className="text-cyber-cyan/45">{t.waitingInput}</span>}
               </div>
               {isSupabaseConfigured && turnstileSiteKey && (
                 <div className="mb-3 flex justify-center">
@@ -595,18 +598,23 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
                   value={playerName}
                   onChange={(e) => setPlayerName(e.target.value)}
                   disabled={isValidating}
-                  className="bg-transparent border border-cyber-green text-cyber-green px-2 py-1 flex-1 focus:outline-none focus:bg-cyber-green/10 disabled:opacity-50"
+                  className="rounded-md bg-[#05070d] border-2 border-cyber-cyan text-cyber-cyan px-3 py-2 flex-1 focus:outline-none focus:border-cyber-yellow disabled:opacity-50"
                 />
                 <button 
                   onClick={handlePublishClick}
                   disabled={!canUpload}
-                  className="bg-cyber-pink text-black px-4 py-1 font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white transition-colors"
+                  className="ui-button ui-button-coral px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isValidating ? '...' : t.upload}
                 </button>
               </div>
-              {requiresTurnstile && !turnstileToken && (
-                <div className="mt-2 text-xs text-cyber-pink">
+              {isSupabaseConfigured && !turnstileSiteKey && (
+                <div className="mt-2 text-xs text-red-500">
+                  CAPTCHA CONFIG REQUIRED
+                </div>
+              )}
+              {requiresTurnstile && turnstileSiteKey && !turnstileToken && (
+                <div className="mt-2 text-xs text-cyber-yellow">
                   VERIFY REQUIRED
                 </div>
               )}
@@ -615,22 +623,22 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
         )}
 
         {activeTab === 'NETWORK' && (
-          <div className="w-full h-full border border-cyber-green p-4 overflow-y-auto font-mono">
+          <div className="ui-panel w-full h-full p-4 overflow-y-auto">
              {serverLog.map(entry => (
-               <div key={entry.id} className="mb-4 border-b border-cyber-gray pb-2">
-                <div className="flex justify-between text-xs text-cyber-gray mb-1">
+               <div key={entry.id} className="mb-4 rounded-md border border-cyber-cyan/45 bg-cyber-cyan/8 p-3">
+                <div className="flex justify-between text-xs text-cyber-cyan/55 mb-1">
                   <span
                     className={
-                      entry.name === '许昊龙'
-                        ? 'text-transparent bg-clip-text bg-gradient-to-r from-cyber-cyan via-cyber-pink to-cyber-green'
-                        : 'text-gray-400'
+                      entry.name === 'Maple'
+                        ? 'text-cyber-yellow font-bold'
+                        : 'text-cyber-cyan/70'
                     }
                   >
                     ID: {entry.name}
                   </span>
                    <span>{new Date(entry.timestamp).toLocaleTimeString()}</span>
                  </div>
-                <div className="text-base sm:text-lg text-white">
+                <div className="text-base sm:text-lg text-cyber-cyan">
                    "{entry.message}"
                  </div>
                </div>

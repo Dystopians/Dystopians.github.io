@@ -318,16 +318,16 @@ export interface EquipmentRenderer {
  */
 export const bootsRenderers: Record<EquipmentLevel, EquipmentRenderer> = {
   1: {
-    pixelArt: (ctx, scale, time, colors) => {
+    pixelArt: (ctx, scale) => {
       const s = scale * 4;
       // 基础鞋子
-      ctx.fillStyle = '#333';
+      ctx.fillStyle = '#05070d';
       ctx.fillRect(-20 * s, 0, 16 * s, 8 * s);
       ctx.fillRect(4 * s, 0, 16 * s, 8 * s);
     }
   },
   2: {
-    pixelArt: (ctx, scale, time, colors) => {
+    pixelArt: (ctx, scale) => {
       const s = scale * 4;
       // 重型靴子
       ctx.fillStyle = '#555';
@@ -340,7 +340,7 @@ export const bootsRenderers: Record<EquipmentLevel, EquipmentRenderer> = {
     }
   },
   3: {
-    pixelArt: (ctx, scale, time, colors) => {
+    pixelArt: (ctx, scale) => {
       const s = scale * 4;
       // 活塞靴
       ctx.fillStyle = '#4a4a4a';
@@ -355,14 +355,14 @@ export const bootsRenderers: Record<EquipmentLevel, EquipmentRenderer> = {
     glowIntensity: 0.8
   },
   4: {
-    pixelArt: (ctx, scale, time, colors) => {
+    pixelArt: (ctx, scale) => {
       const s = scale * 4;
       // 喷射靴主体
       ctx.fillStyle = '#fff';
       ctx.fillRect(-24 * s, -8 * s, 20 * s, 24 * s);
       ctx.fillRect(8 * s, -8 * s, 20 * s, 24 * s);
       // 喷射口
-      ctx.fillStyle = '#333';
+      ctx.fillStyle = '#05070d';
       ctx.fillRect(-20 * s, 12 * s, 12 * s, 4 * s);
       ctx.fillRect(12 * s, 12 * s, 12 * s, 4 * s);
       // 动态火焰
@@ -377,16 +377,16 @@ export const bootsRenderers: Record<EquipmentLevel, EquipmentRenderer> = {
     particleColor: '#ffaa00'
   },
   5: {
-    pixelArt: (ctx, scale, time, colors) => {
+    pixelArt: (ctx, scale) => {
       const s = scale * 4;
       // 反重力平台
       ctx.fillStyle = '#00f3ff';
       ctx.fillRect(-24 * s, 8 * s, 56 * s, 8 * s);
       // 悬浮装置
-      ctx.fillStyle = '#333';
+      ctx.fillStyle = '#05070d';
       ctx.fillRect(-16 * s, -8 * s, 40 * s, 16 * s);
       // 能量线
-      ctx.fillStyle = 'rgba(0, 243, 255, 0.5)';
+      ctx.fillStyle = 'rgba(0, 243, 255, 0.45)';
       ctx.fillRect(-32 * s, 16 * s, 72 * s, 4 * s);
     },
     glowColor: '#00f3ff',
@@ -400,20 +400,20 @@ export const bootsRenderers: Record<EquipmentLevel, EquipmentRenderer> = {
  */
 export const headgearRenderers: Record<EquipmentLevel, EquipmentRenderer> = {
   1: {
-    pixelArt: (ctx, scale, time, colors) => {
+    pixelArt: (ctx, scale) => {
       const s = scale * 4;
       // 基础帽子
-      ctx.fillStyle = '#333';
+      ctx.fillStyle = '#0b1020';
       ctx.fillRect(-16 * s, 0, 32 * s, 8 * s);
       // 帽檐
       ctx.fillRect(8 * s, 4 * s, 8 * s, 4 * s);
     }
   },
   2: {
-    pixelArt: (ctx, scale, time, colors) => {
+    pixelArt: (ctx, scale) => {
       const s = scale * 4;
       // VR护目镜
-      ctx.fillStyle = '#cc0000';
+      ctx.fillStyle = '#05070d';
       ctx.fillRect(-12 * s, 0, 28 * s, 8 * s);
       // 镜片
       ctx.fillStyle = '#ff4444';
@@ -422,7 +422,7 @@ export const headgearRenderers: Record<EquipmentLevel, EquipmentRenderer> = {
     }
   },
   3: {
-    pixelArt: (ctx, scale, time, colors) => {
+    pixelArt: (ctx, scale) => {
       const s = scale * 4;
       // 金色护目镜
       ctx.fillStyle = '#ffd700';
@@ -437,10 +437,10 @@ export const headgearRenderers: Record<EquipmentLevel, EquipmentRenderer> = {
     glowIntensity: 1.0
   },
   4: {
-    pixelArt: (ctx, scale, time, colors) => {
+    pixelArt: (ctx, scale) => {
       const s = scale * 4;
       // 赛博眼镜
-      ctx.fillStyle = '#000';
+      ctx.fillStyle = '#05070d';
       ctx.fillRect(-12 * s, 0, 28 * s, 8 * s);
       // 绿色LED
       ctx.fillStyle = '#0f0';
@@ -451,7 +451,7 @@ export const headgearRenderers: Record<EquipmentLevel, EquipmentRenderer> = {
     glowIntensity: 1.0
   },
   5: {
-    pixelArt: (ctx, scale, time, colors) => {
+    pixelArt: (ctx, scale) => {
       const s = scale * 4;
       // 全息眼睛
       ctx.fillStyle = '#fff';
@@ -477,36 +477,36 @@ export const headgearRenderers: Record<EquipmentLevel, EquipmentRenderer> = {
  */
 export const rodRenderers: Record<EquipmentLevel, EquipmentRenderer> = {
   1: {
-    pixelArt: (ctx, scale, time, colors) => {
+    pixelArt: (ctx) => {
       // 竹竿
-      ctx.strokeStyle = '#8b5a2b';
+      ctx.strokeStyle = '#00f3ff';
       ctx.lineWidth = 12;
     }
   },
   2: {
-    pixelArt: (ctx, scale, time, colors) => {
+    pixelArt: (ctx) => {
       // 钢竿
-      ctx.strokeStyle = '#aaa';
+      ctx.strokeStyle = '#39ff14';
       ctx.lineWidth = 16;
     }
   },
   3: {
-    pixelArt: (ctx, scale, time, colors) => {
+    pixelArt: (ctx, _scale, time) => {
       // 霓虹竿
-      const hue = (time * 50) % 360;
-      ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+      void time;
+      ctx.strokeStyle = '#39ff14';
       ctx.lineWidth = 12;
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#39ff14';
     },
-    particleColor: 'rainbow'
+    particleColor: '#39ff14'
   },
   4: {
-    pixelArt: (ctx, scale, time, colors) => {
+    pixelArt: (ctx) => {
       // 等离子竿
       ctx.strokeStyle = '#ff00ff';
       ctx.lineWidth = 16;
-      ctx.shadowBlur = 60;
+      ctx.shadowBlur = 18;
       ctx.shadowColor = '#ff00ff';
     },
     glowColor: '#ff00ff',
@@ -514,12 +514,12 @@ export const rodRenderers: Record<EquipmentLevel, EquipmentRenderer> = {
     particleColor: '#ff00ff'
   },
   5: {
-    pixelArt: (ctx, scale, time, colors) => {
+    pixelArt: (ctx) => {
       // 量子竿
       ctx.strokeStyle = '#fff';
       ctx.lineWidth = 12;
       ctx.setLineDash([20, 20]);
-      ctx.shadowBlur = 80;
+      ctx.shadowBlur = 18;
       ctx.shadowColor = '#00f3ff';
     },
     glowColor: '#00f3ff',
@@ -540,9 +540,9 @@ export const colorThemes = {
   },
   dark: {
     skin: '#8b7355',
-    jacket: '#1a1a1a',
+    jacket: '#05070d',
     shirt: '#00f3ff',
-    pants: '#0a0a0a'
+    pants: '#062036'
   },
   neon: {
     skin: '#ffd0a0',

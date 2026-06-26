@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { GameState, LootItem, PlayerStats, Upgrades, LootType, HistoryEvent } from './types';
-import { BYTE_FISH_COST, INITIAL_CREDITS, TRASH_LOOT, FISH_LOOT, SPECIAL_LOOT, generateCharLoot, createSpaceCharLoot, createByteFishLoot, SPACE_BYTE_COST } from './constants';
+import { ContractConfig, GameState, LootItem, PlayerStats, Upgrades, LootType, HistoryEvent } from './types';
+import { APP_VERSION, CONTRACTS, INITIAL_CREDITS, TRASH_LOOT, FISH_LOOT, SPECIAL_LOOT, UPGRADE_CONFIGS, generateCharLoot, createSpaceCharLoot, createByteFishLoot, SPACE_BYTE_COST } from './constants';
 import { TEXT } from './locales';
 import { createId } from './utils/id';
 import { NumberCounter } from './utils/animations';
@@ -14,6 +14,48 @@ import Terminal from './components/Terminal';
 import Shop from './components/Shop';
 import Encyclopedia from './components/Encyclopedia';
 import Guidebook from './components/Guidebook';
+import { LOOT_ART } from './assets/generated/manifest';
+
+const readSavedJson = <T,>(key: string, fallback: T): T => {
+  const saved = localStorage.getItem(key);
+  if (!saved) return fallback;
+  try {
+    return JSON.parse(saved) as T;
+  } catch {
+    localStorage.removeItem(key);
+    return fallback;
+  }
+};
+
+const fishRarityWeights: Record<LootItem['rarity'], number> = {
+  common: 100,
+  uncommon: 48,
+  rare: 18,
+  legendary: 4,
+};
+
+const selectWeightedFish = (luckLevel: number, perfect: boolean): Partial<LootItem> => {
+  const normalizedLuck = Math.max(1, Math.min(5, luckLevel || 1));
+  const weighted = FISH_LOOT.map(fish => {
+    const rarity = fish.rarity || 'common';
+    const luckBoost = rarity === 'legendary'
+      ? normalizedLuck * 1.6
+      : rarity === 'rare'
+      ? normalizedLuck * 3.5
+      : rarity === 'uncommon'
+      ? normalizedLuck * 2
+      : 0;
+    const perfectBoost = perfect && (rarity === 'rare' || rarity === 'legendary') ? 8 : 0;
+    return { fish, weight: fishRarityWeights[rarity] + luckBoost + perfectBoost };
+  });
+  const total = weighted.reduce((sum, item) => sum + item.weight, 0);
+  let roll = Math.random() * total;
+  for (const item of weighted) {
+    roll -= item.weight;
+    if (roll <= 0) return item.fish;
+  }
+  return weighted[0].fish;
+};
 
 const App: React.FC = () => {
   // --- STATE ---
@@ -24,21 +66,20 @@ const App: React.FC = () => {
   const minigameProgressRef = useRef(0);
 
   const getInitialStats = () => {
-    const saved = localStorage.getItem('bytefisher_stats');
-    const parsed = saved ? JSON.parse(saved) : {};
+    const parsed = readSavedJson<Partial<PlayerStats>>('bytefisher_stats', {});
     return { 
       credits: INITIAL_CREDITS, 
       inventory: [], 
       caughtCount: 0,
       unlockedItems: [], // Default empty
       catchStats: {}, // Default empty
+      completedContracts: [],
       ...parsed // Overwrite with saved
     };
   };
 
   const getInitialUpgrades = () => {
-    const saved = localStorage.getItem('bytefisher_upgrades');
-    const parsed = saved ? JSON.parse(saved) : {};
+    const parsed = readSavedJson<Partial<Upgrades>>('bytefisher_upgrades', {});
     return { 
       barSize: 1, 
       stability: 1, 
@@ -60,14 +101,13 @@ const App: React.FC = () => {
     return 'hard';
   });
   const [audioMuted, setAudioMuted] = useState(() => localStorage.getItem('bytefisher_mute') === '1');
-  const [resetNonce, setResetNonce] = useState(0);
   const [history, setHistory] = useState<HistoryEvent[]>(() => {
-    const saved = localStorage.getItem('bytefisher_history');
-    return saved ? JSON.parse(saved) : [];
+    return readSavedJson<HistoryEvent[]>('bytefisher_history', []);
   });
 
   // Notifications
   const [lastCaught, setLastCaught] = useState<LootItem | null>(null);
+  const [contractToast, setContractToast] = useState<ContractConfig | null>(null);
 
   const fishmartAudioRef = useRef<HTMLAudioElement | null>(null);
   const reelAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -75,6 +115,9 @@ const App: React.FC = () => {
   const bgmAudioRef = useRef<HTMLAudioElement | null>(null);
   const bgmFadeOutRef = useRef(false);
   const fadeTimersRef = useRef(new Map<HTMLAudioElement, number>());
+  const castTimerRef = useRef<number | null>(null);
+  const biteTimerRef = useRef<number | null>(null);
+  const contractToastTimerRef = useRef<number | null>(null);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
 
   // UI Animation
@@ -148,6 +191,8 @@ const App: React.FC = () => {
     bgmAudioRef.current = bgm;
 
     return () => {
+      fadeTimersRef.current.forEach(timerId => window.clearInterval(timerId));
+      fadeTimersRef.current.clear();
       [fishmart, reel, swim, bgm].forEach(audio => {
         audio.pause();
         audio.src = '';
@@ -170,16 +215,76 @@ const App: React.FC = () => {
 
   const t = TEXT[lang];
 
+  const clearFishingTimers = useCallback(() => {
+    if (castTimerRef.current) {
+      window.clearTimeout(castTimerRef.current);
+      castTimerRef.current = null;
+    }
+    if (biteTimerRef.current) {
+      window.clearTimeout(biteTimerRef.current);
+      biteTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => clearFishingTimers, [clearFishingTimers]);
+
+  useEffect(() => {
+    return () => {
+      if (contractToastTimerRef.current) {
+        window.clearTimeout(contractToastTimerRef.current);
+      }
+    };
+  }, []);
+
   // Helper to get item name
   const getItemName = (item: LootItem) => {
     if (item.itemId === 'char_byte') return item.name;
     if (item.itemId) {
-      // @ts-ignore
-      const translation = t.items[item.itemId];
+      const translation = (t.items as Record<string, { name: string; desc: string }>)[item.itemId];
       if (translation) return translation.name;
     }
     return item.name;
   };
+
+  const getItemArt = (item: LootItem) => {
+    if (item.type === LootType.CHAR) return LOOT_ART.char_byte;
+    return LOOT_ART[item.itemId] || LOOT_ART.fish_neon_guppy;
+  };
+
+  const getCatalogItemName = (itemId: string) => {
+    const translation = (t.items as Record<string, { name: string; desc: string }>)[itemId];
+    return translation?.name || itemId;
+  };
+
+  const showContractToast = useCallback((contract: ContractConfig) => {
+    setContractToast(contract);
+    if (contractToastTimerRef.current) {
+      window.clearTimeout(contractToastTimerRef.current);
+    }
+    contractToastTimerRef.current = window.setTimeout(() => {
+      setContractToast(null);
+      contractToastTimerRef.current = null;
+    }, 2600);
+  }, []);
+
+  const applyContractRewards = useCallback((nextStats: PlayerStats): PlayerStats => {
+    const completed = new Set(nextStats.completedContracts || []);
+    const newlyCompleted = CONTRACTS.filter(contract => {
+      const progress = nextStats.catchStats?.[contract.itemId] || 0;
+      return progress >= contract.target && !completed.has(contract.id);
+    });
+
+    if (newlyCompleted.length === 0) return nextStats;
+
+    newlyCompleted.forEach(contract => completed.add(contract.id));
+    const reward = newlyCompleted.reduce((sum, contract) => sum + contract.reward, 0);
+    queueMicrotask(() => showContractToast(newlyCompleted[0]));
+    return {
+      ...nextStats,
+      credits: nextStats.credits + reward,
+      completedContracts: Array.from(completed),
+    };
+  }, [showContractToast]);
 
   const pushHistory = (event: Omit<HistoryEvent, 'id' | 'at'>) => {
     setHistory(prev => {
@@ -189,6 +294,11 @@ const App: React.FC = () => {
   };
 
   const resetSave = () => {
+    clearFishingTimers();
+    if (contractToastTimerRef.current) {
+      window.clearTimeout(contractToastTimerRef.current);
+      contractToastTimerRef.current = null;
+    }
     localStorage.removeItem('bytefisher_stats');
     localStorage.removeItem('bytefisher_upgrades');
     localStorage.removeItem('bytefisher_name');
@@ -208,52 +318,54 @@ const App: React.FC = () => {
     setAudioMuted(false);
     setGameState(GameState.IDLE);
     setLastCaught(null);
-    setResetNonce(prev => prev + 1);
   };
 
   // --- GAMEPLAY LOGIC ---
 
-  const handleCast = () => {
-    if (gameState !== GameState.IDLE) return;
-    setGameState(GameState.CASTING);
-    // Reset progress ref
-    minigameProgressRef.current = 15; // Start low
-    // Animation time for cast
-    setTimeout(() => {
-      setGameState(GameState.WAITING);
-      startBiteTimer();
-    }, 1000); 
-  };
-
   const startBiteTimer = () => {
+    if (biteTimerRef.current) window.clearTimeout(biteTimerRef.current);
     const waitTime = Math.random() * 5000 + 2000; // 2-7s
-    setTimeout(() => {
+    biteTimerRef.current = window.setTimeout(() => {
+      biteTimerRef.current = null;
       // Need to check if we are still waiting (player didn't cancel)
       setGameState(prev => prev === GameState.WAITING ? GameState.MINIGAME : prev);
     }, waitTime);
   };
 
+  const handleCast = () => {
+    if (gameState !== GameState.IDLE) return;
+    clearFishingTimers();
+    setGameState(GameState.CASTING);
+    minigameProgressRef.current = 15;
+    castTimerRef.current = window.setTimeout(() => {
+      castTimerRef.current = null;
+      setGameState(prev => {
+        if (prev !== GameState.CASTING) return prev;
+        startBiteTimer();
+        return GameState.WAITING;
+      });
+    }, 1000); 
+  };
+
   const handleMinigameSuccess = (perfect: boolean) => {
     const roll = Math.random();
     let item: LootItem;
-    const luckMod = upgrades.luck * 0.05;
+    const luckLevel = upgrades.luck || 1;
+    const treasureChance = Math.min(0.03, 0.01 + (luckLevel - 1) * 0.004);
+    const trashChance = Math.max(0.04, 0.12 - (luckLevel - 1) * 0.015) * (perfect ? 0.55 : 1);
+    const charChance = Math.min(0.28, 0.13 + (luckLevel - 1) * 0.035);
 
-    // 1% Chance for Treasure Chest (LootType.SPECIAL) - Independent of luck modifiers
-    if (roll < 0.01) {
+    if (roll < treasureChance) {
       const tmpl = SPECIAL_LOOT[0]; // Currently only one special item
       item = { ...tmpl, id: createId(), type: LootType.SPECIAL } as LootItem;
+    } else if (roll < treasureChance + trashChance) {
+      const tmpl = TRASH_LOOT[Math.floor(Math.random() * TRASH_LOOT.length)];
+      item = { ...tmpl, id: createId(), type: LootType.TRASH } as LootItem;
+    } else if (roll < treasureChance + trashChance + charChance) {
+      item = generateCharLoot(luckLevel);
     } else {
-      // Standard loot tables
-      if (roll < 0.1 - luckMod) {
-        const tmpl = TRASH_LOOT[Math.floor(Math.random() * TRASH_LOOT.length)];
-        item = { ...tmpl, id: createId(), type: LootType.TRASH } as LootItem;
-      } else if (roll < 0.85) {
-        const fishPool = FISH_LOOT; 
-        const tmpl = fishPool[Math.floor(Math.random() * fishPool.length)];
-        item = { ...tmpl, id: createId(), type: LootType.FISH } as LootItem;
-      } else {
-        item = generateCharLoot(upgrades.luck);
-      }
+      const tmpl = selectWeightedFish(luckLevel, perfect);
+      item = { ...tmpl, id: createId(), type: LootType.FISH } as LootItem;
     }
 
     const baseSellValue = difficulty === 'simple' ? Math.max(0, Math.floor(item.value * 0.5)) : item.value;
@@ -278,13 +390,13 @@ const App: React.FC = () => {
         newCatchStats['byte_fish'] = (currentCatchStats['byte_fish'] || 0) + 1;
       }
 
-      return {
+      return applyContractRewards({
         ...prev,
         inventory: [...prev.inventory, itemWithPrice],
         caughtCount: prev.caughtCount + 1,
         unlockedItems: Array.from(newUnlocked),
         catchStats: newCatchStats
-      };
+      });
     });
 
     pushHistory({
@@ -337,7 +449,8 @@ const App: React.FC = () => {
   };
 
   const handleBuyUpgrade = (id: keyof Upgrades, cost: number) => {
-    if (stats.credits >= cost) {
+    const config = UPGRADE_CONFIGS.find(item => item.id === id);
+    if (stats.credits >= cost && config && upgrades[id] < config.maxLevel) {
       setStats(prev => ({ ...prev, credits: prev.credits - cost }));
       setUpgrades(prev => ({ ...prev, [id]: prev[id] + 1 }));
       pushHistory({
@@ -350,11 +463,15 @@ const App: React.FC = () => {
   const handleBuySpace = (cost: number) => {
     if (stats.credits < cost) return;
     const spaceItem = createSpaceCharLoot();
-    setStats(prev => ({
+    setStats(prev => applyContractRewards({
       ...prev,
       credits: prev.credits - cost,
       inventory: [...prev.inventory, spaceItem],
-      unlockedItems: Array.from(new Set([...(prev.unlockedItems || []), 'fish_space']))
+      unlockedItems: Array.from(new Set([...(prev.unlockedItems || []), 'fish_space'])),
+      catchStats: {
+        ...(prev.catchStats || {}),
+        fish_space: ((prev.catchStats || {}).fish_space || 0) + 1
+      }
     }));
     pushHistory({
       type: 'buy_space',
@@ -364,8 +481,9 @@ const App: React.FC = () => {
 
   const handleBuyByteFish = (char: string, cost: number) => {
     if (stats.credits < cost) return;
+    if (!/^[A-Z0-9]$/.test(char)) return;
     const byteItem = createByteFishLoot(char);
-    setStats(prev => ({
+    setStats(prev => applyContractRewards({
       ...prev,
       credits: prev.credits - cost,
       inventory: [...prev.inventory, byteItem],
@@ -396,6 +514,11 @@ const App: React.FC = () => {
     GameState.IMAGE_EDITOR,
     GameState.CHARACTER_EDITOR,
   ].includes(gameState);
+
+  const activeContract = CONTRACTS.find(contract => !(stats.completedContracts || []).includes(contract.id));
+  const activeContractProgress = activeContract
+    ? Math.min(activeContract.target, (stats.catchStats || {})[activeContract.itemId] || 0)
+    : 0;
 
   const fadeTo = useCallback((audio: HTMLAudioElement | null, target: number, duration = 600, pauseOnEnd = false) => {
     if (!audio) return;
@@ -501,7 +624,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (!audioMuted) return;
-    const all = [
+  const all = [
       fishmartAudioRef.current,
       reelAudioRef.current,
       swimAudioRef.current,
@@ -510,8 +633,38 @@ const App: React.FC = () => {
     all.forEach(audio => fadeTo(audio, 0, 300, true));
   }, [audioMuted, fadeTo]);
 
+  const gameStateLabels: Record<GameState, { en: string; zh: string }> = {
+    [GameState.IDLE]: { en: 'Signal dock', zh: '信号码头' },
+    [GameState.CASTING]: { en: 'Casting probe', zh: '抛出探针' },
+    [GameState.WAITING]: { en: 'Scanning stream', zh: '扫描数据流' },
+    [GameState.MINIGAME]: { en: 'Signal lock', zh: '锁定信号' },
+    [GameState.CAUGHT]: { en: 'Packet captured', zh: '封包捕获' },
+    [GameState.SHOP]: { en: 'Black Market', zh: '黑市终端' },
+    [GameState.TERMINAL]: { en: 'Terminal Log', zh: '终端日志' },
+    [GameState.CODEX]: { en: 'Data Codex', zh: '数据图鉴' },
+    [GameState.IMAGE_EDITOR]: { en: 'Image Studio', zh: '图像工坊' },
+    [GameState.GUIDEBOOK]: { en: 'Protocol Guide', zh: '协议指南' },
+    [GameState.CHARACTER_EDITOR]: { en: 'Character Editor', zh: '角色编辑' },
+  };
+  const zhGameStateLabels: Record<GameState, string> = {
+    [GameState.IDLE]: '\u4fe1\u53f7\u7801\u5934',
+    [GameState.CASTING]: '\u629b\u51fa\u63a2\u9488',
+    [GameState.WAITING]: '\u626b\u63cf\u6570\u636e\u6d41',
+    [GameState.MINIGAME]: '\u9501\u5b9a\u4fe1\u53f7',
+    [GameState.CAUGHT]: '\u5c01\u5305\u6355\u83b7',
+    [GameState.SHOP]: '\u9ed1\u5e02\u7ec8\u7aef',
+    [GameState.TERMINAL]: '\u7ec8\u7aef\u65e5\u5fd7',
+    [GameState.CODEX]: '\u6570\u636e\u56fe\u9274',
+    [GameState.IMAGE_EDITOR]: '\u56fe\u50cf\u5de5\u574a',
+    [GameState.GUIDEBOOK]: '\u534f\u8bae\u6307\u5357',
+    [GameState.CHARACTER_EDITOR]: '\u89d2\u8272\u7f16\u8f91',
+  };
+  const displayedGameState = lang === 'zh'
+    ? zhGameStateLabels[gameState]
+    : (gameStateLabels[gameState]?.en ?? gameState);
+
   return (
-    <div className="relative w-screen h-[100dvh] min-h-[100svh] overflow-hidden bg-transparent text-cyber-green font-mono select-none">
+    <div className="relative w-screen h-[100dvh] min-h-[100svh] overflow-hidden bg-transparent text-cyber-cyan font-sans select-none">
       
       {/* Background Canvas */}
       <VoidCanvas 
@@ -526,27 +679,40 @@ const App: React.FC = () => {
       <div className="fixed inset-x-0 top-0 z-30 p-3 sm:p-4 pointer-events-none">
         <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-           <h1 className="inline-block max-w-full truncate text-[clamp(1.05rem,5.8vw,1.5rem)] sm:text-2xl font-bold bg-black/60 px-2 glitch-text border-l-4 border-cyber-pink">BYTE_FISHER_beta0.9.2</h1>
-           <div className="mt-1 sm:mt-2 max-w-full w-fit truncate text-xs sm:text-sm bg-black/60 px-2">
-             {t.status}: <span className="text-cyber-cyan">{gameState}</span>
+           <h1 className="ui-panel inline-block max-w-full truncate px-3 py-2 text-[clamp(1.05rem,5.8vw,1.5rem)] sm:text-2xl font-black glitch-text">Byte Fisher</h1>
+           <div className="ui-badge mt-2 max-w-full w-fit truncate px-3 py-1 text-xs sm:text-sm">
+             {t.status}: <span>{displayedGameState}</span>
+           </div>
+           <div className="ui-panel mt-2 max-w-[min(88vw,24rem)] px-3 py-2 text-[0.68rem] sm:text-xs leading-snug">
+             {activeContract ? (
+               <>
+                 <span className="text-cyber-yellow font-bold">{t.contract}</span>: {getCatalogItemName(activeContract.itemId)} {activeContractProgress}/{activeContract.target}
+                 <span className="text-cyber-green font-bold"> +${activeContract.reward}</span>
+               </>
+             ) : (
+               <span className="text-cyber-green font-bold">{t.contractsComplete}</span>
+             )}
            </div>
            <div className="mt-1 pointer-events-auto flex flex-wrap gap-2">
              <button 
                onClick={() => setLang(prev => prev === 'en' ? 'zh' : 'en')}
-               className="bg-black/60 border border-cyber-gray text-[0.65rem] sm:text-xs px-2 py-1 hover:border-cyber-green text-gray-400 hover:text-cyber-green transition-colors whitespace-nowrap"
+               className="ui-button px-2 py-1 text-[0.65rem] sm:text-xs whitespace-nowrap"
              >
-               [{lang === 'en' ? 'EN' : '中文'}] SWITCH LANG
+               {lang === 'en' ? 'EN' : '\u4e2d\u6587'}
+               {/*
+               {lang === 'en' ? 'EN' : '中文'}
+               */}
              </button>
              <button
                onClick={() => setAudioMuted(prev => !prev)}
-               className="bg-black/60 border border-cyber-gray text-[0.65rem] sm:text-xs px-2 py-1 hover:border-cyber-green text-gray-400 hover:text-cyber-green transition-colors whitespace-nowrap"
+               className="ui-button px-2 py-1 text-[0.65rem] sm:text-xs whitespace-nowrap"
              >
                {audioMuted ? t.audioMuted : t.audioOn}
              </button>
            </div>
         </div>
         <div className="shrink-0 pointer-events-auto">
-          <div className="bg-cyber-dark/95 border border-cyber-green px-3 sm:px-4 py-2 text-base sm:text-xl font-bold shadow-[0_0_10px_#39ff14] transition-all duration-300">
+          <div className="ui-badge px-3 sm:px-4 py-2 text-base sm:text-xl transition-all duration-300">
              ${displayCredits}
           </div>
         </div>
@@ -555,25 +721,25 @@ const App: React.FC = () => {
           <div className="mt-2 sm:ml-auto grid grid-cols-4 sm:grid-cols-2 gap-1.5 sm:gap-2 w-full sm:w-64 pointer-events-auto">
              <button
                onClick={() => setGameState(GameState.SHOP)}
-               className="min-h-9 bg-cyber-yellow text-black px-1 sm:px-2 py-1 text-[0.66rem] sm:text-base leading-tight hover:bg-white hover:scale-105 font-bold transition-all duration-200 hover:shadow-[0_0_15px_#fdfd00] active:scale-95 whitespace-nowrap overflow-hidden text-ellipsis"
+               className="ui-button min-h-9 px-1 sm:px-2 py-1 text-[0.66rem] sm:text-base leading-tight whitespace-nowrap overflow-hidden text-ellipsis"
              >
                {t.market}
              </button>
              <button
                onClick={() => setGameState(GameState.TERMINAL)}
-               className="min-h-9 bg-cyber-pink text-black px-1 sm:px-2 py-1 text-[0.66rem] sm:text-base leading-tight hover:bg-white hover:scale-105 font-bold transition-all duration-200 hover:shadow-[0_0_15px_#ff00ff] active:scale-95 whitespace-nowrap overflow-hidden text-ellipsis"
+               className="ui-button ui-button-coral min-h-9 px-1 sm:px-2 py-1 text-[0.66rem] sm:text-base leading-tight whitespace-nowrap overflow-hidden text-ellipsis"
              >
                {t.terminal}
              </button>
              <button
                onClick={() => setGameState(GameState.CODEX)}
-               className="min-h-9 bg-cyber-green text-black px-1 sm:px-2 py-1 text-[0.66rem] sm:text-base leading-tight hover:bg-white hover:scale-105 font-bold transition-all duration-200 hover:shadow-[0_0_15px_#39ff14] active:scale-95 whitespace-nowrap overflow-hidden text-ellipsis"
+               className="ui-button ui-button-primary min-h-9 px-1 sm:px-2 py-1 text-[0.66rem] sm:text-base leading-tight whitespace-nowrap overflow-hidden text-ellipsis"
              >
                {t.codex}
              </button>
              <button
                onClick={() => setGameState(GameState.GUIDEBOOK)}
-               className="min-h-9 bg-cyber-cyan text-black px-1 sm:px-2 py-1 text-[0.66rem] sm:text-base leading-tight hover:bg-white hover:scale-105 font-bold transition-all duration-200 hover:shadow-[0_0_15px_#00f3ff] active:scale-95 whitespace-nowrap overflow-hidden text-ellipsis"
+               className="ui-button min-h-9 px-1 sm:px-2 py-1 text-[0.66rem] sm:text-base leading-tight whitespace-nowrap overflow-hidden text-ellipsis"
              >
                {t.guidebook}
              </button>
@@ -582,11 +748,17 @@ const App: React.FC = () => {
       )}
 
       {/* Main Action Area */}
+      {showHud && contractToast && (
+        <div className="ui-panel fixed left-1/2 top-28 z-40 -translate-x-1/2 px-4 py-2 text-center text-sm text-cyber-yellow animate-slide-up">
+          {t.contractComplete}: {getCatalogItemName(contractToast.itemId)} +${contractToast.reward}
+        </div>
+      )}
+
       {gameState === GameState.IDLE && (
-         <div className="absolute bottom-28 sm:bottom-20 left-1/2 -translate-x-1/2 z-20 animate-pulse">
+         <div className="absolute bottom-28 sm:bottom-20 left-1/2 -translate-x-1/2 z-20">
             <button
               onClick={handleCast}
-              className="relative bg-cyber-green text-black text-xl sm:text-2xl px-8 sm:px-12 py-3 sm:py-4 font-bold rounded-sm hover:scale-110 active:scale-90 transition-all duration-300 shadow-[0_0_30px_#39ff14] hover:shadow-[0_0_50px_#39ff14] before:absolute before:inset-0 before:bg-cyber-green before:animate-ping before:opacity-75 before:rounded-sm"
+              className="ui-button ui-button-primary relative text-xl sm:text-2xl px-8 sm:px-12 py-3 sm:py-4"
             >
               <span className="relative z-10">{t.castLine}</span>
             </button>
@@ -594,7 +766,7 @@ const App: React.FC = () => {
       )}
 
       {gameState === GameState.WAITING && (
-         <div className="absolute bottom-32 left-1/2 -translate-x-1/2 text-cyber-cyan animate-pulse z-20 font-bold bg-black/60 px-4 py-1 text-center whitespace-nowrap">
+         <div className="ui-panel absolute bottom-32 left-1/2 -translate-x-1/2 z-20 px-4 py-2 text-center font-bold text-cyber-yellow whitespace-nowrap animate-pulse">
             {t.scanning}
          </div>
       )}
@@ -613,29 +785,35 @@ const App: React.FC = () => {
 
       {/* Catch Success Modal */}
       {gameState === GameState.CAUGHT && lastCaught && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-4" onClick={claimCatch}>
-           <div className={`w-full max-w-md bg-cyber-dark border-4 p-5 sm:p-8 text-center animate-bounce-in relative overflow-hidden
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#05070d]/78 backdrop-blur-sm animate-fade-in p-4" onClick={claimCatch}>
+           <div className={`ui-panel w-full max-w-md border-4 p-5 sm:p-8 text-center animate-bounce-in relative overflow-hidden
              ${lastCaught.rarity === 'legendary' || lastCaught.type === LootType.SPECIAL
-               ? 'border-cyber-yellow shadow-[0_0_80px_#ffd700] animate-pulse'
+               ? 'border-cyber-yellow'
                : lastCaught.rarity === 'rare'
-               ? 'border-cyber-pink shadow-[0_0_60px_#ff00ff]'
+               ? 'border-cyber-pink'
                : lastCaught.rarity === 'uncommon'
-               ? 'border-cyber-cyan shadow-[0_0_50px_#00f3ff]'
-               : 'border-cyber-green shadow-[0_0_40px_#39ff14]'
+               ? 'border-cyber-cyan'
+               : 'border-cyber-green'
              }`}>
-              <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent animate-shimmer"></div>
-              <h2 className="text-2xl text-white mb-2 relative z-10">{t.signalAcquired}</h2>
-              <div className={`text-3xl sm:text-4xl my-4 font-bold relative z-10 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] break-words ${
+              <div className="absolute inset-x-0 top-0 h-2 bg-cyber-yellow/70"></div>
+              <h2 className="text-2xl text-cyber-yellow mb-3 relative z-10 font-black">{t.signalAcquired}</h2>
+              <img
+                src={getItemArt(lastCaught)}
+                alt=""
+                draggable={false}
+                className="relative z-10 mx-auto h-24 w-24 object-contain [image-rendering:pixelated] drop-shadow-[0_0_16px_rgba(0,243,255,0.55)]"
+              />
+              <div className={`text-3xl sm:text-4xl my-4 font-black relative z-10 break-words ${
                 lastCaught.rarity === 'legendary' || lastCaught.type === LootType.SPECIAL
-                  ? 'text-cyber-yellow animate-pulse'
+                  ? 'text-cyber-yellow'
                   : lastCaught.rarity === 'rare'
                   ? 'text-cyber-pink'
                   : lastCaught.rarity === 'uncommon'
                   ? 'text-cyber-cyan'
                   : 'text-cyber-green'
               }`}>{getItemName(lastCaught)}</div>
-              <div className="text-gray-400 mb-6 relative z-10">{t.rarity[lastCaught.rarity]} | {t.value}: ${lastCaught.value}</div>
-              <div className="text-sm animate-pulse text-cyber-green relative z-10">{t.clickContinue}</div>
+              <div className="ui-panel-soft mb-6 relative z-10 mx-auto w-fit px-4 py-2 text-sm">{t.rarity[lastCaught.rarity]} | {t.value}: ${lastCaught.sellValue ?? lastCaught.value}</div>
+              <div className="text-sm text-cyber-yellow relative z-10">{t.clickContinue}</div>
            </div>
         </div>
       )}
@@ -690,8 +868,8 @@ const App: React.FC = () => {
 
       {/* Mobile Controls Hint */}
       {showHud && (
-        <div className="fixed bottom-2 w-full text-center text-xs text-gray-600 pointer-events-none z-20">
-          beta0.9.2 // SECURITY_UPDATE // GLITCH_PATCHED
+        <div className="fixed bottom-2 w-full text-center text-xs text-cyber-cyan/70 pointer-events-none z-20">
+          {APP_VERSION} · neon stream
         </div>
       )}
     </div>

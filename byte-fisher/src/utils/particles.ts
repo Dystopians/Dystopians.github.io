@@ -153,7 +153,7 @@ export class ParticleSystem {
           vx: 0, vy: 0,
           life: duration,
           maxLife: duration,
-          size: 5 + i * 5,
+          size: 5 + (maxSize / 3) * i,
           color,
           alpha: 1,
           type: 'ring'
@@ -178,16 +178,18 @@ export class ParticleSystem {
 
   createLegendaryBeam(x: number, y: number, screenHeight: number) {
     // Golden beam from bottom to top
-    for (let i = 0; i < 50; i++) {
+    const beamCount = Math.max(30, Math.min(80, Math.floor(screenHeight / 18)));
+    const beamStep = screenHeight / beamCount;
+    for (let i = 0; i < beamCount; i++) {
       this.particles.push({
         x: x + (Math.random() - 0.5) * 30,
-        y: y - i * 10,
+        y: y - i * beamStep,
         vx: (Math.random() - 0.5) * 0.5,
         vy: -1,
         life: 40 + Math.random() * 20,
         maxLife: 60,
         size: 3 + Math.random() * 2,
-        color: i % 2 === 0 ? '#ffd700' : '#fdfd00',
+        color: i % 2 === 0 ? '#fdfd00' : '#00f3ff',
         alpha: 1,
         type: 'star',
         rotation: Math.random() * Math.PI * 2,

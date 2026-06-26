@@ -5,17 +5,18 @@ export default {
     extend: {
       colors: {
         cyber: {
-          black: '#050505',
-          dark: '#0a0f0d',
+          black: '#05070d',
+          dark: '#0b1020',
           green: '#39ff14',
           pink: '#ff00ff',
           cyan: '#00f3ff',
           yellow: '#fdfd00',
-          gray: '#2a2a2a'
+          gray: '#253042'
         }
       },
       fontFamily: {
-        mono: ['"Courier New"', 'Courier', 'monospace']
+        mono: ['"Courier New"', 'Courier', 'monospace'],
+        sans: ['"Trebuchet MS"', '"Segoe UI"', 'Arial', 'sans-serif']
       }
     }
   },

@@ -1,7 +1,8 @@
 import React, { useRef, useEffect } from 'react';
 import { GameState, LootItem, Upgrades, LootType } from '../types';
 import { ParticleSystem } from '../utils/particles';
-import { ScreenShakeManager, FloatingTextManager, GlowEffect } from '../utils/animations';
+import { ScreenShakeManager, FloatingTextManager } from '../utils/animations';
+import { CHARACTER_ART, ENVIRONMENT_ART, EQUIPMENT_ART, LOOT_ART, UI_ART } from '../assets/generated/manifest';
 
 interface VoidCanvasProps {
   gameState: GameState;
@@ -22,9 +23,10 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
 
   // Animation state
   const timeRef = useRef<number>(0);
-  const debrisRef = useRef<{x: number, y: number, type: string, speed: number, offset: number, scale: number}[]>([]);
+  const debrisRef = useRef<{x: number, y: number, assetId: string, speed: number, offset: number, scale: number}[]>([]);
   const bubbleRef = useRef<{x: number, y: number, size: number, speed: number}[]>([]);
   const seaweedRef = useRef<{x: number, height: number, width: number, offset: number, color: string}[]>([]);
+  const artImagesRef = useRef<Record<string, HTMLImageElement>>({});
 
   // Character & Rod animation state
   const charPos = useRef({ x: 0.5, y: 0.2 });
@@ -38,18 +40,26 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
   const particlesRef = useRef<ParticleSystem>(new ParticleSystem());
   const screenShakeRef = useRef<ScreenShakeManager>(new ScreenShakeManager());
   const floatingTextRef = useRef<FloatingTextManager>(new FloatingTextManager());
-  const equipmentGlowRef = useRef<{
-    boots: GlowEffect;
-    backpack: GlowEffect;
-    head: GlowEffect;
-    rod: GlowEffect;
-  }>({
-    boots: new GlowEffect(),
-    backpack: new GlowEffect(),
-    head: new GlowEffect(),
-    rod: new GlowEffect()
-  });
   const catchEffectTriggeredRef = useRef(false);
+
+  useEffect(() => {
+    const artSources: Record<string, string> = {
+      ...LOOT_ART,
+      fisher: CHARACTER_ART.fisher,
+      ...Object.fromEntries(
+        Object.entries(EQUIPMENT_ART).flatMap(([slot, levels]) =>
+          Object.entries(levels).map(([level, src]) => [`equipment_${slot}_${level}`, src])
+        )
+      ),
+      environment: ENVIRONMENT_ART.backdrop,
+      minigameTarget: UI_ART.minigameTarget,
+    };
+    Object.entries(artSources).forEach(([id, src]) => {
+      const image = new Image();
+      image.src = src;
+      artImagesRef.current[id] = image;
+    });
+  }, []);
 
   useEffect(() => {
     gameStateRef.current = gameState;
@@ -131,20 +141,38 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
       bubbleRef.current = [];
       seaweedRef.current = [];
 
-      const types = ['🐟', '🐟', '🐟', '🐟', '🐠', '🐠', '🐠', '🐡', '🐡', '🦈', '🐳', '🦑', '👞', '📦'];
-      for (let i = 0; i < 20; i++) {
+      const assetIds = [
+        'fish_neon_guppy',
+        'fish_laser_eel',
+        'fish_packet_puffer',
+        'fish_binary_bass',
+        'fish_glitch_trout',
+        'fish_prism_tetra',
+        'fish_firewall_angelfish',
+        'fish_cyber_koi',
+        'fish_chrome_manta',
+        'fish_void_ray',
+        'fish_space',
+        'trash_corrupted',
+        'trash_404',
+        'trash_null',
+        'trash_deprecated',
+        'trash_spaghetti',
+      ];
+      for (let i = 0; i < 18; i++) {
+        const direction = Math.random() > 0.5 ? 1 : -1;
         debrisRef.current.push({
-          x: Math.random() * W,
+          x: scalePx(96) + Math.random() * Math.max(1, W - scalePx(192)),
           // Spawn randomly within the water column, with 50px padding from surface and mud
           y: waterSurfaceY + scalePx(50) + Math.random() * (waterHeight - scalePx(100)),
-          type: types[Math.floor(Math.random() * types.length)],
-          speed: (Math.random() - 0.5) * scalePx(1.5),
+          assetId: assetIds[Math.floor(Math.random() * assetIds.length)],
+          speed: direction * scalePx(0.36 + Math.random() * 0.72),
           offset: Math.random() * 10,
-          scale: (0.8 + Math.random() * 0.4) * scaleRef.current
+          scale: (0.9 + Math.random() * 0.45) * scaleRef.current
         });
       }
 
-      for (let i = 0; i < 40; i++) {
+      for (let i = 0; i < 26; i++) {
         bubbleRef.current.push({
           x: Math.random() * W,
           // Bubbles can spawn anywhere in the water
@@ -154,13 +182,13 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
         });
       }
 
-      for (let i = 0; i < 60; i++) {
+      for (let i = 0; i < 0; i++) {
         seaweedRef.current.push({
           x: Math.random() * W,
-          height: scalePx(80 + Math.random() * 150),
-          width: scalePx(5 + Math.random() * 10),
+          height: scalePx(34 + Math.random() * 68),
+          width: scalePx(4 + Math.random() * 6),
           offset: Math.random() * Math.PI * 2,
-          color: Math.random() > 0.5 ? '#2e8b57' : '#3cb371'
+          color: Math.random() > 0.5 ? '#00f3ff' : '#ff00ff'
         });
       }
     };
@@ -177,43 +205,35 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
     window.addEventListener('resize', resize);
     resize();
 
-    // Drawing Helpers
-    const drawPixelRect = (x: number, y: number, w: number, h: number, color: string) => {
-      ctx.fillStyle = color;
-      ctx.fillRect(Math.floor(x), Math.floor(y), w, h);
-    };
+    const drawGeneratedArt = (
+      assetId: string,
+      centerX: number,
+      centerY: number,
+      width: number,
+      height: number,
+      alpha = 1,
+      rotation = 0
+    ) => {
+      const image = artImagesRef.current[assetId];
+      if (!image?.complete || image.naturalWidth === 0) return false;
 
-    const drawGlow = (x: number, y: number, size: number, color: string, intensity: number) => {
-      if (intensity <= 0) return;
       ctx.save();
-      ctx.shadowBlur = size * intensity;
-      ctx.shadowColor = color;
-      ctx.fillStyle = color;
-      ctx.globalAlpha = intensity * 0.3;
-      ctx.beginPath();
-      ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(rotation);
+      ctx.globalAlpha = alpha;
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(image, -width / 2, -height / 2, width, height);
       ctx.restore();
+      return true;
     };
 
     const drawCharacter = (t: number) => {
       const s = scalePx(4); // pixel scale
 
       const bootsLvl = upgradesRef.current?.stability || 1;
+      const rodLvl = upgradesRef.current?.netStrength || 1;
       const backpackLvl = upgradesRef.current?.barSize || 1;
       const headLvl = upgradesRef.current?.luck || 1;
-      const rodLvl = upgradesRef.current?.netStrength || 1;
-
-      // Update equipment glow effects based on level
-      equipmentGlowRef.current.boots.setPulse(bootsLvl >= 3 ? 0.8 : 0);
-      equipmentGlowRef.current.backpack.setPulse(backpackLvl >= 3 ? 0.8 : 0);
-      equipmentGlowRef.current.head.setPulse(headLvl >= 3 ? 0.8 : 0);
-      equipmentGlowRef.current.rod.setPulse(rodLvl >= 3 ? 0.8 : 0);
-
-      const bootsGlow = equipmentGlowRef.current.boots.update(t);
-      const backpackGlow = equipmentGlowRef.current.backpack.update(t);
-      const headGlow = equipmentGlowRef.current.head.update(t);
-      const rodGlow = equipmentGlowRef.current.rod.update(t);
 
       // Adjust height if floating (Boots lvl 5)
       let floatOffset = 0;
@@ -235,277 +255,122 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
       // --- Draw Dock (Pier Style) ---
       const dockY = charPos.current.y + 24 * s; // Use original Y for dock
       
-      ctx.fillStyle = '#0f0f0f';
-      for (let px = 0; px < canvas.width; px += scalePx(100)) {
-         ctx.fillRect(px + scalePx(10), dockY, scalePx(10), canvas.height - dockY); 
-         ctx.fillStyle = '#1a1a1a';
-         ctx.fillRect(px, dockY, scalePx(15), canvas.height - dockY); 
+      const dockHeight = scalePx(30);
+      ctx.fillStyle = '#05070d';
+      ctx.fillRect(0, dockY, canvas.width, dockHeight);
+      ctx.fillStyle = '#0b1020';
+      ctx.fillRect(0, dockY + scalePx(5), canvas.width, scalePx(18));
+      ctx.fillStyle = 'rgba(0, 243, 255, 0.75)';
+      for (let py = dockY + scalePx(7); py < dockY + dockHeight; py += scalePx(9)) {
+        ctx.fillRect(0, py, canvas.width, scalePx(1.5));
       }
-      ctx.fillStyle = '#2a2a2a'; 
-      ctx.fillRect(0, dockY, canvas.width, scalePx(20)); 
-      ctx.fillStyle = '#3a3a3a'; 
-      ctx.fillRect(0, dockY, canvas.width, scalePx(5)); 
+      for (let px = scalePx(16); px < canvas.width; px += scalePx(64)) {
+        ctx.fillStyle = px % scalePx(128) < scalePx(64) ? 'rgba(255, 0, 255, 0.58)' : 'rgba(253, 253, 0, 0.54)';
+        ctx.fillRect(px, dockY + scalePx(4), scalePx(18), scalePx(4));
+      }
       
       // Shadow (dynamic if floating)
       ctx.fillStyle = 'rgba(0,0,0,0.5)';
       const shadowSize = bootsLvl >= 5 ? scalePx(40) + Math.sin(t * 3) * scalePx(5) : scalePx(60);
       ctx.fillRect(x - shadowSize/2, dockY, shadowSize, scalePx(5)); 
 
-      // --- Draw Boots (STABILITY) ---
-      // Legs (Standard)
-      drawPixelRect(x - 4*s, y + 12*s, 3*s, 12*s, '#1a1a1a'); 
-      drawPixelRect(x + 1*s, y + 12*s, 3*s, 12*s, '#1a1a1a'); 
+      {
+      drawGeneratedArt(
+        `equipment_barSize_${Math.min(Math.max(backpackLvl, 1), 5)}`,
+        x - scalePx(35),
+        y + scalePx(70),
+        scalePx(50),
+        scalePx(50),
+        0.95
+      );
 
-      if (bootsLvl === 1) {
-        // Basic Shoes
-        drawPixelRect(x - 5*s, y + 22*s, 4*s, 2*s, '#333'); 
-        drawPixelRect(x + 1*s, y + 22*s, 4*s, 2*s, '#333'); 
-      } else if (bootsLvl === 2) {
-         // Heavy Boots
-         drawPixelRect(x - 5*s, y + 20*s, 4*s, 4*s, '#555'); 
-         drawPixelRect(x + 1*s, y + 20*s, 4*s, 4*s, '#555'); 
-      } else if (bootsLvl === 3) {
-         // Piston Boots
-         drawPixelRect(x - 6*s, y + 18*s, 5*s, 6*s, '#4a4a4a');
-         drawPixelRect(x + 2*s, y + 18*s, 5*s, 6*s, '#4a4a4a');
-         drawPixelRect(x - 6*s, y + 22*s, 6*s, 2*s, '#777'); // piston
-         drawPixelRect(x + 2*s, y + 22*s, 6*s, 2*s, '#777');
-         drawGlow(x - 2*s, y + 22*s, scalePx(15), '#777', bootsGlow);
-         drawGlow(x + 4*s, y + 22*s, scalePx(15), '#777', bootsGlow);
-      } else if (bootsLvl === 4) {
-         // Jet Boots
-         drawPixelRect(x - 6*s, y + 18*s, 5*s, 6*s, '#fff');
-         drawPixelRect(x + 2*s, y + 18*s, 5*s, 6*s, '#fff');
-         // Flames
-         if (Math.random() > 0.5) {
-             drawPixelRect(x - 5*s, y + 24*s, 3*s, 2*s, '#ffaa00');
-             drawPixelRect(x + 3*s, y + 24*s, 3*s, 2*s, '#ffaa00');
-         }
-         drawGlow(x - 2*s, y + 24*s, scalePx(20), '#ff6600', bootsGlow * 1.2);
-         drawGlow(x + 4*s, y + 24*s, scalePx(20), '#ff6600', bootsGlow * 1.2);
-      } else if (bootsLvl === 5) {
-         // Anti-Grav Base
-         drawPixelRect(x - 6*s, y + 22*s, 14*s, 2*s, '#00f3ff');
-         drawPixelRect(x - 4*s, y + 18*s, 10*s, 4*s, '#333');
-         // Particles
-         drawPixelRect(x - 8*s, y + 24*s, 18*s, 1, 'rgba(0, 243, 255, 0.5)');
-         drawGlow(x + 1*s, y + 22*s, scalePx(25), '#00f3ff', bootsGlow * 1.5);
-         // Add trail particles
-         if (Math.random() > 0.7) {
-           particlesRef.current.createTrail(x + (Math.random() - 0.5) * 12*s, y + 24*s, '#00f3ff');
-         }
+      const characterDrawn = drawGeneratedArt('fisher', x - scalePx(4), y + scalePx(58), scalePx(92), scalePx(116), 1);
+      if (!characterDrawn) {
+        ctx.fillStyle = '#00f3ff';
+        ctx.fillRect(x - scalePx(18), y + scalePx(28), scalePx(36), scalePx(50));
+        ctx.fillStyle = '#ff00ff';
+        ctx.fillRect(x - scalePx(24), y + scalePx(6), scalePx(48), scalePx(12));
       }
 
-      // Torso
-      drawPixelRect(x - 4*s, y + 2*s, 8*s, 10*s, '#0a2a0a'); 
-      drawPixelRect(x - 2*s, y + 3*s, 4*s, 8*s, '#39ff14'); 
+      drawGeneratedArt(
+        `equipment_stability_${Math.min(Math.max(bootsLvl, 1), 5)}`,
+        x + scalePx(2),
+        y + scalePx(112),
+        scalePx(62),
+        scalePx(44),
+        0.98
+      );
+      drawGeneratedArt(
+        `equipment_luck_${Math.min(Math.max(headLvl, 1), 5)}`,
+        x - scalePx(4),
+        y + scalePx(22),
+        scalePx(60),
+        scalePx(46),
+        0.98
+      );
 
-      // --- Draw Backpack/Antenna (BAR SIZE) ---
-      if (backpackLvl >= 2) {
-         // Base Box
-         drawPixelRect(x - 6*s, y + 3*s, 2*s, 6*s, '#333');
-         
-         if (backpackLvl === 3) {
-             // Simple Antenna
-             ctx.strokeStyle = '#aaa';
-             ctx.lineWidth = scalePx(2);
-             ctx.beginPath();
-             ctx.moveTo(x - 5*s, y + 3*s);
-             ctx.lineTo(x - 5*s, y - 5*s);
-             ctx.stroke();
-             if (Math.floor(t * 5) % 2 === 0) {
-                ctx.fillStyle = '#ff0000';
-                ctx.fillRect(x - 6*s, y - 6*s, 2*s, 2*s);
-                drawGlow(x - 5*s, y - 6*s, scalePx(10), '#ff0000', backpackGlow * 1.5);
-             }
-         } else if (backpackLvl === 4) {
-             // Satellite Dish
-             ctx.fillStyle = '#ccc';
-             ctx.beginPath();
-             ctx.arc(x - 6*s, y - 2*s, 3*s, 0.5, Math.PI * 1.5);
-             ctx.fill();
-             // Signal waves
-             if (Math.floor(t * 8) % 3 === 0) {
-                 ctx.strokeStyle = '#00ff00';
-                 ctx.beginPath();
-                 ctx.arc(x - 6*s, y - 2*s, 5*s, 3, 5);
-                 ctx.stroke();
-             }
-             drawGlow(x - 6*s, y - 2*s, scalePx(15), '#00ff00', backpackGlow);
-         } else if (backpackLvl === 5) {
-             // Hover Drone
-             const dx = x - 15*s + Math.sin(t*2)*scalePx(5);
-             const dy = y - 5*s + Math.cos(t*3)*scalePx(3);
-             drawPixelRect(dx, dy, 4*s, 2*s, '#fff'); // body
-             drawPixelRect(dx-1*s, dy-1*s, 6*s, 1*s, '#00f3ff'); // rotors
-             drawGlow(dx + 2*s, dy, scalePx(20), '#00f3ff', backpackGlow * 1.5);
-             // Beam
-             ctx.fillStyle = 'rgba(0, 243, 255, 0.1)';
-             ctx.beginPath();
-             ctx.moveTo(dx + 2*s, dy + 2*s);
-             ctx.lineTo(x, y + 5*s);
-             ctx.lineTo(x + 2*s, y + 5*s);
-             ctx.fill();
-             // Add drone trail particles
-             if (Math.random() > 0.8) {
-               particlesRef.current.createTrail(dx + 2*s, dy + 2*s, '#00f3ff');
-             }
-         }
-      }
-
-      // --- Draw Head/Visor (LUCK) ---
-      // Head base
-      drawPixelRect(x - 3*s, y - 4*s, 6*s, 6*s, '#f0d0b0'); 
-
-      if (headLvl === 1) {
-         // Basic Cap
-         drawPixelRect(x - 4*s, y - 5*s, 8*s, 2*s, '#333');
-         drawPixelRect(x + 2*s, y - 4*s, 2*s, 1*s, '#333'); 
-      } else if (headLvl === 2) {
-         // Red VR Goggles
-         drawPixelRect(x - 3*s, y - 3*s, 7*s, 2*s, '#cc0000');
-         drawPixelRect(x - 4*s, y - 5*s, 8*s, 2*s, '#333'); // Keep hat
-      } else if (headLvl === 3) {
-         // Golden Visor
-         drawPixelRect(x - 3*s, y - 3*s, 7*s, 2*s, '#ffd700');
-         if (Math.random() > 0.9) drawPixelRect(x + 2*s, y - 3*s, 1*s, 1*s, '#fff'); // sparkle
-         drawGlow(x + 1*s, y - 2*s, scalePx(12), '#ffd700', headGlow);
-      } else if (headLvl === 4) {
-         // Cyber Glasses + Matrix Rain
-         drawPixelRect(x - 3*s, y - 3*s, 7*s, 2*s, '#000');
-         drawPixelRect(x - 1*s, y - 3*s, 1*s, 1*s, '#0f0');
-         drawPixelRect(x + 2*s, y - 3*s, 1*s, 1*s, '#0f0');
-         // Matrix effect above head
-         ctx.fillStyle = '#0f0';
-         ctx.font = `${scalePx(10)}px monospace`;
-         const char = String.fromCharCode(0x30A0 + Math.random() * 96);
-        ctx.fillText(char, x, y - 10*s - ((t * 50) % 20) * scaleRef.current);
-         drawGlow(x - 1*s, y - 2*s, scalePx(10), '#0f0', headGlow);
-         drawGlow(x + 2*s, y - 2*s, scalePx(10), '#0f0', headGlow);
-      } else if (headLvl === 5) {
-         // Holographic Halo
-         drawPixelRect(x - 3*s, y - 3*s, 7*s, 2*s, '#fff'); // White eyes
-         ctx.strokeStyle = '#fdfd00';
-         ctx.shadowBlur = scalePx(10);
-         ctx.shadowColor = '#fdfd00';
-         ctx.lineWidth = scalePx(2);
-         ctx.beginPath();
-         ctx.ellipse(x, y - 8*s, 6*s, 2*s, 0, 0, Math.PI * 2);
-         ctx.stroke();
-         ctx.shadowBlur = 0;
-         drawGlow(x, y - 8*s, scalePx(20), '#fdfd00', headGlow * 1.5);
-         // Add halo particles
-         if (Math.random() > 0.85) {
-           const angle = Math.random() * Math.PI * 2;
-           const dist = 6*s;
-           particlesRef.current.createTrail(
-             x + Math.cos(angle) * dist,
-             y - 8*s + Math.sin(angle) * dist * 0.3,
-             '#fdfd00'
-           );
-         }
-      }
-
-      // Arms
-      const shoulderX = x + 3*s;
-      const shoulderY = y + 4*s;
-      
-      const rodLen = scalePx(100);
+      const shoulderX = x + scalePx(35);
+      const shoulderY = y + scalePx(48);
+      const rodLen = scalePx(112);
       const tipX = shoulderX + Math.cos(armAngle) * rodLen;
       const tipY = shoulderY + Math.sin(armAngle) * rodLen;
-      
-      ctx.strokeStyle = '#f0d0b0';
-      ctx.lineWidth = 3 * s;
-      ctx.beginPath();
-      ctx.moveTo(shoulderX, shoulderY);
-      ctx.lineTo(shoulderX + Math.cos(armAngle)*scalePx(20), shoulderY + Math.sin(armAngle)*scalePx(20));
-      ctx.stroke();
-
-      // --- Draw Rod (NET STRENGTH) ---
-      ctx.beginPath();
-      ctx.moveTo(shoulderX, shoulderY);
-      ctx.lineTo(tipX, tipY);
-      ctx.lineWidth = scalePx(3);
-      
-      if (rodLvl === 1) {
-         // Bamboo
-         ctx.strokeStyle = '#8b5a2b';
-      } else if (rodLvl === 2) {
-         // Steel
-         ctx.strokeStyle = '#aaa';
-         ctx.lineWidth = scalePx(4);
-      } else if (rodLvl === 3) {
-         // Neon
-         const hue = (t * 50) % 360;
-         ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
-         ctx.shadowBlur = scalePx(5) * (1 + rodGlow);
-         ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
-         // Add trail effect
-         if (Math.random() > 0.8) {
-           const midX = (shoulderX + tipX) / 2;
-           const midY = (shoulderY + tipY) / 2;
-           particlesRef.current.createTrail(midX, midY, `hsl(${hue}, 100%, 50%)`);
-         }
-      } else if (rodLvl === 4) {
-         // Plasma
-         ctx.strokeStyle = '#ff00ff';
-         ctx.shadowBlur = scalePx(15) * (1 + rodGlow * 0.5);
-         ctx.shadowColor = '#ff00ff';
-         ctx.lineWidth = scalePx(4);
-         // Add plasma particles
-         if (Math.random() > 0.7) {
-           const midX = (shoulderX + tipX) / 2;
-           const midY = (shoulderY + tipY) / 2;
-           particlesRef.current.createTrail(midX + (Math.random() - 0.5) * 10, midY + (Math.random() - 0.5) * 10, '#ff00ff');
-         }
-      } else if (rodLvl === 5) {
-         // Quantum (Void)
-         ctx.strokeStyle = '#fff';
-         ctx.setLineDash([scalePx(5), scalePx(5)]);
-         ctx.shadowBlur = scalePx(20) * (1 + rodGlow * 0.8);
-         ctx.shadowColor = '#00f3ff';
-         // Add quantum particles
-         if (Math.random() > 0.6) {
-           const progress = Math.random();
-           const qx = shoulderX + (tipX - shoulderX) * progress;
-           const qy = shoulderY + (tipY - shoulderY) * progress;
-           particlesRef.current.createTrail(qx, qy, '#00f3ff');
-         }
-         drawGlow(tipX, tipY, scalePx(25), '#00f3ff', rodGlow * 1.5);
-      }
-      
-      ctx.stroke();
-      ctx.setLineDash([]); // Reset dash
-      ctx.shadowBlur = 0; // Reset shadow
-
-      // Rod Details (Reels)
-      if (rodLvl >= 2) {
-         ctx.fillStyle = '#333';
-         const reelX = shoulderX + Math.cos(armAngle) * scalePx(10);
-         const reelY = shoulderY + Math.sin(armAngle) * scalePx(10);
-         ctx.beginPath();
-         ctx.arc(reelX, reelY, scalePx(5), 0, Math.PI*2);
-         ctx.fill();
+      const sourceRodAngle = -Math.PI / 4;
+      const rodDrawn = drawGeneratedArt(
+        `equipment_netStrength_${Math.min(Math.max(rodLvl, 1), 5)}`,
+        shoulderX + Math.cos(armAngle) * rodLen * 0.42,
+        shoulderY + Math.sin(armAngle) * rodLen * 0.42,
+        scalePx(132),
+        scalePx(88),
+        1,
+        armAngle - sourceRodAngle
+      );
+      if (!rodDrawn) {
+        const rodColors = ['#00f3ff', '#39ff14', '#fdfd00', '#ff00ff', '#ffffff'];
+        ctx.strokeStyle = rodColors[Math.min(rodLvl, 5) - 1];
+        ctx.lineWidth = scalePx(3);
+        ctx.beginPath();
+        ctx.moveTo(shoulderX, shoulderY);
+        ctx.lineTo(tipX, tipY);
+        ctx.stroke();
+        ctx.fillStyle = '#05070d';
+        const reelX = shoulderX + Math.cos(armAngle) * scalePx(15);
+        const reelY = shoulderY + Math.sin(armAngle) * scalePx(15);
+        ctx.beginPath();
+        ctx.arc(reelX, reelY, scalePx(5), 0, Math.PI * 2);
+        ctx.fill();
       }
 
       rodTipPos.current = { x: tipX, y: tipY };
-      
-      // Basket
-      const basketX = charPos.current.x + scalePx(50);
+      const basketX = charPos.current.x + scalePx(54);
       const basketY = dockY - scalePx(20);
-      ctx.fillStyle = '#8B4513';
+      ctx.fillStyle = '#0b1020';
       ctx.fillRect(basketX, basketY, scalePx(30), scalePx(20));
-      ctx.strokeStyle = '#333';
+      ctx.strokeStyle = '#00f3ff';
       ctx.strokeRect(basketX, basketY, scalePx(30), scalePx(20));
+      return;
+      }
+
     };
 
     const drawEnvironment = (t: number) => {
       const waterLevel = charPos.current.y + scalePx(96 + 20); 
+      const backgroundImage = artImagesRef.current.environment;
+
+      if (backgroundImage?.complete) {
+        const scale = Math.max(canvas.width / backgroundImage.width, canvas.height / backgroundImage.height);
+        const width = backgroundImage.width * scale;
+        const height = backgroundImage.height * scale;
+        ctx.save();
+        ctx.globalAlpha = 0.92;
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(backgroundImage, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height);
+        ctx.restore();
+      }
       
       const gradient = ctx.createLinearGradient(0, waterLevel, 0, canvas.height);
-      gradient.addColorStop(0, '#0055aa'); 
-      gradient.addColorStop(0.4, '#003366'); 
-      gradient.addColorStop(1, '#001122'); 
+      gradient.addColorStop(0, 'rgba(0, 243, 255, 0.28)'); 
+      gradient.addColorStop(0.42, 'rgba(0, 91, 122, 0.44)'); 
+      gradient.addColorStop(1, 'rgba(2, 7, 18, 0.76)'); 
 
       ctx.fillStyle = gradient;
       ctx.fillRect(0, waterLevel, canvas.width, canvas.height - waterLevel);
@@ -513,25 +378,32 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
       ctx.beginPath();
       ctx.moveTo(0, waterLevel);
       ctx.lineTo(canvas.width, waterLevel);
-      ctx.strokeStyle = '#00ffff'; 
+      ctx.strokeStyle = 'rgba(0, 243, 255, 0.88)'; 
       ctx.lineWidth = scalePx(3);
       ctx.stroke();
 
       const mudLevel = canvas.height - scalePx(80);
-      ctx.fillStyle = '#2d1e18'; 
+      ctx.fillStyle = 'rgba(3, 5, 10, 0.88)'; 
       ctx.fillRect(0, mudLevel, canvas.width, scalePx(80));
       
-      ctx.fillStyle = '#3e2723';
+      ctx.fillStyle = 'rgba(0, 243, 255, 0.26)';
       for(let i=0; i<20; i++) {
         const mx = (i * scalePx(100) + t * scalePx(20)) % canvas.width;
-        ctx.fillRect(mx, mudLevel + scalePx(10), scalePx(30), scalePx(10));
+        ctx.fillRect(mx, mudLevel + scalePx(10), scalePx(46), scalePx(3));
+      }
+
+      ctx.fillStyle = 'rgba(255, 0, 255, 0.18)';
+      for (let i = 0; i < 18; i++) {
+        const rx = (i * scalePx(130) - t * scalePx(24)) % (canvas.width + scalePx(130));
+        const ry = waterLevel + scalePx(18 + (i % 7) * 31);
+        ctx.fillRect(rx - scalePx(130), ry, scalePx(64), scalePx(2));
       }
 
       // 3. Dense Seaweed
       seaweedRef.current.forEach((weed) => {
         const grad = ctx.createLinearGradient(0, canvas.height, 0, canvas.height - weed.height);
-        grad.addColorStop(0, '#0f3a1a'); 
-        grad.addColorStop(1, '#39ff14'); 
+        grad.addColorStop(0, '#062036'); 
+        grad.addColorStop(1, '#00f3ff'); 
 
         ctx.fillStyle = grad;
         
@@ -553,7 +425,7 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
       });
 
       // Bubbles
-      ctx.fillStyle = 'rgba(200, 255, 255, 0.4)'; 
+      ctx.fillStyle = 'rgba(0, 243, 255, 0.34)'; 
       bubbleRef.current.forEach(b => {
         b.y -= b.speed;
         if (b.y < waterLevel) b.y = canvas.height - Math.random() * 50; 
@@ -563,15 +435,15 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
       });
 
       // Debris / Fish
-      ctx.font = `${scalePx(30)}px Arial`; 
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = '#ffffff'; 
       
       debrisRef.current.forEach(d => {
         d.x += d.speed;
-        if (d.x > canvas.width + 50) d.x = -50;
-        if (d.x < -50) d.x = canvas.width + 50;
+        const wrapMargin = scalePx(d.assetId.startsWith('trash') ? 56 : 120);
+        if (d.x > canvas.width + wrapMargin) d.x = -wrapMargin;
+        if (d.x < -wrapMargin) d.x = canvas.width + wrapMargin;
         const floatY = d.y + Math.sin(t * 2 + d.offset) * scalePx(5);
         
         // Relaxed visibility check to ensure fish near surface are seen
@@ -584,7 +456,16 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
            }
            const scale = d.scale || 1;
            ctx.scale(scale, scale);
-           ctx.fillText(d.type, 0, 0);
+           const asset = artImagesRef.current[d.assetId];
+           if (asset?.complete) {
+             const w = scalePx(d.assetId.startsWith('trash') ? 36 : 58) / Math.max(scale, 0.01);
+             const h = scalePx(d.assetId.startsWith('trash') ? 36 : 40) / Math.max(scale, 0.01);
+             ctx.imageSmoothingEnabled = false;
+             ctx.drawImage(asset, -w / 2, -h / 2, w, h);
+           } else {
+             ctx.font = `${scalePx(30)}px Arial`;
+              ctx.fillText('><>', 0, 0);
+           }
            ctx.restore();
         }
       });
@@ -698,10 +579,19 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
 
       // Draw Hooked Fish (Signal)
       if (gameStateRef.current === GameState.MINIGAME) {
+        const hookedFish = artImagesRef.current.minigameTarget;
+        const fishY = bobberPos.current.y + scalePx(30) + Math.sin(t*15)*scalePx(5);
+        if (hookedFish?.complete) {
+          ctx.save();
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(hookedFish, bobberPos.current.x - scalePx(24), fishY - scalePx(16), scalePx(48), scalePx(32));
+          ctx.restore();
+        } else {
+          ctx.font = `${scalePx(40)}px Arial`;
+          ctx.fillText('><>', bobberPos.current.x, fishY);
+        }
         ctx.font = `${scalePx(40)}px Arial`;
-        ctx.fillText('🐟', bobberPos.current.x, bobberPos.current.y + scalePx(30) + Math.sin(t*15)*scalePx(5)); 
-        ctx.font = `${scalePx(40)}px Arial`;
-        ctx.fillStyle = '#ffff00';
+      ctx.fillStyle = '#fdfd00';
         ctx.fillText('!', bobberPos.current.x, bobberPos.current.y - scalePx(40));
       }
 
@@ -722,8 +612,8 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
            // Particles based on rarity
            if (item.rarity === 'legendary' || item.type === LootType.SPECIAL) {
              particlesRef.current.createLegendaryBeam(basketX + scalePx(15), basketY, canvas.height);
-             particlesRef.current.createShockwave(basketX + scalePx(15), basketY, '#ffd700', 100, 40);
-             floatingTextRef.current.add('LEGENDARY!', basketX + scalePx(15), basketY - scalePx(60), '#ffd700', 24);
+             particlesRef.current.createShockwave(basketX + scalePx(15), basketY, '#fdfd00', 100, 40);
+             floatingTextRef.current.add('LEGENDARY!', basketX + scalePx(15), basketY - scalePx(60), '#fdfd00', 24);
            } else if (item.rarity === 'rare') {
              particlesRef.current.createExplosion(basketX + scalePx(15), basketY, '#ff00ff', 30, 6);
              particlesRef.current.createSparkles(basketX + scalePx(15), basketY, '#ff00ff', 15);
@@ -738,10 +628,24 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
 
          // Special Effect for Treasure
          if (lastCaughtRef.current.type === LootType.SPECIAL) {
-             ctx.font = `${scalePx(50)}px Arial`;
-             ctx.fillText('🎁', basketX + scalePx(15), basketY - scalePx(30) - (Math.sin(t*10)*scalePx(10)));
+             const specialArt = artImagesRef.current[lastCaughtRef.current.itemId];
+             if (specialArt?.complete) {
+               ctx.save();
+               ctx.imageSmoothingEnabled = false;
+               ctx.drawImage(
+                 specialArt,
+                 basketX - scalePx(12),
+                 basketY - scalePx(62) - (Math.sin(t*10)*scalePx(10)),
+                 scalePx(54),
+                 scalePx(54)
+               );
+               ctx.restore();
+             } else {
+               ctx.font = `${scalePx(50)}px Arial`;
+                ctx.fillText('BOX', basketX + scalePx(15), basketY - scalePx(30) - (Math.sin(t*10)*scalePx(10)));
+             }
              // Sparkles
-             ctx.fillStyle = '#ffd700';
+             ctx.fillStyle = '#fdfd00';
              for(let i=0; i<5; i++) {
                  ctx.fillRect(
                     basketX + Math.random()*scalePx(40),
@@ -750,8 +654,24 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
                  );
              }
          } else {
-             ctx.font = `${scalePx(30)}px Arial`;
-             ctx.fillText('✨', basketX + scalePx(15), basketY - scalePx(20) - (Math.sin(t*10)*scalePx(10)));
+             const item = lastCaughtRef.current;
+             const artId = item.type === LootType.CHAR ? 'char_byte' : item.itemId;
+             const itemArt = artImagesRef.current[artId];
+             if (itemArt?.complete) {
+               ctx.save();
+               ctx.imageSmoothingEnabled = false;
+               ctx.drawImage(
+                 itemArt,
+                 basketX - scalePx(10),
+                 basketY - scalePx(58) - (Math.sin(t*10)*scalePx(10)),
+                 scalePx(50),
+                 scalePx(38)
+               );
+               ctx.restore();
+             } else {
+               ctx.font = `${scalePx(30)}px Arial`;
+                ctx.fillText('OK', basketX + scalePx(15), basketY - scalePx(20) - (Math.sin(t*10)*scalePx(10)));
+             }
          }
       }
     };

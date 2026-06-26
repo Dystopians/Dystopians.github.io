@@ -43,6 +43,13 @@ Deno.serve(async (req) => {
     return json(400, { error: 'Missing required fields.' });
   }
 
+  const sanitizedName = name.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 12);
+  const sanitizedMessage = message.replace(/[^\x20-\x7E]/g, '').slice(0, 50);
+
+  if (!sanitizedName || !sanitizedMessage) {
+    return json(400, { error: 'Invalid name or message.' });
+  }
+
   const verifyRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -92,8 +99,8 @@ Deno.serve(async (req) => {
   const { data, error } = await supabase
     .from('bytefisher_messages')
     .insert({
-      name: name.slice(0, 12),
-      message: message.slice(0, 50),
+      name: sanitizedName,
+      message: sanitizedMessage,
       session_id: sessionId,
     })
     .select('id, name, message, created_at')

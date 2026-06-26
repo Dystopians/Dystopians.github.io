@@ -1,5 +1,4 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { TEXT } from '../locales';
 
 interface PixelEditorProps {
   partName: string;
@@ -14,13 +13,13 @@ const PIXEL_SIZE = 4; // 1游戏像素 = 4实际像素
 
 // 预设调色板
 const PALETTE = [
-  '#050505', '#1a1a1a', '#333333', '#555555', '#777777', '#aaa', '#ccc', '#fff',
+  '#05070d', '#0b1020', '#111827', '#253042', '#555555', '#777777', '#aaa', '#fff',
   '#f0d0b0', '#8b7355', '#8b5a2b', '#8B4513',
   '#39ff14', '#ff00ff', '#00f3ff', '#fdfd00', '#ffd700',
   '#0a2a0a', '#cc0000', '#ff4444', '#ff6600', '#ffaa00'
 ];
 
-const PixelEditor: React.FC<PixelEditorProps> = ({ partName, width, height, onClose, onSave, lang }) => {
+const PixelEditor: React.FC<PixelEditorProps> = ({ partName, width, height, onClose, onSave }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const previewRef = useRef<HTMLCanvasElement>(null);
   const [currentColor, setCurrentColor] = useState(PALETTE[0]);
@@ -31,7 +30,6 @@ const PixelEditor: React.FC<PixelEditorProps> = ({ partName, width, height, onCl
   const [history, setHistory] = useState<ImageData[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
 
-  const t = TEXT[lang];
   const canvasWidth = width * PIXEL_SIZE;
   const canvasHeight = height * PIXEL_SIZE;
 
@@ -310,19 +308,19 @@ const PixelEditor: React.FC<PixelEditorProps> = ({ partName, width, height, onCl
                   onClick={() => setTool('pen')}
                   className={`px-2 sm:px-3 py-2 border text-xs sm:text-sm leading-tight ${tool === 'pen' ? 'bg-cyber-green text-black' : 'border-cyber-gray text-gray-400'}`}
                 >
-                  ✏️ PEN
+                  PEN
                 </button>
                 <button
                   onClick={() => setTool('eraser')}
                   className={`px-2 sm:px-3 py-2 border text-xs sm:text-sm leading-tight ${tool === 'eraser' ? 'bg-cyber-green text-black' : 'border-cyber-gray text-gray-400'}`}
                 >
-                  🧹 ERASE
+                  ERASE
                 </button>
                 <button
                   onClick={() => setTool('fill')}
                   className={`px-2 sm:px-3 py-2 border text-xs sm:text-sm leading-tight ${tool === 'fill' ? 'bg-cyber-green text-black' : 'border-cyber-gray text-gray-400'}`}
                 >
-                  🪣 FILL
+                  FILL
                 </button>
               </div>
             </div>
@@ -360,20 +358,20 @@ const PixelEditor: React.FC<PixelEditorProps> = ({ partName, width, height, onCl
                   disabled={historyIndex <= 0}
                   className="px-3 py-1 border border-cyber-gray text-white hover:bg-cyber-gray disabled:opacity-30"
                 >
-                  ↶ UNDO
+                  UNDO
                 </button>
                 <button
                   onClick={redo}
                   disabled={historyIndex >= history.length - 1}
                   className="px-3 py-1 border border-cyber-gray text-white hover:bg-cyber-gray disabled:opacity-30"
                 >
-                  ↷ REDO
+                  REDO
                 </button>
                 <button
                   onClick={clearCanvas}
                   className="px-3 py-1 border border-red-600 text-red-500 hover:bg-red-900"
                 >
-                  🗑️ CLEAR
+                  CLEAR
                 </button>
               </div>
             </div>
@@ -383,7 +381,7 @@ const PixelEditor: React.FC<PixelEditorProps> = ({ partName, width, height, onCl
               <h3 className="text-cyber-cyan mb-2">FILE</h3>
               <div className="flex flex-col gap-2">
                 <label className="px-3 py-1 border border-cyber-green text-cyber-green hover:bg-cyber-green hover:text-black cursor-pointer text-center">
-                  📂 IMPORT PNG
+                  IMPORT PNG
                   <input
                     type="file"
                     accept="image/png"
@@ -395,7 +393,7 @@ const PixelEditor: React.FC<PixelEditorProps> = ({ partName, width, height, onCl
                   onClick={handleExportPNG}
                   className="px-3 py-1 border border-cyber-green text-cyber-green hover:bg-cyber-green hover:text-black"
                 >
-                  💾 EXPORT PNG
+                  EXPORT PNG
                 </button>
               </div>
             </div>
@@ -522,10 +520,10 @@ const PixelEditor: React.FC<PixelEditorProps> = ({ partName, width, height, onCl
             <div className="border border-cyber-gray p-3">
               <h3 className="text-cyber-cyan mb-2">TIPS</h3>
               <div className="text-xs text-gray-400 space-y-1">
-                <div>• Click to draw</div>
-                <div>• Use fill tool for areas</div>
-                <div>• Import to pixelate images</div>
-                <div>• Export as PNG for game</div>
+                <div>Click to draw</div>
+                <div>Use fill tool for areas</div>
+                <div>Import to pixelate images</div>
+                <div>Export as PNG for game</div>
               </div>
             </div>
 
@@ -534,7 +532,7 @@ const PixelEditor: React.FC<PixelEditorProps> = ({ partName, width, height, onCl
               onClick={handleSave}
               className="px-6 py-3 bg-cyber-green text-black font-bold hover:bg-white transition-colors"
             >
-              ✓ SAVE & APPLY
+              SAVE & APPLY
             </button>
 
           </div>

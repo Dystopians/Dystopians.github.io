@@ -1,23 +1,36 @@
-import { LootItem, LootType, UpgradeConfig } from './types';
+import { ContractConfig, LootItem, LootType, UpgradeConfig } from './types';
 import { createId } from './utils/id';
 
 export const COLORS = {
-  black: '#050505',
+  black: '#05070d',
   green: '#39ff14',
   pink: '#ff00ff',
   cyan: '#00f3ff',
   yellow: '#fdfd00',
 };
 
+export const APP_VERSION = 'beta0.10.1';
 export const INITIAL_CREDITS = 0;
 export const SPACE_BYTE_COST = 150;
 export const BYTE_FISH_COST = 500;
+
+export const CONTRACTS: ContractConfig[] = [
+  { id: 'guppy_scan', itemId: 'fish_neon_guppy', target: 3, reward: 75 },
+  { id: 'bass_packet', itemId: 'fish_binary_bass', target: 2, reward: 125 },
+  { id: 'eel_current', itemId: 'fish_laser_eel', target: 2, reward: 160 },
+  { id: 'byte_phrase', itemId: 'byte_fish', target: 6, reward: 180 },
+  { id: 'puffer_patch', itemId: 'fish_packet_puffer', target: 2, reward: 210 },
+  { id: 'koi_trace', itemId: 'fish_cyber_koi', target: 1, reward: 260 },
+  { id: 'manta_trace', itemId: 'fish_chrome_manta', target: 1, reward: 340 },
+  { id: 'void_ray', itemId: 'fish_void_ray', target: 1, reward: 700 },
+  { id: 'cache_hunter', itemId: 'special_treasure_chest', target: 1, reward: 500 },
+];
 
 export const UPGRADE_CONFIGS: UpgradeConfig[] = [
   {
     id: 'barSize',
     name: 'Signal Amplifier',
-    description: 'Increases capture bar size. Visual: Upgrades Backpack/Antenna.',
+    description: 'Increases capture bar size. Visual: Upgrades backpack and antenna.',
     baseCost: 100,
     costMultiplier: 1.8,
     maxLevel: 5,
@@ -25,7 +38,7 @@ export const UPGRADE_CONFIGS: UpgradeConfig[] = [
   {
     id: 'stability',
     name: 'Noise Filter',
-    description: 'Stabilizes bar bounce. Visual: Upgrades Boots/Mobility.',
+    description: 'Makes the catch bar easier to control. Visual: Upgrades boots.',
     baseCost: 75,
     costMultiplier: 1.5,
     maxLevel: 5,
@@ -33,7 +46,7 @@ export const UPGRADE_CONFIGS: UpgradeConfig[] = [
   {
     id: 'luck',
     name: 'Encryption Key',
-    description: 'Increases rare drop chance. Visual: Upgrades Headgear.',
+    description: 'Increases rare drop chance. Visual: Upgrades headgear.',
     baseCost: 200,
     costMultiplier: 2.0,
     maxLevel: 5,
@@ -41,7 +54,7 @@ export const UPGRADE_CONFIGS: UpgradeConfig[] = [
   {
     id: 'netStrength',
     name: 'Download Booster',
-    description: 'Increases capture speed. Visual: Upgrades Fishing Rod.',
+    description: 'Increases capture speed. Visual: Upgrades fishing rod.',
     baseCost: 150,
     costMultiplier: 1.6,
     maxLevel: 5,
@@ -63,10 +76,16 @@ export const TRASH_LOOT_DEFINITIONS = [
 
 export const FISH_LOOT_DEFINITIONS = [
   createLoot('fish_neon_guppy', 'Neon Guppy', 25, 'common', LootType.FISH),
+  createLoot('fish_laser_eel', 'Laser Eel', 40, 'common', LootType.FISH),
+  createLoot('fish_packet_puffer', 'Packet Puffer', 55, 'common', LootType.FISH),
   createLoot('fish_binary_bass', 'Binary Bass', 50, 'uncommon', LootType.FISH),
   createLoot('fish_glitch_trout', 'Glitch Trout', 75, 'uncommon', LootType.FISH),
+  createLoot('fish_prism_tetra', 'Prism Tetra', 90, 'uncommon', LootType.FISH),
+  createLoot('fish_firewall_angelfish', 'Firewall Angelfish', 120, 'rare', LootType.FISH),
   createLoot('fish_cyber_koi', 'Cyber Koi', 150, 'rare', LootType.FISH),
+  createLoot('fish_chrome_manta', 'Chrome Manta', 220, 'rare', LootType.FISH),
   createLoot('fish_mainframe_shark', 'Mainframe Shark', 300, 'legendary', LootType.FISH),
+  createLoot('fish_void_ray', 'Void Ray', 420, 'legendary', LootType.FISH),
 ];
 
 export const SPECIAL_LOOT_DEFINITIONS = [
@@ -93,15 +112,28 @@ export const ALL_LOOT_DEFINITIONS = [
 
 // Generates a random character loot
 export const generateCharLoot = (luckLevel: number): LootItem => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!?@#$%&*';
-  const char = chars.charAt(Math.floor(Math.random() * chars.length));
-  
-  // Rarity based on type of char roughly
+  const normalizedLuck = Math.max(1, Math.min(5, luckLevel || 1));
+  const commonChars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const uncommonChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const rareChars = '!?@#$%&*+-=<>[]{}';
+  const roll = Math.random();
+  const rareChance = 0.06 + normalizedLuck * 0.025;
+  const uncommonChance = 0.26 + normalizedLuck * 0.035;
+  let pool = commonChars;
   let rarity: LootItem['rarity'] = 'common';
   let value = 10;
-  
-  if (/[A-Z]/.test(char)) { value = 20; rarity = 'uncommon'; }
-  if (/[!@#$%&*]/.test(char)) { value = 50; rarity = 'rare'; }
+
+  if (roll < rareChance) {
+    pool = rareChars;
+    rarity = 'rare';
+    value = 50;
+  } else if (roll < rareChance + uncommonChance) {
+    pool = uncommonChars;
+    rarity = 'uncommon';
+    value = 20;
+  }
+
+  const char = pool.charAt(Math.floor(Math.random() * pool.length));
   
   return {
     id: createId(),
@@ -116,8 +148,8 @@ export const generateCharLoot = (luckLevel: number): LootItem => {
 
 export const createSpaceCharLoot = (): LootItem => ({
   id: createId(),
-  itemId: 'char_byte',
-  name: "Byte Fish: ' '",
+  itemId: 'fish_space',
+  name: 'Spacefish',
   type: LootType.CHAR,
   value: 0,
   rarity: 'common',
