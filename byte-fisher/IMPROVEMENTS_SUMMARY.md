@@ -164,7 +164,6 @@ this.shake.elapsed += dt * 1000; // 转换秒到毫秒
 
 ### 1. 角色部件定义 📦
 
-**文件**: `src/utils/characterParts.ts`
 
 **设计理念**:
 - 完全模块化，每个部件独立
@@ -197,11 +196,9 @@ CharacterSkeleton {
 
 ### 2. 角色渲染器 🎨
 
-**文件**: `src/utils/characterRenderer.ts`
 
 **核心类**:
 - `CharacterRenderer` - 负责绘制角色
-- `SpriteManager` - 管理精灵图资源
 
 **渲染流程**:
 1. 绘制码头和阴影
@@ -282,7 +279,6 @@ neon: {
 
 ### 2. 可视化模板指南 🖼️
 
-**文件**: `CHARACTER_TEMPLATE_GUIDE.md`
 
 **包含**:
 - ASCII艺术骨架图
@@ -332,7 +328,6 @@ npm run build
 ### 步骤1: 准备精灵图
 1. 使用 Aseprite/Piskel 等工具
 2. 参考 `SPRITE_SPECIFICATIONS.md` 创建
-3. 按照 `CHARACTER_TEMPLATE_GUIDE.md` 绘制
 4. 导出为PNG（透明背景）
 
 ### 步骤2: 组织文件
@@ -349,13 +344,8 @@ src/assets/sprites/character/
 
 ### 步骤3: 加载精灵图
 ```typescript
-import { SpriteManager } from './utils/characterRenderer';
-
-const spriteManager = new SpriteManager();
-await spriteManager.loadSprites({
-  'head_base': '/assets/sprites/character/base/head_base.png',
-  'boots_lv5': '/assets/sprites/character/boots/boots_lv5_antigrav.png'
-});
+// 旧版精灵加载管线已移除。
+// 当前游戏角色资源通过 src/assets/generated/manifest.ts 接入。
 ```
 
 ### 步骤4: 应用到部件

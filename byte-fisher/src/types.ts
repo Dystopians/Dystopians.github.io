@@ -9,7 +9,6 @@ export enum GameState {
   CODEX = 'CODEX', // Fish Encyclopedia
   IMAGE_EDITOR = 'IMAGE_EDITOR', // Image Editor
   GUIDEBOOK = 'GUIDEBOOK', // Tutorial
-  CHARACTER_EDITOR = 'CHARACTER_EDITOR', // Character Pixel Editor
 }
 
 export enum LootType {

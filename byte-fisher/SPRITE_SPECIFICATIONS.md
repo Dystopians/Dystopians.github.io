@@ -346,7 +346,7 @@ src/assets/sprites/character/
 
 1. **加载精灵图**:
 ```typescript
-const spriteManager = new SpriteManager();
+// 旧版 SpriteManager 已移除。
 await spriteManager.loadSprites({
   'head_base': '/assets/sprites/character/base/head_base.png',
   'boots_lv5': '/assets/sprites/character/boots/boots_lv5_antigrav.png'
@@ -409,7 +409,7 @@ skeleton.parts.head.sh = 96;
 当你准备好精灵图后：
 
 1. 将PNG文件放入对应目录
-2. 在 `characterParts.ts` 中更新部件定义
+2. 在 `src/assets/generated/manifest.ts` 中接入新资源
 3. 在游戏启动时加载精灵图
 4. 刷新页面查看效果
 
@@ -420,6 +420,5 @@ skeleton.parts.head.sh = 96;
 ## 📧 技术支持
 
 如有问题，请参考：
-- `src/utils/characterParts.ts` - 部件定义
-- `src/utils/characterRenderer.ts` - 渲染逻辑
+- `src/assets/generated/manifest.ts` - 资源接入
 - `src/components/VoidCanvas.tsx` - 集成示例

@@ -512,7 +512,6 @@ const App: React.FC = () => {
     GameState.CODEX,
     GameState.GUIDEBOOK,
     GameState.IMAGE_EDITOR,
-    GameState.CHARACTER_EDITOR,
   ].includes(gameState);
 
   const activeContract = CONTRACTS.find(contract => !(stats.completedContracts || []).includes(contract.id));
@@ -644,7 +643,6 @@ const App: React.FC = () => {
     [GameState.CODEX]: { en: 'Data Codex', zh: '数据图鉴' },
     [GameState.IMAGE_EDITOR]: { en: 'Image Studio', zh: '图像工坊' },
     [GameState.GUIDEBOOK]: { en: 'Protocol Guide', zh: '协议指南' },
-    [GameState.CHARACTER_EDITOR]: { en: 'Character Editor', zh: '角色编辑' },
   };
   const zhGameStateLabels: Record<GameState, string> = {
     [GameState.IDLE]: '\u4fe1\u53f7\u7801\u5934',
@@ -657,7 +655,6 @@ const App: React.FC = () => {
     [GameState.CODEX]: '\u6570\u636e\u56fe\u9274',
     [GameState.IMAGE_EDITOR]: '\u56fe\u50cf\u5de5\u574a',
     [GameState.GUIDEBOOK]: '\u534f\u8bae\u6307\u5357',
-    [GameState.CHARACTER_EDITOR]: '\u89d2\u8272\u7f16\u8f91',
   };
   const displayedGameState = lang === 'zh'
     ? zhGameStateLabels[gameState]

@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { HistoryEvent, LootItem, LootType, LeaderboardEntry } from '../types';
 import { MOCK_LEADERBOARD } from '../constants';
 import { TEXT } from '../locales';
 import { createId } from '../utils/id';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import CharacterEditor from './CharacterEditor';
 
 type MessageRow = {
   id: string;
@@ -49,9 +48,10 @@ interface TerminalProps {
 
 const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, setPlayerName, onClose, onConsume, onPublishLog, difficulty, setDifficulty, onReset, lang }) => {
   const [confirmReset, setConfirmReset] = useState(false);
-  const [activeTab, setActiveTab] = useState<'INVENTORY' | 'COMPOSE' | 'NETWORK' | 'CHAR_EDITOR'>('INVENTORY');
+  const [activeTab, setActiveTab] = useState<'INVENTORY' | 'COMPOSE' | 'NETWORK'>('INVENTORY');
   const [composedMsg, setComposedMsg] = useState<LootItem[]>([]);
   const [serverLog, setServerLog] = useState<LeaderboardEntry[]>([]);
+  const [messageBoardStatus, setMessageBoardStatus] = useState<'idle' | 'loading' | 'local' | 'remote' | 'error'>('idle');
   const [uploadStatus, setUploadStatus] = useState<string>('');
   const [isValidating, setIsValidating] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
@@ -154,14 +154,22 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
     timestamp: new Date(row.created_at).getTime(),
   });
 
-  const loadMessages = async () => {
+  const readLocalMessages = useCallback(() => {
+    return readLocalJson<LeaderboardEntry[]>('bytefisher_logs', MOCK_LEADERBOARD);
+  }, []);
+
+  const loadMessages = useCallback(async () => {
+    setMessageBoardStatus('loading');
+
     if (!isSupabaseConfigured) {
-      setServerLog(readLocalJson<LeaderboardEntry[]>('bytefisher_logs', MOCK_LEADERBOARD));
+      setServerLog(readLocalMessages());
+      setMessageBoardStatus('local');
       return;
     }
 
     if (!supabase) {
-      setServerLog(MOCK_LEADERBOARD);
+      setServerLog(readLocalMessages());
+      setMessageBoardStatus('error');
       return;
     }
 
@@ -172,16 +180,18 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
       .limit(50);
 
     if (error || !data) {
-      setServerLog(MOCK_LEADERBOARD);
+      setServerLog(readLocalMessages());
+      setMessageBoardStatus('error');
       return;
     }
 
     setServerLog(data.map(toEntry));
-  };
+    setMessageBoardStatus('remote');
+  }, [readLocalMessages]);
 
   useEffect(() => {
     void loadMessages();
-  }, []);
+  }, [loadMessages]);
 
   useEffect(() => {
     if (!turnstileSiteKey) return;
@@ -374,6 +384,7 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
       const newLog = [newEntry, ...serverLog].slice(0, 50); // Keep last 50
       setServerLog(newLog);
       localStorage.setItem('bytefisher_logs', JSON.stringify(newLog));
+      setMessageBoardStatus('local');
       
       const ip = getSimulatedIP();
       recordUpload(ip);
@@ -509,12 +520,6 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
         >
           {t.network}
         </button>
-        <button
-          onClick={() => setActiveTab('CHAR_EDITOR')}
-          className={`ui-button px-3 sm:px-4 py-2 text-xs sm:text-base whitespace-nowrap overflow-hidden text-ellipsis ${activeTab === 'CHAR_EDITOR' ? 'ui-button-coral' : ''}`}
-        >
-          {t.characterEditor}
-        </button>
       </div>
 
       {/* Content */}
@@ -624,6 +629,33 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
 
         {activeTab === 'NETWORK' && (
           <div className="ui-panel w-full h-full p-4 overflow-y-auto">
+             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+               <div>
+                 <h3 className="text-lg sm:text-xl text-cyber-yellow font-bold">{t.network}</h3>
+                 <div className={`text-xs ${
+                   messageBoardStatus === 'error'
+                     ? 'text-red-400'
+                     : messageBoardStatus === 'remote'
+                     ? 'text-cyber-green'
+                     : 'text-cyber-cyan/65'
+                 }`}>
+                   {messageBoardStatus === 'loading'
+                     ? t.boardLoading
+                     : messageBoardStatus === 'remote'
+                     ? t.boardOnline
+                     : messageBoardStatus === 'error'
+                     ? t.boardOffline
+                     : t.boardLocal}
+                 </div>
+               </div>
+               <button
+                 onClick={() => void loadMessages()}
+                 disabled={messageBoardStatus === 'loading'}
+                 className="ui-button shrink-0 px-3 py-2 text-xs sm:text-sm disabled:opacity-50"
+               >
+                 {t.reloadBoard}
+               </button>
+             </div>
              {serverLog.map(entry => (
                <div key={entry.id} className="mb-4 rounded-md border border-cyber-cyan/45 bg-cyber-cyan/8 p-3">
                 <div className="flex justify-between text-xs text-cyber-cyan/55 mb-1">
@@ -643,16 +675,7 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
                  </div>
                </div>
              ))}
-          </div>
-        )}
-
-        {activeTab === 'CHAR_EDITOR' && (
-          <div className="w-full h-full min-h-0 relative overflow-hidden">
-            <CharacterEditor
-              onClose={() => setActiveTab('INVENTORY')}
-              lang={lang}
-              embedded={true}
-            />
+             {serverLog.length === 0 && <div className="text-cyber-cyan/55 italic">{t.noData}</div>}
           </div>
         )}
 
