@@ -265,6 +265,8 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
         floatOffset = Math.sin(t * 3) * scalePx(5) - scalePx(10);
       }
 
+      const upgradeColors = ['#00f3ff', '#ff00ff', '#b8ff2c', '#fdfd00', '#ffffff'];
+      const colorForLevel = (level: number) => upgradeColors[Math.min(Math.max(level, 1), 5) - 1];
       const x = charPos.current.x;
       const y = charPos.current.y + floatOffset;
 
@@ -305,12 +307,14 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
       const normalizedRodLvl = Math.min(Math.max(rodLvl, 1), 5);
 
       if (normalizedBackpackLvl > 1) {
-        drawGeneratedArt(
+        drawGeneratedArtAnchored(
           `equipment_barSize_${normalizedBackpackLvl}`,
-          x - scalePx(42),
-          y + scalePx(72),
-          scalePx(36),
-          scalePx(36),
+          x - scalePx(21),
+          y + scalePx(68),
+          scalePx(32 + normalizedBackpackLvl * 1.5),
+          scalePx(32 + normalizedBackpackLvl * 1.5),
+          0.78,
+          0.52,
           0.86
         );
       }
@@ -324,42 +328,81 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
       }
 
       if (normalizedBootsLvl > 1) {
-        drawGeneratedArt(
-          `equipment_stability_${normalizedBootsLvl}`,
-          x + scalePx(2),
-          y + scalePx(113),
-          scalePx(42),
-          scalePx(28),
-          0.88
-        );
+        const bootColor = colorForLevel(normalizedBootsLvl);
+        const soleY = y + scalePx(116);
+        const leftFootX = x - scalePx(14);
+        const rightFootX = x + scalePx(13);
+        ctx.save();
+        ctx.globalAlpha = 0.72;
+        ctx.strokeStyle = bootColor;
+        ctx.lineWidth = scalePx(2);
+        ctx.shadowColor = bootColor;
+        ctx.shadowBlur = scalePx(8);
+        [leftFootX, rightFootX].forEach((footX, index) => {
+          ctx.beginPath();
+          ctx.moveTo(footX - scalePx(10), soleY + (index === 0 ? scalePx(1) : 0));
+          ctx.quadraticCurveTo(footX, soleY + scalePx(5), footX + scalePx(12), soleY + scalePx(1));
+          ctx.stroke();
+          if (normalizedBootsLvl >= 4) {
+            ctx.fillStyle = bootColor;
+            ctx.fillRect(footX - scalePx(7), soleY + scalePx(5), scalePx(14), scalePx(1.5));
+          }
+        });
+        if (normalizedBootsLvl >= 5) {
+          ctx.globalAlpha = 0.36;
+          ctx.fillStyle = bootColor;
+          ctx.fillRect(x - scalePx(24), soleY + scalePx(11), scalePx(48), scalePx(2));
+        }
+        ctx.restore();
       }
       if (normalizedHeadLvl > 1) {
-        drawGeneratedArt(
-          `equipment_luck_${normalizedHeadLvl}`,
-          x - scalePx(4),
-          y + scalePx(21),
-          scalePx(42),
-          scalePx(30),
-          0.9
-        );
+        const headColor = colorForLevel(normalizedHeadLvl);
+        ctx.save();
+        ctx.globalAlpha = 0.82;
+        ctx.strokeStyle = headColor;
+        ctx.lineWidth = scalePx(2);
+        ctx.shadowColor = headColor;
+        ctx.shadowBlur = scalePx(8);
+        ctx.beginPath();
+        ctx.moveTo(x - scalePx(19), y + scalePx(29));
+        ctx.lineTo(x + scalePx(15), y + scalePx(27));
+        ctx.stroke();
+        if (normalizedHeadLvl >= 3) {
+          ctx.beginPath();
+          ctx.arc(x + scalePx(18), y + scalePx(27), scalePx(3), 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        if (normalizedHeadLvl >= 5) {
+          ctx.globalAlpha = 0.68;
+          ctx.beginPath();
+          ctx.ellipse(x - scalePx(2), y + scalePx(9), scalePx(23), scalePx(6), 0, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
       }
 
       const handX = x + scalePx(25);
       const handY = y + scalePx(55);
-      const rodLen = scalePx(106);
-      const tipX = handX + Math.cos(armAngle) * rodLen;
-      const tipY = handY + Math.sin(armAngle) * rodLen;
-      const sourceRodAngle = -0.82;
+      const rodWidth = scalePx(116);
+      const rodHeight = scalePx(77);
+      const rodAnchor = { x: 0.24, y: 0.9 };
+      const rodTip = { x: 0.79, y: 0.05 };
+      const sourceRodAngle = Math.atan2((rodTip.y - rodAnchor.y) * rodHeight, (rodTip.x - rodAnchor.x) * rodWidth);
+      const rodRotation = armAngle - sourceRodAngle;
+      const localTipX = (rodTip.x - rodAnchor.x) * rodWidth;
+      const localTipY = (rodTip.y - rodAnchor.y) * rodHeight;
+      const tipX = handX + Math.cos(rodRotation) * localTipX - Math.sin(rodRotation) * localTipY;
+      const tipY = handY + Math.sin(rodRotation) * localTipX + Math.cos(rodRotation) * localTipY;
       const rodDrawn = drawGeneratedArtAnchored(
         `equipment_netStrength_${normalizedRodLvl}`,
         handX,
         handY,
-        scalePx(116),
-        scalePx(77),
-        0.24,
-        0.9,
+        rodWidth,
+        rodHeight,
+        rodAnchor.x,
+        rodAnchor.y,
         1,
-        armAngle - sourceRodAngle
+        rodRotation
       );
       if (!rodDrawn) {
         const rodColors = ['#00f3ff', '#39ff14', '#fdfd00', '#ff00ff', '#ffffff'];
@@ -519,21 +562,21 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
       
       // Determine Bobber Position
       if (gameStateRef.current === GameState.IDLE) {
-         bobberPos.current.x = rodTip.x;
-         bobberPos.current.y = rodTip.y + scalePx(60) + Math.sin(t * 2) * scalePx(5); 
+         bobberPos.current.x = rodTip.x + scalePx(12);
+         bobberPos.current.y = rodTip.y + scalePx(58) + Math.sin(t * 2) * scalePx(5); 
       } else if (gameStateRef.current === GameState.CASTING) {
           if (castStartRef.current === null) castStartRef.current = t;
           const p = clamp01((t - castStartRef.current) / 0.6);
           const eased = easeOutCubic(p);
-          const startX = rodTip.x;
-          const startY = rodTip.y + scalePx(20);
-          const endX = rodTip.x + scalePx(150);
+          const startX = rodTip.x + scalePx(10);
+          const startY = rodTip.y + scalePx(16);
+          const endX = rodTip.x + scalePx(132);
           const endY = waterLevel + scalePx(200);
           const arc = Math.sin(eased * Math.PI) * scalePx(80);
           bobberPos.current.x = lerp(startX, endX, eased);
           bobberPos.current.y = lerp(startY, endY, eased) - arc;
       } else if (gameStateRef.current === GameState.WAITING) {
-          const targetX = rodTip.x + scalePx(150);
+          const targetX = rodTip.x + scalePx(132);
           const deepY = waterLevel + scalePx(200); 
           const targetY = deepY + Math.sin(t * 2) * scalePx(10);
           if (landingStartRef.current !== null && landingFromRef.current) {
@@ -550,7 +593,7 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
             bobberPos.current.y = targetY;
           }
       } else if (gameStateRef.current === GameState.MINIGAME) {
-          bobberPos.current.x = rodTip.x + scalePx(150);
+          bobberPos.current.x = rodTip.x + scalePx(132);
           
           const progress = progressRef.current?.current || 0;
           const clampedProgress = Math.max(0, Math.min(100, progress));
@@ -571,30 +614,32 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
           bobberPos.current.y += dy * 0.1;
       }
 
-      // Draw Line
-      ctx.beginPath();
-      ctx.moveTo(rodTip.x, rodTip.y);
-      if (gameStateRef.current === GameState.WAITING) {
-         ctx.quadraticCurveTo(rodTip.x + scalePx(20), waterLevel, bobberPos.current.x, bobberPos.current.y);
-      } else if (gameStateRef.current === GameState.MINIGAME) {
-         ctx.lineTo(bobberPos.current.x, bobberPos.current.y);
-      } else {
-         if (gameStateRef.current === GameState.IDLE) {
-           ctx.lineTo(bobberPos.current.x, bobberPos.current.y);
-         } else {
-           ctx.quadraticCurveTo(rodTip.x + scalePx(50), bobberPos.current.y, bobberPos.current.x, bobberPos.current.y);
-         }
-      }
-      
-      // Line Color
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; 
+      const lineStart = { x: rodTip.x, y: rodTip.y + scalePx(2) };
+      const lineDx = bobberPos.current.x - lineStart.x;
+      const lineDy = bobberPos.current.y - lineStart.y;
+      const sag = Math.min(scalePx(42), Math.max(scalePx(8), Math.abs(lineDx) * 0.16 + Math.max(0, lineDy) * 0.08));
+      const controlX = lineStart.x + lineDx * 0.48 + (gameStateRef.current === GameState.IDLE ? scalePx(8) : 0);
+      const controlY = lineStart.y + lineDy * 0.48 + sag;
+
+      const strokeLine = (color: string, width: number, alpha = 1) => {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.beginPath();
+        ctx.moveTo(lineStart.x, lineStart.y);
+        ctx.quadraticCurveTo(controlX, controlY, bobberPos.current.x, bobberPos.current.y);
+        ctx.stroke();
+        ctx.restore();
+      };
+
+      strokeLine('rgba(0, 243, 255, 0.22)', scalePx(2.2), 1);
       if (gameStateRef.current === GameState.MINIGAME) {
-        ctx.strokeStyle = '#ff3333'; 
-        ctx.lineWidth = scalePx(1.5);
+        strokeLine('rgba(255, 0, 255, 0.7)', scalePx(1.2), 1);
+        strokeLine('rgba(255, 255, 255, 0.72)', scalePx(0.75), 1);
       } else {
-        ctx.lineWidth = scalePx(1);
+        strokeLine('rgba(255, 255, 255, 0.58)', scalePx(0.85), 1);
       }
-      ctx.stroke();
 
       // Draw Bobber
       ctx.fillStyle = '#ff0000';
