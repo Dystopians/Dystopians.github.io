@@ -511,7 +511,6 @@ const App: React.FC = () => {
     GameState.TERMINAL,
     GameState.CODEX,
     GameState.GUIDEBOOK,
-    GameState.IMAGE_EDITOR,
   ].includes(gameState);
 
   const activeContract = CONTRACTS.find(contract => !(stats.completedContracts || []).includes(contract.id));
@@ -641,7 +640,6 @@ const App: React.FC = () => {
     [GameState.SHOP]: { en: 'Black Market', zh: '黑市终端' },
     [GameState.TERMINAL]: { en: 'Terminal Log', zh: '终端日志' },
     [GameState.CODEX]: { en: 'Data Codex', zh: '数据图鉴' },
-    [GameState.IMAGE_EDITOR]: { en: 'Image Studio', zh: '图像工坊' },
     [GameState.GUIDEBOOK]: { en: 'Protocol Guide', zh: '协议指南' },
   };
   const zhGameStateLabels: Record<GameState, string> = {
@@ -653,7 +651,6 @@ const App: React.FC = () => {
     [GameState.SHOP]: '\u9ed1\u5e02\u7ec8\u7aef',
     [GameState.TERMINAL]: '\u7ec8\u7aef\u65e5\u5fd7',
     [GameState.CODEX]: '\u6570\u636e\u56fe\u9274',
-    [GameState.IMAGE_EDITOR]: '\u56fe\u50cf\u5de5\u574a',
     [GameState.GUIDEBOOK]: '\u534f\u8bae\u6307\u5357',
   };
   const displayedGameState = lang === 'zh'

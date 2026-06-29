@@ -251,6 +251,66 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
       return true;
     };
 
+    const equipmentSourceBounds = {
+      barSize: {
+        1: [11, 0, 82, 102],
+        2: [8, 0, 87, 102],
+        3: [7, 0, 90, 102],
+        4: [2, 6, 102, 89],
+        5: [5, 0, 91, 102],
+      },
+      stability: {
+        1: [5, 2, 85, 76],
+        2: [20, 0, 55, 80],
+        3: [18, 0, 60, 80],
+        4: [18, 0, 60, 80],
+        5: [19, 1, 58, 79],
+      },
+      luck: {
+        1: [2, 10, 92, 59],
+        2: [3, 11, 90, 58],
+        3: [2, 2, 92, 75],
+        4: [7, 2, 82, 76],
+        5: [2, 2, 90, 76],
+      },
+    } satisfies Record<'barSize' | 'stability' | 'luck', Record<number, [number, number, number, number]>>;
+
+    const drawGeneratedArtCroppedAnchored = (
+      assetId: string,
+      sourceBounds: [number, number, number, number],
+      anchorX: number,
+      anchorY: number,
+      width: number,
+      height: number,
+      anchorNormX: number,
+      anchorNormY: number,
+      alpha = 1,
+      rotation = 0
+    ) => {
+      const image = artImagesRef.current[assetId];
+      if (!image?.complete || image.naturalWidth === 0) return false;
+
+      const [sourceX, sourceY, sourceWidth, sourceHeight] = sourceBounds;
+      ctx.save();
+      ctx.translate(anchorX, anchorY);
+      ctx.rotate(rotation);
+      ctx.globalAlpha = alpha;
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(
+        image,
+        sourceX,
+        sourceY,
+        sourceWidth,
+        sourceHeight,
+        -anchorNormX * width,
+        -anchorNormY * height,
+        width,
+        height
+      );
+      ctx.restore();
+      return true;
+    };
+
     const drawCharacter = (t: number) => {
       const s = scalePx(4); // pixel scale
 
@@ -267,6 +327,7 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
 
       const upgradeColors = ['#00f3ff', '#ff00ff', '#b8ff2c', '#fdfd00', '#ffffff'];
       const colorForLevel = (level: number) => upgradeColors[Math.min(Math.max(level, 1), 5) - 1];
+      const clampEquipmentLevel = (level: number): 1 | 2 | 3 | 4 | 5 => Math.min(Math.max(level, 1), 5) as 1 | 2 | 3 | 4 | 5;
       const x = charPos.current.x;
       const y = charPos.current.y + floatOffset;
 
@@ -301,21 +362,44 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
       ctx.fillRect(x - shadowSize/2, dockY, shadowSize, scalePx(5)); 
 
       {
-      const normalizedBackpackLvl = Math.min(Math.max(backpackLvl, 1), 5);
-      const normalizedBootsLvl = Math.min(Math.max(bootsLvl, 1), 5);
-      const normalizedHeadLvl = Math.min(Math.max(headLvl, 1), 5);
-      const normalizedRodLvl = Math.min(Math.max(rodLvl, 1), 5);
+      const normalizedBackpackLvl = clampEquipmentLevel(backpackLvl);
+      const normalizedBootsLvl = clampEquipmentLevel(bootsLvl);
+      const normalizedHeadLvl = clampEquipmentLevel(headLvl);
+      const normalizedRodLvl = clampEquipmentLevel(rodLvl);
+
+      const backpackPlacement = {
+        2: { x: -28, y: 67, w: 25, h: 31, ax: 0.5, ay: 0.54, alpha: 0.9 },
+        3: { x: -29, y: 66, w: 27, h: 33, ax: 0.5, ay: 0.54, alpha: 0.9 },
+        4: { x: -29, y: 66, w: 29, h: 31, ax: 0.52, ay: 0.55, alpha: 0.88 },
+        5: { x: -30, y: 65, w: 30, h: 34, ax: 0.52, ay: 0.55, alpha: 0.88 },
+      } as const;
+
+      const bootPlacement = {
+        2: { x: -1, y: 115, w: 39, h: 34, ax: 0.5, ay: 0.92, alpha: 0.86 },
+        3: { x: -1, y: 115, w: 41, h: 35, ax: 0.5, ay: 0.92, alpha: 0.86 },
+        4: { x: -1, y: 115, w: 43, h: 36, ax: 0.5, ay: 0.92, alpha: 0.86 },
+        5: { x: -1, y: 113, w: 44, h: 36, ax: 0.5, ay: 0.92, alpha: 0.88 },
+      } as const;
+
+      const headPlacement = {
+        2: { x: -5, y: 31, w: 38, h: 24, ax: 0.5, ay: 0.56, alpha: 0.92 },
+        3: { x: -5, y: 29, w: 40, h: 32, ax: 0.5, ay: 0.58, alpha: 0.92 },
+        4: { x: -5, y: 28, w: 41, h: 32, ax: 0.5, ay: 0.58, alpha: 0.92 },
+        5: { x: -5, y: 26, w: 44, h: 38, ax: 0.5, ay: 0.58, alpha: 0.93 },
+      } as const;
 
       if (normalizedBackpackLvl > 1) {
-        drawGeneratedArtAnchored(
+        const placement = backpackPlacement[normalizedBackpackLvl as keyof typeof backpackPlacement];
+        drawGeneratedArtCroppedAnchored(
           `equipment_barSize_${normalizedBackpackLvl}`,
-          x - scalePx(21),
-          y + scalePx(68),
-          scalePx(32 + normalizedBackpackLvl * 1.5),
-          scalePx(32 + normalizedBackpackLvl * 1.5),
-          0.78,
-          0.52,
-          0.86
+          equipmentSourceBounds.barSize[normalizedBackpackLvl],
+          x + scalePx(placement.x),
+          y + scalePx(placement.y),
+          scalePx(placement.w),
+          scalePx(placement.h),
+          placement.ax,
+          placement.ay,
+          placement.alpha
         );
       }
 
@@ -328,57 +412,62 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
       }
 
       if (normalizedBootsLvl > 1) {
-        const bootColor = colorForLevel(normalizedBootsLvl);
-        const soleY = y + scalePx(116);
-        const leftFootX = x - scalePx(14);
-        const rightFootX = x + scalePx(13);
+        const placement = bootPlacement[normalizedBootsLvl as keyof typeof bootPlacement];
+        const glowColor = colorForLevel(normalizedBootsLvl);
         ctx.save();
-        ctx.globalAlpha = 0.72;
-        ctx.strokeStyle = bootColor;
-        ctx.lineWidth = scalePx(2);
-        ctx.shadowColor = bootColor;
-        ctx.shadowBlur = scalePx(8);
-        [leftFootX, rightFootX].forEach((footX, index) => {
-          ctx.beginPath();
-          ctx.moveTo(footX - scalePx(10), soleY + (index === 0 ? scalePx(1) : 0));
-          ctx.quadraticCurveTo(footX, soleY + scalePx(5), footX + scalePx(12), soleY + scalePx(1));
-          ctx.stroke();
-          if (normalizedBootsLvl >= 4) {
-            ctx.fillStyle = bootColor;
-            ctx.fillRect(footX - scalePx(7), soleY + scalePx(5), scalePx(14), scalePx(1.5));
-          }
-        });
-        if (normalizedBootsLvl >= 5) {
-          ctx.globalAlpha = 0.36;
-          ctx.fillStyle = bootColor;
-          ctx.fillRect(x - scalePx(24), soleY + scalePx(11), scalePx(48), scalePx(2));
-        }
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = glowColor;
+        ctx.shadowColor = glowColor;
+        ctx.shadowBlur = scalePx(10);
+        ctx.fillRect(x - scalePx(22), y + scalePx(114), scalePx(46), scalePx(2));
         ctx.restore();
+
+        drawGeneratedArtCroppedAnchored(
+          `equipment_stability_${normalizedBootsLvl}`,
+          equipmentSourceBounds.stability[normalizedBootsLvl],
+          x + scalePx(placement.x),
+          y + scalePx(placement.y),
+          scalePx(placement.w),
+          scalePx(placement.h),
+          placement.ax,
+          placement.ay,
+          placement.alpha
+        );
       }
+
       if (normalizedHeadLvl > 1) {
-        const headColor = colorForLevel(normalizedHeadLvl);
+        const placement = headPlacement[normalizedHeadLvl as keyof typeof headPlacement];
+        const glowColor = colorForLevel(normalizedHeadLvl);
         ctx.save();
-        ctx.globalAlpha = 0.82;
-        ctx.strokeStyle = headColor;
-        ctx.lineWidth = scalePx(2);
-        ctx.shadowColor = headColor;
+        ctx.globalAlpha = 0.22;
+        ctx.strokeStyle = glowColor;
+        ctx.lineWidth = scalePx(1.5);
+        ctx.shadowColor = glowColor;
         ctx.shadowBlur = scalePx(8);
         ctx.beginPath();
-        ctx.moveTo(x - scalePx(19), y + scalePx(29));
-        ctx.lineTo(x + scalePx(15), y + scalePx(27));
+        ctx.ellipse(
+          x + scalePx(placement.x),
+          y + scalePx(placement.y - 1),
+          scalePx(placement.w * 0.48),
+          scalePx(placement.h * 0.34),
+          0,
+          0,
+          Math.PI * 2
+        );
         ctx.stroke();
-        if (normalizedHeadLvl >= 3) {
-          ctx.beginPath();
-          ctx.arc(x + scalePx(18), y + scalePx(27), scalePx(3), 0, Math.PI * 2);
-          ctx.stroke();
-        }
-        if (normalizedHeadLvl >= 5) {
-          ctx.globalAlpha = 0.68;
-          ctx.beginPath();
-          ctx.ellipse(x - scalePx(2), y + scalePx(9), scalePx(23), scalePx(6), 0, 0, Math.PI * 2);
-          ctx.stroke();
-        }
         ctx.restore();
+
+        drawGeneratedArtCroppedAnchored(
+          `equipment_luck_${normalizedHeadLvl}`,
+          equipmentSourceBounds.luck[normalizedHeadLvl],
+          x + scalePx(placement.x),
+          y + scalePx(placement.y),
+          scalePx(placement.w),
+          scalePx(placement.h),
+          placement.ax,
+          placement.ay,
+          placement.alpha
+        );
       }
 
       const handX = x + scalePx(25);
@@ -552,7 +641,7 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
     };
 
     const drawFishingMechanics = (t: number) => {
-      if (gameStateRef.current === GameState.SHOP || gameStateRef.current === GameState.TERMINAL || gameStateRef.current === GameState.IMAGE_EDITOR || gameStateRef.current === GameState.CODEX || gameStateRef.current === GameState.GUIDEBOOK) return;
+      if (gameStateRef.current === GameState.SHOP || gameStateRef.current === GameState.TERMINAL || gameStateRef.current === GameState.CODEX || gameStateRef.current === GameState.GUIDEBOOK) return;
 
       const rodTip = rodTipPos.current;
       const waterLevel = charPos.current.y + scalePx(96 + 20); 

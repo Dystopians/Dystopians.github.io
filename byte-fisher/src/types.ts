@@ -7,7 +7,6 @@ export enum GameState {
   SHOP = 'SHOP',
   TERMINAL = 'TERMINAL', // Inventory & Leaderboard
   CODEX = 'CODEX', // Fish Encyclopedia
-  IMAGE_EDITOR = 'IMAGE_EDITOR', // Image Editor
   GUIDEBOOK = 'GUIDEBOOK', // Tutorial
 }
 
