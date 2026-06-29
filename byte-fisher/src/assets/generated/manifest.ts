@@ -26,6 +26,21 @@ import equipmentRodLv2 from './equipment_rod_lv2.png';
 import equipmentRodLv3 from './equipment_rod_lv3.png';
 import equipmentRodLv4 from './equipment_rod_lv4.png';
 import equipmentRodLv5 from './equipment_rod_lv5.png';
+import wearableBackpackLv1 from './wearable_backpack_lv1.png';
+import wearableBackpackLv2 from './wearable_backpack_lv2.png';
+import wearableBackpackLv3 from './wearable_backpack_lv3.png';
+import wearableBackpackLv4 from './wearable_backpack_lv4.png';
+import wearableBackpackLv5 from './wearable_backpack_lv5.png';
+import wearableBootsLv1 from './wearable_boots_lv1.png';
+import wearableBootsLv2 from './wearable_boots_lv2.png';
+import wearableBootsLv3 from './wearable_boots_lv3.png';
+import wearableBootsLv4 from './wearable_boots_lv4.png';
+import wearableBootsLv5 from './wearable_boots_lv5.png';
+import wearableHeadgearLv1 from './wearable_headgear_lv1.png';
+import wearableHeadgearLv2 from './wearable_headgear_lv2.png';
+import wearableHeadgearLv3 from './wearable_headgear_lv3.png';
+import wearableHeadgearLv4 from './wearable_headgear_lv4.png';
+import wearableHeadgearLv5 from './wearable_headgear_lv5.png';
 import fishBinaryBass from './fish_binary_bass.png';
 import fishCyberKoi from './fish_cyber_koi.png';
 import fishGlitchTrout from './fish_glitch_trout.png';
@@ -95,6 +110,30 @@ export const EQUIPMENT_ART = {
     3: equipmentRodLv3,
     4: equipmentRodLv4,
     5: equipmentRodLv5,
+  },
+} as const;
+
+export const WEARABLE_ART = {
+  backpack: {
+    1: wearableBackpackLv1,
+    2: wearableBackpackLv2,
+    3: wearableBackpackLv3,
+    4: wearableBackpackLv4,
+    5: wearableBackpackLv5,
+  },
+  boots: {
+    1: wearableBootsLv1,
+    2: wearableBootsLv2,
+    3: wearableBootsLv3,
+    4: wearableBootsLv4,
+    5: wearableBootsLv5,
+  },
+  headgear: {
+    1: wearableHeadgearLv1,
+    2: wearableHeadgearLv2,
+    3: wearableHeadgearLv3,
+    4: wearableHeadgearLv4,
+    5: wearableHeadgearLv5,
   },
 } as const;
 
