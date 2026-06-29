@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ContractConfig, GameState, LootItem, PlayerStats, Upgrades, LootType, HistoryEvent } from './types';
-import { APP_VERSION, CONTRACTS, INITIAL_CREDITS, TRASH_LOOT, FISH_LOOT, SPECIAL_LOOT, UPGRADE_CONFIGS, generateCharLoot, createSpaceCharLoot, createByteFishLoot, SPACE_BYTE_COST } from './constants';
+import { APP_VERSION, CAST_ANIMATION_MS, CONTRACTS, INITIAL_CREDITS, TRASH_LOOT, FISH_LOOT, SPECIAL_LOOT, UPGRADE_CONFIGS, generateCharLoot, createSpaceCharLoot, createByteFishLoot, SPACE_BYTE_COST } from './constants';
 import { TEXT } from './locales';
 import { createId } from './utils/id';
 import { NumberCounter } from './utils/animations';
@@ -344,7 +344,7 @@ const App: React.FC = () => {
         startBiteTimer();
         return GameState.WAITING;
       });
-    }, 1000); 
+    }, CAST_ANIMATION_MS);
   };
 
   const handleMinigameSuccess = (perfect: boolean) => {

@@ -58,6 +58,7 @@ const DIFFICULTY_TUNING: Record<MinigameProps['difficulty'], DifficultyTune> = {
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 const randomBetween = (min: number, max: number) => min + Math.random() * (max - min);
+const PERFECT_CATCH_IN_BAR_RATIO = 0.9;
 
 const pickFishTarget = (current: number, tune: DifficultyTune) => {
   const centerBias = (50 - current) * 0.18;
@@ -110,7 +111,8 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
     let barPosition = clamp(14, 0, 100 - barSizePercent);
     let barVelocity = 0;
     let progress = 18;
-    let missTimeMs = 0;
+    let trackedTime = 0;
+    let inBarTime = 0;
 
     finishedRef.current = false;
     perfectRef.current = true;
@@ -187,13 +189,13 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
       const barTop = barPosition + barSizePercent;
       const fishCenter = fishPosition + 3.6;
       const isCatching = fishCenter >= barBottom && fishCenter <= barTop;
+      trackedTime += dt;
+      if (isCatching) inBarTime += dt;
+      perfectRef.current = trackedTime > 0 && inBarTime / trackedTime >= PERFECT_CATCH_IN_BAR_RATIO;
 
       if (isCatching) {
-        missTimeMs = 0;
         progress = Math.min(100, progress + progressPerSecond * dt);
       } else {
-        missTimeMs += dt * 1000;
-        if (missTimeMs > 110) perfectRef.current = false;
         progress = Math.max(0, progress - tune.decaySpeed * dt);
       }
 

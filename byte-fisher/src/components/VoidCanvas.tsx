@@ -3,6 +3,7 @@ import { GameState, LootItem, Upgrades, LootType } from '../types';
 import { ParticleSystem } from '../utils/particles';
 import { ScreenShakeManager, FloatingTextManager } from '../utils/animations';
 import { CHARACTER_ART, ENVIRONMENT_ART, EQUIPMENT_ART, LOOT_ART, UI_ART, WEARABLE_ART } from '../assets/generated/manifest';
+import { CAST_ANIMATION_SECONDS } from '../constants';
 
 interface VoidCanvasProps {
   gameState: GameState;
@@ -33,6 +34,7 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
   const bobberPos = useRef({ x: 0.5, y: 0.4 });
   const rodTipPos = useRef({ x: 0.5, y: 0.2 });
   const castStartRef = useRef<number | null>(null);
+  const castReleaseFromRef = useRef<{ x: number; y: number } | null>(null);
   const landingStartRef = useRef<number | null>(null);
   const landingFromRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -74,6 +76,7 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
     const now = performance.now() / 1000;
     if (gameState === GameState.CASTING && lastStateRef.current !== GameState.CASTING) {
       castStartRef.current = now;
+      castReleaseFromRef.current = null;
       landingStartRef.current = null;
       landingFromRef.current = null;
       catchEffectTriggeredRef.current = false;
@@ -91,6 +94,7 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
     if (gameState === GameState.WAITING && lastStateRef.current === GameState.CASTING) {
       landingStartRef.current = now;
       landingFromRef.current = { ...bobberPos.current };
+      castReleaseFromRef.current = null;
       castStartRef.current = null;
       // Water splash on landing
       const canvas = canvasRef.current;
@@ -132,6 +136,20 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
     if (!ctx) return;
 
     const scalePx = (value: number) => value * scaleRef.current;
+    const CAST_RELEASE_PROGRESS = 0.52;
+    const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+    const lerp = (from: number, to: number, progress: number) => from + (to - from) * progress;
+    const easeOutCubic = (progress: number) => 1 - Math.pow(1 - progress, 3);
+    const easeInOutCubic = (progress: number) => (
+      progress < 0.5
+        ? 4 * progress * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 3) / 2
+    );
+    const easeOutBack = (progress: number) => {
+      const c1 = 1.70158;
+      const c3 = c1 + 1;
+      return 1 + c3 * Math.pow(progress - 1, 3) + c1 * Math.pow(progress - 1, 2);
+    };
 
     // --- Initialization Logic ---
     const buildEntities = () => {
@@ -275,10 +293,29 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
       const y = charPos.current.y + floatOffset;
 
       // Pivot for casting animation
-      let armAngle = 0; 
-      if (gameStateRef.current === GameState.IDLE) armAngle = -Math.PI / 3; 
-      else if (gameStateRef.current === GameState.CASTING) armAngle = -Math.PI / 4 + Math.sin(t * 10) * 1.5; 
-      else if (gameStateRef.current === GameState.WAITING) armAngle = 0.4; 
+      const idleArmAngle = -Math.PI / 3;
+      const loadedArmAngle = -2.05;
+      const releaseArmAngle = -0.1;
+      const followThroughArmAngle = 0.58;
+      const waitingArmAngle = 0.4;
+      const castElapsed = castStartRef.current === null ? 0 : Math.max(0, t - castStartRef.current);
+      const castProgress = gameStateRef.current === GameState.CASTING
+        ? clamp01(castElapsed / CAST_ANIMATION_SECONDS)
+        : 0;
+      let armAngle = idleArmAngle;
+      if (gameStateRef.current === GameState.CASTING) {
+        if (castProgress < 0.2) {
+          armAngle = lerp(idleArmAngle, -1.25, easeInOutCubic(castProgress / 0.2));
+        } else if (castProgress < CAST_RELEASE_PROGRESS) {
+          armAngle = lerp(-1.25, loadedArmAngle, easeInOutCubic((castProgress - 0.2) / (CAST_RELEASE_PROGRESS - 0.2)));
+        } else if (castProgress < 0.72) {
+          armAngle = lerp(loadedArmAngle, releaseArmAngle, easeOutCubic((castProgress - CAST_RELEASE_PROGRESS) / (0.72 - CAST_RELEASE_PROGRESS)));
+        } else if (castProgress < 0.88) {
+          armAngle = lerp(releaseArmAngle, followThroughArmAngle, easeOutBack((castProgress - 0.72) / 0.16));
+        } else {
+          armAngle = lerp(followThroughArmAngle, waitingArmAngle, easeOutCubic((castProgress - 0.88) / 0.12));
+        }
+      } else if (gameStateRef.current === GameState.WAITING) armAngle = waitingArmAngle; 
       else if (gameStateRef.current === GameState.MINIGAME) armAngle = -0.2 + Math.sin(t*20)*0.1; 
       else if (gameStateRef.current === GameState.CAUGHT) armAngle = -1.2; 
 
@@ -343,6 +380,34 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
       const localTipY = (rodTip.y - rodAnchor.y) * rodHeight;
       const tipX = handX + Math.cos(rodRotation) * localTipX - Math.sin(rodRotation) * localTipY;
       const tipY = handY + Math.sin(rodRotation) * localTipX + Math.cos(rodRotation) * localTipY;
+
+      if (gameStateRef.current === GameState.CASTING && castProgress > 0.48 && castProgress < 0.86) {
+        const trailProgress = (castProgress - 0.48) / 0.38;
+        const trailAlpha = Math.sin(trailProgress * Math.PI) * 0.5;
+        ctx.save();
+        ctx.lineCap = 'round';
+        [0.18, 0.34].forEach((offset, index) => {
+          const ghostRotation = rodRotation - offset;
+          const ghostTipX = handX + Math.cos(ghostRotation) * localTipX - Math.sin(ghostRotation) * localTipY;
+          const ghostTipY = handY + Math.sin(ghostRotation) * localTipX + Math.cos(ghostRotation) * localTipY;
+          ctx.globalAlpha = trailAlpha * (index === 0 ? 1 : 0.55);
+          ctx.strokeStyle = index === 0 ? '#00f3ff' : '#ff00ff';
+          ctx.lineWidth = scalePx(index === 0 ? 2 : 1);
+          ctx.shadowColor = ctx.strokeStyle;
+          ctx.shadowBlur = scalePx(8);
+          ctx.beginPath();
+          ctx.moveTo(handX, handY);
+          ctx.quadraticCurveTo(
+            lerp(handX, ghostTipX, 0.52),
+            lerp(handY, ghostTipY, 0.52) - scalePx(10),
+            ghostTipX,
+            ghostTipY
+          );
+          ctx.stroke();
+        });
+        ctx.restore();
+      }
+
       const rodDrawn = drawGeneratedArtAnchored(
         `equipment_netStrength_${normalizedRodLvl}`,
         handX,
@@ -509,6 +574,8 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
       const lerp = (a: number, b: number, p: number) => a + (b - a) * p;
       const easeOutCubic = (p: number) => 1 - Math.pow(1 - p, 3);
       const clamp01 = (p: number) => Math.max(0, Math.min(1, p));
+      const castTargetX = charPos.current.x + scalePx(150);
+      const castTargetDepth = waterLevel + scalePx(200);
       
       // Determine Bobber Position
       if (gameStateRef.current === GameState.IDLE) {
@@ -516,19 +583,32 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
          bobberPos.current.y = rodTip.y + scalePx(58) + Math.sin(t * 2) * scalePx(5); 
       } else if (gameStateRef.current === GameState.CASTING) {
           if (castStartRef.current === null) castStartRef.current = t;
-          const p = clamp01((t - castStartRef.current) / 0.6);
-          const eased = easeOutCubic(p);
-          const startX = rodTip.x + scalePx(10);
-          const startY = rodTip.y + scalePx(16);
-          const endX = rodTip.x + scalePx(132);
-          const endY = waterLevel + scalePx(200);
-          const arc = Math.sin(eased * Math.PI) * scalePx(80);
-          bobberPos.current.x = lerp(startX, endX, eased);
-          bobberPos.current.y = lerp(startY, endY, eased) - arc;
+          const p = clamp01((t - castStartRef.current) / CAST_ANIMATION_SECONDS);
+          if (p < CAST_RELEASE_PROGRESS) {
+            castReleaseFromRef.current = null;
+            const holdProgress = p / CAST_RELEASE_PROGRESS;
+            const holdSwing = Math.sin(holdProgress * Math.PI);
+            bobberPos.current.x = rodTip.x + scalePx(4 + holdSwing * 3);
+            bobberPos.current.y = rodTip.y + scalePx(9 - holdSwing * 2);
+          } else {
+            if (!castReleaseFromRef.current) {
+              castReleaseFromRef.current = {
+                x: rodTip.x + scalePx(6),
+                y: rodTip.y + scalePx(8),
+              };
+            }
+            const releaseProgress = clamp01((p - CAST_RELEASE_PROGRESS) / (1 - CAST_RELEASE_PROGRESS));
+            const eased = easeOutCubic(releaseProgress);
+            const start = castReleaseFromRef.current;
+            const controlX = lerp(start.x, castTargetX, 0.46);
+            const controlY = Math.min(start.y, castTargetDepth) - scalePx(122);
+            const oneMinus = 1 - eased;
+            bobberPos.current.x = oneMinus * oneMinus * start.x + 2 * oneMinus * eased * controlX + eased * eased * castTargetX;
+            bobberPos.current.y = oneMinus * oneMinus * start.y + 2 * oneMinus * eased * controlY + eased * eased * castTargetDepth;
+          }
       } else if (gameStateRef.current === GameState.WAITING) {
-          const targetX = rodTip.x + scalePx(132);
-          const deepY = waterLevel + scalePx(200); 
-          const targetY = deepY + Math.sin(t * 2) * scalePx(10);
+          const targetX = castTargetX;
+          const targetY = castTargetDepth + Math.sin(t * 2) * scalePx(10);
           if (landingStartRef.current !== null && landingFromRef.current) {
             const p = clamp01((t - landingStartRef.current) / 0.35);
             const eased = easeOutCubic(p);
@@ -543,13 +623,13 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
             bobberPos.current.y = targetY;
           }
       } else if (gameStateRef.current === GameState.MINIGAME) {
-          bobberPos.current.x = rodTip.x + scalePx(132);
+          bobberPos.current.x = castTargetX;
           
           const progress = progressRef.current?.current || 0;
           const clampedProgress = Math.max(0, Math.min(100, progress));
           const normalizedProgress = clampedProgress / 100; // 0 to 1
           
-          const startDepth = waterLevel + scalePx(200);
+          const startDepth = castTargetDepth;
           const endDepth = waterLevel + scalePx(20);
           
           const currentDepth = startDepth - ((startDepth - endDepth) * normalizedProgress);
@@ -567,9 +647,17 @@ const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigame
       const lineStart = { x: rodTip.x, y: rodTip.y + scalePx(2) };
       const lineDx = bobberPos.current.x - lineStart.x;
       const lineDy = bobberPos.current.y - lineStart.y;
-      const sag = Math.min(scalePx(42), Math.max(scalePx(8), Math.abs(lineDx) * 0.16 + Math.max(0, lineDy) * 0.08));
-      const controlX = lineStart.x + lineDx * 0.48 + (gameStateRef.current === GameState.IDLE ? scalePx(8) : 0);
-      const controlY = lineStart.y + lineDy * 0.48 + sag;
+      const isCasting = gameStateRef.current === GameState.CASTING;
+      const castLineProgress = isCasting && castStartRef.current !== null
+        ? clamp01((t - castStartRef.current) / CAST_ANIMATION_SECONDS)
+        : 0;
+      const releaseLineProgress = clamp01((castLineProgress - CAST_RELEASE_PROGRESS) / (1 - CAST_RELEASE_PROGRESS));
+      const sag = isCasting && castLineProgress < CAST_RELEASE_PROGRESS
+        ? scalePx(4)
+        : Math.min(scalePx(42), Math.max(scalePx(8), Math.abs(lineDx) * 0.16 + Math.max(0, lineDy) * 0.08));
+      const castingLift = isCasting ? Math.sin(releaseLineProgress * Math.PI) * scalePx(30) : 0;
+      const controlX = lineStart.x + lineDx * (isCasting ? 0.42 : 0.48) + (gameStateRef.current === GameState.IDLE ? scalePx(8) : 0);
+      const controlY = lineStart.y + lineDy * (isCasting ? 0.44 : 0.48) + sag - castingLift;
 
       const strokeLine = (color: string, width: number, alpha = 1) => {
         ctx.save();
