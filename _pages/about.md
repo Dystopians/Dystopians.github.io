@@ -15,19 +15,18 @@ title_logos:
     alt: University of Southern California
     href: https://www.usc.edu/
     variant: seal
-  - src: /images/logos/tiktok.svg
+  - src: /images/logos/tiktok-wordmark-light.svg
+    dark_src: /images/logos/tiktok-wordmark-dark.svg
     alt: TikTok
     href: https://www.tiktok.com/
-    variant: default
+    variant: wide
 ---
 {% include base_path %}
 <h2 id="about">About</h2>
 
 
 
-I am a master student researcher focused on computer vision (CV), large language models (LLMs), and multimodal generation. At USC’s [Graphics & Vision Lab](https://usc-gvl.github.io/) (advisor: [Prof. Yue Wang](https://yuewang.xyz/)), my work centers on 3D reconstruction under sparse observations, controllable generative rendering, and embodied navigation. 
-
-On July 13, 2026, I will join TikTok as a Machine Learning Engineer.
+I am a Machine Learning Engineer at TikTok. I earned my M.S. in Computer Science from the University of Southern California (USC), where I conducted research at the [Graphics & Vision Lab](https://usc-gvl.github.io/) (advisor: [Prof. Yue Wang](https://yuewang.xyz/)). My research spans computer vision (CV), large language models (LLMs), and multimodal generation, with a focus on 3D reconstruction from sparse observations, controllable generative rendering, and embodied navigation.
 
 <div class="about-card-grid">
   <details class="about-card">
@@ -36,7 +35,7 @@ On July 13, 2026, I will join TikTok as a Machine Learning Engineer.
       <span class="about-card__title">Perception, generation, and grounded world models</span>
     </summary>
     <div class="about-card__body">
-      <p>More broadly, my research is driven by a simple goal: to enable models that both <strong>perceive</strong> and <strong>generate</strong> the real world in a scalable, physically grounded way. From structured 3D reconstruction during my undergraduate years at Wuhan University to my current work on large language models, world models, and embodied agents at USC, a recurring theme has been bridging raw sensory data with structured representations of scenes, actions, and goals.</p>
+      <p>More broadly, my research is driven by a simple goal: to enable models that both <strong>perceive</strong> and <strong>generate</strong> the real world in a scalable, physically grounded way. From structured 3D reconstruction during my undergraduate years at Wuhan University to my graduate research on large language models, world models, and embodied agents at USC, a recurring theme has been bridging raw sensory data with structured representations of scenes, actions, and goals.</p>
       <p>I am especially interested in unified models of perception and generation for lifelong scene understanding and robust, context-aware agents.</p>
     </div>
   </details>
@@ -58,7 +57,7 @@ On July 13, 2026, I will join TikTok as a Machine Learning Engineer.
       <span class="about-card__title">Engineering depth, research breadth, and collaboration</span>
     </summary>
     <div class="about-card__body">
-      <p>I have strong coding skills and a solid background in computer vision and natural language processing, along with extensive experience training, deploying, and running inference with LLMs and VLMs. I am also continuing to strengthen my research skills in robotics at the GVL Lab.</p>
+      <p>I have strong coding skills and a solid background in computer vision and natural language processing, along with extensive experience training, deploying, and running inference with LLMs and VLMs. Through my graduate research at USC’s Graphics & Vision Lab, I also built experience in robotics and embodied AI.</p>
       <p>If you are interested in collaborating, please feel free to reach out. My preferred email is <a href="mailto:peilinca@usc.edu">peilinca@usc.edu</a>.</p>
     </div>
   </details>

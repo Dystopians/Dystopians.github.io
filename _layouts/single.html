@@ -38,10 +38,18 @@ layout: default
                     </span>
                   {% else %}
                     <img
-                      class="page__title-logo-image page__title-logo-image--{{ logo.variant | default: 'default' }}"
+                      class="page__title-logo-image page__title-logo-image--{{ logo.variant | default: 'default' }}{% if logo.dark_src %} page__title-logo-image--light-theme{% endif %}"
                       src="{{ logo.src | relative_url }}"
                       alt="{{ logo.alt }}"
                     >
+                    {% if logo.dark_src %}
+                      <img
+                        class="page__title-logo-image page__title-logo-image--{{ logo.variant | default: 'default' }} page__title-logo-image--dark-theme"
+                        src="{{ logo.dark_src | relative_url }}"
+                        alt=""
+                        aria-hidden="true"
+                      >
+                    {% endif %}
                   {% endif %}
                 </a>
               {% endfor %}
