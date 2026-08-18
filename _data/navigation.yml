@@ -38,6 +38,8 @@ main:
         url: /byte-fisher/build/
       - title: "Covid"
         url: /covid/
+      - title: "Record"
+        url: /game-record/
 
   - title: "Empty Chair"
     url: /EmptyChair/
