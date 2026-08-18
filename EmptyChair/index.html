@@ -7,13 +7,20 @@ classes: "empty-chair-page"
 
 {% capture chao_raw %}{% include poems/ChaoCuoYao.md %}{% endcapture %}
 {% capture mao_raw %}{% include poems/MaoRenShuKu.md %}{% endcapture %}
+<!-- 正文字体（文悦古体仿宋子集）在 _includes/emptychair-fonts.html 里预加载。
+     下面两个只是极少数字的后备，异步加载，不挡首屏渲染。 -->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
   rel="stylesheet"
   href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600&display=swap"
+  media="print"
+  onload="this.media='all'"
 />
 <link
   rel="stylesheet"
   href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-webfont@1.7.0/style.css"
+  media="print"
+  onload="this.media='all'"
 />
 
 <style>
@@ -26,13 +33,9 @@ classes: "empty-chair-page"
     src: url('https://fonts.cdnfonts.com/s/17851/IowanOldStyleBT-Roman.woff') format('woff');
     font-display: swap;
   }
-  @font-face {
-  font-family: 'WenYueGutiFangSong';
-  src: url('/assets/fonts/WenYue_GuTiFangSong_F.otf') format('opentype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-  }
+  /* 文悦古体仿宋的 @font-face 已移到 _includes/emptychair-fonts.html：
+     那里用的是 510 KB 的子集而不是 16 MB 的原始 OTF，并且预加载 + 等字体就位再显示。
+     改了诗稿后请重新跑 scripts/build-emptychair-font.py。 */
 
   html.empty-chair-root,
   html.empty-chair-root body {
