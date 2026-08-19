@@ -40,6 +40,8 @@ main:
         url: /covid/
       - title: "Record"
         url: /game-record/
+      - title: "Zhao Lian"
+        url: /ZhaoLian/
 
   - title: "Empty Chair"
     url: /EmptyChair/
