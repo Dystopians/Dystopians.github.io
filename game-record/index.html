@@ -325,6 +325,44 @@ select.inp{-webkit-appearance:none;appearance:none;background-image:linear-gradi
 .keyrow{display:flex;gap:6px;align-items:center}
 .keyrow input{font-family:ui-monospace,monospace;font-size:12px;letter-spacing:.5px}
 
+/* 浮窗菜单 */
+.pop{position:fixed;z-index:150;background:var(--card);border:1px solid var(--line);border-radius:15px;
+  box-shadow:var(--sh2);padding:6px;opacity:0;transform:translateY(-5px) scale(.98);transition:.14s;
+  max-width:calc(100vw - 20px);max-height:calc(100vh - 24px);overflow:auto}
+.pop.on{opacity:1;transform:none}
+.popitem{display:flex;align-items:center;gap:9px;padding:8px 13px 8px 10px;border-radius:10px;
+  font-size:13.5px;width:100%;text-align:left;white-space:nowrap;color:var(--text)}
+.popitem:hover{background:var(--card2)}
+.popitem[disabled]{opacity:.38;cursor:default}
+.popitem[disabled]:hover{background:none}
+.popitem.dang:hover{color:var(--bad)}
+.popitem .ic{width:17px;text-align:center;font-size:13px;flex:none}
+.popsep{height:1px;background:var(--line2);margin:5px 6px}
+.poptitle{font-size:11px;color:var(--faint);padding:6px 10px 3px;letter-spacing:.6px}
+/* emoji 选择 */
+.emj{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;padding:0 4px 4px}
+.emj button{font-size:19px;line-height:1;padding:6px 0;border-radius:9px;transition:.12s}
+.emj button:hover{background:var(--card2);transform:scale(1.16)}
+.emj button.on{background:var(--accent-soft);box-shadow:0 0 0 1.5px var(--accent) inset}
+/* 日历 */
+.cal{width:290px;padding:4px}
+.calhd{display:flex;align-items:center;gap:6px;padding:4px 4px 8px}
+.calhd .m{flex:1;text-align:center;font-size:13.5px;font-weight:640}
+.calhd button{width:28px;height:28px;border-radius:9px;color:var(--muted);display:grid;place-items:center}
+.calhd button:hover{background:var(--card2);color:var(--text)}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.calgrid .wd{font-size:10.5px;color:var(--faint);text-align:center;padding:2px 0 4px}
+.calday{height:34px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:1px;font-size:12.5px;color:var(--text);transition:.12s;position:relative}
+.calday:hover{background:var(--card2)}
+.calday.out{color:var(--faint);opacity:.45}
+.calday.today{box-shadow:0 0 0 1.5px var(--accent) inset;font-weight:650}
+.calday.sel{background:var(--accent);color:#fff;font-weight:650}
+.calday.sel .bar{background:rgba(255,255,255,.85)}
+.calday .bar{width:14px;height:3px;border-radius:2px;background:var(--accent);opacity:.75}
+.calday.none .bar{opacity:0}
+.calft{display:flex;gap:6px;padding:8px 4px 2px;align-items:center}
+
 /* toast */
 .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(14px);background:var(--text);color:var(--bg);
   padding:9px 18px;border-radius:22px;font-size:13px;z-index:300;opacity:0;transition:.22s;box-shadow:var(--sh2);
@@ -493,7 +531,7 @@ body{-webkit-tap-highlight-color:transparent}
     </div>
 
     <aside class="side">
-      <div class="card">
+      <div class="card hide" id="ocrCard">
         <div class="cardhd"><h3>🌙 睡眠截图</h3><span class="h-sub">拖入 / ⌘V 粘贴 / 点击选择</span></div>
         <div class="cardbd">
           <div class="dz" id="dz"><span class="big">🖼️</span>把手环睡眠截图拖到这里<br><span class="hint">自动识别入睡·醒来·评分</span></div>
@@ -694,7 +732,7 @@ function rangeKeys(from,to){const out=[];let c=from;let guard=0;while(c<=to&&gua
 
 /* ---------- 默认要素 ---------- */
 const DEFAULT_FIELDS=()=>[
- {id:"sleep",  label:"睡眠",      type:"sleep",   icon:"🌙", span:true},
+ {id:"sleep",  label:"睡眠",      type:"sleep",   icon:"🌙", span:true, bedGoal:"23:30", wakeGoal:"07:30"},
  {id:"steps",  label:"运动",      type:"number",  icon:"👟", prefix:"步数", unit:"", goal:8000},
  {id:"diet",   label:"饮食",      type:"text",    icon:"🍚", chips:["无不良","略油腻","偏辛辣","吃得过多","不太规律","清淡健康","没吃早饭"]},
  {id:"water",  label:"饮水",      type:"volume",  icon:"💧", unit:"L", goal:1.5, step:.25},
@@ -924,6 +962,25 @@ function numOf(f,v){
   }
   return null}
 function bell(x,ideal,tol){if(x==null)return null;return clamp(1-Math.abs(x-ideal)/tol,0,1)}
+/* ---- 作息（入睡/起床时刻）---- */
+const BED_DEF="23:30",WAKE_DEF="07:30";
+function offsetOf(t){const m=minOf(t);return m==null?null:(m<720?m+1440:m)} // 以 18:00 为轴，凌晨算“更晚”
+function bedGoalOf(f){return offsetOf((f&&f.bedGoal)||BED_DEF)}
+function wakeGoalOf(f){return offsetOf((f&&f.wakeGoal)||WAKE_DEF)}
+function offToClock(o){if(o==null)return"";const m=((Math.round(o)%1440)+1440)%1440;return`${pad(Math.floor(m/60))}:${pad(m%60)}`}
+function lateMin(v,f){const b=bedOffset(v);return b==null?null:b-bedGoalOf(f)} // 正数=比目标晚睡
+function bedScore(v,f){const d=lateMin(v,f);if(d==null)return null;
+  return clamp(1-(d>0?d/120:-d/180),0,1)} // 晚 2 小时或早 3 小时归零
+function wakeOffset(v){return v&&v.end?offsetOf(v.end):null}
+function stdev(a){const l=a.filter(x=>x!=null);if(l.length<2)return null;const m=avg(l);
+  return Math.sqrt(avg(l.map(x=>(x-m)*(x-m))))}
+function rhythmOf(ks,f){ // 一段时间的作息概况
+  const beds=ks.map(k=>bedOffset((S.entries[k]||{values:{}}).values[f.id])).filter(x=>x!=null);
+  const wakes=ks.map(k=>wakeOffset((S.entries[k]||{values:{}}).values[f.id])).filter(x=>x!=null);
+  const lates=ks.map(k=>lateMin((S.entries[k]||{values:{}}).values[f.id],f)).filter(x=>x!=null);
+  return{n:beds.length,bed:beds.length?avg(beds):null,wake:wakes.length?avg(wakes):null,
+    bedSd:stdev(beds),wakeSd:stdev(wakes),late:lates.filter(x=>x>60).length,
+    score:beds.length?avg(ks.map(k=>bedScore((S.entries[k]||{values:{}}).values[f.id],f)).filter(x=>x!=null)):null}}
 function fieldScore(f,v){
   if(v==null||v==="")return null;
   switch(f.type){
@@ -938,7 +995,8 @@ function fieldScore(f,v){
       return f.invert?clamp(1-Math.max(0,n-g)/g,0,1):clamp(n/g,0,1)}
     case"sleep":{const m=sleepMin(v);const a=m?bell(m/60,goalOf(f)||7.5,2.6):null;
       const b=v.score!==""&&v.score!=null?clamp(Number(v.score)/100,0,1):null;
-      const l=[a,b].filter(x=>x!=null);return l.length?l.reduce((s,x)=>s+x,0)/l.length:null}
+      const c=bedScore(v,f); // 作息：睡得早不早
+      const l=[a,b,c].filter(x=>x!=null);return l.length?l.reduce((s,x)=>s+x,0)/l.length:null}
   }
   return null}
 function goalOf(f){const g=S.settings.goals[f.id];return g!=null&&g!==""?Number(g):(f.goal!=null?f.goal:(f.type==="sleep"?7.5:null))}
@@ -1061,6 +1119,51 @@ function sortable(host,sel,handleSel,done){
     addEventListener("pointerup",up);addEventListener("pointercancel",up);
   });
 }
+let popEl=null,popOff=null;
+function closePop(){if(popEl){popEl.remove();popEl=null}
+  if(popOff){document.removeEventListener("pointerdown",popOff,true);removeEventListener("resize",closePop);popOff=null}}
+function popover(anchor,build,opt){
+  closePop();opt=opt||{};
+  const p=el("div","pop"+(opt.cls?" "+opt.cls:""));
+  build(p,closePop);
+  document.body.append(p);
+  const r=anchor.getBoundingClientRect(),w=p.offsetWidth,h=p.offsetHeight;
+  let x=clamp(opt.center?r.left+r.width/2-w/2:r.left,8,Math.max(8,innerWidth-w-8));
+  let y=r.bottom+6;
+  if(y+h>innerHeight-8)y=Math.max(8,r.top-h-6);
+  p.style.left=Math.round(x)+"px";p.style.top=Math.round(y)+"px";
+  requestAnimationFrame(()=>p.classList.add("on"));
+  popEl=p;
+  popOff=e=>{if(!p.contains(e.target)&&!anchor.contains(e.target))closePop()};
+  setTimeout(()=>{document.addEventListener("pointerdown",popOff,true);addEventListener("resize",closePop)},0);
+  return p}
+function popItem(p,icon,text,fn,opt){
+  const b=el("button","popitem"+(opt&&opt.cls?" "+opt.cls:""));
+  b.append(el("span","ic",icon),el("span",null,text));
+  if(opt&&opt.disabled)b.disabled=true;
+  else b.onclick=()=>{closePop();fn()};
+  p.append(b);return b}
+const EMOJI=[
+ ["身体","😴🌙🛏️💤🍚🍎🥗🍜💧🚰🛁🚿🩹💊🩺🌡️🦷👁️💪🏃🚶🧘🏋️🚴⚖️🩸🌸🤧😷"],
+ ["生活","🏠🧹🧺👕🪞💄🧴📱💻💼📚✏️🎓🗂️⏰🧾💰🛒🎁🚗🚌🎒🌳☀️🌧️🔑🪥🧊"],
+ ["心情","💗❤️🥰😊😌🙂😔😢😤😰🌀🫧🎯⚡🔥🌈🍀✨🕯️🎐"],
+ ["关系","🫂💌🏡👪👭👫☎️💬🎉🍻🤝👋💐"],
+ ["兴趣","🎬📖🎵🎧🎮🎨✍️📷🌻🐱🐶🍰☕🍵🍷🎲🧩🏊⚽🎸✈️"]];
+function emojiPicker(anchor,cur2,onPick){
+  popover(anchor,(p,close)=>{
+    const inp=el("input","inp");inp.placeholder="也可以直接粘贴任意 emoji";inp.value=cur2||"";
+    inp.style.cssText="margin:4px 4px 8px;width:calc(100% - 8px)";
+    inp.oninput=()=>onPick(inp.value.trim());
+    p.append(inp);
+    EMOJI.forEach(([name,set])=>{
+      p.append(el("div","poptitle",name));
+      const g=el("div","emj");
+      [...set].forEach(ch=>{const b=el("button",ch===cur2?"on":"",ch);
+        b.onclick=()=>{onPick(ch);close()};g.append(b)});
+      p.append(g)});
+  },{cls:"emjpop"});
+  const pp=popEl;if(pp)pp.style.width="292px"}
+
 function dialog(title,bodyEl,buttons,sub){
   const d=$("#dlg");d.innerHTML="";
   const hd=el("div","dlghd");hd.append(el("h3",null,title));
@@ -1283,7 +1386,11 @@ function sleepCtl(v,set,f){
   const napHost=el("div");napHost.style.cssText="display:flex;flex-direction:column;gap:8px";
   const addNap=el("button","addrow","＋ 午睡/补觉");
   const pd=()=>{const m=sleepMin(v);d1.textContent=m?fmtDurCN(m):"—";
-    const n=napMin(v);tot.textContent=m||n?`共 ${fmtDurCN((m||0)+n)}`:""};
+    const n=napMin(v);
+    const late=lateMin(v,f);
+    let extra="";
+    if(late!=null)extra=late>20?` · 比目标晚 ${Math.round(late)} 分钟`:late<-20?` · 比目标早 ${Math.round(-late)} 分钟`:" · 作息准时 ✓";
+    tot.textContent=(m||n?`共 ${fmtDurCN((m||0)+n)}`:"")+extra};
   const tot=el("span","hint");
   const paintNaps=()=>{napHost.innerHTML="";
     v.naps.forEach((n,ix)=>{const l=el("div","sleepline");l.append(el("span","k",ix?"补觉":"午睡"));
@@ -1322,16 +1429,26 @@ function renderDaily(){
   const d=parseKey(cur),today=key(new Date());
   $("#dTitle").innerHTML=`${cnDate(cur)} <span class="hint">${cur===today?"今天":cur===addDays(today,-1)?"昨天":""}</span>`;
   $("#dSub").textContent=WK[d.getDay()]+(hasAny(cur)?` · 已填 ${Math.round(filled(cur)*100)}%`:" · 还没有记录");
-  $("#dInput").value=cur;
+  $("#dInput").value=cur;calMonth=cur.slice(0,7);
   const host=$("#formHost");host.innerHTML="";
   S.fields.forEach((f,i)=>{
     if(f.hidden)return;
     const c=el("div","field"+(f.span?" span2":""));c.dataset.i=i;c.dataset.id=f.id;
     const hd=el("div","fhd");
     hd.append(el("span","ico",f.icon||"•"),el("span","lab",f.label));
-    const clr=el("button","clr","✕");clr.title="清除本项";
-    clr.onclick=()=>{if(!hasVal(f,entry(cur).values[f.id]))return;
-      withUndo(`清除了「${f.label}」`,()=>{delete entry(cur,true).values[f.id];save();renderDaily()})};
+    const clr=el("button","clr","⋯");clr.title="更多";
+    clr.onclick=e=>{e.stopPropagation();
+      const has=hasVal(f,entry(cur).values[f.id]);
+      popover(clr,p=>{
+        popItem(p,"⌫","清除今天填的内容",()=>{
+          withUndo(`清除了「${f.label}」`,()=>{delete entry(cur,true).values[f.id];save();renderDaily()})},
+          {disabled:!has});
+        popItem(p,"✎","编辑这个要素…",()=>editField(i));
+        p.append(el("div","popsep"));
+        popItem(p,"🚫","不再显示这个要素",()=>{
+          withUndo(`隐藏了「${f.label}」`,()=>{f.hidden=true;save();renderDaily();
+            if(view==="settings")renderSettings()})},{cls:"dang"});
+      })};
     const grip=el("span","grip","⣿");grip.title="拖动排序";
     hd.append(clr,grip);
     const bd=el("div","fbody");
@@ -1386,8 +1503,21 @@ function renderTips(){
       else if(h<goal-1)tips.push(tipEl("🌙",`睡了 ${fmtDurCN(m)}，比理想的 ${goal} 小时少一些。今晚试着提前 30 分钟放下手机。`));
       else if(h>goal+2)tips.push(tipEl("🛏️",`睡了 ${fmtDurCN(m)}，偏长。睡太久也会让人发懵，白天多晒点太阳会好些。`));
       else tips.push(tipEl("✅",`夜眠 <b>${fmtDurCN(m)}</b>，长度很合适。`));
-      const bo=bedOffset(sv);
-      if(bo!=null&&bo>=1500)tips.push(tipEl("🕐",`入睡时间 ${hhmm(sv.start)}，属于晚睡。连续晚睡会拖累第二天的情绪与专注。`));
+      const late=lateMin(sv,sf);
+      if(late!=null){
+        const goalTxt=(sf.bedGoal||BED_DEF);
+        if(late>60){
+          const recent=lastKeys(0).filter(k=>k<=cur).slice(-7)
+            .filter(k=>{const l2=lateMin(S.entries[k].values[sf.id],sf);return l2!=null&&l2>60}).length;
+          tips.push(tipEl("🕐",`${hhmm(sv.start)} 才睡，比目标的 ${goalTxt} 晚了 <b>${Math.round(late)}</b> 分钟`+
+            (recent>=3?`，近 7 天里已经有 ${recent} 天这样了。作息比睡够更影响第二天的状态。`:"。")));
+        }else if(late>=-60)tips.push(tipEl("👍",`${hhmm(sv.start)} 入睡，作息很准时。`));
+      }
+      if(sv.end){
+        const beds=lastKeys(0).filter(k=>k<=cur).slice(-7).map(k=>bedOffset(S.entries[k].values[sf.id])).filter(x=>x!=null);
+        const sd=stdev(beds);
+        if(sd!=null&&sd>75)tips.push(tipEl("🎢",`最近 7 天入睡时间上下浮动约 <b>${Math.round(sd)}</b> 分钟，忽早忽晚比单纯晚睡更累。`));
+      }
       const nm=napMin(sv);
       if(nm>90)tips.push(tipEl("💤",`午睡 ${fmtDurCN(nm)} 偏长，可能会让晚上更难入睡。`));
     }else tips.push(tipEl("🌙","睡眠还没填。这是最影响其他各项的一格。"));
@@ -1530,6 +1660,7 @@ function bindDrop(){
   ["dragleave","drop"].forEach(t=>dz.addEventListener(t,e=>{e.preventDefault();dz.classList.remove("over")}));
   dz.addEventListener("drop",e=>{const f=[...e.dataTransfer.files].find(f=>/^image\//.test(f.type));if(f)runOCR(f)});
   document.addEventListener("paste",e=>{
+    if(!S.settings.ocr)return;
     if($("#v-daily").classList.contains("hide"))return;
     const t=e.target;if(/INPUT|TEXTAREA/.test(t.tagName)&&t.type!=="file")return;
     const it=[...(e.clipboardData?.items||[])].find(i=>/^image\//.test(i.type));
@@ -1643,7 +1774,12 @@ function metricDefs(){
       out.push({id:f.id+"__h",label:f.label+"时长",unit:"h",max:12,get:g()});
       out.push({id:f.id+"__s",label:f.label+"评分",unit:"分",max:100,get:k=>{const e=S.entries[k];const v=e&&e.values[f.id];
         return v&&v.score!==""&&v.score!=null?Number(v.score):null}});
-      out.push({id:f.id+"__b",label:"入睡时刻",unit:"",max:1,hidden:true,get:k=>{const e=S.entries[k];return e?bedOffset(e.values[f.id]):null}});
+      out.push({id:f.id+"__b",label:"入睡时刻",unit:"",max:12,fmt:v=>offToClock(v*60+1080),
+        get:k=>{const e=S.entries[k];const b=e?bedOffset(e.values[f.id]):null;return b==null?null:(b-1080)/60}});
+      out.push({id:f.id+"__w",label:"起床时刻",unit:"",max:20,fmt:v=>offToClock(v*60+1080),
+        get:k=>{const e=S.entries[k];const w=e?wakeOffset(e.values[f.id]):null;return w==null?null:(w-1080)/60}});
+      out.push({id:f.id+"__r",label:"作息规律",unit:"分",max:100,
+        get:k=>{const e=S.entries[k];const sc=e?bedScore(e.values[f.id],f):null;return sc==null?null:Math.round(sc*100)}});
     }else if(f.type==="rating"||f.type==="mood")out.push({id:f.id,label:f.label,unit:"/5",max:5,get:g()});
     else if(f.type==="number")out.push({id:f.id,label:f.label,unit:f.unit||"",max:Math.max(goalOf(f)*1.4||100,1),get:g()});
     else if(f.type==="cups")out.push({id:f.id,label:f.label,unit:f.unit||"杯",max:Math.max((goalOf(f)||6)*1.6,1),get:g()});
@@ -1689,6 +1825,13 @@ function renderKPI(ks,defs){
   if(sf){const h=A(rec,k=>{const m=sleepMin(S.entries[k].values[sf.id]);return m?m/60:null});
     const ph=A(prevKs,k=>{const m=sleepMin(S.entries[k].values[sf.id]);return m?m/60:null});
     host.append(kpi("平均夜眠",h==null?"—":h.toFixed(1),deltaOf(h,ph),"h"))}
+  if(sf){const R=rhythmOf(rec,sf),P2=rhythmOf(prevKs,sf);
+    if(R.bed!=null){
+      host.append(kpi("平均入睡",offToClock(R.bed),
+        P2.bed!=null?(Math.abs(R.bed-P2.bed)<6?{c:"flat",t:"和上期差不多"}:
+          {c:R.bed<P2.bed?"up":"down",t:(R.bed<P2.bed?"▲ 早了 ":"▼ 晚了 ")+Math.round(Math.abs(R.bed-P2.bed))+" 分钟"}):null));
+      if(R.bedSd!=null)host.append(kpi("作息稳定度","±"+Math.round(R.bedSd),
+        P2.bedSd!=null?deltaOf(R.bedSd,P2.bedSd,true):null,"分钟"))}}
   const mf=S.fields.find(f=>f.type==="mood");
   if(mf){const m=A(rec,k=>{const v=S.entries[k].values[mf.id];return v&&v.score!==""&&v.score!=null?Number(v.score):null});
     const pm=A(prevKs,k=>{const v=S.entries[k].values[mf.id];return v&&v.score!==""&&v.score!=null?Number(v.score):null});
@@ -1741,7 +1884,7 @@ function renderTrend(ks,defs){
   ks.forEach((k,i)=>{const r=sv("rect",{x:X(i)-iw/(ks.length*2||1),y:P.t,width:Math.max(6,iw/(ks.length||1)),height:ih,fill:"transparent"});
     r.style.cursor="pointer";
     r.addEventListener("mousemove",e=>{const lines=[`${cnDate(k)} ${WK[parseKey(k).getDay()]}`];
-      act.forEach(d=>{const v=d.get(k);if(v!=null)lines.push(`${d.label} ${trimNum(v)}${d.unit}`)});
+      act.forEach(d=>{const v=d.get(k);if(v!=null)lines.push(`${d.label} ${d.fmt?d.fmt(v):trimNum(v)+d.unit}`)});
       tip(e,lines.join("\n"))});
     r.addEventListener("mouseleave",untip);
     r.addEventListener("click",()=>{cur=k;switchView("daily");renderDaily()});
@@ -1750,10 +1893,16 @@ function renderTrend(ks,defs){
 function renderRadar(ks){
   const host=$("#radarChart");host.innerHTML="";
   const rec=ks.filter(hasAny);
-  const fs=S.fields.filter(f=>!f.hidden&&(f.type==="rating"||f.type==="mood")).slice(0,9);
-  if(fs.length<3||!rec.length){host.append(el("div","empty","需要至少 3 个评分类要素"));return}
-  const vals=fs.map(f=>avg(rec.map(k=>{const v=S.entries[k].values[f.id];
-    return f.type==="mood"?(v&&v.score!==""&&v.score!=null?Number(v.score):null):(v===""||v==null?null:Number(v))})));
+  const base=S.fields.filter(f=>!f.hidden&&(f.type==="rating"||f.type==="mood")).slice(0,8);
+  const sf2=S.fields.find(f=>f.type==="sleep"&&!f.hidden);
+  const fs=base.map(f=>({label:f.label,
+    val:avg(rec.map(k=>{const v=S.entries[k].values[f.id];
+      return f.type==="mood"?(v&&v.score!==""&&v.score!=null?Number(v.score):null):(v===""||v==null?null:Number(v))}))}));
+  if(sf2){
+    fs.unshift({label:"作息",val:(()=>{const r2=rhythmOf(rec,sf2);return r2.score==null?null:r2.score*5})()});
+    fs.unshift({label:"睡眠",val:avg(rec.map(k=>{const sc=fieldScore(sf2,S.entries[k].values[sf2.id]);return sc==null?null:sc*5}))})}
+  if(fs.filter(x=>x.val!=null).length<3||!rec.length){host.append(el("div","empty","需要至少 3 个评分类要素"));return}
+  const vals=fs.map(x=>x.val);
   $("#radarMeta").textContent=`${rec.length} 天均值`;
   const W=hostW(host,560),H=290,cx=W/2,cy=H/2+4,R=Math.min(W,H)/2-46;
   const s=sv("svg",{width:W,height:H});
@@ -1872,7 +2021,15 @@ function mergeSummary(from,to){
         if(med!=null)s+=`，入睡中位 ${hhmm(pad(Math.floor(med%1440/60))+":"+pad(med%60))}`;
         if(naps.length)s+=`，午睡 ${naps.length} 次均 ${fmtDurCN(Math.round(avg(naps)))}`;
         const short=mins.filter(m=>m<360).length;if(short)s+=`，其中 ${short} 天不足 6 小时`;
-        L.push(s);break}
+        L.push(s);
+        const R=rhythmOf(ks,f);
+        if(R.n>=2){
+          let s2=`- 作息：平均 ${offToClock(R.bed)} 入睡`;
+          if(R.wake!=null)s2+=` / ${offToClock(R.wake)} 起床`;
+          if(R.bedSd!=null)s2+=`，波动 ±${Math.round(R.bedSd)} 分钟`;
+          s2+=`，比目标（${f.bedGoal||BED_DEF}）晚睡超 1 小时的有 ${R.late}/${R.n} 天`;
+          L.push(s2)}
+        break}
       case"rating":{const ns=vs.map(v=>v===""||v==null?null:Number(v)).filter(x=>x!=null);
         if(!ns.length)break;const lo=ns.filter(x=>x<=2).length;
         L.push(`- ${f.label}：均 ${avg(ns).toFixed(1)}/5${lo?`（${lo} 天 ≤2 分）`:""}`);break}
@@ -1923,9 +2080,11 @@ function suggestions(ks){
   if(sf){const mins=rec.map(k=>sleepMin(S.entries[k].values[sf.id])).filter(Boolean);
     if(mins.length>=3){const a=avg(mins)/60;
       if(a<6.8)out.push(`平均夜眠只有 ${a.toFixed(1)} 小时，是这段时间最需要补的一块；把入睡时间提前 30 分钟，比周末补觉更有效。`);
-      const beds=rec.map(k=>bedOffset(S.entries[k].values[sf.id])).filter(x=>x!=null);
-      if(beds.length>=4){const sd=Math.sqrt(avg(beds.map(b=>(b-avg(beds))**2)));
-        if(sd>75)out.push(`入睡时间忽早忽晚（波动约 ${Math.round(sd)} 分钟），作息越规律，白天的精力越稳。`)}}}
+      const R=rhythmOf(rec,sf);
+      if(R.n>=4){
+        if(R.bedSd>75)out.push(`入睡时间忽早忽晚（波动约 ${Math.round(R.bedSd)} 分钟），作息越规律，白天的精力越稳；先固定起床时间，入睡时间会自己跟上。`);
+        if(R.late>=Math.max(3,R.n*.5))out.push(`${R.n} 天里有 ${R.late} 天比目标（${sf.bedGoal||BED_DEF}）晚睡超过 1 小时，平均 ${offToClock(R.bed)} 才睡；把睡前那件"再看一会儿"的事提前 30 分钟，是最容易见效的一步。`);
+      }}}
   const pf=S.fields.find(f=>f.type==="duration"&&f.invert);
   if(pf){const ns=rec.map(k=>Number(S.entries[k].values[pf.id])).filter(x=>Number.isFinite(x)&&x>0);
     const g=goalOf(pf)||240;
@@ -2047,6 +2206,11 @@ function renderSettings(){
     r.append(s,v);wb.append(r)});
   // 目标
   const gb=$("#goalBox");gb.innerHTML="";
+  S.fields.filter(f=>f.type==="sleep"&&!f.hidden).forEach(f=>{
+    [["bedGoal","理想入睡时间",BED_DEF],["wakeGoal","理想起床时间",WAKE_DEF]].forEach(([k2,lab,dv])=>{
+      const r=el("div","srow");r.append(el("div","t",`🌙 ${lab}`),el("span","spacer"));
+      const i=timeInput(f[k2]||dv,t=>{f[k2]=t||dv;save();renderDaily();if(view==="charts")renderCharts()});
+      r.append(i);gb.append(r)})});
   S.fields.filter(f=>!f.hidden&&["number","cups","volume","duration","sleep"].includes(f.type)).forEach(f=>{
     const r=el("div","srow");
     const unit=f.type==="sleep"?"小时":f.type==="duration"?"分钟":(f.unit||"");
@@ -2071,7 +2235,12 @@ function editField(i,isNew){
   const name=mk("名称",el("input","inp"));name.value=f.label;
   const row=el("div");row.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:10px";
   const g1=el("div","fgrp"),g2=el("div","fgrp");
-  g1.append(el("label",null,"图标"));const icon=el("input","inp");icon.value=f.icon||"";icon.placeholder="任意 emoji";g1.append(icon);
+  g1.append(el("label",null,"图标"));
+  const iwrap=el("div","keyrow");
+  const icon=el("input","inp");icon.value=f.icon||"";icon.placeholder="任意 emoji";
+  const ipick=el("button","btn sm","😀 选择");ipick.type="button";
+  ipick.onclick=()=>emojiPicker(ipick,icon.value.trim(),v=>{icon.value=v});
+  iwrap.append(icon,ipick);g1.append(iwrap);
   g2.append(el("label",null,"类型"));const type=el("select","inp");
   Object.entries(TYPES).forEach(([k,v])=>type.append(new Option(v,k)));type.value=f.type;g2.append(type);
   row.append(g1,g2);b.append(row);
@@ -2084,7 +2253,9 @@ function editField(i,isNew){
     if(t==="cups")     {add("单位","unit","如 杯",f.unit);add("目标值","goal","",f.goal)}
     if(t==="volume")   {add("单位","unit","如 L",f.unit);add("每日目标（升）","goal","1.5",f.goal);add("加减步长（升）","step","0.25",f.step)}
     if(t==="duration") {add("目标分钟数","goal","如 240",f.goal)}
-    if(t==="sleep")    {add("理想睡眠小时","goal","7.5",f.goal)}
+    if(t==="sleep")    {add("理想睡眠小时","goal","7.5",f.goal);
+                        add("理想入睡时间","bedGoal",BED_DEF,f.bedGoal);
+                        add("理想起床时间","wakeGoal",WAKE_DEF,f.wakeGoal)}
     if(t==="rating")   {add("最理想的分值（留空＝越高越好）","ideal","如 3.5",f.ideal)}
     if(t==="text")     {add("快捷选项（用 / 分隔）","chips","无不良/略油腻",(f.chips||[]).join("/"))}
     if(t==="select")   {add("选项（用 / 分隔）","options","无/轻/重",(f.options||[]).join("/"))}
@@ -2108,6 +2279,7 @@ function editField(i,isNew){
     f.prefix=gv("prefix")||undefined;f.unit=gv("unit")||undefined;f.ph=gv("ph")||undefined;
     f.goal=gv("goal")!==""?Number(gv("goal")):undefined;
     f.step=gv("step")!==""?Number(gv("step")):undefined;
+    f.bedGoal=normTime(gv("bedGoal"))||undefined;f.wakeGoal=normTime(gv("wakeGoal"))||undefined;
     f.ideal=gv("ideal")!==""?Number(gv("ideal")):undefined;
     f.chips=gv("chips")?gv("chips").split("/").map(x=>x.trim()).filter(Boolean):undefined;
     f.options=gv("options")?gv("options").split("/").map(x=>x.trim()).filter(Boolean):undefined;
@@ -2615,6 +2787,9 @@ function renderAISettings(){
   const sep=el("div");sep.style.cssText="height:1px;background:var(--line2);margin:14px 0";host.append(sep);
   const row=(t,sub)=>{const r=el("div","srow");const l=el("div");
     l.append(el("div","t",t));if(sub)l.append(el("div","s",sub));r.append(l,el("span","spacer"));host.append(r);return r};
+  const rOcr=row("睡眠截图识别","关掉后直接手填时间，更快；开启会多一张拖图卡片");
+  const sOcr=mkSw(!!S.settings.ocr,x=>{S.settings.ocr=!S.settings.ocr;
+    x.classList.toggle("on",!!S.settings.ocr);save();applyOcr()});rOcr.append(sOcr);
   const r1=row("进入汇总页自动分析","数据没变化时直接用上次结果，不重复消耗");
   const s1=mkSw(a.auto!==false,x=>{a.auto=!(a.auto!==false);x.classList.toggle("on",a.auto!==false);save()});r1.append(s1);
   const r2=row("深度思考","更细致，但要多等十几秒");
@@ -2626,6 +2801,54 @@ function renderAISettings(){
   const q=aiStat();
   row("用量",`今天 ${q.day} 次 · 最近一小时 ${q.hour} 次 · 已存 ${(a.reports||[]).length} 份报告`);
 }
+
+/* ==================== 日历选日期 ==================== */
+let calMonth=null;
+function calendarPopover(anchor){
+  calMonth=calMonth||cur.slice(0,7);
+  popover(anchor,(p,close)=>{
+    const box=el("div","cal");p.append(box);
+    const draw=()=>{
+      box.innerHTML="";
+      const[y,m]=calMonth.split("-").map(Number);
+      const hd=el("div","calhd");
+      const prev=el("button",null,"‹"),next=el("button",null,"›");
+      const title=el("div","m",`${y} 年 ${m} 月`);
+      prev.onclick=()=>{const d=new Date(y,m-2,1);calMonth=`${d.getFullYear()}-${pad(d.getMonth()+1)}`;draw()};
+      next.onclick=()=>{const d=new Date(y,m,1);calMonth=`${d.getFullYear()}-${pad(d.getMonth()+1)}`;draw()};
+      hd.append(prev,title,next);box.append(hd);
+      const g=el("div","calgrid");
+      const mon=S.settings.monday!==false;
+      const wd=mon?["一","二","三","四","五","六","日"]:["日","一","二","三","四","五","六"];
+      wd.forEach(t=>g.append(el("div","wd",t)));
+      const first=new Date(y,m-1,1);
+      const lead=mon?((first.getDay()+6)%7):first.getDay();
+      const today=key(new Date());
+      const start=new Date(y,m-1,1-lead);
+      for(let i=0;i<42;i++){
+        const d=new Date(start);d.setDate(start.getDate()+i);
+        const k=key(d),inMonth=d.getMonth()===m-1;
+        if(i>=35&&!inMonth)continue;
+        const c=el("div","calday"+(inMonth?"":" out")+(k===today?" today":"")+(k===cur?" sel":"")+(hasAny(k)?"":" none"));
+        c.append(el("span",null,String(d.getDate())));
+        const bar=el("span","bar");
+        const ix=dayIndex(k);
+        if(hasAny(k)&&k!==cur)bar.style.opacity=ix!=null?(.3+.7*ix/100).toFixed(2):.5;
+        c.append(bar);
+        c.title=hasAny(k)?`${k} · 已填 ${Math.round(filled(k)*100)}%${ix!=null?` · 综合 ${ix}`:""}`:k;
+        onTap(c,()=>{cur=k;calMonth=k.slice(0,7);renderDaily();close()},{keyboard:false});
+        g.append(c)}
+      box.append(g);
+      const ft=el("div","calft");
+      const t2=el("button","btn sm","跳到今天");
+      t2.onclick=()=>{cur=key(new Date());calMonth=cur.slice(0,7);renderDaily();close()};
+      const last=allKeys().at(-1);
+      ft.append(t2);
+      if(last&&last!==cur){const l=el("button","btn sm gho","最近记录 "+shortDate(last));
+        l.onclick=()=>{cur=last;calMonth=last.slice(0,7);renderDaily();close()};ft.append(l)}
+      box.append(ft)};
+    draw();
+  },{center:true})}
 
 /* ==================== 搜索 ==================== */
 function textsOf(k){ // 某天所有可搜索的文字
@@ -2744,16 +2967,19 @@ function renderWeek(ks){
     const best=v===mx,worst=v===mn;
     const r=sv("rect",{x,y:P.t+ih-h,width:w2,height:h,rx:6,fill:"var(--accent)",
       "fill-opacity":best?.95:worst?.32:.6});
-    r.addEventListener("mousemove",e=>tip(e,`${WK[order[i]]} 平均 ${trimNum(+v.toFixed(2))}${d.unit}\n${buckets[i].length} 天`));
+    r.addEventListener("mousemove",e=>tip(e,`${WK[order[i]]} 平均 ${d.fmt?d.fmt(v):trimNum(+v.toFixed(2))+d.unit}\n${buckets[i].length} 天`));
     r.addEventListener("mouseleave",untip);sv2.append(r);
     const lb=sv("text",{x:x+w2/2,y:P.t+ih-h-5,class:"axtx","text-anchor":"middle"});
-    lb.textContent=trimNum(+v.toFixed(1));sv2.append(lb);
+    lb.textContent=d.fmt?d.fmt(v):trimNum(+v.toFixed(1));sv2.append(lb);
     const t=sv("text",{x:x+w2/2,y:P.t+ih+16,class:"axtx","text-anchor":"middle"});
     t.textContent=WK[order[i]].slice(1);sv2.append(t)});
   host.append(sv2);
   const bi=vals.indexOf(mx),wi=vals.indexOf(mn);
   const note=el("div","hint");note.style.marginTop="6px";
-  note.innerHTML=`<b>${WK[order[bi]]}</b>最高（${trimNum(+mx.toFixed(2))}${d.unit}），<b>${WK[order[wi]]}</b>最低（${trimNum(+mn.toFixed(2))}${d.unit}）`;
+  const F=x=>d.fmt?d.fmt(x):trimNum(+x.toFixed(2))+d.unit;
+  note.innerHTML=/时刻/.test(d.label)
+    ?`<b>${WK[order[bi]]}</b>最晚（${F(mx)}），<b>${WK[order[wi]]}</b>最早（${F(mn)}）`
+    :`<b>${WK[order[bi]]}</b>最高（${F(mx)}），<b>${WK[order[wi]]}</b>最低（${F(mn)}）`;
   host.append(note)}
 
 /* ==================== 主题 / 视图 / 启动 ==================== */
@@ -2790,8 +3016,9 @@ function migrateWater(){ // 饮水从「杯」改成「升」
       if(typeof v==="number"&&v>0){e.values.water=Math.round(v*.25*100)/100;n++}})}
   S.settings.waterL=1;save();
   if(n)setTimeout(()=>toast(`饮水已改为按升记录，原有 ${n} 天的「杯」按 250ml 折算`),1200)}
+function applyOcr(){$("#ocrCard").classList.toggle("hide",!S.settings.ocr)}
 function boot(){
-  S=load();applyTheme();migrateWater();
+  S=load();applyTheme();migrateWater();applyOcr();
   $("#tabs").onclick=e=>{const b=e.target.closest(".tab");if(b)switchView(b.dataset.v)};
   $("#botnav").onclick=e=>{const b=e.target.closest("button");if(b)switchView(b.dataset.v)};
   $("#themeBtn").onclick=()=>{const o=["auto","light","dark"];
@@ -2800,7 +3027,7 @@ function boot(){
   $("#dPrev").onclick=()=>{cur=addDays(cur,-1);renderDaily()};
   $("#dNext").onclick=()=>{cur=addDays(cur,1);renderDaily()};
   $("#dToday").onclick=()=>{cur=key(new Date());renderDaily()};
-  onTap($("#dateBox"),()=>{const i=$("#dInput");try{i.showPicker?i.showPicker():i.click()}catch(_){i.click()}});
+  onTap($("#dateBox"),()=>calendarPopover($("#dateBox")));
   $("#dInput").onchange=e=>{if(e.target.value){cur=e.target.value;renderDaily()}};
   $("#btnCopyDay").onclick=()=>{const t=entryMD(cur);t?copy(t):toast("今天还没有内容")};
   $("#btnCopyPv").onclick=()=>{const t=entryMD(cur);t?copy(t):toast("今天还没有内容")};
