@@ -14,7 +14,7 @@ layout: default
   {% endunless %}
 {% endif %}
 
-<div id="main" role="main">
+<main id="main" role="main">
   {% include sidebar.html %}
 
   <article class="page" itemscope itemtype="http://schema.org/CreativeWork">
@@ -61,7 +61,9 @@ layout: default
             {% elsif page.modified %}
               <p class="page__meta"><i class="fa fa-refresh" aria-hidden="true"></i> Last updated: <time datetime="{{ page.modified | date: "%Y-%m-%d" }}">{{ page.modified | date: "%B %d, %Y" }}</time></p>
             {% else %}
-              <p class="page__meta"><i class="fa fa-refresh" aria-hidden="true"></i> Last updated: <time datetime="{{ site.time | date: "%Y-%m-%d" }}">{{ site.time | date: "%B %d, %Y" }}</time></p>
+              {%- comment -%} 以前这里 fallback 到 site.time（构建时间），
+                  每次重新部署都会变，跟内容有没有更新无关，所以干脆不显示。
+                  想显示就在 front matter 里写 last_updated 或 modified。 {%- endcomment -%}
             {% endif %}
           {% endif %}
           {% if page.read_time %}
@@ -149,4 +151,4 @@ layout: default
       </div>
     </div>
   {% endif %}
-</div>
+</main>

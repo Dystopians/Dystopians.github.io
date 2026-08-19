@@ -1,17 +1,19 @@
 ---
 permalink: /
 title: "Peilin Cai's Personal Website"
-excerpt: "Last Updated on Sept. 19th"
+excerpt: "Machine Learning Engineer at TikTok. M.S. in Computer Science, USC. Research on computer vision, large language models, and multimodal generation."
+seo_title: "Peilin Cai — Machine Learning Engineer"
 author_profile: true
 redirect_from: 
   - /about/
   - /about.html
 title_logos:
-  - src: /images/logos/wuhan-university.png
+  - src: /images/logos/whu-seal.png
     alt: Wuhan University
     href: https://www.whu.edu.cn/
     variant: seal
-  - src: /images/logos/TheSeal_Reg_0921.png
+  - src: /images/logos/usc-seal.png
+    dark_src: /images/logos/usc-seal-dark.png
     alt: University of Southern California
     href: https://www.usc.edu/
     variant: seal

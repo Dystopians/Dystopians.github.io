@@ -1,5 +1,7 @@
 ---
 permalink: /markdown/
+mathjax: true
+mermaid: true
 title: "Markdown"
 author_profile: true
 redirect_from: 

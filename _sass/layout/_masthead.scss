@@ -149,7 +149,7 @@
     white-space: nowrap;
   }
 
-  #theme-toggle a {
+  #theme-toggle .theme-toggle__control {
     width: 2.15rem;
     min-height: 2.15rem;
   }
@@ -274,7 +274,15 @@
   border-bottom: 0;
 }
 
-#theme-toggle a {
+#theme-toggle .theme-toggle__control {
+  /* 这里以前是 <a href="#">，点击会跳回页首且语义不对，现在是真正的 <button>，
+     因此需要清掉浏览器默认按钮样式 */
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
   --theme-toggle-icon-color: #111827;
   --theme-toggle-mask-color: #ffffff;
   flex: 0 0 auto;
@@ -290,7 +298,7 @@
   transition: color .18s ease, border-color .18s ease, background-color .18s ease, transform .18s ease;
 }
 
-#theme-toggle a:hover {
+#theme-toggle .theme-toggle__control:hover {
   border-color: rgba(31, 111, 130, 0.32);
   color: var(--global-link-color);
   transform: translateY(-1px);
@@ -356,14 +364,14 @@ html[data-theme="dark"] .masthead::after {
   background: rgba(51, 65, 85, 0.95);
 }
 
-html[data-theme="dark"] #theme-toggle a {
+html[data-theme="dark"] #theme-toggle .theme-toggle__control {
   --theme-toggle-icon-color: #e5e7eb;
   --theme-toggle-mask-color: rgba(15, 23, 42, 0.75);
   background: rgba(15, 23, 42, 0.75);
   color: var(--theme-toggle-icon-color) !important;
 }
 
-html[data-theme="dark"] #theme-toggle a:hover {
+html[data-theme="dark"] #theme-toggle .theme-toggle__control:hover {
   border-color: rgba(103, 198, 216, 0.42);
   color: #bcecf5;
 }

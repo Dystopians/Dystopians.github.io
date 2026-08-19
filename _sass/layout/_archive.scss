@@ -225,6 +225,12 @@
     align-items: center;
     min-height: 1.65rem;
     padding: 0.2rem 0.55rem;
+
+    /* 触摸设备上按钮太小不好点，抬到 44px */
+    @media (hover: none) {
+      min-height: 2.75rem;
+      padding: 0.35rem 0.9rem;
+    }
     border: 1px solid var(--global-border-color);
     border-radius: 999px;
     font-family: $sans-serif;

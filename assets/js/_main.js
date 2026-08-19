@@ -26,7 +26,7 @@ let determineComputedTheme = () => {
 const browserPref = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
 let updateThemeToggle = (computedTheme) => {
-  const toggle = $("#theme-toggle a");
+  const toggle = $("#theme-toggle .theme-toggle__control");
   const moonIcon = $(".theme-toggle__symbol--moon");
   const sunIcon = $(".theme-toggle__symbol--sun");
   const isDark = computedTheme === "dark";
@@ -67,7 +67,7 @@ var toggleTheme = () => {
 };
 
 let bindThemeToggle = () => {
-  $('#theme-toggle a').off('click.theme-toggle').on('click.theme-toggle', function (event) {
+  $('#theme-toggle .theme-toggle__control').off('click.theme-toggle').on('click.theme-toggle', function (event) {
     event.preventDefault();
     toggleTheme();
   });

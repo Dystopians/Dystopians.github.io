@@ -10,7 +10,19 @@
   <article class="pub{% unless post.thumb %} pub--text-only{% endunless %}" itemscope itemtype="http://schema.org/CreativeWork">
     {% if post.thumb %}
       <div class="pub__media">
-        <img src="{{ post.thumb }}" alt="{{ post.conference_label | default: post.venue }}" class="pub__thumb">
+        {%- comment -%}
+          缩略图显示宽度约 200px，原图曾经是 1900px 宽、815 KB。
+          现在统一指向 files/thumbs/web/ 下按显示尺寸导出的版本，优先 WebP。
+          图片都在首屏之外，用 loading="lazy"；width/height 用来占位防止加载时跳版。
+        {%- endcomment -%}
+        <picture>
+          <source srcset="{{ post.thumb | replace: '.png', '.webp' | relative_url }}" type="image/webp">
+          <img src="{{ post.thumb | relative_url }}"
+               alt="Figure from {{ title | strip_html }}"
+               class="pub__thumb"
+               loading="lazy" decoding="async"
+               {% if post.thumb_width %}width="{{ post.thumb_width }}" height="{{ post.thumb_height }}"{% endif %}>
+        </picture>
       </div>
     {% endif %}
     <div class="pub__body">

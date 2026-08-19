@@ -2,18 +2,24 @@
 
 <a href="/sitemap/">Sitemap</a>
 
-<!-- Support for MatJax -->
-<script defer src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script"></script>
+<!-- 这几个库以前是全站每页无条件加载的：主页因此白下载 1.3 MB JS（plotly 1 MB + MathJax 251 KB），
+     而实际上只有个别页面用得到。现在改成在页面 front matter 里按需开启：
+       mathjax: true / plotly: true / mermaid: true
+     （原来还挂着一个给 IE 用的 es6 polyfill，已删除。） -->
+{% if page.mathjax %}
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script"></script>
+{% endif %}
 
-<!-- Support for Plotly -->
-<script defer src='https://cdnjs.cloudflare.com/ajax/libs/plotly.js/3.0.1/plotly.min.js'></script>
+{% if page.plotly %}
+  <script defer src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@3.0.1/plotly.min.js"></script>
+{% endif %}
 
-<!-- Support for Mermaid -->
-<script type="module">
-    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-    mermaid.initialize({startOnLoad:true, theme:'default'});
-    await mermaid.run({querySelector:'code.language-mermaid'});
-</script>
+{% if page.mermaid %}
+  <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+      mermaid.initialize({startOnLoad:true, theme:'default'});
+      await mermaid.run({querySelector:'code.language-mermaid'});
+  </script>
+{% endif %}
 
 <!-- end custom footer snippets -->

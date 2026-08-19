@@ -9,7 +9,9 @@ venue: 'Submission'
 graphpdf: '/files/thumbs/fig-overview-v2.pdf'
 arxiv: ''
 conference_label: 'In Submission'
-thumb: '/files/thumbs/png/fig-overview-v2_p1.png'
+thumb: '/files/thumbs/web/fig-overview-v2.png'
+thumb_width: 500
+thumb_height: 241
 authors:
   - Peilin Cai
   - Weiduo Yuan

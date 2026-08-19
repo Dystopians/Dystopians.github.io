@@ -27,7 +27,7 @@ author:
   name             : "Peilin Cai"
   pronouns         : "He/Him"  
   bio              : "Machine Learning Engineer at TikTok · M.S. in Computer Science, USC"
-  location         : "Los Angeles"
+  location         : "San Jose"
   employer         : "TikTok"
   uri              : "https://caipeilin.com"
   email            : "peilinca@usc.edu" 
@@ -140,7 +140,7 @@ facebook:
   username               :
   app_id                 :
   publisher              :
-og_image                 :  # Social media default site image
+og_image                 : "/images/og-cover.png"  # Social media default site image
 og_description           :  # Social media default site image description
 # For specifying social profiles
 # - https://developers.google.com/structured-data/customize/social-profiles
