@@ -13,7 +13,9 @@
 import io, os, re, sys, subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC_FONT = os.path.join(ROOT, "assets/fonts/WenYue_GuTiFangSong_F.otf")
+# 原始字体放在 _fonts/：下划线开头的目录 Jekyll 不会发布，
+# 所以这份 16 MB 的商业字体留在仓库里可以重新生成子集，但不会挂到公网上。
+SRC_FONT = os.path.join(ROOT, "_fonts/WenYue_GuTiFangSong_F.otf")
 OUT_FONT = os.path.join(ROOT, "assets/fonts/wenyue-emptychair.woff2")
 FALLBACK = "assets/fonts/wenyue-fallback.woff2"          # 字库缺字用，Noto Serif SC 子集
 OUT_INC  = os.path.join(ROOT, "_includes/emptychair-fonts.html")
