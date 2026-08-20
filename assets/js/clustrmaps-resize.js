@@ -1,12 +1,15 @@
 /**
- * ClustrMaps 访客地球仪。
+ * MapMyVisitors（原 ClustrMaps）访客地球仪。
+ *
+ * 注意域名：clustrmaps.com 的源站已经停止响应，服务迁到了 mapmyvisitors.com，
+ * map ID 不变。挂件地址在 _includes/sidebar.html 里。
  *
  * 之前的写法有三个问题：页面一加载就注入脚本、失败后还会带 cache buster 再注入一次、
- * 且没有任何超时。clustrmaps.com 在部分网络下不可达时，两个请求会各自挂 70 秒以上才超时，
+ * 且没有任何超时。域名在部分网络下不可达时，两个请求会各自挂 70 秒以上才超时，
  * 控制台留下一串 ERR_CONNECTION_TIMED_OUT，容器最后是空的。
  *
  * 现在：滚动到侧栏才开始加载，超过 LOAD_TIMEOUT 没出现组件就安静地把容器收起来，
- * 不重试、不报错、不占位。能连上 clustrmaps 的访客照常看到地球仪。
+ * 不重试、不报错、不占位。能连上的访客照常看到地球仪。
  */
 (() => {
   const container = document.querySelector('[data-clustrmaps="globe"]');
