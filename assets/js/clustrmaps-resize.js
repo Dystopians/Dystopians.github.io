@@ -1,15 +1,17 @@
 /**
  * MapMyVisitors（原 ClustrMaps）访客地球仪。
  *
- * 注意域名：clustrmaps.com 的源站已经停止响应，服务迁到了 mapmyvisitors.com，
- * map ID 不变。挂件地址在 _includes/sidebar.html 里。
+ * 关于这个挂件的两个硬性要求，都是从他们的 globe.js 里读出来的：
  *
- * 之前的写法有三个问题：页面一加载就注入脚本、失败后还会带 cache buster 再注入一次、
- * 且没有任何超时。域名在部分网络下不可达时，两个请求会各自挂 70 秒以上才超时，
- * 控制台留下一串 ERR_CONNECTION_TIMED_OUT，容器最后是空的。
+ * 1. script 标签的 id 必须是 mmvst_globe。它内部是 `$("#mmvst_globe")`，
+ *    找不到就直接 return，什么都不做。旧的 id 叫 clstr_globe，改域名后必须一起改。
+ * 2. 脚本必须在 window load 事件之前就位。显示地球仪的 set_globe() 挂在
+ *    `$(window).load(...)` 上，如果等滚动到侧栏再注入，那时 load 早就过了，
+ *    骨架会建出来但 .mmvst_inner 永远停在 display:none。
+ *    所以这里在 DOMContentLoaded（本文件用 defer 加载）就注入，不做懒加载。
  *
- * 现在：滚动到侧栏才开始加载，超过 LOAD_TIMEOUT 没出现组件就安静地把容器收起来，
- * 不重试、不报错、不占位。能连上的访客照常看到地球仪。
+ * 失败兜底：超过 LOAD_TIMEOUT 还没真正显示出来，就把容器收起来，
+ * 不重试、不报错、不留空洞。移动端不加载（省 170KB）。
  */
 (() => {
   const container = document.querySelector('[data-clustrmaps="globe"]');
@@ -18,79 +20,47 @@
   const scriptSrc = container.getAttribute('data-clustrmaps-src');
   if (!scriptSrc) return;
 
-  const WIDGET_SELECTOR = 'canvas, iframe, svg, object';
-  const LOAD_TIMEOUT = 8000;   // 超过这个时间还没渲染出来就放弃
-  let started = false;
+  const SCRIPT_ID = 'mmvst_globe';
+  const LOAD_TIMEOUT = 10000;
   let finished = false;
 
   const isDesktop = () => !window.matchMedia('(max-width: 1023px)').matches;
-  const hasWidget = () => Boolean(container.querySelector(WIDGET_SELECTOR));
 
-  const resizeWidget = () => {
-    const size = container.clientWidth;
-    if (!size) return;
-    const widget = container.querySelector(WIDGET_SELECTOR);
-    if (!widget) return;
-    container.style.height = `${size}px`;
-    widget.style.width = '100%';
-    widget.style.height = '100%';
-    widget.style.display = 'block';
+  // 骨架建出来不等于成功：拿到访客数据之前 .mmvst_inner 一直是 display:none
+  const isVisible = () => {
+    const inner = container.querySelector('.mmvst_inner');
+    return Boolean(inner) && window.getComputedStyle(inner).display !== 'none';
   };
 
-  const giveUp = () => {
+  const settle = () => {
     if (finished) return;
     finished = true;
-    if (hasWidget()) return;
-    // 连不上就当它不存在，不要留一个空洞
+    if (isVisible()) return;
     container.style.display = 'none';
-    const script = container.querySelector('#clstr_globe');
+    const script = container.querySelector('#' + SCRIPT_ID);
     if (script) script.remove();
   };
 
-  const start = () => {
-    if (started || !isDesktop()) return;
-    started = true;
+  if (!isDesktop()) return;
 
-    const script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.id = 'clstr_globe';
-    script.async = true;
-    script.src = scriptSrc;
-    script.addEventListener('error', giveUp);
-    container.appendChild(script);
+  const script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.id = SCRIPT_ID;
+  script.async = true;
+  script.src = scriptSrc;
+  script.addEventListener('error', settle);
+  container.appendChild(script);
 
-    const timer = window.setTimeout(giveUp, LOAD_TIMEOUT);
+  const timer = window.setTimeout(settle, LOAD_TIMEOUT);
 
-    // 组件是脚本跑完之后异步插进来的，插进来就调整尺寸并停止计时
-    if (typeof MutationObserver !== 'undefined') {
-      const mo = new MutationObserver(() => {
-        if (!hasWidget()) return;
-        window.clearTimeout(timer);
-        finished = true;
-        resizeWidget();
-        mo.disconnect();
-      });
-      mo.observe(container, { childList: true, subtree: true });
-    }
-  };
-
-  // 滚动到侧栏可见时才加载；不支持 IntersectionObserver 的浏览器等 load 之后再说
-  if (typeof IntersectionObserver !== 'undefined') {
-    const io = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting)) {
-        io.disconnect();
-        start();
-      }
-    }, { rootMargin: '200px' });
-    io.observe(container);
-  } else {
-    window.addEventListener('load', start);
+  // 地球仪显示出来就停止计时；尺寸交给挂件自己算（它按父元素宽度渲染）
+  if (typeof MutationObserver !== 'undefined') {
+    const mo = new MutationObserver(() => {
+      if (!isVisible()) return;
+      window.clearTimeout(timer);
+      finished = true;
+      mo.disconnect();
+    });
+    mo.observe(container, { childList: true, subtree: true, attributes: true });
   }
-
-  if (typeof ResizeObserver !== 'undefined') {
-    new ResizeObserver(resizeWidget).observe(container);
-  }
-  window.addEventListener('resize', () => {
-    if (isDesktop()) resizeWidget();
-  });
 })();
