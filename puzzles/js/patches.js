@@ -1,12 +1,14 @@
 // Patches：把棋盘切成若干矩形补丁，每块恰好盖住一个提示；提示给出面积和/或形状（正方、竖长、横长）
 import { range, el, cellFromPoint } from './lib.js';
 
-// hideNum：只给形状不给面积的比例；hideShape：只给面积不给形状（任意矩形）的比例
+// 每个提示随机成为四种之一：面积+形状都给 / 只给面积（形状不限）/ 只给形状（面积不限）/ 都不给（“?”）。
+// 有歧义时再把牵涉到的提示补全，所以最终题面里的“不限”都是推得出来的
 const DIFFS = [
-  { id: 'easy', label: '简单', n: 6, maxA: 6, hideNum: 0, hideShape: 0, maxSingles: 1 },
-  { id: 'medium', label: '中等', n: 7, maxA: 8, hideNum: 0, hideShape: 0.3, maxSingles: 1 },
-  { id: 'hard', label: '困难', n: 8, maxA: 9, hideNum: 0.2, hideShape: 0.35, maxSingles: 0 },
+  { id: 'easy', label: '简单', n: 6, maxA: 6, numOnly: 0.2, shapeOnly: 0, neither: 0 },
+  { id: 'medium', label: '中等', n: 7, maxA: 8, numOnly: 0.3, shapeOnly: 0.15, neither: 0.1 },
+  { id: 'hard', label: '困难', n: 8, maxA: 9, numOnly: 0.3, shapeOnly: 0.2, neither: 0.2 },
 ];
+const MIN_A = 2; // 不存在 1 格的补丁
 // 色相沿色环均匀铺开，相邻补丁再用图着色错开，避免两块挨着的颜色看起来一样
 const PALETTE = ['#f28b82', '#fbb45c', '#f2d64b', '#8fd16a', '#4fc2b0', '#62b0f0', '#8a96f4', '#c192f0',
   '#f08fc3', '#c9a57c'];
@@ -30,12 +32,13 @@ function tile(N, R, D) {
         for (let x = 0; x < w; x++) if (g[(r + h - 1) * N + c + x] >= 0) { free = false; break; }
         if (!free) break;
         const a = w * h, asp = Math.max(w, h) / Math.min(w, h);
-        if (a > D.maxA) continue;
-        let wt = a === 1 ? 0.04 : a === 2 ? 0.3 : a === 3 ? 0.8 : a <= 6 ? 1.7 : 1.2;
+        if (a > D.maxA || a < MIN_A) continue;
+        let wt = a === 2 ? 0.3 : a === 3 ? 0.8 : a <= 6 ? 1.7 : 1.2;
         if (asp > 3) wt *= 0.25;
         opts.push([w, h, wt]);
       }
     }
+    if (!opts.length) return null; // 这一格只能单独成块：整张铺法作废重来
     let tot = opts.reduce((s, o) => s + o[2], 0), x = R.next() * tot, pick = opts[opts.length - 1];
     for (const o of opts) { x -= o[2]; if (x <= 0) { pick = o; break; } }
     const [w, h] = pick, id = rects.length;
@@ -53,7 +56,7 @@ function enumerate(N, clues, maxA) {
     const list = [], cr = (k.cell / N) | 0, cc = k.cell % N;
     for (let h = 1; h <= N; h++) for (let w = 1; w <= N; w++) {
       const a = w * h;
-      if (k.area ? a !== k.area : a > maxA) continue;
+      if (a < MIN_A || (k.area ? a !== k.area : a > maxA)) continue;
       if (k.shape && shapeOf(w, h) !== k.shape) continue;
       for (let r0 = cr - h + 1; r0 <= cr; r0++) for (let c0 = cc - w + 1; c0 <= cc; c0++) {
         if (r0 < 0 || c0 < 0 || r0 + h > N || c0 + w > N) continue;
@@ -127,13 +130,14 @@ function generate(R, diffId) {
   const D = DIFFS.find(d => d.id === diffId) || DIFFS[1], N = D.n;
   for (let attempt = 0; attempt < 400; attempt++) {
     const rects = tile(N, R, D);
-    if (rects.filter(rc => rc.w * rc.h === 1).length > D.maxSingles) continue;
+    if (!rects) continue;
     const clues = rects.map(rc => {
       const cell = (rc.r + R.int(rc.h)) * N + rc.c + R.int(rc.w);
       const k = { cell, area: rc.w * rc.h, shape: shapeOf(rc.w, rc.h) };
       const roll = R.next();
-      if (roll < D.hideNum) k.area = 0;
-      else if (roll < D.hideNum + D.hideShape) k.shape = '';
+      if (roll < D.numOnly) k.shape = '';
+      else if (roll < D.numOnly + D.shapeOnly) k.area = 0;
+      else if (roll < D.numOnly + D.shapeOnly + D.neither) { k.area = 0; k.shape = ''; }
       return k;
     });
     let sols = [], cnt = solvePatches(N, clues, D.maxA, 2, sols), guard = 0;
@@ -143,11 +147,11 @@ function generate(R, diffId) {
       const diff = range(clues.length).filter(ci => { const a = alt[ci], b = rects[ci]; return a.r !== b.r || a.c !== b.c || a.w !== b.w || a.h !== b.h; });
       const partial = diff.filter(ci => !clues[ci].area || !clues[ci].shape);
       if (partial.length) {
-        const ci = R.pick(partial), rc = rects[ci];
-        if (!clues[ci].area) clues[ci].area = rc.w * rc.h; else clues[ci].shape = shapeOf(rc.w, rc.h);
+        // 一次只补一项：“?”先补面积或形状之一，尽量保留不限的提示
+        const ci = R.pick(partial), rc = rects[ci], k = clues[ci];
+        if (!k.area && (k.shape || R.next() < 0.5)) k.area = rc.w * rc.h; else k.shape = shapeOf(rc.w, rc.h);
       } else {
         const ci = R.pick(diff), rc = rects[ci];
-        if (rc.w * rc.h === 1) break;
         clues[ci].cell = (rc.r + R.int(rc.h)) * N + rc.c + R.int(rc.w);
       }
       sols = []; cnt = solvePatches(N, clues, D.maxA, 2, sols);
@@ -182,7 +186,7 @@ function mount(host, p, saved, ctx) {
     return el('div', {
       class: 'p-clue', style: { left: `${(c / N) * 100}%`, top: `${(r / N) * 100}%`, '--c': colorOf(k.color) },
       title: `${k.area ? `面积 ${k.area}` : '面积不限'}，${k.shape ? SHAPE[k.shape] : '形状不限'}`,
-      html: `<span class="p-tag">${shapeGlyph(k.shape)}${k.area ? `<b>${k.area}</b>` : ''}</span>`,
+      html: `<span class="p-tag">${shapeGlyph(k.shape)}${k.area ? `<b>${k.area}</b>` : ''}${!k.area && !k.shape ? '<b>?</b>' : ''}</span>`,
     });
   });
   board.append(el('div', { class: 'grid' }, range(N * N).map(() => el('div', { class: 'p-cell' }))), layer, ...clueEls, preview);
@@ -194,7 +198,7 @@ function mount(host, p, saved, ctx) {
   });
   const validOf = rc => {
     const ks = inside(rc);
-    if (ks.length !== 1) return -1;
+    if (ks.length !== 1 || rc.w * rc.h < MIN_A) return -1;
     const k = p.clues[ks[0]];
     if (k.area && k.area !== rc.w * rc.h) return -1;
     if (k.shape && k.shape !== shapeOf(rc.w, rc.h)) return -1;
@@ -259,11 +263,11 @@ function mount(host, p, saved, ctx) {
     const before = patches.map(x => ({ ...x }));
     const rc = rectOf(s, t);
     if (s === t) {
-      // 点一下：点在补丁上就删掉它；点在只能是 1×1 的提示上就直接放一块
+      // 点一下：点在补丁上就删掉它；补丁至少 2 格，所以点空格不做任何事
       const at = patches.findIndex(x => overlaps(x, rc));
-      if (at >= 0) { patches.splice(at, 1); commit(before); return; }
-      const ci = clueAt[s];
-      if (ci < 0 || validOf(rc) < 0) { render(); return; }
+      if (at >= 0) { patches.splice(at, 1); commit(before); }
+      else render();
+      return;
     }
     patches = patches.filter(x => !overlaps(x, rc));
     patches.push(rc);
@@ -307,7 +311,8 @@ export default {
   rules: `<ul>
     <li>把整个棋盘切成若干<b>矩形补丁</b>，不重叠、不留空。</li>
     <li>每块补丁<b>恰好盖住一个</b>彩色提示。</li>
-    <li>提示上的数字是这块补丁的<b>格子数</b>；图标是它的<b>形状</b>：<i class="p-g sq"></i> 正方形、<i class="p-g tall"></i> 竖长、<i class="p-g wide"></i> 横长。没有数字或没有图标的，表示这一项不限。</li>
+    <li>提示上的数字是这块补丁的<b>格子数</b>；图标是它的<b>形状</b>：<i class="p-g sq"></i> 正方形、<i class="p-g tall"></i> 竖长、<i class="p-g wide"></i> 横长。</li>
+    <li>没有数字表示面积不限，没有图标表示形状不限；显示 <b>?</b> 的两样都不限。每块补丁<b>至少 2 格</b>。</li>
     <li>按住从一个角拖到对角放一块补丁；点一下补丁可以删掉它。</li>
   </ul><p class="tip">从数字大、又被边角挤着的提示下手，它能摆的位置最少。</p>`,
   settings: [],

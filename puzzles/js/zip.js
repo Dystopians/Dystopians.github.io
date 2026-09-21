@@ -205,12 +205,13 @@ function mount(host, p, saved, ctx) {
   const cells = range(n).map(() => el('div', { class: 'z-cell' }));
   const art = svg('svg', { class: 'z-art', viewBox: `0 0 ${N} ${N}` });
   const line = svg('polyline', { class: 'z-path' });
+  const head = svg('circle', { class: 'z-head', r: 0.2, cx: 0, cy: 0 });
   const wallPath = [];
   for (const k of walls) {
     const a = Math.floor(k / 1000), b = k % 1000, ra = (a / N) | 0, ca = a % N;
     wallPath.push(b === a + 1 ? `M${ca + 1} ${ra}V${ra + 1}` : `M${ca} ${ra + 1}H${ca + 1}`);
   }
-  art.append(line, svg('path', { class: 'z-wall', d: wallPath.join('') }));
+  art.append(line, head, svg('path', { class: 'z-wall', d: wallPath.join('') }));
   const dots = p.nums.map(([c, k]) => el('div', {
     class: 'z-num', style: { left: `${((c % N) + 0.5) / N * 100}%`, top: `${(((c / N) | 0) + 0.5) / N * 100}%` },
   }, String(k)));
@@ -222,6 +223,8 @@ function mount(host, p, saved, ctx) {
   const adjacent = (a, b) => neighbors(a, N).includes(b) && !walls.has(edgeKey(a, b));
   function render() {
     line.setAttribute('points', path.map(c => `${(c % N) + 0.5},${((c / N) | 0) + 0.5}`).join(' '));
+    const last = path[path.length - 1];
+    head.style.transform = `translate(${(last % N) + 0.5}px, ${((last / N) | 0) + 0.5}px)`;
     const onPath = new Set(path);
     cells.forEach((c, i) => { c.classList.toggle('on', onPath.has(i)); c.classList.toggle('flash', flash.has(i)); });
     const nx = nextNum();
@@ -240,15 +243,35 @@ function mount(host, p, saved, ctx) {
     setTimeout(() => { shake = -1; render(); }, 380);
   }
   // 走到 i：相邻就前进，退回上一格就后撤，踩到自己走过的路就截断到那里
-  function stepTo(i) {
+  function stepTo(i, quiet) {
     const last = path[path.length - 1];
     if (path.length >= 2 && i === path[path.length - 2]) { path.pop(); return true; }
     const at = path.indexOf(i);
     if (at >= 0) { path.length = at + 1; return true; }
     if (!adjacent(last, i) || last === end) return false;
-    if (num[i] && num[i] !== nextNum()) { reject(i); return false; }
+    if (num[i] && num[i] !== nextNum()) { if (!quiet) reject(i); return false; }
     path.push(i);
     return true;
+  }
+  // 斜着穿过格角时，手指没在中间格停留：试着经由两个拐角格之一走过去
+  function viaCorner(i, px, py) {
+    const last = path[path.length - 1], rl = (last / N) | 0, cl = last % N, ri = (i / N) | 0, ci = i % N;
+    if (Math.abs(rl - ri) !== 1 || Math.abs(cl - ci) !== 1) return false;
+    const r = board.getBoundingClientRect(), fx = ((px - r.left) / r.width) * N, fy = ((py - r.top) / r.height) * N;
+    const a = rl * N + ci, b = ri * N + cl; // 先横后竖 / 先竖后横
+    // 手指实际划过哪个拐角格就先试哪个；正好穿过角点时再看离谁近
+    let first = g && g.raw === a ? a : g && g.raw === b ? b : -1;
+    if (first < 0) {
+      const da = Math.hypot(fx - (ci + 0.5), fy - (rl + 0.5)), db = Math.hypot(fx - (cl + 0.5), fy - (ri + 0.5));
+      first = da <= db ? a : b;
+    }
+    for (const m of first === a ? [a, b] : [b, a]) {
+      if (path.includes(m)) continue;
+      const keep = path.length;
+      if (stepTo(m, true) && stepTo(i, true)) return true;
+      path.length = keep;
+    }
+    return false;
   }
   // 手指划得快会跳格：同一行/列时把中间的格子补上
   function travel(i) {
@@ -266,26 +289,63 @@ function mount(host, p, saved, ctx) {
     if (solved()) ctx.won();
   }
 
+  // 手指所在格；inner=true 时落在格子边缘一圈（死区）返回 -2，防止在两格交界处来回抖
+  function cellAt(x, y, inner) {
+    const r = board.getBoundingClientRect();
+    const fx = ((x - r.left) / r.width) * N, fy = ((y - r.top) / r.height) * N;
+    const c = Math.floor(fx), rr = Math.floor(fy);
+    if (c < 0 || rr < 0 || c >= N || rr >= N) return -1;
+    if (inner && (Math.abs(fx - c - 0.5) > 0.4 || Math.abs(fy - rr - 0.5) > 0.4)) return -2;
+    return rr * N + c;
+  }
+  function advance(i, px, py) {
+    const last = path[path.length - 1];
+    if (i === last) return false;
+    const r0 = (last / N) | 0, c0 = last % N, r1 = (i / N) | 0, c1 = i % N;
+    if (path.includes(i) || Math.abs(r0 - r1) + Math.abs(c0 - c1) === 1) return stepTo(i);
+    if (viaCorner(i, px, py)) return true;
+    return travel(i);
+  }
+  // 两次事件之间按 0.2 格插值：划得再快也不会漏格
+  function feed(x, y) {
+    const r = board.getBoundingClientRect(), stepPx = (r.width / N) * 0.2;
+    const dx = x - g.x, dy = y - g.y, n = Math.max(1, Math.ceil(Math.hypot(dx, dy) / stepPx));
+    let moved = false;
+    for (let k = 1; k <= n; k++) {
+      const px = g.x + (dx * k) / n, py = g.y + (dy * k) / n, i = cellAt(px, py, true);
+      if (i === -2) { // 落在格子边缘的死区：不走，但记下手指经过了哪格，供斜穿格角时判断
+        const raw = cellAt(px, py, false);
+        if (raw >= 0 && raw !== g.last) g.raw = raw;
+        continue;
+      }
+      if (i < 0 || i === g.last) continue;
+      g.last = i;
+      if (advance(i, px, py)) moved = true;
+      g.raw = -1;
+    }
+    g.x = x; g.y = y;
+    return moved;
+  }
+
   let g = null;
   board.addEventListener('pointerdown', e => {
     if (e.button) return;
-    const i = cellFromPoint(board, N, e.clientX, e.clientY);
+    const i = cellAt(e.clientX, e.clientY, false);
     if (i < 0) return;
     e.preventDefault(); board.focus({ preventScroll: true });
     try { board.setPointerCapture(e.pointerId); } catch (_) { /* 指针已失效时会抛错，不影响后续逻辑 */ }
     const before = path.slice(), at = path.indexOf(i);
     if (at >= 0) path.length = at + 1;
-    else if (!travel(i)) { render(); return; }
-    g = { before, last: i };
+    else if (!advance(i, e.clientX, e.clientY)) { render(); return; }
+    g = { before, last: i, x: e.clientX, y: e.clientY };
     render();
   });
   board.addEventListener('pointermove', e => {
     if (!g) return;
-    const i = cellFromPoint(board, N, e.clientX, e.clientY);
-    if (i < 0 || i === g.last) return;
-    g.last = i;
-    travel(i);
-    render();
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+    let moved = false;
+    for (const pe of evs.length ? evs : [e]) if (feed(pe.clientX, pe.clientY)) moved = true;
+    if (moved) render();
   });
   const up = () => { if (!g) return; const b = g.before; g = null; commit(b); };
   board.addEventListener('pointerup', up);
