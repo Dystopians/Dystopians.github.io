@@ -42,6 +42,16 @@ main:
         url: /game-record/
       - title: "Zhao Lian"
         url: /ZhaoLian/
+      - title: "Zip"
+        url: /puzzles/#zip
+      - title: "Queens"
+        url: /puzzles/#queens
+      - title: "Tango"
+        url: /puzzles/#tango
+      - title: "Patches"
+        url: /puzzles/#patches
+      - title: "Mini Sudoku"
+        url: /puzzles/#sudoku
 
   - title: "Empty Chair"
     url: /EmptyChair/

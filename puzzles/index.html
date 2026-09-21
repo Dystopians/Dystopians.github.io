@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>智力小游戏 · Puzzles</title>
+<meta name="description" content="Zip、Queens、Tango、Patches、Mini Sudoku——每天一道，保证唯一解的逻辑小游戏。">
+<meta name="theme-color" content="#f4f2ee">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="智力小游戏">
+<meta property="og:title" content="每日智力题 · Puzzles">
+<meta property="og:description" content="Zip、Queens、Tango、Patches、Mini Sudoku——每天一道，保证唯一解。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='16' fill='%237c5cd6'/><path fill='white' d='M13 26l9 7 8-13 8 13 9-7-4 21H17z'/></svg>">
+<link rel="stylesheet" href="style.css">
+<script>
+  // 先定主题再绘制，避免深色模式下闪白
+  try {
+    var t = JSON.parse(localStorage.getItem('pz1:theme') || '"auto"');
+    var d = t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = d ? 'dark' : 'light';
+  } catch (e) {}
+</script>
+</head>
+<body>
+<div id="app"></div>
+<noscript><p style="padding:24px;text-align:center">这些小游戏需要启用 JavaScript。</p></noscript>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
