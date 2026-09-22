@@ -66,6 +66,7 @@ function modal(content, { onClose } = {}) {
   modalEl = el('div', { class: 'mask', onclick: e => { if (e.target === modalEl) closeModal(); } }, dlg);
   modalEl._onClose = onClose;
   document.body.append(modalEl);
+  pause(); // 看说明、看成绩时不计时
   setTimeout(() => (dlg.querySelector('.btn.pri') || dlg.querySelector('button'))?.focus(), 30);
 }
 function closeModal() {
@@ -73,6 +74,7 @@ function closeModal() {
   const cb = modalEl._onClose;
   modalEl.remove(); modalEl = null;
   if (cb) cb();
+  resume();
 }
 function topbar(extra) {
   return el('header', { class: 'top' },
@@ -127,9 +129,10 @@ function persist() {
   store.set(S.key, { seed: S.seed, diff: S.diff, user: S.ctl.state(), elapsed: elapsedOf(S), hints: S.hints, started: S.started, done: S.done, doneTime: S.doneTime });
 }
 function pause() { if (S && S.runningSince != null) { S.elapsed = elapsedOf(S); S.runningSince = null; persist(); } }
-function resume() { if (S && S.started && !S.done && S.runningSince == null && !document.hidden) S.runningSince = now(); }
+function resume() { if (S && S.started && !S.done && S.runningSince == null && !document.hidden && !modalEl) S.runningSince = now(); }
 document.addEventListener('visibilitychange', () => (document.hidden ? pause() : resume()));
 addEventListener('pagehide', pause);
+addEventListener('pageshow', resume); // 从浏览器的前进/后退缓存里恢复时接着计时
 
 function closeGame() {
   if (!S) return;
@@ -265,6 +268,7 @@ function load() {
       toast,
     };
     S.ctl = game.mount(els.stage, puzzle, valid ? valid.user : null, ctx);
+    if (!S.done) S.started = true; // 和原版一样：题目一出现就开始计时，不等第一步
     persist(); // 立即落盘：练习题刷新后仍是同一道
     els.info.textContent = game.sizeLabel(puzzle);
     updateInfo();
@@ -383,7 +387,7 @@ function route() {
   const id = location.hash.slice(1).split(/[/?]/)[0];
   if (BY_ID[id]) {
     openGame(id);
-    if (!store.get(`${V}:seen:${id}`, false)) { store.set(`${V}:seen:${id}`, true); setTimeout(() => showRules(BY_ID[id]), 400); }
+    if (!store.get(`${V}:seen:${id}`, false)) { store.set(`${V}:seen:${id}`, true); setTimeout(() => { if (S && S.game.id === id) showRules(BY_ID[id]); }, 400); }
   } else { closeGame(); renderHub(); }
 }
 addEventListener('hashchange', route);

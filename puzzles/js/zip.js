@@ -242,12 +242,16 @@ function mount(host, p, saved, ctx) {
     shake = i; render();
     setTimeout(() => { shake = -1; render(); }, 380);
   }
-  // 走到 i：相邻就前进，退回上一格就后撤，踩到自己走过的路就截断到那里
+  // 走到 i：相邻就前进；往回退一两格就擦掉（斜着切过拐角时是两格）。
+  // 碰到更早走过的路一律不理会——手一滑划过旧路线，不能一下子擦掉一大段
   function stepTo(i, quiet) {
     const last = path[path.length - 1];
-    if (path.length >= 2 && i === path[path.length - 2]) { path.pop(); return true; }
     const at = path.indexOf(i);
-    if (at >= 0) { path.length = at + 1; return true; }
+    if (at >= 0) {
+      const back = path.length - 1 - at;
+      if (back === 1 || back === 2) { path.length = at + 1; return true; }
+      return false;
+    }
     if (!adjacent(last, i) || last === end) return false;
     if (num[i] && num[i] !== nextNum()) { if (!quiet) reject(i); return false; }
     path.push(i);
@@ -334,8 +338,11 @@ function mount(host, p, saved, ctx) {
     if (i < 0) return;
     e.preventDefault(); board.focus({ preventScroll: true });
     try { board.setPointerCapture(e.pointerId); } catch (_) { /* 指针已失效时会抛错，不影响后续逻辑 */ }
-    const before = path.slice(), at = path.indexOf(i);
-    if (at >= 0) path.length = at + 1;
+    const before = path.slice(), last = path[path.length - 1];
+    let at = path.indexOf(i);
+    // 按在末端周围一格内的旧路线上，多半是想接着画却按偏了：当作从末端继续，不截断
+    if (at >= 0 && Math.abs(((i / N) | 0) - ((last / N) | 0)) <= 1 && Math.abs((i % N) - (last % N)) <= 1) at = path.length - 1;
+    if (at >= 0) path.length = at + 1; // 点更远处的旧路线：从那里重新开始（可以撤销）
     else if (!advance(i, e.clientX, e.clientY)) { render(); return; }
     g = { before, last: i, x: e.clientX, y: e.clientY };
     render();
@@ -412,7 +419,7 @@ export default {
     <li>从 <b>1</b> 出发，按 <b>1 → 2 → 3 …</b> 的顺序经过所有数字，最后停在最大的数字上。</li>
     <li>路线要<b>走遍每一格</b>，每格只能走一次，只能上下左右移动。</li>
     <li>粗黑线是<b>墙</b>，不能穿过。</li>
-    <li>按住拖动画线；往回拖就是擦掉；点一下路线上的格子可以从那里重新开始。</li>
+    <li>按住拖动画线；沿路线往回拖就是擦掉，划过更早的路线不会误删；点一下路线上较远的格子可以从那里重新开始（点错了按「撤销」）。</li>
   </ul><p class="tip">角落和靠墙的格子只有一两个出口，通常最先确定下来。</p>`,
   settings: [],
   generate, mount,
