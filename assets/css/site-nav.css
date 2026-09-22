@@ -1,0 +1,94 @@
+/* ==========================================================================
+   顶部导航重做（纯 CSS，不经过 SCSS 编译，避免把整站构建搞挂）
+   - 链接做成圆角按钮，间距统一
+   - Game 下拉改成分组面板
+   - 641–960px 之间收紧，保证主题按钮不被挤出屏幕
+   ========================================================================== */
+#site-nav .visible-links { align-items: center; gap: 2px; }
+#site-nav .visible-links > .masthead__menu-item:not(.masthead__menu-item--lg):not(.tail) > a,
+#site-nav .visible-links .masthead__submenu-toggle {
+  padding: .42rem .7rem; border-radius: 10px; font-size: .9rem; font-weight: 600; line-height: 1.2;
+  color: var(--global-masthead-link-color); transition: background-color .16s ease, color .16s ease;
+}
+#site-nav .visible-links > .masthead__menu-item:not(.masthead__menu-item--lg):not(.tail) > a:hover,
+#site-nav .visible-links .masthead__submenu-toggle:hover,
+#site-nav .visible-links .masthead__submenu[open] > .masthead__submenu-toggle {
+  background: rgba(31, 111, 130, .09); color: var(--global-link-color);
+}
+/* 原来的下划线动画和按钮背景重复了，去掉 */
+#site-nav .visible-links > .masthead__menu-item > a::after { display: none !important; }
+#site-nav .visible-links > .masthead__menu-item { margin-right: 0 !important; }
+
+/* 普通下拉：补上被覆盖掉的内边距 */
+#site-nav .masthead__submenu-menu { min-width: 11rem; padding: .4rem; }
+#site-nav .masthead__submenu-menu a { display: block; padding: .5rem .75rem !important; border-radius: 8px; font-size: .9rem; }
+
+/* ---------- 分组面板 ---------- */
+#site-nav .mega {
+  position: absolute; top: calc(100% + .6rem); right: -6rem; z-index: 40;
+  width: min(35rem, calc(100vw - 1.5rem)); padding: .9rem;
+  display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 0 .8rem;
+  background: var(--global-bg-color, #fff); border: 1px solid var(--global-border-color); border-radius: 16px;
+  box-shadow: 0 24px 56px -28px rgba(15, 23, 42, .45), 0 2px 8px rgba(15, 23, 42, .06);
+  animation: mega-in .16s ease;
+}
+@keyframes mega-in { from { opacity: 0; transform: translateY(-4px); } }
+#site-nav .mega__col { display: grid; align-content: start; gap: .15rem; min-width: 0; }
+#site-nav .mega__col + .mega__col { border-left: 1px solid var(--global-border-color); padding-left: .8rem; }
+#site-nav .mega__group { padding: .35rem .1rem .45rem; min-width: 0; }
+#site-nav .mega__title {
+  margin: 0 0 .35rem; padding: 0 .55rem; font-size: .72rem; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--global-text-color-light, #6b7280);
+  display: flex; align-items: center; justify-content: space-between;
+}
+#site-nav .mega__title a { color: inherit; font-weight: 700; padding: 0 !important; font-size: inherit; background: none !important; }
+#site-nav .mega__title a:hover { color: var(--global-link-color); }
+#site-nav .mega__title .mega__all { font-size: .72rem; letter-spacing: 0; text-transform: none; font-weight: 600; }
+#site-nav .mega__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+#site-nav .mega__list li { display: block; margin: 0 !important; }
+#site-nav .mega__list a {
+  display: flex !important; align-items: baseline; gap: .5rem; padding: .45rem .55rem !important; border-radius: 9px;
+  font-size: .9rem !important; font-weight: 600; color: var(--global-masthead-link-color); white-space: nowrap;
+}
+#site-nav .mega__list a:hover { background: rgba(31, 111, 130, .09); color: var(--global-link-color); }
+#site-nav .mega__note { font-size: .75rem; font-weight: 500; color: var(--global-text-color-light, #6b7280); overflow: hidden; text-overflow: ellipsis; }
+/* 小游戏组：做成三列紧凑按钮 */
+#site-nav .mega__group--chips .mega__list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem; padding: 0 .2rem; }
+#site-nav .mega__group--chips .mega__list a {
+  justify-content: center; padding: .42rem .4rem !important; font-size: .82rem !important;
+  background: rgba(15, 23, 42, .035); box-shadow: inset 0 0 0 1px var(--global-border-color);
+}
+#site-nav .mega__group--chips .mega__list a:hover { background: rgba(31, 111, 130, .1); box-shadow: inset 0 0 0 1px rgba(31, 111, 130, .35); }
+html[data-theme="dark"] #site-nav .mega__group--chips .mega__list a { background: rgba(255, 255, 255, .04); }
+
+/* ---------- 中等宽度：收紧，别把主题按钮挤出去 ---------- */
+@media (min-width: 641px) and (max-width: 960px) {
+  #site-nav .visible-links > .masthead__menu-item:not(.masthead__menu-item--lg):not(.tail) > a,
+  #site-nav .visible-links .masthead__submenu-toggle { padding: .38rem .5rem; font-size: .84rem; }
+  #site-nav .masthead__menu-item--lg { padding-right: .6rem !important; }
+  #site-nav .site-brand__name { display: none; }
+  /* 窄屏时面板改为相对整条导航居中，保证不溢出屏幕。
+     只在这个区间给 #site-nav 定位：手机上汉堡按钮靠它原来的定位参照，改了会和主题按钮叠在一起 */
+  #site-nav { position: relative; }
+  #site-nav .masthead__submenu--mega { position: static; }
+  #site-nav .mega { left: 50%; right: auto; translate: -50% 0; }
+}
+
+/* ---------- 窄屏：汉堡按钮和主题按钮并排 ----------
+   原主题里 `.greedy-nav button { right: 2.68rem }` 会连主题按钮一起挪到汉堡按钮的位置，两者叠在一起；
+   以前靠插件误把主题按钮藏掉才看不出来（代价是手机上没法切深色）。这里让主题按钮回到自己的格子里 */
+@media (max-width: 768px) {
+  #site-nav #theme-toggle .theme-toggle__control { position: static; top: auto; right: auto; transform: none; }
+}
+
+/* ---------- 手机：汉堡菜单里分组平铺 ---------- */
+@media (max-width: 640px) {
+  #site-nav .hidden-links .mega {
+    position: static; width: auto; box-shadow: none; border: 0; border-radius: 0; padding: .2rem .2rem .5rem;
+    grid-template-columns: 1fr; background: transparent; animation: none;
+  }
+  #site-nav .hidden-links .mega__col + .mega__col { border-left: 0; padding-left: 0; }
+  #site-nav .hidden-links .mega__group--chips .mega__list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #site-nav .hidden-links .mega__list a { padding: .5rem .6rem !important; }
+  #site-nav .hidden-links .masthead__submenu--mega[open] > .masthead__submenu-toggle { color: var(--global-link-color); }
+}

@@ -14,7 +14,33 @@
             </a>
           </li>
           {% for link in site.data.navigation.main %}
-            {% if link.children %}
+            {% if link.groups %}
+              <li class="masthead__menu-item masthead__menu-item--dropdown">
+                <details class="masthead__submenu masthead__submenu--mega">
+                  <summary class="masthead__submenu-toggle">{{ link.title }}</summary>
+                  <div class="mega">
+                    {% for col in (1..2) %}
+                      <div class="mega__col">
+                        {% for group in link.groups %}
+                          {% if group.column == col %}
+                            <section class="mega__group{% if group.compact %} mega__group--chips{% endif %}">
+                              <h4 class="mega__title">
+                                {% if group.url %}<a href="{{ base_path }}{{ group.url }}">{{ group.title }}</a><a class="mega__all" href="{{ base_path }}{{ group.url }}">全部 →</a>{% else %}{{ group.title }}{% endif %}
+                              </h4>
+                              <ul class="mega__list">
+                                {% for item in group.items %}
+                                  <li><a href="{{ base_path }}{{ item.url }}"><span class="mega__name">{{ item.title }}</span>{% if item.note %}<span class="mega__note">{{ item.note }}</span>{% endif %}</a></li>
+                                {% endfor %}
+                              </ul>
+                            </section>
+                          {% endif %}
+                        {% endfor %}
+                      </div>
+                    {% endfor %}
+                  </div>
+                </details>
+              </li>
+            {% elsif link.children %}
               <li class="masthead__menu-item masthead__menu-item--dropdown">
                 <details class="masthead__submenu">
                   <summary class="masthead__submenu-toggle">{{ link.title }}</summary>

@@ -32,26 +32,59 @@ main:
   - title: "CV"
     url: /#cv
 
+  # Game 是分组面板：column 决定放在左栏还是右栏，compact 的组显示成紧凑按钮
   - title: "Game"
-    children:
-      - title: "Fish"
-        url: /byte-fisher/build/
-      - title: "Covid"
-        url: /covid/
-      - title: "Record"
-        url: /game-record/
-      - title: "Zhao Lian"
-        url: /ZhaoLian/
-      - title: "Zip"
-        url: /puzzles/#zip
-      - title: "Queens"
-        url: /puzzles/#queens
-      - title: "Tango"
-        url: /puzzles/#tango
-      - title: "Patches"
-        url: /puzzles/#patches
-      - title: "Mini Sudoku"
-        url: /puzzles/#sudoku
+    groups:
+      - title: "原创作品"
+        column: 1
+        items:
+          - title: "Byte Fisher"
+            note: "像素钓鱼"
+            url: /byte-fisher/build/
+          - title: "临江72日"
+            note: "Covid"
+            url: /covid/
+          - title: "赵廉案卷"
+            note: "出去一趟"
+            url: /ZhaoLian/
+      - title: "工具"
+        column: 1
+        items:
+          - title: "日查表"
+            note: "Record"
+            url: /game-record/
+      - title: "每日智力题"
+        column: 2
+        compact: true
+        url: /puzzles/
+        items:
+          - title: "Zip"
+            url: /puzzles/#zip
+          - title: "Queens"
+            url: /puzzles/#queens
+          - title: "Tango"
+            url: /puzzles/#tango
+          - title: "Patches"
+            url: /puzzles/#patches
+          - title: "Mini Sudoku"
+            url: /puzzles/#sudoku
+      - title: "太阁立志传 V"
+        column: 2
+        compact: true
+        url: /taiko/
+        items:
+          - title: "药物调制"
+            url: /taiko/#medicine
+          - title: "比大小"
+            url: /taiko/#debate
+          - title: "修补"
+            url: /taiko/#repair
+          - title: "军学"
+            url: /taiko/#tactics
+          - title: "茶道"
+            url: /taiko/#tea
+          - title: "忍术"
+            url: /taiko/#ninja
 
   - title: "Empty Chair"
     url: /EmptyChair/
