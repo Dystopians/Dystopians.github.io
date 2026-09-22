@@ -6,10 +6,14 @@ import { LEVELS, STAT, grade, intro, countdown, timeBar, shuffle } from './kit.j
 const CFG = [
   { w: 6, h: 5, nums: 2 }, { w: 6, h: 6, nums: 2 }, { w: 7, h: 6, nums: 3 }, { w: 8, h: 7, nums: 3 }, { w: 8, h: 8, nums: 4 },
 ];
+// 原作配色：足轻黄、骑马蓝、铁炮红、大筒绿，浅色书面 + 深色描边
 const UNITS = [
-  { k: '足軽', c: '#d4a02a' }, { k: '騎馬', c: '#3a64ad' }, { k: '鉄砲', c: '#b3382e' }, { k: '大筒', c: '#3d7746' },
+  { k: '足軽', c: '#f3de8a', d: '#c9a23a' }, { k: '騎馬', c: '#7cc2e2', d: '#3a86b4' },
+  { k: '鉄砲', c: '#ec7d85', d: '#bb414b' }, { k: '大筒', c: '#acdb8e', d: '#62a446' },
 ];
 const NUMS = ['一', '二', '三', '四'];
+const RING = 0.5; // 外圈（连线可以绕行的空位）画窄一点，把地方让给兵书
+const BOOK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.5h11.5a2 2 0 0 1 2 2V19H7a2 2 0 0 0-2 2z" fill="#c9b27a" stroke="#6b5530" stroke-width="1.3"/><path d="M5 21a2 2 0 0 1 2-2h11.5v2.5H7A2 2 0 0 1 5 21z" fill="#f6efdc" stroke="#6b5530" stroke-width="1.1"/><rect x="11" y="6" width="4" height="8" fill="#fbf7ee" stroke="#6b5530" stroke-width=".8"/></svg>';
 
 // ---------- 连线：0、1、2 个拐点（纯函数，方便单独测试） ----------
 export function linker(grid, PW, PH) {
@@ -68,16 +72,25 @@ function mount(stage, ctx) {
   // ---------- 界面 ----------
   const bar = timeBar();
   const counter = el('b', null, '');
-  const hud = el('div', { class: 'hud' }, el('span', null, '残り ', counter, ` / ${tiles} 冊`), el('span', { class: 'sq-legend' },
-    UNITS.map(u => el('i', { style: { background: u.c } }, u.k)), el('em', null, NUMS.slice(0, nums).join(''))));
-  const board = el('div', { class: 'sq-board', style: { '--pw': PW, '--ph': PH } });
-  const art = svg('svg', { class: 'sq-art', viewBox: `0 0 ${PW} ${PH}` });
-  board.append(art);
+  const hud = el('div', { class: 'hud sq-hud' }, el('span', { class: 'sq-count' }, el('i', { html: BOOK }), counter, el('small', null, ` / ${tiles} 冊`)));
+  // 左边「軍学」栏：四种兵书，下面的数字条里没用到的灰掉（原作画面）
+  const side = el('aside', { class: 'sq-side' }, el('div', { class: 'sq-side-t' }, '軍学'),
+    el('div', { class: 'sq-books' }, UNITS.map(u => el('div', { class: 'sq-book', style: { '--u': u.c, '--ud': u.d } },
+      el('div', { class: 'sq-cover' }, el('span', { class: 'sq-title' }, u.k)),
+      el('div', { class: 'sq-strip' }, NUMS.map((nm, i) => el('i', { class: i < nums ? 'on' : '' }, nm)))))));
+  const BW = W + 2 * RING, BH = H + 2 * RING;
+  const board = el('div', { class: 'sq-board', style: { '--bw': BW, '--bh': BH } });
+  const art = svg('svg', { class: 'sq-art', viewBox: `0 0 ${BW} ${BH}`, preserveAspectRatio: 'none' });
+  const ask = el('div', { class: 'sq-ask' }, 'この並びで始めるかな？');
+  board.append(art, ask);
   const msg = el('div', { class: 'msg' });
   const again = el('button', { class: 'btn' }, '並べ直す');
   const go = el('button', { class: 'btn pri' }, 'この並びで始める');
   const quit = el('button', { class: 'btn hidden' }, '終了');
-  const panel = el('div', { class: 'panel sq' }, bar.el, hud, board, msg, el('div', { class: 'btns' }, again, go, quit));
+  const panel = el('div', { class: 'panel sq' }, bar.el, hud, el('div', { class: 'sq-main' }, side, board), msg, el('div', { class: 'btns' }, again, go, quit));
+  // 格子坐标 → 棋盘上的位置（外圈只有半格宽）
+  const cx = x => (x === 0 ? RING / 2 : x === PW - 1 ? RING + W + RING / 2 : RING + x - 0.5);
+  const cy = y => (y === 0 ? RING / 2 : y === PH - 1 ? RING + H + RING / 2 : RING + y - 0.5);
   const nodes = new Map(); // id -> element（保留元素，重力下落时才有动画）
 
   function render() {
@@ -89,12 +102,12 @@ function mount(stage, ctx) {
       let n = nodes.get(t.id);
       if (!n) {
         const u = UNITS[t.t % 4];
-        n = el('button', { class: 'sq-tile', style: { '--u': u.c }, 'aria-label': `${u.k}${NUMS[(t.t / 4) | 0]}` },
+        n = el('button', { class: 'sq-tile', style: { '--u': u.c, '--ud': u.d }, 'aria-label': `${u.k}${NUMS[(t.t / 4) | 0]}` },
           el('span', { class: 'sq-num' }, NUMS[(t.t / 4) | 0]));
         n.dataset.id = t.id;
         nodes.set(t.id, n); board.append(n);
       }
-      n.style.left = `${(x / PW) * 100}%`; n.style.top = `${(y / PH) * 100}%`;
+      n.style.left = `${((cx(x) - 0.5) / BW) * 100}%`; n.style.top = `${((cy(y) - 0.5) / BH) * 100}%`;
       n.dataset.x = x; n.dataset.y = y;
       n.classList.toggle('sel', !!sel && sel.x === x && sel.y === y);
     }
@@ -102,7 +115,8 @@ function mount(stage, ctx) {
     counter.textContent = tiles - removed;
   }
   function drawLink(path) {
-    art.replaceChildren(svg('polyline', { class: 'sq-line', points: path.map(p => `${p.x + 0.5},${p.y + 0.5}`).join(' ') }));
+    const pts = path.map(p => `${cx(p.x)},${cy(p.y)}`).join(' ');
+    art.replaceChildren(svg('polyline', { class: 'sq-line-bg', points: pts }), svg('polyline', { class: 'sq-line', points: pts }));
   }
   function tap(x, y) {
     if (phase !== 'play' || busy) return;
@@ -137,7 +151,7 @@ function mount(stage, ctx) {
   again.onclick = () => { if (phase !== 'setup') return; nodes.forEach(n => n.remove()); nodes.clear(); deal(); render(); };
   go.onclick = () => {
     if (phase !== 'setup') return;
-    phase = 'play'; again.classList.add('hidden'); go.classList.add('hidden'); quit.classList.remove('hidden');
+    phase = 'play'; again.classList.add('hidden'); go.classList.add('hidden'); quit.classList.remove('hidden'); ask.remove();
     msg.textContent = '点两本一样的兵书';
     timer = countdown(total, { onTick: (l, t) => bar.set(l, t), onEnd: () => end(false) });
     timer.start();
@@ -153,7 +167,7 @@ function mount(stage, ctx) {
     lines: ['兵书按兵种分四种颜色，各有数字。<b>颜色和数字都一样</b>的两本才能配对。', '两本之间要能用一条<b>拐弯不超过两次</b>的线连起来，线只能走空格（可以绕到外面）。', '消掉后上面的书会往下掉。开始前可以无限次「並べ直す」换一种排列。'],
     onStart() {
       stage.replaceChildren(panel); deal(); render(); bar.set(total, total);
-      msg.textContent = 'この並びで始めるかな？';
+      msg.textContent = '不满意可以一直「並べ直す」，开始后才计时';
     },
   });
   return { destroy() { phase = 'done'; timer?.stop(); } };

@@ -3,13 +3,14 @@ import { el } from './lib.js';
 import { LEVELS, STAT, grade, intro, rint } from './kit.js';
 
 // 原作的六种茶器颜色，游戏内提示的记法是取首音：あ・ちゃ・く・き・し・み
+// 每种颜色借一种名窑的釉色：青＝瑠璃釉、茶＝飴釉、黒＝黒楽、黄＝黄瀬戸、白＝志野、緑＝織部。主色要一眼认得出，装饰只点到为止
 const WARES = [
-  { id: 'ao', k: '青', name: '青', c: '#3b6db3', hi: '#7fa6de' },
-  { id: 'cha', k: '茶', name: '茶', c: '#8a5a34', hi: '#c08a5c' },
-  { id: 'kuro', k: '黒', name: '黒', c: '#2b2623', hi: '#6a605a' },
-  { id: 'ki', k: '黄', name: '黄', c: '#d6a52c', hi: '#f2d27a' },
-  { id: 'shiro', k: '白', name: '白', c: '#efe9dc', hi: '#ffffff', edge: '#b8ab94' },
-  { id: 'midori', k: '緑', name: '緑', c: '#4d8a4a', hi: '#8cc088' },
+  { id: 'ao', k: '青', top: '#6b9be0', bot: '#1d4a94', rim: '#8db5ec', in: ['#163a74', '#3c6fbe'] },
+  { id: 'cha', k: '茶', top: '#c48548', bot: '#6a3a18', rim: '#d49a5e', in: ['#4e2a10', '#9a6030'] },
+  { id: 'kuro', k: '黒', top: '#4a423d', bot: '#141110', rim: '#5a4e46', in: ['#0e0c0b', '#342d29'], raku: true },
+  { id: 'ki', k: '黄', top: '#f0cf6a', bot: '#b88a22', rim: '#f6de8e', in: ['#9a741c', '#dcb24a'] },
+  { id: 'shiro', k: '白', top: '#fbf7ee', bot: '#ddd1bb', rim: '#fffdf8', in: ['#cfc3ab', '#f3ede1'] },
+  { id: 'midori', k: '緑', top: '#56a36a', bot: '#1f5a33', rim: '#7cc08e', in: ['#1a4a2a', '#3f8a55'], oribe: true },
 ];
 const PALETTE_ORDER = ['cha', 'shiro', 'ao', 'midori', 'kuro', 'ki']; // 原作红布上从左到右的顺序
 const BY = Object.fromEntries(WARES.map(w => [w.id, w]));
@@ -17,16 +18,43 @@ const ROUNDS = 5;
 const RN = ['一', '二', '三', '四', '五'];
 const PRAISE = { '◎': 'お見事', '○': '惜しい', '△': '精進を', '×': '修行が足りぬ' };
 
-// 茶碗：碗身 + 高台 + 釉面高光
-function bowl(w, size = 44) {
-  const edge = w.edge || 'rgba(0,0,0,.25)';
-  return `<svg viewBox="0 0 48 40" width="${size}" height="${size * 40 / 48}" aria-hidden="true">
-    <ellipse cx="24" cy="36" rx="9" ry="2.6" fill="rgba(0,0,0,.18)"/>
-    <path d="M16 32h16l-1.2 4H17.2z" fill="${w.c}" stroke="${edge}" stroke-width=".8"/>
-    <path d="M5 11h38c0 13-7.5 21.5-19 21.5S5 24 5 11z" fill="${w.c}" stroke="${edge}" stroke-width=".9"/>
-    <ellipse cx="24" cy="11" rx="19" ry="4.2" fill="${w.hi}" stroke="${edge}" stroke-width=".9"/>
-    <ellipse cx="24" cy="11.4" rx="15.5" ry="2.8" fill="${w.c}" opacity=".55"/>
-    <path d="M10 16c1 6 4 10 8 12" stroke="${w.hi}" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".7"/>
+// ---------- 茶碗 ----------
+// 渐变只定义一次，放在页面里一个隐藏的 <svg> 里，所有茶碗共用
+function ensureDefs() {
+  if (document.getElementById('tkg-defs')) return;
+  const grads = WARES.map(w => `
+    <linearGradient id="tkg-${w.id}-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${w.top}"/><stop offset="1" stop-color="${w.bot}"/></linearGradient>
+    <linearGradient id="tkg-${w.id}-r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${w.rim}"/><stop offset="1" stop-color="${w.top}"/></linearGradient>
+    <radialGradient id="tkg-${w.id}-i" cx=".5" cy=".75" r=".75"><stop offset="0" stop-color="${w.in[0]}"/><stop offset="1" stop-color="${w.in[1]}"/></radialGradient>`).join('');
+  const defs = `<svg id="tkg-defs" width="0" height="0" style="position:absolute" aria-hidden="true"><defs>${grads}
+    <linearGradient id="tkg-clay" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9b48a"/><stop offset="1" stop-color="#a47a50"/></linearGradient>
+    <linearGradient id="tkg-dark" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a322d"/><stop offset="1" stop-color="#1a1614"/></linearGradient>
+    <radialGradient id="tkg-hi" cx=".3" cy=".3" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <clipPath id="tkg-std"><path d="M5 15C5 31 15 44 32 44S59 31 59 15z"/></clipPath>
+  </defs></svg>`;
+  document.body.insertAdjacentHTML('beforeend', defs);
+}
+function bowl(w, size = 48) {
+  const id = w.id, raku = !!w.raku;
+  // 楽茶碗口沿直一些、身子高一些；其余是标准的碗形
+  const ry = raku ? 12 : 15, rx = raku ? 24 : 27;
+  const body = raku ? 'M8 12C7 29 13 44 32 44S57 29 56 12z' : 'M5 15C5 31 15 44 32 44S59 31 59 15z';
+  let deco = '';
+  if (id === 'cha') deco = '<g stroke="#4a2410" stroke-opacity=".28" stroke-width="1.4" stroke-linecap="round"><path d="M17 24l2 12M26 22l1 15M38 22l-1 15M47 24l-2 12"/></g>'; // 飴釉的流纹
+  if (id === 'ki') deco = '<path d="M9 25q23 6 46 0" stroke="#8a6414" stroke-opacity=".45" stroke-width="1" fill="none"/><circle cx="22" cy="31" r="2.6" fill="#5f9a52" opacity=".85"/><circle cx="41" cy="28" r="1.8" fill="#5f9a52" opacity=".7"/>'; // 线刻和胆矾绿斑
+  if (id === 'shiro') deco = '<ellipse cx="22" cy="30" rx="6" ry="4" fill="#e89a72" opacity=".32"/><ellipse cx="43" cy="26" rx="4.5" ry="3" fill="#e89a72" opacity=".26"/><g fill="#b8a888" opacity=".5"><circle cx="30" cy="24" r=".7"/><circle cx="36" cy="32" r=".6"/><circle cx="16" cy="22" r=".6"/></g>'; // 志野的火色和针孔
+  if (id === 'kuro') deco = '<path d="M14 18q3 14 12 22" stroke="#8a7462" stroke-opacity=".35" stroke-width="3" fill="none" stroke-linecap="round"/>'; // 黑乐的柔光
+  if (w.oribe) deco = '<g clip-path="url(#tkg-std)"><path d="M41 10L64 10 64 50 33 50C38 40 37 24 41 10z" fill="#efe6cf"/><path d="M45 25q3.5-4 7 0M45 31q3.5-4 7 0" stroke="#6b4222" stroke-width="1.3" stroke-linecap="round" fill="none"/></g>'; // 织部：一侧施绿釉，另一侧白地上两笔铁绘
+  const clay = raku ? '' : '<path d="M17 39.5C22 42.6 42 42.6 47 39.5C43.5 43 38.5 44 32 44S20.5 43 17 39.5z" fill="url(#tkg-clay)"/>'; // 碗底一圈露胎
+  return `<svg viewBox="0 0 64 54" width="${size}" height="${Math.round(size * 54 / 64)}" aria-hidden="true">
+    <ellipse cx="32" cy="50" rx="17" ry="3.2" fill="#000" opacity=".2"/>
+    <path d="M24.5 43.6h15l-1.3 5.4H25.8z" fill="url(#tkg-${raku ? 'dark' : 'clay'})"/>
+    <path d="${body}" fill="url(#tkg-${id}-b)"/>${deco}${clay}
+    <path d="${body}" fill="url(#tkg-hi)"/>
+    <ellipse cx="32" cy="${ry}" rx="${rx}" ry="6.2" fill="url(#tkg-${id}-r)"/>
+    <ellipse cx="32" cy="${ry + 0.7}" rx="${rx - 3.4}" ry="4.4" fill="url(#tkg-${id}-i)"/>
+    <path d="M${raku ? 12 : 10} ${ry + 6}c1.5 9 5.5 16 11.5 20" stroke="#fff" stroke-opacity=".5" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <circle cx="${raku ? 15 : 13}" cy="${ry + 4}" r="1.3" fill="#fff" opacity=".7"/>
   </svg>`;
 }
 
@@ -47,21 +75,22 @@ function mount(stage, ctx) {
   const panel = el('div', { class: 'panel tea' }, tracker, boxes, el('div', { class: 'tea-label' }, '答え'), slots, cloth, msg,
     el('div', { class: 'btns' }, fix, ok, next));
 
+  ensureDefs();
   for (const id of PALETTE_ORDER) {
     const w = BY[id];
-    cloth.append(el('button', { class: 'tea-ware', 'data-id': id, 'aria-label': w.k, html: `${bowl(w, 40)}<span>${w.k}</span>` }));
+    cloth.append(el('button', { class: 'tea-ware', 'data-id': id, 'aria-label': w.k, html: `${bowl(w, 52)}<span>${w.k}</span>` }));
   }
 
   function drawBoxes(open, show) {
     boxes.replaceChildren(...seq.map((id, i) => el('div', { class: 'tea-box' + (open ? ' open' : '') },
-      el('div', { class: 'tea-inside', html: show ? bowl(BY[id], 38) : '' }),
-      el('div', { class: 'tea-lid' }))));
+      el('div', { class: 'tea-inside', html: show ? bowl(BY[id], 60) : '' }),
+      el('div', { class: 'tea-lid' }, el('span', { class: 'tea-tag' }, '茶碗')))));
   }
   function drawSlots(result) {
     slots.replaceChildren(...Array.from({ length: 7 }, (_, i) => {
       const on = i < n, id = answer[i];
       const s = el('button', { class: 'tea-slot' + (on ? '' : ' off') + (result ? (id === seq[i] ? ' good' : ' bad') : ''), disabled: !on || phase !== 'answer' || !id, 'data-i': i,
-        html: id ? bowl(BY[id], 34) : '' });
+        html: id ? bowl(BY[id], 56) : '' });
       return s;
     }));
     fix.disabled = phase !== 'answer' || !answer.length;
