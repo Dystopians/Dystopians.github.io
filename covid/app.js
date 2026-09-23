@@ -3,9 +3,9 @@
 
   const STORAGE_KEY = "linjiang72-save-v2";
   const ASSET_PATH = "./assets/";
-  const ASSET_VERSION = "v185";
-  const EVENT_IMAGE_FALLBACK = "news-hospital.png";
-  const NEWS_IMAGE_FALLBACK = "news-supply.png";
+  const ASSET_VERSION = "v186";
+  const EVENT_IMAGE_FALLBACK = "news-hospital.webp";
+  const NEWS_IMAGE_FALLBACK = "news-supply.webp";
   const core = window.Linjiang72;
 
   let state = null;
@@ -30,16 +30,21 @@
 
   const MAP_ZOOM_MIN = 1;
   const MAP_ZOOM_MAX = 2.8;
-  const MAP_FOOTPRINTS = {
-    hospital: { w: 12, h: 13, markerX: 55, markerY: 56 },
-    stadium: { w: 18, h: 14, markerX: 51, markerY: 49 },
-    market: { w: 19, h: 12, markerX: 49, markerY: 50 },
-    road: { w: 25, h: 11, markerX: 54, markerY: 52 },
-    school: { w: 16, h: 12, markerX: 49, markerY: 51 },
-    factory: { w: 20, h: 17, markerX: 52, markerY: 51 },
-    residents: { w: 18, h: 16, markerX: 52, markerY: 54 },
-    volunteers: { w: 16, h: 13, markerX: 52, markerY: 53 },
+  // 地图上每个可操作对象的轮廓。坐标系是地图舞台的 1536×960：底图 1536×1024 按 16:10 裁掉上下各 32px 后显示的范围。
+  // 建筑贴着楼体剪影描，片区沿街道描地块；marker 是标记、角标和标签的落点。悬停和点击都以这个轮廓为准。
+  const MAP_VIEW = { w: 1536, h: 960, imageY: -32, imageH: 1024 };
+  const MAP_ZONES = {
+    hospital: { marker: [712, 322], points: [[549, 345], [589, 323], [640, 333], [640, 255], [673, 237], [705, 239], [717, 251], [767, 255], [803, 245], [838, 262], [838, 331], [867, 351], [892, 369], [892, 405], [833, 435], [783, 463], [720, 453], [718, 430], [653, 429], [597, 397], [550, 378]] },
+    stadium: { marker: [420, 540], points: [[291, 502], [325, 465], [375, 444], [420, 439], [470, 451], [520, 474], [556, 502], [576, 535], [571, 568], [545, 591], [500, 611], [455, 621], [400, 628], [380, 630], [266, 562], [266, 539], [282, 518]] },
+    market: { marker: [632, 800], points: [[445, 790], [650, 655], [818, 790], [690, 880], [615, 950], [460, 880]] },
+    road: { marker: [985, 790], points: [[724, 616], [1031, 726], [1167, 780], [1124, 898], [1003, 901], [826, 800]] },
+    school: { marker: [1128, 286], points: [[964, 282], [968, 274], [1046, 244], [1046, 222], [1086, 206], [1110, 210], [1150, 185], [1188, 203], [1188, 235], [1220, 241], [1280, 260], [1281, 278], [1105, 366], [1090, 362], [1020, 332], [968, 309]] },
+    factory: { marker: [1330, 118], points: [[1139, 0], [1510, 0], [1510, 108], [1506, 155], [1440, 190], [1340, 234], [1242, 186], [1225, 176], [1185, 176], [1119, 146], [1119, 119], [1140, 108], [1139, 30]] },
+    residents: { marker: [470, 160], points: [[219, 150], [234, 114], [275, 100], [302, 107], [329, 112], [365, 93], [368, 48], [405, 29], [435, 44], [482, 22], [500, 0], [635, 0], [635, 62], [672, 53], [711, 70], [711, 125], [720, 131], [722, 165], [610, 212], [500, 270], [480, 280], [420, 270], [300, 210], [220, 172]] },
+    volunteers: { marker: [1068, 588], points: [[814, 588], [835, 558], [865, 551], [900, 526], [935, 514], [965, 495], [986, 481], [1020, 468], [1035, 448], [1080, 449], [1099, 431], [1318, 555], [1318, 570], [1056, 726], [1035, 720]] },
   };
+  const mapZoneHandlers = {};
+  let hoveredMapZone = null;
   const mascotTimers = new WeakMap();
   const MASCOT_ACTIONS = {
     dingdong: [
@@ -299,6 +304,8 @@
     continueBtn: document.getElementById("continueBtn"),
     tutorialBtn: document.getElementById("tutorialBtn"),
     startTutorialBtn: document.getElementById("startTutorialBtn"),
+    startContinueBtn: document.getElementById("startContinueBtn"),
+    startNewBtn: document.getElementById("startNewBtn"),
     closeTutorialBtn: document.getElementById("closeTutorialBtn"),
     tutorialStartBtn: document.getElementById("tutorialStartBtn"),
     tutorialOverlay: document.getElementById("tutorialOverlay"),
@@ -369,6 +376,10 @@
     endingReview: document.getElementById("endingReview"),
     scenarioBrief: document.getElementById("scenarioBrief"),
   };
+  // 「今晚趋势 / 选后结算」挪到选项区正上方：悬停选项时就在眼前，而不是在屏幕外
+  if (els.trendPreview && els.choiceList && els.choiceList.parentNode) {
+    els.choiceList.parentNode.insertBefore(els.trendPreview, els.choiceList);
+  }
   const PREVIEW_METRIC_BY_SHORT = Object.fromEntries([
     ...Object.entries(core.METRIC_META).map(([metric, meta]) => [meta.short, metric]),
     ...Object.entries(core.RESOURCE_META).map(([metric, meta]) => [meta.short, metric]),
@@ -378,8 +389,13 @@
     els.startForm.addEventListener("submit", (event) => {
       event.preventDefault();
       const data = new FormData(els.startForm);
+      // 开新局会覆盖进行中的存档：先确认，免得一下丢掉几十天的进度
+      const stored = readStoredSave();
+      if (stored && !stored.state.ended && stored.state.day > 1
+        && !window.confirm(`现有存档进行到第 ${stored.state.day} 天，开新局会覆盖它。确定开新局？`)) return;
       startNewGame(data.get("difficulty") || "normal", data.get("scenario") || "standard");
     });
+    if (els.startContinueBtn) els.startContinueBtn.addEventListener("click", continueGame);
     els.newGameBtn.addEventListener("click", () => showStart());
     els.continueBtn.addEventListener("click", continueGame);
     els.endingRestartBtn.addEventListener("click", () => showStart());
@@ -571,6 +587,17 @@
     const title = hasSave ? summarizeStoredSave(stored.state) : "没有可继续的存档";
     els.continueBtn.title = title;
     els.continueBtn.setAttribute("aria-label", title);
+    // 开始页上也放一个看得见的继续按钮（顶栏的 ▶ 只是个图标，不容易发现）
+    if (els.startContinueBtn) {
+      const resumable = hasSave && !stored.state.ended;
+      els.startContinueBtn.hidden = !resumable;
+      if (resumable) els.startContinueBtn.textContent = `继续第 ${stored.state.day} 天`;
+      if (els.startNewBtn) {
+        els.startNewBtn.classList.toggle("primary-button", !resumable);
+        els.startNewBtn.classList.toggle("secondary-button", resumable);
+        els.startNewBtn.textContent = resumable ? "开新局" : "立即开始第 1 天";
+      }
+    }
   }
 
   function readStoredSave(purgeInvalid = false) {
@@ -1675,16 +1702,13 @@
       const availableOps = pointState.operations.filter((item) => item.available).length;
       const availableRes = pointState.resolutions.filter((item) => item.available).length;
       const availableTotal = availableOps + availableRes;
-      const footprint = getMapFootprint(point);
+      const zone = MAP_ZONES[point.id];
+      const [markerX, markerY] = zone ? zone.marker : [(point.x / 100) * MAP_VIEW.w, (point.y / 100) * MAP_VIEW.h];
       const button = document.createElement("button");
       button.className = `map-hotspot ${point.type}${state.selectedMapPointId === point.id ? " active" : ""}${availableTotal ? " has-actions" : ""}${pointStatus ? ` status-${pointStatus.tone}` : ""}${pointSignal ? ` has-signal signal-${pointSignal.tone}` : ""}`;
       button.type = "button";
-      button.style.left = `${point.x}%`;
-      button.style.top = `${point.y}%`;
-      button.style.setProperty("--hit-w", `${footprint.w}%`);
-      button.style.setProperty("--hit-h", `${footprint.h}%`);
-      button.style.setProperty("--marker-x", `${footprint.markerX || 50}%`);
-      button.style.setProperty("--marker-y", `${footprint.markerY || 50}%`);
+      button.style.left = `${(markerX / MAP_VIEW.w) * 100}%`;
+      button.style.top = `${(markerY / MAP_VIEW.h) * 100}%`;
       const actionHint = availableTotal
         ? `，可用${availableOps ? `${availableOps}项工程` : ""}${availableOps && availableRes ? "、" : ""}${availableRes ? `${availableRes}项决议` : ""}`
         : "";
@@ -1712,18 +1736,18 @@
         setMapHighlight(null);
         renderMapHint();
       };
-      button.addEventListener("mouseenter", showHighlight);
-      button.addEventListener("mouseleave", hideHighlight);
-      button.addEventListener("pointerenter", showHighlight);
-      button.addEventListener("pointerleave", hideHighlight);
-      button.addEventListener("focus", showHighlight);
-      button.addEventListener("blur", hideHighlight);
-      button.addEventListener("click", () => {
+      const selectPoint = () => {
         core.selectMapPoint(state, point.id);
         save();
         renderMap();
         renderActionMode();
-      });
+      };
+      mapZoneHandlers[point.id] = { show: showHighlight, hide: hideHighlight, select: selectPoint };
+      button.addEventListener("pointerenter", showHighlight);
+      button.addEventListener("pointerleave", hideHighlight);
+      button.addEventListener("focus", showHighlight);
+      button.addEventListener("blur", hideHighlight);
+      button.addEventListener("click", selectPoint);
       els.mapHotspots.appendChild(button);
     });
     renderMapSignals(mapSignals);
@@ -1784,18 +1808,54 @@
     });
   }
 
+  // 高光层：悬停的对象提亮、四周压暗、沿轮廓描一圈光边；选中的对象保留一圈细边。轮廓本身也是点击区域
   function renderMapHighlights() {
-    if (!els.mapHighlightLayer) return;
-    els.mapHighlightLayer.innerHTML = core.MAP_POINTS.map((point) => `
-      <img class="map-highlight" data-map-highlight="${point.id}" src="${ASSET_PATH}highlight-${point.id}.png?${ASSET_VERSION}" alt="">
-    `).join("");
+    const layer = els.mapHighlightLayer;
+    if (!layer) return;
+    if (!layer.querySelector(".map-zones")) {
+      const ids = core.MAP_POINTS.map((point) => point.id).filter((id) => MAP_ZONES[id]);
+      const points = (id) => MAP_ZONES[id].points.map(([x, y]) => `${x},${y}`).join(" ");
+      layer.innerHTML = `
+        <svg class="map-zones" viewBox="0 0 ${MAP_VIEW.w} ${MAP_VIEW.h}" preserveAspectRatio="none" aria-hidden="true">
+          <defs>${ids.map((id) => `<clipPath id="mapZoneClip-${id}"><polygon points="${points(id)}"/></clipPath>`).join("")}</defs>
+          <path class="map-zone-dim" fill-rule="evenodd" d=""/>
+          ${ids.map((id) => `
+            <g class="map-zone" data-zone="${id}">
+              <g clip-path="url(#mapZoneClip-${id})">
+                <image class="map-zone-lit" href="${ASSET_PATH}city-map.webp" x="0" y="${MAP_VIEW.imageY}" width="${MAP_VIEW.w}" height="${MAP_VIEW.imageH}" preserveAspectRatio="none"/>
+              </g>
+              <polygon class="map-zone-glow" points="${points(id)}"/>
+              <polygon class="map-zone-line" points="${points(id)}"/>
+              <polygon class="map-zone-dash" points="${points(id)}"/>
+            </g>`).join("")}
+          ${ids.map((id) => `<polygon class="map-zone-hit" data-zone="${id}" points="${points(id)}"/>`).join("")}
+        </svg>`;
+      layer.querySelectorAll(".map-zone-hit").forEach((hit) => {
+        const id = hit.dataset.zone;
+        hit.addEventListener("pointerenter", () => mapZoneHandlers[id] && mapZoneHandlers[id].show());
+        hit.addEventListener("pointerleave", () => mapZoneHandlers[id] && mapZoneHandlers[id].hide());
+        hit.addEventListener("click", () => mapZoneHandlers[id] && mapZoneHandlers[id].select());
+      });
+    }
+    syncMapZones();
   }
 
   function setMapHighlight(pointId) {
-    if (!els.mapHighlightLayer) return;
-    els.mapHighlightLayer.querySelectorAll(".map-highlight").forEach((item) => {
-      item.classList.toggle("hover", item.dataset.mapHighlight === pointId);
+    hoveredMapZone = pointId && MAP_ZONES[pointId] ? pointId : null;
+    syncMapZones();
+  }
+
+  function syncMapZones() {
+    const layer = els.mapHighlightLayer;
+    if (!layer) return;
+    layer.querySelectorAll(".map-zone").forEach((group) => {
+      group.classList.toggle("hover", group.dataset.zone === hoveredMapZone);
+      group.classList.toggle("active", group.dataset.zone === state.selectedMapPointId);
     });
+    const dim = layer.querySelector(".map-zone-dim");
+    const zone = hoveredMapZone && MAP_ZONES[hoveredMapZone];
+    if (dim) dim.setAttribute("d", zone ? `M0 0H${MAP_VIEW.w}V${MAP_VIEW.h}H0Z M${zone.points.map(([x, y]) => `${x} ${y}`).join("L")}Z` : "");
+    layer.classList.toggle("has-hover", Boolean(zone));
   }
 
   function renderMapInspector() {
@@ -1854,15 +1914,6 @@
   function cityActionBudgetText() {
     const budget = core.getCityActionBudget(state);
     return `今日调度 ${budget.remaining}/${budget.limit}`;
-  }
-
-  function getMapFootprint(point) {
-    return MAP_FOOTPRINTS[point.id] || {
-      w: point.type === "road" ? 18 : 12,
-      h: point.type === "road" ? 9 : 12,
-      markerX: 50,
-      markerY: 50,
-    };
   }
 
   function initMapViewport() {

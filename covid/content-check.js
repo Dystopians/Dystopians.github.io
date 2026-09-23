@@ -68,7 +68,7 @@ function assetExists(relativePath) {
   return Boolean(relativePath) && fs.existsSync(path.join(assetsDir, relativePath));
 }
 
-function readPngDimensions(relativePath) {
+function readImageDimensions(relativePath) {
   const fullPath = path.join(assetsDir, relativePath);
   if (!fs.existsSync(fullPath)) return null;
   const buffer = fs.readFileSync(fullPath);
@@ -77,16 +77,41 @@ function readPngDimensions(relativePath) {
     && buffer[1] === 0x50
     && buffer[2] === 0x4e
     && buffer[3] === 0x47;
-  if (!isPng) return null;
-  return {
-    width: buffer.readUInt32BE(16),
-    height: buffer.readUInt32BE(20),
-  };
+  if (isPng) {
+    return {
+      width: buffer.readUInt32BE(16),
+      height: buffer.readUInt32BE(20),
+    };
+  }
+  const tag = (offset) => String.fromCharCode(buffer[offset], buffer[offset + 1], buffer[offset + 2], buffer[offset + 3]);
+  const isWebp = buffer.length >= 30 && tag(0) === "RIFF" && tag(8) === "WEBP";
+  if (!isWebp) return null;
+  const chunk = tag(12);
+  if (chunk === "VP8X") {
+    return {
+      width: 1 + (buffer[24] | (buffer[25] << 8) | (buffer[26] << 16)),
+      height: 1 + (buffer[27] | (buffer[28] << 8) | (buffer[29] << 16)),
+    };
+  }
+  if (chunk === "VP8 ") {
+    return {
+      width: (buffer[26] | (buffer[27] << 8)) & 0x3fff,
+      height: (buffer[28] | (buffer[29] << 8)) & 0x3fff,
+    };
+  }
+  if (chunk === "VP8L") {
+    const bits = buffer[21] | (buffer[22] << 8) | (buffer[23] << 16) | (buffer[24] << 24);
+    return {
+      width: 1 + (bits & 0x3fff),
+      height: 1 + ((bits >> 14) & 0x3fff),
+    };
+  }
+  return null;
 }
 
-function assertPngQuality(relativePath, rules = {}) {
-  const dimensions = readPngDimensions(relativePath);
-  assert(Boolean(dimensions), `${relativePath} should be a readable PNG file.`);
+function assertImageQuality(relativePath, rules = {}) {
+  const dimensions = readImageDimensions(relativePath);
+  assert(Boolean(dimensions), `${relativePath} should be a readable PNG or WebP file.`);
   if (!dimensions) return null;
   const ratio = dimensions.width / dimensions.height;
   const minWidth = rules.minWidth || 1;
@@ -139,7 +164,7 @@ function validateEventCorpus() {
     const image = eventImagePath(event);
     assert(image.startsWith("events/"), `${event.id} must use a dedicated event image, found ${image}.`);
     assert(assetExists(image), `${event.id} image is missing: covid/assets/${image}.`);
-    assertPngQuality(image, { minWidth: 900, minHeight: 900, minRatio: 0.9, maxRatio: 1.9 });
+    assertImageQuality(image, { minWidth: 900, minHeight: 900, minRatio: 0.9, maxRatio: 1.9 });
     if (!eventImages.has(image)) eventImages.set(image, []);
     eventImages.get(image).push(event.id);
 
@@ -258,21 +283,28 @@ function validateMapAndCityActions() {
   const operationIds = new Set(Object.keys(core.OPERATIONS || {}));
   const resolutionIds = new Set(Object.keys(core.RESOLUTIONS || {}));
 
-  assert(assetExists("city-map.png"), "Missing city-map.png.");
-  assert(assetExists("tilesheet.png"), "Missing tilesheet.png.");
-  assert(assetExists("mascot-dingdong-sprite.png"), "Missing mascot-dingdong-sprite.png.");
-  assert(assetExists("mascot-dabai-sprite.png"), "Missing mascot-dabai-sprite.png.");
-  assertPngQuality("city-map.png", { minWidth: 1200, minHeight: 800, minRatio: 1.4, maxRatio: 1.6 });
-  assertPngQuality("tilesheet.png", { minWidth: 1200, minHeight: 800, minRatio: 1.4, maxRatio: 1.6 });
-  assertPngQuality("mascot-dingdong-sprite.png", { minWidth: 1600, minHeight: 300, minRatio: 4, maxRatio: 7 });
-  assertPngQuality("mascot-dabai-sprite.png", { minWidth: 1600, minHeight: 300, minRatio: 4, maxRatio: 7 });
+  assert(assetExists("city-map.webp"), "Missing city-map.webp.");
+  assert(assetExists("tilesheet.webp"), "Missing tilesheet.webp.");
+  assert(assetExists("mascot-dingdong-sprite.webp"), "Missing mascot-dingdong-sprite.webp.");
+  assert(assetExists("mascot-dabai-sprite.webp"), "Missing mascot-dabai-sprite.webp.");
+  assertImageQuality("city-map.webp", { minWidth: 1200, minHeight: 800, minRatio: 1.4, maxRatio: 1.6 });
+  assertImageQuality("tilesheet.webp", { minWidth: 1200, minHeight: 800, minRatio: 1.4, maxRatio: 1.6 });
+  assertImageQuality("mascot-dingdong-sprite.webp", { minWidth: 1600, minHeight: 300, minRatio: 4, maxRatio: 7 });
+  assertImageQuality("mascot-dabai-sprite.webp", { minWidth: 1600, minHeight: 300, minRatio: 4, maxRatio: 7 });
 
   assert(Array.isArray(core.MAP_POINTS), "MAP_POINTS must be exported as an array.");
   core.MAP_POINTS.forEach((point) => {
     assert(point.id && point.label, "Each map point needs id and label.");
     assert(Number.isFinite(point.x) && Number.isFinite(point.y), `${point.id} needs numeric x/y coordinates.`);
-    assert(assetExists(`highlight-${point.id}.png`), `${point.id} highlight asset is missing.`);
-    assertPngQuality(`highlight-${point.id}.png`, { minWidth: 1200, minHeight: 760, minRatio: 1.4, maxRatio: 1.8 });
+    const zoneMatch = appJs.match(new RegExp(`\\n\\s+${point.id}: \\{ marker: \\[(\\d+), (\\d+)\\], points: \\[(.+)\\] \\},\\n`));
+    assert(Boolean(zoneMatch), `${point.id} needs a traced outline in app.js MAP_ZONES.`);
+    if (zoneMatch) {
+      const vertices = [...zoneMatch[3].matchAll(/\[(\d+), (\d+)\]/g)].map((m) => [Number(m[1]), Number(m[2])]);
+      assert(vertices.length >= 4, `${point.id} map outline needs at least 4 vertices.`);
+      assert(vertices.every(([x, y]) => x >= 0 && x <= 1536 && y >= 0 && y <= 960), `${point.id} map outline must stay inside the 1536x960 map stage.`);
+      const [mx, my] = [Number(zoneMatch[1]), Number(zoneMatch[2])];
+      assert(mx >= 0 && mx <= 1536 && my >= 0 && my <= 960, `${point.id} map marker must stay inside the map stage.`);
+    }
 
     (point.operations || []).forEach((id) => {
       assert(operationIds.has(id), `${point.id} references missing operation ${id}.`);
@@ -316,7 +348,7 @@ function validateNewsAssets() {
     assert(Array.isArray(item.tags) && item.tags.length >= 2, `${item.id} news item needs at least two pressure tags.`);
     assert(Array.isArray(item.phases) && item.phases.length >= 1, `${item.id} news item needs phase weighting.`);
     assert(assetExists(item.image), `${item.id} news image is missing: covid/assets/${item.image}.`);
-    assertPngQuality(item.image, { minWidth: 900, minHeight: 900, minRatio: 0.9, maxRatio: 1.1 });
+    assertImageQuality(item.image, { minWidth: 900, minHeight: 900, minRatio: 0.9, maxRatio: 1.1 });
     newsImages.add(item.image);
   });
   assert(newsImages.size >= 28, `Random news should use diverse thumbnail images, found ${newsImages.size}.`);
