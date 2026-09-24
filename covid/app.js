@@ -2,6 +2,8 @@
   "use strict";
 
   const STORAGE_KEY = "linjiang72-save-v2";
+  // 玩家可以关掉「城市行动还没用」时的二次确认；会触发红线失败的高危选项仍然要确认
+  const SKIP_ACTION_CONFIRM_KEY = "linjiang72-skip-action-confirm";
   const ASSET_PATH = "./assets/";
   const ASSET_VERSION = "v186";
   const EVENT_IMAGE_FALLBACK = "news-hospital.webp";
@@ -13,6 +15,7 @@
   let postRenderFocus = "";
   let pendingSettlementChoice = null;
   let pendingCriticalChoice = null;
+  let skipActionConfirm = readSkipActionConfirm();
   const MASCOT_FRAME_COUNT = 6;
   const MASCOT_ACTION_FRAME_MS = 118;
   const MASCOT_IDLE_FRAME_MS = 760;
@@ -2071,7 +2074,7 @@
     );
     els.choiceList.innerHTML = "";
     const settlementHint = core.getEventSettlementHint ? core.getEventSettlementHint(state) : null;
-    if (!settlementHint || settlementHint.id !== "cityActionUnused") {
+    if (!settlementHint || settlementHint.id !== "cityActionUnused" || skipActionConfirm) {
       pendingSettlementChoice = null;
     }
     if (pendingCriticalChoice && (pendingCriticalChoice.eventId !== state.currentEventId || pendingCriticalChoice.day !== state.day)) {
@@ -2272,7 +2275,7 @@
       : "今日还有城市行动未用。再次点击这个事件选项才会结算当天。";
     return `
       <small class="choice-settlement-confirm ${risk ? "has-risk" : ""}" title="${escapeHtml(title)}">
-        再次点击确认结算${escapeHtml(riskText)}；或先用上方“定位行动”处理城市行动
+        再次点击确认结算${escapeHtml(riskText)}；或先用上方“定位行动”处理城市行动（上方提醒条可设「不再提醒」）
       </small>
     `;
   }
@@ -2298,7 +2301,26 @@
     );
   }
 
+  function readSkipActionConfirm() {
+    try {
+      return localStorage.getItem(SKIP_ACTION_CONFIRM_KEY) === "1";
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function setSkipActionConfirm(value) {
+    skipActionConfirm = value;
+    try {
+      if (value) localStorage.setItem(SKIP_ACTION_CONFIRM_KEY, "1");
+      else localStorage.removeItem(SKIP_ACTION_CONFIRM_KEY);
+    } catch (error) {
+      // 隐私模式下存不了：本次打开页面期间仍然有效
+    }
+  }
+
   function shouldConfirmSettlementBeforeChoice(choiceId) {
+    if (skipActionConfirm) return false;
     if (isPendingSettlementChoice(choiceId)) return false;
     if (!core.getEventSettlementHint) return false;
     const hint = core.getEventSettlementHint(state);
@@ -2335,6 +2357,15 @@
     }
     const canLocate = hint.actionId && hint.pointId && hint.id !== "cityActionCommitted";
     const canUndo = hint.id === "cityActionCommitted" && core.undoCityAction;
+    const canToggle = hint.id === "cityActionUnused";
+    const toggle = canToggle
+      ? `
+        <button class="pre-settlement-toggle" type="button" data-pre-settlement-toggle aria-pressed="${skipActionConfirm ? "true" : "false"}"
+          title="${skipActionConfirm ? "恢复后：城市行动没用时，点事件选项要再点一次才结算。" : "关闭后：城市行动没用时，点事件选项直接结算。会触发红线失败的高危选项仍然要确认。"}">
+          ${skipActionConfirm ? "恢复提醒" : "不再提醒"}
+        </button>
+      `
+      : "";
     const action = canLocate
       ? `
         <button class="pre-settlement-action" type="button"
@@ -2353,9 +2384,20 @@
       <div>
         <span>${escapeHtml(hint.label || "选前提醒")}</span>
         <strong>${escapeHtml(hint.detail || "")}</strong>
+        ${canToggle && skipActionConfirm ? "<em class=\"pre-settlement-note\">已关闭二次确认：点事件选项会直接结算。</em>" : ""}
       </div>
-      ${action}
+      ${action || toggle ? `<div class="pre-settlement-buttons">${action}${toggle}</div>` : ""}
     `;
+    const toggleButton = els.preSettlementHint.querySelector("[data-pre-settlement-toggle]");
+    if (toggleButton) {
+      toggleButton.addEventListener("click", () => {
+        setSkipActionConfirm(!skipActionConfirm);
+        pendingSettlementChoice = null;
+        renderEvent();
+        const again = els.preSettlementHint.querySelector("[data-pre-settlement-toggle]");
+        if (again) again.focus();
+      });
+    }
     const actionButton = els.preSettlementHint.querySelector("[data-pre-settlement-action]");
     if (actionButton) {
       bindCityActionPreview(actionButton, () => actionButton.dataset.preSettlementMode, () => actionButton.dataset.preSettlementAction);

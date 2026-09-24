@@ -3517,6 +3517,53 @@ button.pressure-chip:focus-visible {
   cursor: pointer;
 }
 
+/* 提醒条右侧的按钮组：定位行动 + 不再提醒 */
+.pre-settlement-hint > .pre-settlement-buttons {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+}
+
+.pre-settlement-buttons .pre-settlement-action {
+  align-self: stretch;
+}
+
+.pre-settlement-toggle {
+  min-height: 26px;
+  padding: 0 10px;
+  border: 2px solid rgba(117, 82, 40, 0.7);
+  background: #fff1c8;
+  color: #6b4521;
+  box-shadow: 1px 1px 0 rgba(70, 49, 25, 0.25);
+  font: inherit;
+  font-size: 0.64rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.pre-settlement-toggle:hover,
+.pre-settlement-toggle:focus-visible {
+  background: #f6dc97;
+  outline: 2px solid rgba(117, 82, 40, 0.45);
+  outline-offset: 1px;
+}
+
+.pre-settlement-toggle[aria-pressed="true"] {
+  background: #e7d8b0;
+  color: #5b4630;
+}
+
+.pre-settlement-note {
+  display: block;
+  margin-top: 3px;
+  color: #6b4521;
+  font-size: 0.66rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
 .pre-settlement-action:hover,
 .pre-settlement-action:focus-visible {
   transform: translate(-1px, -1px);
@@ -8944,6 +8991,15 @@ button.strategy-debt {
   .pre-settlement-hint {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .pre-settlement-hint > .pre-settlement-buttons {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .pre-settlement-buttons > button {
+    flex: 1 1 auto;
   }
 
   .pre-settlement-action {
