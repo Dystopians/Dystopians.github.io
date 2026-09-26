@@ -1,4 +1,5 @@
 import React from 'react';
+import { X } from 'lucide-react';
 import { TEXT } from '../locales';
 import { CHARACTER_ART, ENVIRONMENT_ART } from '../assets/generated/manifest';
 
@@ -12,18 +13,18 @@ const Guidebook: React.FC<GuidebookProps> = ({ onClose, lang }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#05070d]/82 backdrop-blur-md p-3 sm:p-6">
-      <div className="ui-panel w-full max-w-3xl p-4 sm:p-6 flex flex-col max-h-[85vh] crt">
-        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 border-b border-cyber-cyan/60 pb-3">
+      <div role="dialog" aria-modal="true" aria-label={t.guideTitle} className="ui-panel w-full max-w-3xl p-4 sm:p-6 flex flex-col max-h-[85dvh]">
+        <div className="flex gap-3 justify-between items-start mb-4 sm:mb-6 border-b border-cyber-cyan/30 pb-3 shrink-0">
           <div>
             <h2 className="ui-section-title text-2xl sm:text-3xl glitch-text">{t.guideTitle}</h2>
             <div className="text-xs text-cyber-cyan/65 mt-1">{t.guideSubtitle}</div>
           </div>
-          <button onClick={onClose} className="ui-button self-start sm:self-auto px-3 py-1 text-sm">
-            {t.close}
+          <button onClick={onClose} aria-label={t.close} title={t.close} data-testid="close-dialog" className="icon-button">
+            <X size={20}/>
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto pr-1">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-1">
           <div className="mb-5 grid grid-cols-[5rem_1fr] gap-3 overflow-hidden rounded-md border-2 border-cyber-cyan/60 bg-cyber-dark/70 p-2 shadow-[0_0_18px_rgba(0,243,255,0.16)]">
             <img
               src={CHARACTER_ART.fisher}

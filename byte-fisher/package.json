@@ -1,16 +1,23 @@
 {
   "name": "byte-fisher",
   "private": true,
-  "version": "0.10.7",
+  "version": "0.11.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/*.test.mjs",
+    "test:visual": "node scripts/verify-harbor.mjs",
+    "test:animation": "node scripts/verify-angler.mjs",
+    "assets:harbor": "node scripts/prepare-harbor-assets.cjs",
+    "assets:angler": "node scripts/prepare-angler-actions.cjs"
   },
   "dependencies": {
     "@google/genai": "^1.38.0",
     "@supabase/supabase-js": "^2.91.1",
+    "lucide-react": "^1.48.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   },
@@ -19,7 +26,9 @@
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^5.0.0",
     "autoprefixer": "^10.4.21",
+    "playwright": "^1.63.0",
     "postcss": "^8.5.6",
+    "sharp": "^0.35.4",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"

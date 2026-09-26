@@ -1,58 +1,43 @@
 import byteFish from './byte_fish.png';
 import charByte from './char_byte.png';
-import environmentDigitalOcean from './environment_digital_ocean.png';
-import fisherCharacter from './fisher_character.png';
-import minigameTarget from './minigame_target.png';
+import environmentDigitalOcean from '../harbor/harbor.webp';
+import environmentUnderwater from '../harbor/underwater.webp';
+import fisherCharacter from '../harbor/angler.png';
+import fisherActions from '../harbor/angler-actions.png';
+import minigameTarget from '../harbor/fish_neon_guppy.png';
 import specialTreasureChest from './special_treasure_chest.png';
-import tilePier from './tile_pier.png';
-import tileWater from './tile_water.png';
-import equipmentBackpackLv2 from './equipment_backpack_lv2.png';
-import equipmentBackpackLv1 from './equipment_backpack_lv1.png';
-import equipmentBackpackLv3 from './equipment_backpack_lv3.png';
-import equipmentBackpackLv4 from './equipment_backpack_lv4.png';
-import equipmentBackpackLv5 from './equipment_backpack_lv5.png';
-import equipmentBootsLv1 from './equipment_boots_lv1.png';
-import equipmentBootsLv2 from './equipment_boots_lv2.png';
-import equipmentBootsLv3 from './equipment_boots_lv3.png';
-import equipmentBootsLv4 from './equipment_boots_lv4.png';
-import equipmentBootsLv5 from './equipment_boots_lv5.png';
-import equipmentHeadgearLv1 from './equipment_headgear_lv1.png';
-import equipmentHeadgearLv2 from './equipment_headgear_lv2.png';
-import equipmentHeadgearLv3 from './equipment_headgear_lv3.png';
-import equipmentHeadgearLv4 from './equipment_headgear_lv4.png';
-import equipmentHeadgearLv5 from './equipment_headgear_lv5.png';
-import equipmentRodLv1 from './equipment_rod_lv1.png';
-import equipmentRodLv2 from './equipment_rod_lv2.png';
-import equipmentRodLv3 from './equipment_rod_lv3.png';
-import equipmentRodLv4 from './equipment_rod_lv4.png';
-import equipmentRodLv5 from './equipment_rod_lv5.png';
-import wearableBackpackLv1 from './wearable_backpack_lv1.png';
-import wearableBackpackLv2 from './wearable_backpack_lv2.png';
-import wearableBackpackLv3 from './wearable_backpack_lv3.png';
-import wearableBackpackLv4 from './wearable_backpack_lv4.png';
-import wearableBackpackLv5 from './wearable_backpack_lv5.png';
-import wearableBootsLv1 from './wearable_boots_lv1.png';
-import wearableBootsLv2 from './wearable_boots_lv2.png';
-import wearableBootsLv3 from './wearable_boots_lv3.png';
-import wearableBootsLv4 from './wearable_boots_lv4.png';
-import wearableBootsLv5 from './wearable_boots_lv5.png';
-import wearableHeadgearLv1 from './wearable_headgear_lv1.png';
-import wearableHeadgearLv2 from './wearable_headgear_lv2.png';
-import wearableHeadgearLv3 from './wearable_headgear_lv3.png';
-import wearableHeadgearLv4 from './wearable_headgear_lv4.png';
-import wearableHeadgearLv5 from './wearable_headgear_lv5.png';
-import fishBinaryBass from './fish_binary_bass.png';
-import fishCyberKoi from './fish_cyber_koi.png';
-import fishGlitchTrout from './fish_glitch_trout.png';
-import fishChromeManta from './fish_chrome_manta.png';
-import fishFirewallAngelfish from './fish_firewall_angelfish.png';
-import fishLaserEel from './fish_laser_eel.png';
-import fishMainframeShark from './fish_mainframe_shark.png';
-import fishNeonGuppy from './fish_neon_guppy.png';
-import fishPacketPuffer from './fish_packet_puffer.png';
-import fishPrismTetra from './fish_prism_tetra.png';
-import fishSpace from './fish_space.png';
-import fishVoidRay from './fish_void_ray.png';
+import equipmentBackpackLv2 from '../harbor/backpack.png';
+import equipmentBackpackLv1 from '../harbor/backpack.png';
+import equipmentBackpackLv3 from '../harbor/backpack.png';
+import equipmentBackpackLv4 from '../harbor/backpack.png';
+import equipmentBackpackLv5 from '../harbor/backpack.png';
+import equipmentBootsLv1 from '../harbor/boots.png';
+import equipmentBootsLv2 from '../harbor/boots.png';
+import equipmentBootsLv3 from '../harbor/boots.png';
+import equipmentBootsLv4 from '../harbor/boots.png';
+import equipmentBootsLv5 from '../harbor/boots.png';
+import equipmentHeadgearLv1 from '../harbor/headgear.png';
+import equipmentHeadgearLv2 from '../harbor/headgear.png';
+import equipmentHeadgearLv3 from '../harbor/headgear.png';
+import equipmentHeadgearLv4 from '../harbor/headgear.png';
+import equipmentHeadgearLv5 from '../harbor/headgear.png';
+import equipmentRodLv1 from '../harbor/rod.png';
+import equipmentRodLv2 from '../harbor/rod.png';
+import equipmentRodLv3 from '../harbor/rod.png';
+import equipmentRodLv4 from '../harbor/rod.png';
+import equipmentRodLv5 from '../harbor/rod.png';
+import fishBinaryBass from '../harbor/fish_binary_bass.png';
+import fishCyberKoi from '../harbor/fish_cyber_koi.png';
+import fishGlitchTrout from '../harbor/fish_glitch_trout.png';
+import fishChromeManta from '../harbor/fish_chrome_manta.png';
+import fishFirewallAngelfish from '../harbor/fish_firewall_angelfish.png';
+import fishLaserEel from '../harbor/fish_laser_eel.png';
+import fishMainframeShark from '../harbor/fish_mainframe_shark.png';
+import fishNeonGuppy from '../harbor/fish_neon_guppy.png';
+import fishPacketPuffer from '../harbor/fish_packet_puffer.png';
+import fishPrismTetra from '../harbor/fish_prism_tetra.png';
+import fishSpace from '../harbor/fish_space.png';
+import fishVoidRay from '../harbor/fish_void_ray.png';
 import trash404 from './trash_404.png';
 import trashCorrupted from './trash_corrupted.png';
 import trashDeprecated from './trash_deprecated.png';
@@ -113,38 +98,14 @@ export const EQUIPMENT_ART = {
   },
 } as const;
 
-export const WEARABLE_ART = {
-  backpack: {
-    1: wearableBackpackLv1,
-    2: wearableBackpackLv2,
-    3: wearableBackpackLv3,
-    4: wearableBackpackLv4,
-    5: wearableBackpackLv5,
-  },
-  boots: {
-    1: wearableBootsLv1,
-    2: wearableBootsLv2,
-    3: wearableBootsLv3,
-    4: wearableBootsLv4,
-    5: wearableBootsLv5,
-  },
-  headgear: {
-    1: wearableHeadgearLv1,
-    2: wearableHeadgearLv2,
-    3: wearableHeadgearLv3,
-    4: wearableHeadgearLv4,
-    5: wearableHeadgearLv5,
-  },
-} as const;
-
 export const ENVIRONMENT_ART = {
   backdrop: environmentDigitalOcean,
-  pierTile: tilePier,
-  waterTile: tileWater,
+  underwater: environmentUnderwater,
 };
 
 export const CHARACTER_ART = {
   fisher: fisherCharacter,
+  actions: fisherActions,
 };
 
 export const UI_ART = {

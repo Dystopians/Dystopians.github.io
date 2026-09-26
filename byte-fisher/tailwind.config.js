@@ -5,13 +5,13 @@ export default {
     extend: {
       colors: {
         cyber: {
-          black: '#05070d',
-          dark: '#0b1020',
-          green: '#39ff14',
-          pink: '#ff00ff',
-          cyan: '#00f3ff',
-          yellow: '#fdfd00',
-          gray: '#253042'
+          black: '#08171e',
+          dark: '#10252c',
+          green: '#9bdbb5',
+          pink: '#eb988a',
+          cyan: '#89dcd0',
+          yellow: '#eac78e',
+          gray: '#354b51'
         }
       },
       fontFamily: {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { X } from 'lucide-react';
 import { HistoryEvent, LootItem, LootType, LeaderboardEntry } from '../types';
 import { MOCK_LEADERBOARD } from '../constants';
 import { TEXT } from '../locales';
@@ -454,29 +455,16 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
   };
 
   return (
-    <div className="fixed inset-0 z-40 h-[100dvh] bg-[#05070d]/96 flex flex-col p-3 sm:p-4 md:p-10 font-sans text-cyber-cyan crt overflow-hidden">
+    <div role="dialog" aria-modal="true" aria-label={t.terminal} className="terminal-screen fixed inset-0 z-40 h-[100dvh] bg-cyber-black flex flex-col p-3 sm:p-4 md:p-10 font-sans text-cyber-cyan overflow-hidden">
       {/* Header */}
-      <div className="ui-panel flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center p-3 sm:p-4 mb-3 sm:mb-4 shrink-0">
+      <div className="terminal-header flex flex-wrap gap-3 justify-between items-center border-b border-cyber-cyan/25 pb-3 mb-3 shrink-0">
         <h1 className="ui-section-title text-xl sm:text-3xl glitch-text break-words">{t.terminal}</h1>
-        <div className="grid grid-cols-2 sm:flex gap-2 sm:items-center">
-          <button
-            onClick={() =>
-              setDifficulty(
-                difficulty === 'simple'
-                  ? 'hard'
-                  : difficulty === 'hard'
-                    ? 'hardcore'
-                    : 'simple'
-              )
-            }
-            className={`ui-button px-3 py-1 text-xs sm:text-sm ${
-              difficulty === 'hardcore'
-                ? 'ui-button-coral'
-                : ''
-            } whitespace-nowrap overflow-hidden text-ellipsis`}
-          >
-            {difficulty === 'simple' ? t.modeSimple : difficulty === 'hard' ? t.modeHard : t.modeHardcore}
-          </button>
+        <div className="flex gap-2 items-center flex-wrap">
+          <select aria-label={lang === 'zh' ? '难度' : 'Difficulty'} value={difficulty} onChange={event => setDifficulty(event.target.value as typeof difficulty)} className="ui-button px-2 text-xs">
+            <option value="simple">{t.modeSimple}</option>
+            <option value="hard">{t.modeHard}</option>
+            <option value="hardcore">{t.modeHardcore}</option>
+          </select>
           <button
             onClick={() => {
               if (!confirmReset) {
@@ -494,8 +482,8 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
           >
             {confirmReset ? t.resetConfirm : t.reset}
           </button>
-          <button onClick={onClose} className="ui-button ui-button-coral col-span-2 sm:col-span-1 px-4 py-1 text-xs sm:text-sm whitespace-nowrap overflow-hidden text-ellipsis">
-            {t.disconnect}
+          <button onClick={onClose} aria-label={t.disconnect} title={t.disconnect} data-testid="close-dialog" className="icon-button">
+            <X size={20}/>
           </button>
         </div>
       </div>
@@ -549,7 +537,7 @@ const Terminal: React.FC<TerminalProps> = ({ inventory, history, playerName, set
         )}
 
         {activeTab === 'COMPOSE' && (
-          <div className="flex-1 flex flex-col gap-4 min-h-0">
+          <div className="composer-layout">
             <div className="ui-panel p-4 flex-1 overflow-y-auto">
                <h3 className="text-lg sm:text-xl mb-4 text-cyber-yellow font-bold">{t.byteFish}</h3>
                <div className="flex flex-wrap gap-2">

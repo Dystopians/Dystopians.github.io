@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { X } from 'lucide-react';
 import { LootItem, LootType, Upgrades } from '../types';
 import { BYTE_FISH_COST, UPGRADE_CONFIGS } from '../constants';
 import { TEXT } from '../locales';
@@ -39,11 +40,11 @@ const Shop: React.FC<ShopProps> = ({ credits, upgrades, inventory, onBuy, onSell
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#05070d]/78 backdrop-blur-sm p-3 sm:p-6">
-      <div className="ui-panel w-full max-w-2xl p-4 sm:p-6 crt relative max-h-[90dvh] overflow-y-auto">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4 sm:mb-6">
+      <div role="dialog" aria-modal="true" aria-label={t.shopTitle} className="ui-panel w-full max-w-2xl p-4 sm:p-6 relative max-h-[90dvh] overflow-y-auto">
+        <div className="flex gap-3 items-center justify-between mb-4 sm:mb-6">
           <h2 className="ui-section-title text-2xl sm:text-3xl text-center sm:text-left">{t.shopTitle}</h2>
-          <button onClick={onClose} className="ui-button self-center sm:self-auto shrink-0 px-3 py-1 text-sm">
-            {t.close}
+          <button onClick={onClose} aria-label={t.close} title={t.close} data-testid="close-dialog" className="icon-button">
+            <X size={20}/>
           </button>
         </div>
         

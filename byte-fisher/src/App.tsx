@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ContractConfig, GameState, LootItem, PlayerStats, Upgrades, LootType, HistoryEvent } from './types';
-import { APP_VERSION, CAST_ANIMATION_MS, CONTRACTS, INITIAL_CREDITS, TRASH_LOOT, FISH_LOOT, SPECIAL_LOOT, UPGRADE_CONFIGS, generateCharLoot, createSpaceCharLoot, createByteFishLoot, SPACE_BYTE_COST } from './constants';
+import { CAST_ANIMATION_MS, CONTRACTS, INITIAL_CREDITS, TRASH_LOOT, FISH_LOOT, SPECIAL_LOOT, UPGRADE_CONFIGS, generateCharLoot, createSpaceCharLoot, createByteFishLoot, SPACE_BYTE_COST } from './constants';
 import { TEXT } from './locales';
 import { createId } from './utils/id';
 import { NumberCounter } from './utils/animations';
@@ -14,6 +14,7 @@ import Terminal from './components/Terminal';
 import Shop from './components/Shop';
 import Encyclopedia from './components/Encyclopedia';
 import Guidebook from './components/Guidebook';
+import GameHud from './components/GameHud';
 import { LOOT_ART } from './assets/generated/manifest';
 
 const readSavedJson = <T,>(key: string, fallback: T): T => {
@@ -60,7 +61,8 @@ const selectWeightedFish = (luckLevel: number, perfect: boolean): Partial<LootIt
 const App: React.FC = () => {
   // --- STATE ---
   const [gameState, setGameState] = useState<GameState>(GameState.IDLE);
-  const [lang, setLang] = useState<'en' | 'zh'>('en');
+  const [lang, setLang] = useState<'en' | 'zh'>(() => localStorage.getItem('bytefisher_lang') === 'en' ? 'en' : 'zh');
+  useEffect(() => { localStorage.setItem('bytefisher_lang', lang); document.documentElement.lang = lang; }, [lang]);
   
   // Shared ref for minigame progress to sync Canvas visuals
   const minigameProgressRef = useRef(0);
@@ -80,13 +82,11 @@ const App: React.FC = () => {
 
   const getInitialUpgrades = () => {
     const parsed = readSavedJson<Partial<Upgrades>>('bytefisher_upgrades', {});
-    return { 
-      barSize: 1, 
-      stability: 1, 
-      luck: 1, 
-      netStrength: 1,
-      ...parsed 
+    const level = (key: keyof Upgrades) => {
+      const value = Number(parsed?.[key]);
+      return Number.isFinite(value) ? Math.max(1, Math.min(5, Math.floor(value))) : 1;
     };
+    return { barSize: level('barSize'), stability: level('stability'), luck: level('luck'), netStrength: level('netStrength') };
   };
 
   // Persistence
@@ -107,6 +107,8 @@ const App: React.FC = () => {
 
   // Notifications
   const [lastCaught, setLastCaught] = useState<LootItem | null>(null);
+  const [catchReady, setCatchReady] = useState(false);
+  const handleCatchLanded = useCallback(() => setCatchReady(true), []);
   const [contractToast, setContractToast] = useState<ContractConfig | null>(null);
 
   const fishmartAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -168,25 +170,25 @@ const App: React.FC = () => {
   useEffect(() => {
     const fishmart = new Audio(fishmartAudio);
     fishmart.loop = true;
-    fishmart.preload = 'auto';
+    fishmart.preload = 'none';
     fishmart.volume = 0;
     fishmartAudioRef.current = fishmart;
 
     const reel = new Audio(reelAudio);
     reel.loop = true;
-    reel.preload = 'auto';
+    reel.preload = 'none';
     reel.volume = 0;
     reelAudioRef.current = reel;
 
     const swim = new Audio(swimAudio);
     swim.loop = true;
-    swim.preload = 'auto';
+    swim.preload = 'none';
     swim.volume = 0;
     swimAudioRef.current = swim;
 
     const bgm = new Audio(bgmAudio);
     bgm.loop = false;
-    bgm.preload = 'auto';
+    bgm.preload = 'none';
     bgm.volume = 0;
     bgmAudioRef.current = bgm;
 
@@ -409,6 +411,7 @@ const App: React.FC = () => {
     });
     
     setLastCaught(itemWithPrice);
+    setCatchReady(false);
     setGameState(GameState.CAUGHT);
   };
 
@@ -417,6 +420,7 @@ const App: React.FC = () => {
   };
 
   const claimCatch = () => {
+    setCatchReady(false);
     setLastCaught(null);
     setGameState(GameState.IDLE);
   };
@@ -512,6 +516,23 @@ const App: React.FC = () => {
     GameState.CODEX,
     GameState.GUIDEBOOK,
   ].includes(gameState);
+
+  useEffect(() => {
+    if (showHud) return;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    document.querySelector<HTMLButtonElement>('[data-testid="close-dialog"]')?.focus();
+    const handleDialogKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setGameState(GameState.IDLE);
+      if (event.key !== 'Tab') return;
+      const dialog = document.querySelector('[role="dialog"]');
+      const controls = Array.from(dialog?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select, textarea, [tabindex="0"]') || []).filter(el => el.getClientRects().length);
+      const first = controls[0], last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    window.addEventListener('keydown', handleDialogKey);
+    return () => { window.removeEventListener('keydown', handleDialogKey); previousFocus?.focus(); };
+  }, [showHud]);
 
   const activeContract = CONTRACTS.find(contract => !(stats.completedContracts || []).includes(contract.id));
   const activeContractProgress = activeContract
@@ -666,104 +687,21 @@ const App: React.FC = () => {
         lastCaught={lastCaught} 
         minigameProgressRef={minigameProgressRef}
         upgrades={upgrades}
+        onCatchLanded={handleCatchLanded}
       />
 
-      {/* HUD */}
-      {showHud && (
-      <div className="fixed inset-x-0 top-0 z-30 p-3 sm:p-4 pointer-events-none">
-        <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-           <h1 className="ui-panel inline-block max-w-full truncate px-3 py-2 text-[clamp(1.05rem,5.8vw,1.5rem)] sm:text-2xl font-black glitch-text">Byte Fisher</h1>
-           <div className="ui-badge mt-2 max-w-full w-fit truncate px-3 py-1 text-xs sm:text-sm">
-             {t.status}: <span>{displayedGameState}</span>
-           </div>
-           <div className="ui-panel mt-2 max-w-[min(88vw,24rem)] px-3 py-2 text-[0.68rem] sm:text-xs leading-snug">
-             {activeContract ? (
-               <>
-                 <span className="text-cyber-yellow font-bold">{t.contract}</span>: {getCatalogItemName(activeContract.itemId)} {activeContractProgress}/{activeContract.target}
-                 <span className="text-cyber-green font-bold"> +${activeContract.reward}</span>
-               </>
-             ) : (
-               <span className="text-cyber-green font-bold">{t.contractsComplete}</span>
-             )}
-           </div>
-           <div className="mt-1 pointer-events-auto flex flex-wrap gap-2">
-             <button 
-               onClick={() => setLang(prev => prev === 'en' ? 'zh' : 'en')}
-               className="ui-button px-2 py-1 text-[0.65rem] sm:text-xs whitespace-nowrap"
-             >
-               {lang === 'en' ? 'EN' : '\u4e2d\u6587'}
-               {/*
-               {lang === 'en' ? 'EN' : '中文'}
-               */}
-             </button>
-             <button
-               onClick={() => setAudioMuted(prev => !prev)}
-               className="ui-button px-2 py-1 text-[0.65rem] sm:text-xs whitespace-nowrap"
-             >
-               {audioMuted ? t.audioMuted : t.audioOn}
-             </button>
-           </div>
-        </div>
-        <div className="shrink-0 pointer-events-auto">
-          <div className="ui-badge px-3 sm:px-4 py-2 text-base sm:text-xl transition-all duration-300">
-             ${displayCredits}
-          </div>
-        </div>
-        </div>
-
-          <div className="mt-2 sm:ml-auto grid grid-cols-4 sm:grid-cols-2 gap-1.5 sm:gap-2 w-full sm:w-64 pointer-events-auto">
-             <button
-               onClick={() => setGameState(GameState.SHOP)}
-               className="ui-button min-h-9 px-1 sm:px-2 py-1 text-[0.66rem] sm:text-base leading-tight whitespace-nowrap overflow-hidden text-ellipsis"
-             >
-               {t.market}
-             </button>
-             <button
-               onClick={() => setGameState(GameState.TERMINAL)}
-               className="ui-button ui-button-coral min-h-9 px-1 sm:px-2 py-1 text-[0.66rem] sm:text-base leading-tight whitespace-nowrap overflow-hidden text-ellipsis"
-             >
-               {t.terminal}
-             </button>
-             <button
-               onClick={() => setGameState(GameState.CODEX)}
-               className="ui-button ui-button-primary min-h-9 px-1 sm:px-2 py-1 text-[0.66rem] sm:text-base leading-tight whitespace-nowrap overflow-hidden text-ellipsis"
-             >
-               {t.codex}
-             </button>
-             <button
-               onClick={() => setGameState(GameState.GUIDEBOOK)}
-               className="ui-button min-h-9 px-1 sm:px-2 py-1 text-[0.66rem] sm:text-base leading-tight whitespace-nowrap overflow-hidden text-ellipsis"
-             >
-               {t.guidebook}
-             </button>
-          </div>
-      </div>
-      )}
-
-      {/* Main Action Area */}
-      {showHud && contractToast && (
-        <div className="ui-panel fixed left-1/2 top-28 z-40 -translate-x-1/2 px-4 py-2 text-center text-sm text-cyber-yellow animate-slide-up">
-          {t.contractComplete}: {getCatalogItemName(contractToast.itemId)} +${contractToast.reward}
-        </div>
-      )}
-
-      {gameState === GameState.IDLE && (
-         <div className="absolute bottom-28 sm:bottom-20 left-1/2 -translate-x-1/2 z-20">
-            <button
-              onClick={handleCast}
-              className="ui-button ui-button-primary relative text-xl sm:text-2xl px-8 sm:px-12 py-3 sm:py-4"
-            >
-              <span className="relative z-10">{t.castLine}</span>
-            </button>
-         </div>
-      )}
-
-      {gameState === GameState.WAITING && (
-         <div className="ui-panel absolute bottom-32 left-1/2 -translate-x-1/2 z-20 px-4 py-2 text-center font-bold text-cyber-yellow whitespace-nowrap animate-pulse">
-            {t.scanning}
-         </div>
-      )}
+      {showHud && <GameHud
+        lang={lang} state={gameState} credits={displayCredits} catches={stats.caughtCount}
+        muted={audioMuted} status={displayedGameState}
+        onLanguage={() => setLang(prev => prev === 'en' ? 'zh' : 'en')}
+        onAudio={() => setAudioMuted(prev => !prev)}
+        onNavigate={setGameState} onCast={handleCast}
+        onCancel={() => { clearFishingTimers(); setGameState(GameState.IDLE); }}
+        contract={activeContract ? <>{t.contract}: {getCatalogItemName(activeContract.itemId)} <strong>{activeContractProgress}/{activeContract.target}</strong> <span>+{activeContract.reward} cr</span></> : t.contractsComplete}
+      />}
+      {showHud && contractToast && <div className="contract-toast" role="status">
+        {t.contractComplete}: {getCatalogItemName(contractToast.itemId)} +{contractToast.reward} cr
+      </div>}
 
       {/* Mini Game Overlay */}
       {gameState === GameState.MINIGAME && (
@@ -778,8 +716,8 @@ const App: React.FC = () => {
       )}
 
       {/* Catch Success Modal */}
-      {gameState === GameState.CAUGHT && lastCaught && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#05070d]/78 backdrop-blur-sm animate-fade-in p-4" onClick={claimCatch}>
+      {gameState === GameState.CAUGHT && lastCaught && catchReady && (
+        <div data-testid="catch-result" className="absolute inset-0 z-50 flex items-center justify-center bg-[#05070d]/78 backdrop-blur-sm animate-fade-in p-4" onClick={claimCatch}>
            <div className={`ui-panel w-full max-w-md border-4 p-5 sm:p-8 text-center animate-bounce-in relative overflow-hidden
              ${lastCaught.rarity === 'legendary' || lastCaught.type === LootType.SPECIAL
                ? 'border-cyber-yellow'
@@ -807,7 +745,7 @@ const App: React.FC = () => {
                   : 'text-cyber-green'
               }`}>{getItemName(lastCaught)}</div>
               <div className="ui-panel-soft mb-6 relative z-10 mx-auto w-fit px-4 py-2 text-sm">{t.rarity[lastCaught.rarity]} | {t.value}: ${lastCaught.sellValue ?? lastCaught.value}</div>
-              <div className="text-sm text-cyber-yellow relative z-10">{t.clickContinue}</div>
+              <button type="button" onClick={claimCatch} className="ui-button px-6 py-2 relative z-10" autoFocus>{t.clickContinue}</button>
            </div>
         </div>
       )}
@@ -860,12 +798,6 @@ const App: React.FC = () => {
         />
       )}
 
-      {/* Mobile Controls Hint */}
-      {showHud && (
-        <div className="fixed bottom-2 w-full text-center text-xs text-cyber-cyan/70 pointer-events-none z-20">
-          {APP_VERSION} · neon stream
-        </div>
-      )}
     </div>
   );
 };

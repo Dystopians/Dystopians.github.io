@@ -8,6 +8,9 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+test-results/
+baseline-*.png
+review-*.png
 dist
 dist-ssr
 *.local

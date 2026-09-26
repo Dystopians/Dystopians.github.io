@@ -1,844 +1,204 @@
-import React, { useRef, useEffect } from 'react';
-import { GameState, LootItem, Upgrades, LootType } from '../types';
-import { ParticleSystem } from '../utils/particles';
-import { ScreenShakeManager, FloatingTextManager } from '../utils/animations';
-import { CHARACTER_ART, ENVIRONMENT_ART, EQUIPMENT_ART, LOOT_ART, UI_ART, WEARABLE_ART } from '../assets/generated/manifest';
+import React, { useEffect, useRef } from 'react';
+import { GameState, LootItem, LootType, Upgrades } from '../types';
+import { CHARACTER_ART, ENVIRONMENT_ART, LOOT_ART } from '../assets/generated/manifest';
 import { CAST_ANIMATION_SECONDS } from '../constants';
+import { CAST_RELEASE_PROGRESS, clamp, getCastBobber, getRodPose, getSceneLayout } from '../utils/sceneLayout';
+import { ANGLER_ATLAS, LANDING_ANIMATION_SECONDS, RECOVERY_SECONDS, getAnglerGeometry, getLandingPosition, mixPoint, recoveryProgress, sampleAnglerMotion } from '../utils/anglerAnimation';
 
 interface VoidCanvasProps {
   gameState: GameState;
   lastCaught: LootItem | null;
   minigameProgressRef?: React.MutableRefObject<number>;
   upgrades?: Upgrades;
+  onCatchLanded?: () => void;
 }
 
-const VoidCanvas: React.FC<VoidCanvasProps> = ({ gameState, lastCaught, minigameProgressRef, upgrades }) => {
+const VoidCanvas: React.FC<VoidCanvasProps> = (props) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationFrameRef = useRef<number>(0);
-  const scaleRef = useRef(1);
-  const gameStateRef = useRef(gameState);
-  const lastStateRef = useRef(gameState);
-  const lastCaughtRef = useRef(lastCaught);
-  const upgradesRef = useRef(upgrades);
-  const progressRef = useRef<React.MutableRefObject<number> | undefined>(minigameProgressRef);
-
-  // Animation state
-  const timeRef = useRef<number>(0);
-  const debrisRef = useRef<{x: number, y: number, assetId: string, speed: number, offset: number, scale: number}[]>([]);
-  const bubbleRef = useRef<{x: number, y: number, size: number, speed: number}[]>([]);
-  const seaweedRef = useRef<{x: number, height: number, width: number, offset: number, color: string}[]>([]);
-  const artImagesRef = useRef<Record<string, HTMLImageElement>>({});
-
-  // Character & Rod animation state
-  const charPos = useRef({ x: 0.5, y: 0.2 });
-  const bobberPos = useRef({ x: 0.5, y: 0.4 });
-  const rodTipPos = useRef({ x: 0.5, y: 0.2 });
-  const castStartRef = useRef<number | null>(null);
-  const castReleaseFromRef = useRef<{ x: number; y: number } | null>(null);
-  const landingStartRef = useRef<number | null>(null);
-  const landingFromRef = useRef<{ x: number; y: number } | null>(null);
-
-  // New visual effects systems
-  const particlesRef = useRef<ParticleSystem>(new ParticleSystem());
-  const screenShakeRef = useRef<ScreenShakeManager>(new ScreenShakeManager());
-  const floatingTextRef = useRef<FloatingTextManager>(new FloatingTextManager());
-  const catchEffectTriggeredRef = useRef(false);
-
-  useEffect(() => {
-    const artSources: Record<string, string> = {
-      ...LOOT_ART,
-      fisher: CHARACTER_ART.fisher,
-      ...Object.fromEntries(
-        Object.entries(EQUIPMENT_ART).flatMap(([slot, levels]) =>
-          Object.entries(levels).map(([level, src]) => [`equipment_${slot}_${level}`, src])
-        )
-      ),
-      ...Object.fromEntries(
-        Object.entries(WEARABLE_ART).flatMap(([slot, levels]) =>
-          Object.entries(levels).map(([level, src]) => [`wearable_${slot}_${level}`, src])
-        )
-      ),
-      environment: ENVIRONMENT_ART.backdrop,
-      minigameTarget: UI_ART.minigameTarget,
-    };
-    Object.entries(artSources).forEach(([id, src]) => {
-      const image = new Image();
-      image.src = src;
-      artImagesRef.current[id] = image;
-    });
-  }, []);
-
-  useEffect(() => {
-    gameStateRef.current = gameState;
-  }, [gameState]);
-
-  useEffect(() => {
-    const now = performance.now() / 1000;
-    if (gameState === GameState.CASTING && lastStateRef.current !== GameState.CASTING) {
-      castStartRef.current = now;
-      castReleaseFromRef.current = null;
-      landingStartRef.current = null;
-      landingFromRef.current = null;
-      catchEffectTriggeredRef.current = false;
-      // Cast effect
-      const canvas = canvasRef.current;
-      if (canvas) {
-        particlesRef.current.createSparkles(
-          rodTipPos.current.x,
-          rodTipPos.current.y,
-          '#39ff14',
-          8
-        );
-      }
-    }
-    if (gameState === GameState.WAITING && lastStateRef.current === GameState.CASTING) {
-      landingStartRef.current = now;
-      landingFromRef.current = { ...bobberPos.current };
-      castReleaseFromRef.current = null;
-      castStartRef.current = null;
-      // Water splash on landing
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const waterLevel = canvas.height * 0.20 + scaleRef.current * (96 + 20);
-        particlesRef.current.createWaterSplash(
-          bobberPos.current.x,
-          waterLevel + scaleRef.current * 200,
-          20
-        );
-      }
-    }
-    if (gameState === GameState.CAUGHT && lastStateRef.current !== GameState.CAUGHT) {
-      catchEffectTriggeredRef.current = false;
-    }
-    // Reset on returning to IDLE
-    if (gameState === GameState.IDLE && lastStateRef.current !== GameState.IDLE) {
-      catchEffectTriggeredRef.current = false;
-    }
-    lastStateRef.current = gameState;
-  }, [gameState]);
-
-  useEffect(() => {
-    lastCaughtRef.current = lastCaught;
-  }, [lastCaught]);
-
-  useEffect(() => {
-    upgradesRef.current = upgrades;
-  }, [upgrades]);
-
-  useEffect(() => {
-    progressRef.current = minigameProgressRef;
-  }, [minigameProgressRef]);
+  const live = useRef(props);
+  live.current = props;
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const scalePx = (value: number) => value * scaleRef.current;
-    const CAST_RELEASE_PROGRESS = 0.52;
-    const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
-    const lerp = (from: number, to: number, progress: number) => from + (to - from) * progress;
-    const easeOutCubic = (progress: number) => 1 - Math.pow(1 - progress, 3);
-    const easeInOutCubic = (progress: number) => (
-      progress < 0.5
-        ? 4 * progress * progress * progress
-        : 1 - Math.pow(-2 * progress + 2, 3) / 2
-    );
-    const easeOutBack = (progress: number) => {
-      const c1 = 1.70158;
-      const c3 = c1 + 1;
-      return 1 + c3 * Math.pow(progress - 1, 3) + c1 * Math.pow(progress - 1, 2);
-    };
-
-    // --- Initialization Logic ---
-    const buildEntities = () => {
-      const H = canvas.height;
-      const W = canvas.width;
-      const charY = charPos.current.y;
-      const waterSurfaceY = charY + scalePx(96 + 20); // 24*4 (dock height) + 20 (padding)
-      const mudY = H - scalePx(80);
-      const waterHeight = Math.max(scalePx(100), mudY - waterSurfaceY); // Ensure strictly positive
-
-      debrisRef.current = [];
-      bubbleRef.current = [];
-      seaweedRef.current = [];
-
-      const assetIds = [
-        'fish_neon_guppy',
-        'fish_laser_eel',
-        'fish_packet_puffer',
-        'fish_binary_bass',
-        'fish_glitch_trout',
-        'fish_prism_tetra',
-        'fish_firewall_angelfish',
-        'fish_cyber_koi',
-        'fish_chrome_manta',
-        'fish_void_ray',
-        'fish_space',
-        'trash_corrupted',
-        'trash_404',
-        'trash_null',
-        'trash_deprecated',
-        'trash_spaghetti',
-      ];
-      for (let i = 0; i < 18; i++) {
-        const direction = Math.random() > 0.5 ? 1 : -1;
-        debrisRef.current.push({
-          x: scalePx(96) + Math.random() * Math.max(1, W - scalePx(192)),
-          // Spawn randomly within the water column, with 50px padding from surface and mud
-          y: waterSurfaceY + scalePx(50) + Math.random() * (waterHeight - scalePx(100)),
-          assetId: assetIds[Math.floor(Math.random() * assetIds.length)],
-          speed: direction * scalePx(0.36 + Math.random() * 0.72),
-          offset: Math.random() * 10,
-          scale: (0.9 + Math.random() * 0.45) * scaleRef.current
-        });
-      }
-
-      for (let i = 0; i < 26; i++) {
-        bubbleRef.current.push({
-          x: Math.random() * W,
-          // Bubbles can spawn anywhere in the water
-          y: waterSurfaceY + Math.random() * waterHeight,
-          size: (Math.random() * 3 + 1) * scaleRef.current,
-          speed: (Math.random() * 1 + 0.5) * scaleRef.current
-        });
-      }
-
-      for (let i = 0; i < 0; i++) {
-        seaweedRef.current.push({
-          x: Math.random() * W,
-          height: scalePx(34 + Math.random() * 68),
-          width: scalePx(4 + Math.random() * 6),
-          offset: Math.random() * Math.PI * 2,
-          color: Math.random() > 0.5 ? '#00f3ff' : '#ff00ff'
-        });
-      }
-    };
-
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    const images: Record<string, HTMLImageElement> = {};
+    Object.entries({ harbor: ENVIRONMENT_ART.backdrop, underwater: ENVIRONMENT_ART.underwater, angler: CHARACTER_ART.fisher, actions: CHARACTER_ART.actions, ...LOOT_ART }).forEach(([id, src]) => {
+      const image = new Image(); image.src = src; images[id] = image;
+    });
+    let layout = getSceneLayout(1, 1);
+    let dpr = 1;
+    let frame = 0;
+    let previousTime = 0;
+    let elapsed = 0;
+    let stateTime = 0;
+    let previousState = live.current.gameState;
+    let lastMotion = sampleAnglerMotion(previousState, 0, 0);
+    let returnMotion = lastMotion;
+    let previousBobber = { x: 0, y: 0 };
+    let returnBobber = previousBobber;
+    let recovering = false;
+    let catchNotified = false;
+    const fishIds = ['fish_neon_guppy', 'fish_binary_bass', 'fish_cyber_koi', 'fish_laser_eel', 'fish_prism_tetra', 'fish_chrome_manta'];
+    const fish = Array.from({ length: 9 }, (_, i) => ({ phase: (i * 0.137) % 1, depth: (i % 3) / 3 + 0.12, speed: (i % 2 ? 1 : -1) * (11 + i * 2), id: fishIds[i % fishIds.length] }));
     const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      const minDim = Math.min(canvas.width, canvas.height);
-      scaleRef.current = Math.min(1, Math.max(0.55, minDim / 700));
-      const mobileClearanceY = canvas.width < 430 ? 164 : 0;
-      charPos.current = { x: canvas.width * 0.5, y: Math.max(canvas.height * 0.20, mobileClearanceY) };
-      buildEntities();
+      const bounds = canvas.getBoundingClientRect();
+      layout = getSceneLayout(bounds.width, bounds.height);
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(bounds.width * dpr);
+      canvas.height = Math.round(bounds.height * dpr);
     };
-    window.addEventListener('resize', resize);
-    resize();
-
-    const drawGeneratedArt = (
-      assetId: string,
-      centerX: number,
-      centerY: number,
-      width: number,
-      height: number,
-      alpha = 1,
-      rotation = 0
-    ) => {
-      const image = artImagesRef.current[assetId];
-      if (!image?.complete || image.naturalWidth === 0) return false;
-
-      ctx.save();
-      ctx.translate(centerX, centerY);
-      ctx.rotate(rotation);
-      ctx.globalAlpha = alpha;
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(image, -width / 2, -height / 2, width, height);
-      ctx.restore();
-      return true;
+    const observer = new ResizeObserver(resize); observer.observe(canvas); resize();
+    const rect = (x: number, y: number, w: number, h: number, color: string) => {
+      ctx.fillStyle = color; ctx.fillRect(Math.round(x), Math.round(y), Math.ceil(w), Math.ceil(h));
     };
-
-    const drawGeneratedArtAnchored = (
-      assetId: string,
-      anchorX: number,
-      anchorY: number,
-      width: number,
-      height: number,
-      anchorNormX: number,
-      anchorNormY: number,
-      alpha = 1,
-      rotation = 0
-    ) => {
-      const image = artImagesRef.current[assetId];
-      if (!image?.complete || image.naturalWidth === 0) return false;
-
-      ctx.save();
-      ctx.translate(anchorX, anchorY);
-      ctx.rotate(rotation);
-      ctx.globalAlpha = alpha;
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(image, -anchorNormX * width, -anchorNormY * height, width, height);
-      ctx.restore();
-      return true;
+    const sprite = (id: string, x: number, y: number, w: number, h: number, flip = false) => {
+      const image = images[id];
+      if (!image?.complete || !image.naturalWidth) return;
+      // Cutouts retain their proportions, with a stable bottom-center foot anchor.
+      const fit = Math.min(w / image.naturalWidth, h / image.naturalHeight);
+      const dw = image.naturalWidth * fit, dh = image.naturalHeight * fit;
+      ctx.save(); ctx.translate(Math.round(x + w / 2), Math.round(y + h));
+      if (flip) ctx.scale(-1, 1);
+      ctx.drawImage(image, -dw / 2, -dh, dw, dh); ctx.restore();
     };
-
-    const drawCharacter = (t: number) => {
-      const s = scalePx(4); // pixel scale
-
-      const bootsLvl = upgradesRef.current?.stability || 1;
-      const rodLvl = upgradesRef.current?.netStrength || 1;
-      const backpackLvl = upgradesRef.current?.barSize || 1;
-      const headLvl = upgradesRef.current?.luck || 1;
-
-      // Adjust height if floating (Boots lvl 5)
-      let floatOffset = 0;
-      if (bootsLvl >= 5) {
-        floatOffset = Math.sin(t * 3) * scalePx(5) - scalePx(10);
-      }
-
-      const clampEquipmentLevel = (level: number): 1 | 2 | 3 | 4 | 5 => Math.min(Math.max(level, 1), 5) as 1 | 2 | 3 | 4 | 5;
-      const x = charPos.current.x;
-      const y = charPos.current.y + floatOffset;
-
-      // Pivot for casting animation
-      const idleArmAngle = -Math.PI / 3;
-      const loadedArmAngle = -2.05;
-      const releaseArmAngle = -0.1;
-      const followThroughArmAngle = 0.58;
-      const waitingArmAngle = 0.4;
-      const castElapsed = castStartRef.current === null ? 0 : Math.max(0, t - castStartRef.current);
-      const castProgress = gameStateRef.current === GameState.CASTING
-        ? clamp01(castElapsed / CAST_ANIMATION_SECONDS)
-        : 0;
-      let armAngle = idleArmAngle;
-      if (gameStateRef.current === GameState.CASTING) {
-        if (castProgress < 0.2) {
-          armAngle = lerp(idleArmAngle, -1.25, easeInOutCubic(castProgress / 0.2));
-        } else if (castProgress < CAST_RELEASE_PROGRESS) {
-          armAngle = lerp(-1.25, loadedArmAngle, easeInOutCubic((castProgress - 0.2) / (CAST_RELEASE_PROGRESS - 0.2)));
-        } else if (castProgress < 0.72) {
-          armAngle = lerp(loadedArmAngle, releaseArmAngle, easeOutCubic((castProgress - CAST_RELEASE_PROGRESS) / (0.72 - CAST_RELEASE_PROGRESS)));
-        } else if (castProgress < 0.88) {
-          armAngle = lerp(releaseArmAngle, followThroughArmAngle, easeOutBack((castProgress - 0.72) / 0.16));
-        } else {
-          armAngle = lerp(followThroughArmAngle, waitingArmAngle, easeOutCubic((castProgress - 0.88) / 0.12));
-        }
-      } else if (gameStateRef.current === GameState.WAITING) armAngle = waitingArmAngle; 
-      else if (gameStateRef.current === GameState.MINIGAME) armAngle = -0.2 + Math.sin(t*20)*0.1; 
-      else if (gameStateRef.current === GameState.CAUGHT) armAngle = -1.2; 
-
-      // --- Draw Dock (Pier Style) ---
-      const dockY = charPos.current.y + 24 * s; // Use original Y for dock
-      
-      const dockHeight = scalePx(30);
-      ctx.fillStyle = '#05070d';
-      ctx.fillRect(0, dockY, canvas.width, dockHeight);
-      ctx.fillStyle = '#0b1020';
-      ctx.fillRect(0, dockY + scalePx(5), canvas.width, scalePx(18));
-      ctx.fillStyle = 'rgba(0, 243, 255, 0.75)';
-      for (let py = dockY + scalePx(7); py < dockY + dockHeight; py += scalePx(9)) {
-        ctx.fillRect(0, py, canvas.width, scalePx(1.5));
-      }
-      for (let px = scalePx(16); px < canvas.width; px += scalePx(64)) {
-        ctx.fillStyle = px % scalePx(128) < scalePx(64) ? 'rgba(255, 0, 255, 0.58)' : 'rgba(253, 253, 0, 0.54)';
-        ctx.fillRect(px, dockY + scalePx(4), scalePx(18), scalePx(4));
-      }
-      
-      // Shadow (dynamic if floating)
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      const shadowSize = bootsLvl >= 5 ? scalePx(40) + Math.sin(t * 3) * scalePx(5) : scalePx(60);
-      ctx.fillRect(x - shadowSize/2, dockY, shadowSize, scalePx(5)); 
-
-      {
-      const normalizedBackpackLvl = clampEquipmentLevel(backpackLvl);
-      const normalizedBootsLvl = clampEquipmentLevel(bootsLvl);
-      const normalizedHeadLvl = clampEquipmentLevel(headLvl);
-      const normalizedRodLvl = clampEquipmentLevel(rodLvl);
-
-      const characterCenterX = x - scalePx(4);
-      const characterCenterY = y + scalePx(58);
-      const characterWidth = scalePx(92);
-      const characterHeight = scalePx(116);
-      const drawWearable = (slot: 'backpack' | 'boots' | 'headgear', level: 1 | 2 | 3 | 4 | 5, alpha = 0.96) => {
-        if (level <= 1) return false;
-        return drawGeneratedArt(`wearable_${slot}_${level}`, characterCenterX, characterCenterY, characterWidth, characterHeight, alpha);
-      };
-
-      const characterDrawn = drawGeneratedArt('fisher', characterCenterX, characterCenterY, characterWidth, characterHeight, 1);
-      if (!characterDrawn) {
-        ctx.fillStyle = '#00f3ff';
-        ctx.fillRect(x - scalePx(18), y + scalePx(28), scalePx(36), scalePx(50));
-        ctx.fillStyle = '#ff00ff';
-        ctx.fillRect(x - scalePx(24), y + scalePx(6), scalePx(48), scalePx(12));
-      }
-
-      drawWearable('backpack', normalizedBackpackLvl, 0.94);
-      drawWearable('boots', normalizedBootsLvl, 0.94);
-      drawWearable('headgear', normalizedHeadLvl, 0.96);
-
-      const handX = x + scalePx(25);
-      const handY = y + scalePx(55);
-      const rodWidth = scalePx(116);
-      const rodHeight = scalePx(77);
-      const rodAnchor = { x: 0.24, y: 0.9 };
-      const rodTip = { x: 0.79, y: 0.05 };
-      const sourceRodAngle = Math.atan2((rodTip.y - rodAnchor.y) * rodHeight, (rodTip.x - rodAnchor.x) * rodWidth);
-      const rodRotation = armAngle - sourceRodAngle;
-      const localTipX = (rodTip.x - rodAnchor.x) * rodWidth;
-      const localTipY = (rodTip.y - rodAnchor.y) * rodHeight;
-      const tipX = handX + Math.cos(rodRotation) * localTipX - Math.sin(rodRotation) * localTipY;
-      const tipY = handY + Math.sin(rodRotation) * localTipX + Math.cos(rodRotation) * localTipY;
-
-      if (gameStateRef.current === GameState.CASTING && castProgress > 0.48 && castProgress < 0.86) {
-        const trailProgress = (castProgress - 0.48) / 0.38;
-        const trailAlpha = Math.sin(trailProgress * Math.PI) * 0.5;
-        ctx.save();
-        ctx.lineCap = 'round';
-        [0.18, 0.34].forEach((offset, index) => {
-          const ghostRotation = rodRotation - offset;
-          const ghostTipX = handX + Math.cos(ghostRotation) * localTipX - Math.sin(ghostRotation) * localTipY;
-          const ghostTipY = handY + Math.sin(ghostRotation) * localTipX + Math.cos(ghostRotation) * localTipY;
-          ctx.globalAlpha = trailAlpha * (index === 0 ? 1 : 0.55);
-          ctx.strokeStyle = index === 0 ? '#00f3ff' : '#ff00ff';
-          ctx.lineWidth = scalePx(index === 0 ? 2 : 1);
-          ctx.shadowColor = ctx.strokeStyle;
-          ctx.shadowBlur = scalePx(8);
-          ctx.beginPath();
-          ctx.moveTo(handX, handY);
-          ctx.quadraticCurveTo(
-            lerp(handX, ghostTipX, 0.52),
-            lerp(handY, ghostTipY, 0.52) - scalePx(10),
-            ghostTipX,
-            ghostTipY
-          );
-          ctx.stroke();
-        });
-        ctx.restore();
-      }
-
-      const rodDrawn = drawGeneratedArtAnchored(
-        `equipment_netStrength_${normalizedRodLvl}`,
-        handX,
-        handY,
-        rodWidth,
-        rodHeight,
-        rodAnchor.x,
-        rodAnchor.y,
-        1,
-        rodRotation
-      );
-      if (!rodDrawn) {
-        const rodColors = ['#00f3ff', '#39ff14', '#fdfd00', '#ff00ff', '#ffffff'];
-        ctx.strokeStyle = rodColors[normalizedRodLvl - 1];
-        ctx.lineWidth = scalePx(3);
-        ctx.beginPath();
-        ctx.moveTo(handX, handY);
-        ctx.lineTo(tipX, tipY);
-        ctx.stroke();
-        ctx.fillStyle = '#05070d';
-        const reelX = handX + Math.cos(armAngle) * scalePx(15);
-        const reelY = handY + Math.sin(armAngle) * scalePx(15);
-        ctx.beginPath();
-        ctx.arc(reelX, reelY, scalePx(5), 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      rodTipPos.current = { x: tipX, y: tipY };
-      const basketX = charPos.current.x + scalePx(54);
-      const basketY = dockY - scalePx(20);
-      ctx.fillStyle = '#0b1020';
-      ctx.fillRect(basketX, basketY, scalePx(30), scalePx(20));
-      ctx.strokeStyle = '#00f3ff';
-      ctx.strokeRect(basketX, basketY, scalePx(30), scalePx(20));
-      return;
-      }
-
-    };
-
-    const drawEnvironment = (t: number) => {
-      const waterLevel = charPos.current.y + scalePx(96 + 20); 
-      const backgroundImage = artImagesRef.current.environment;
-
-      if (backgroundImage?.complete) {
-        const scale = Math.max(canvas.width / backgroundImage.width, canvas.height / backgroundImage.height);
-        const width = backgroundImage.width * scale;
-        const height = backgroundImage.height * scale;
-        ctx.save();
-        ctx.globalAlpha = 0.92;
-        ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(backgroundImage, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height);
-        ctx.restore();
-      }
-      
-      const gradient = ctx.createLinearGradient(0, waterLevel, 0, canvas.height);
-      gradient.addColorStop(0, 'rgba(0, 243, 255, 0.28)'); 
-      gradient.addColorStop(0.42, 'rgba(0, 91, 122, 0.44)'); 
-      gradient.addColorStop(1, 'rgba(2, 7, 18, 0.76)'); 
-
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, waterLevel, canvas.width, canvas.height - waterLevel);
-
-      ctx.beginPath();
-      ctx.moveTo(0, waterLevel);
-      ctx.lineTo(canvas.width, waterLevel);
-      ctx.strokeStyle = 'rgba(0, 243, 255, 0.88)'; 
-      ctx.lineWidth = scalePx(3);
-      ctx.stroke();
-
-      const mudLevel = canvas.height - scalePx(80);
-      ctx.fillStyle = 'rgba(3, 5, 10, 0.88)'; 
-      ctx.fillRect(0, mudLevel, canvas.width, scalePx(80));
-      
-      ctx.fillStyle = 'rgba(0, 243, 255, 0.26)';
-      for(let i=0; i<20; i++) {
-        const mx = (i * scalePx(100) + t * scalePx(20)) % canvas.width;
-        ctx.fillRect(mx, mudLevel + scalePx(10), scalePx(46), scalePx(3));
-      }
-
-      ctx.fillStyle = 'rgba(255, 0, 255, 0.18)';
-      for (let i = 0; i < 18; i++) {
-        const rx = (i * scalePx(130) - t * scalePx(24)) % (canvas.width + scalePx(130));
-        const ry = waterLevel + scalePx(18 + (i % 7) * 31);
-        ctx.fillRect(rx - scalePx(130), ry, scalePx(64), scalePx(2));
-      }
-
-      // 3. Dense Seaweed
-      seaweedRef.current.forEach((weed) => {
-        const grad = ctx.createLinearGradient(0, canvas.height, 0, canvas.height - weed.height);
-        grad.addColorStop(0, '#062036'); 
-        grad.addColorStop(1, '#00f3ff'); 
-
-        ctx.fillStyle = grad;
-        
-        ctx.beginPath();
-        const startX = weed.x;
-        const startY = canvas.height;
-        ctx.moveTo(startX - weed.width/2, startY);
-        
-        const cp1x = startX + Math.sin(t + weed.offset) * scalePx(20);
-        const cp1y = startY - weed.height * 0.5;
-        const endX = startX + Math.sin(t * 1.5 + weed.offset) * scalePx(40);
-        const endY = startY - weed.height;
-        
-        ctx.quadraticCurveTo(cp1x - weed.width/2, cp1y, endX, endY);
-        ctx.quadraticCurveTo(cp1x + weed.width/2, cp1y, startX + weed.width/2, startY);
-        
-        ctx.closePath();
-        ctx.fill();
-      });
-
-      // Bubbles
-      ctx.fillStyle = 'rgba(0, 243, 255, 0.34)'; 
-      bubbleRef.current.forEach(b => {
-        b.y -= b.speed;
-        if (b.y < waterLevel) b.y = canvas.height - Math.random() * 50; 
-        ctx.beginPath();
-        ctx.arc(b.x + Math.sin(t + b.y*0.1)*2, b.y, b.size, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      // Debris / Fish
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#ffffff'; 
-      
-      debrisRef.current.forEach(d => {
-        d.x += d.speed;
-        const wrapMargin = scalePx(d.assetId.startsWith('trash') ? 56 : 120);
-        if (d.x > canvas.width + wrapMargin) d.x = -wrapMargin;
-        if (d.x < -wrapMargin) d.x = canvas.width + wrapMargin;
-        const floatY = d.y + Math.sin(t * 2 + d.offset) * scalePx(5);
-        
-        // Relaxed visibility check to ensure fish near surface are seen
-        if (floatY > waterLevel && floatY < canvas.height - scalePx(10)) {
-           ctx.save();
-           ctx.translate(d.x, floatY);
-           // Scale flipping
-           if (d.speed > 0) {
-             ctx.scale(-1, 1);
-           }
-           const scale = d.scale || 1;
-           ctx.scale(scale, scale);
-           const asset = artImagesRef.current[d.assetId];
-           if (asset?.complete) {
-             const w = scalePx(d.assetId.startsWith('trash') ? 36 : 58) / Math.max(scale, 0.01);
-             const h = scalePx(d.assetId.startsWith('trash') ? 36 : 40) / Math.max(scale, 0.01);
-             ctx.imageSmoothingEnabled = false;
-             ctx.drawImage(asset, -w / 2, -h / 2, w, h);
-           } else {
-             ctx.font = `${scalePx(30)}px Arial`;
-              ctx.fillText('><>', 0, 0);
-           }
-           ctx.restore();
-        }
-      });
-    };
-
-    const drawFishingMechanics = (t: number) => {
-      if (gameStateRef.current === GameState.SHOP || gameStateRef.current === GameState.TERMINAL || gameStateRef.current === GameState.CODEX || gameStateRef.current === GameState.GUIDEBOOK) return;
-
-      const rodTip = rodTipPos.current;
-      const waterLevel = charPos.current.y + scalePx(96 + 20); 
-      const lerp = (a: number, b: number, p: number) => a + (b - a) * p;
-      const easeOutCubic = (p: number) => 1 - Math.pow(1 - p, 3);
-      const clamp01 = (p: number) => Math.max(0, Math.min(1, p));
-      const castTargetX = charPos.current.x + scalePx(150);
-      const castTargetDepth = waterLevel + scalePx(200);
-      
-      // Determine Bobber Position
-      if (gameStateRef.current === GameState.IDLE) {
-         bobberPos.current.x = rodTip.x + scalePx(12);
-         bobberPos.current.y = rodTip.y + scalePx(58) + Math.sin(t * 2) * scalePx(5); 
-      } else if (gameStateRef.current === GameState.CASTING) {
-          if (castStartRef.current === null) castStartRef.current = t;
-          const p = clamp01((t - castStartRef.current) / CAST_ANIMATION_SECONDS);
-          if (p < CAST_RELEASE_PROGRESS) {
-            castReleaseFromRef.current = null;
-            const holdProgress = p / CAST_RELEASE_PROGRESS;
-            const holdSwing = Math.sin(holdProgress * Math.PI);
-            bobberPos.current.x = rodTip.x + scalePx(4 + holdSwing * 3);
-            bobberPos.current.y = rodTip.y + scalePx(9 - holdSwing * 2);
-          } else {
-            if (!castReleaseFromRef.current) {
-              castReleaseFromRef.current = {
-                x: rodTip.x + scalePx(6),
-                y: rodTip.y + scalePx(8),
-              };
-            }
-            const releaseProgress = clamp01((p - CAST_RELEASE_PROGRESS) / (1 - CAST_RELEASE_PROGRESS));
-            const eased = easeOutCubic(releaseProgress);
-            const start = castReleaseFromRef.current;
-            const controlX = lerp(start.x, castTargetX, 0.46);
-            const controlY = Math.min(start.y, castTargetDepth) - scalePx(122);
-            const oneMinus = 1 - eased;
-            bobberPos.current.x = oneMinus * oneMinus * start.x + 2 * oneMinus * eased * controlX + eased * eased * castTargetX;
-            bobberPos.current.y = oneMinus * oneMinus * start.y + 2 * oneMinus * eased * controlY + eased * eased * castTargetDepth;
-          }
-      } else if (gameStateRef.current === GameState.WAITING) {
-          const targetX = castTargetX;
-          const targetY = castTargetDepth + Math.sin(t * 2) * scalePx(10);
-          if (landingStartRef.current !== null && landingFromRef.current) {
-            const p = clamp01((t - landingStartRef.current) / 0.35);
-            const eased = easeOutCubic(p);
-            bobberPos.current.x = lerp(landingFromRef.current.x, targetX, eased);
-            bobberPos.current.y = lerp(landingFromRef.current.y, targetY, eased);
-            if (p >= 1) {
-              landingStartRef.current = null;
-              landingFromRef.current = null;
-            }
-          } else {
-            bobberPos.current.x = targetX;
-            bobberPos.current.y = targetY;
-          }
-      } else if (gameStateRef.current === GameState.MINIGAME) {
-          bobberPos.current.x = castTargetX;
-          
-          const progress = progressRef.current?.current || 0;
-          const clampedProgress = Math.max(0, Math.min(100, progress));
-          const normalizedProgress = clampedProgress / 100; // 0 to 1
-          
-          const startDepth = castTargetDepth;
-          const endDepth = waterLevel + scalePx(20);
-          
-          const currentDepth = startDepth - ((startDepth - endDepth) * normalizedProgress);
-          
-          // Add shake effect
-          bobberPos.current.y = currentDepth + (Math.random() - 0.5) * scalePx(5); 
-
-      } else if (gameStateRef.current === GameState.CAUGHT) {
-          const dx = rodTip.x - bobberPos.current.x;
-          const dy = rodTip.y - bobberPos.current.y;
-          bobberPos.current.x += dx * 0.1;
-          bobberPos.current.y += dy * 0.1;
-      }
-
-      const lineStart = { x: rodTip.x, y: rodTip.y + scalePx(2) };
-      const lineDx = bobberPos.current.x - lineStart.x;
-      const lineDy = bobberPos.current.y - lineStart.y;
-      const isCasting = gameStateRef.current === GameState.CASTING;
-      const castLineProgress = isCasting && castStartRef.current !== null
-        ? clamp01((t - castStartRef.current) / CAST_ANIMATION_SECONDS)
-        : 0;
-      const releaseLineProgress = clamp01((castLineProgress - CAST_RELEASE_PROGRESS) / (1 - CAST_RELEASE_PROGRESS));
-      const sag = isCasting && castLineProgress < CAST_RELEASE_PROGRESS
-        ? scalePx(4)
-        : Math.min(scalePx(42), Math.max(scalePx(8), Math.abs(lineDx) * 0.16 + Math.max(0, lineDy) * 0.08));
-      const castingLift = isCasting ? Math.sin(releaseLineProgress * Math.PI) * scalePx(30) : 0;
-      const controlX = lineStart.x + lineDx * (isCasting ? 0.42 : 0.48) + (gameStateRef.current === GameState.IDLE ? scalePx(8) : 0);
-      const controlY = lineStart.y + lineDy * (isCasting ? 0.44 : 0.48) + sag - castingLift;
-
-      const strokeLine = (color: string, width: number, alpha = 1) => {
-        ctx.save();
-        ctx.globalAlpha = alpha;
-        ctx.strokeStyle = color;
-        ctx.lineWidth = width;
-        ctx.beginPath();
-        ctx.moveTo(lineStart.x, lineStart.y);
-        ctx.quadraticCurveTo(controlX, controlY, bobberPos.current.x, bobberPos.current.y);
-        ctx.stroke();
-        ctx.restore();
-      };
-
-      strokeLine('rgba(0, 243, 255, 0.22)', scalePx(2.2), 1);
-      if (gameStateRef.current === GameState.MINIGAME) {
-        strokeLine('rgba(255, 0, 255, 0.7)', scalePx(1.2), 1);
-        strokeLine('rgba(255, 255, 255, 0.72)', scalePx(0.75), 1);
-      } else {
-        strokeLine('rgba(255, 255, 255, 0.58)', scalePx(0.85), 1);
-      }
-
-      // Draw Bobber
-      ctx.fillStyle = '#ff0000';
-      ctx.beginPath();
-      ctx.arc(bobberPos.current.x, bobberPos.current.y, scalePx(6), 0, Math.PI*2);
-      ctx.fill();
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(bobberPos.current.x, bobberPos.current.y, scalePx(6), 0, Math.PI, true); 
-      ctx.fill();
-      
-      // Stick on bobber
-      ctx.strokeStyle = '#ff0000';
-      ctx.lineWidth = scalePx(2);
-      ctx.beginPath();
-      ctx.moveTo(bobberPos.current.x, bobberPos.current.y - scalePx(6));
-      ctx.lineTo(bobberPos.current.x, bobberPos.current.y - scalePx(12));
-      ctx.stroke();
-
-      // Draw Hooked Fish (Signal)
-      if (gameStateRef.current === GameState.MINIGAME) {
-        const hookedFish = artImagesRef.current.minigameTarget;
-        const fishY = bobberPos.current.y + scalePx(30) + Math.sin(t*15)*scalePx(5);
-        if (hookedFish?.complete) {
-          ctx.save();
-          ctx.imageSmoothingEnabled = false;
-          ctx.drawImage(hookedFish, bobberPos.current.x - scalePx(24), fishY - scalePx(16), scalePx(48), scalePx(32));
-          ctx.restore();
-        } else {
-          ctx.font = `${scalePx(40)}px Arial`;
-          ctx.fillText('><>', bobberPos.current.x, fishY);
-        }
-        ctx.font = `${scalePx(40)}px Arial`;
-      ctx.fillStyle = '#fdfd00';
-        ctx.fillText('!', bobberPos.current.x, bobberPos.current.y - scalePx(40));
-      }
-
-      // Draw Flying Fish (Success)
-      if (gameStateRef.current === GameState.CAUGHT && lastCaughtRef.current) {
-         const basketX = charPos.current.x + scalePx(50);
-         const basketY = charPos.current.y + scalePx(96) - scalePx(20);
-
-         // Trigger catch effects once
-         if (!catchEffectTriggeredRef.current) {
-           catchEffectTriggeredRef.current = true;
-           const item = lastCaughtRef.current;
-
-           // Screen shake based on rarity
-           const shakeMap = { common: 3, uncommon: 6, rare: 10, legendary: 15 };
-           screenShakeRef.current.start(shakeMap[item.rarity], 300);
-
-           // Particles based on rarity
-           if (item.rarity === 'legendary' || item.type === LootType.SPECIAL) {
-             particlesRef.current.createLegendaryBeam(basketX + scalePx(15), basketY, canvas.height);
-             particlesRef.current.createShockwave(basketX + scalePx(15), basketY, '#fdfd00', 100, 40);
-             floatingTextRef.current.add('LEGENDARY!', basketX + scalePx(15), basketY - scalePx(60), '#fdfd00', 24);
-           } else if (item.rarity === 'rare') {
-             particlesRef.current.createExplosion(basketX + scalePx(15), basketY, '#ff00ff', 30, 6);
-             particlesRef.current.createSparkles(basketX + scalePx(15), basketY, '#ff00ff', 15);
-             floatingTextRef.current.add('RARE!', basketX + scalePx(15), basketY - scalePx(50), '#ff00ff', 20);
-           } else if (item.rarity === 'uncommon') {
-             particlesRef.current.createExplosion(basketX + scalePx(15), basketY, '#00f3ff', 20, 4);
-             floatingTextRef.current.add('Nice!', basketX + scalePx(15), basketY - scalePx(40), '#00f3ff', 16);
-           } else {
-             particlesRef.current.createSparkles(basketX + scalePx(15), basketY, '#39ff14', 10);
-           }
-         }
-
-         // Special Effect for Treasure
-         if (lastCaughtRef.current.type === LootType.SPECIAL) {
-             const specialArt = artImagesRef.current[lastCaughtRef.current.itemId];
-             if (specialArt?.complete) {
-               ctx.save();
-               ctx.imageSmoothingEnabled = false;
-               ctx.drawImage(
-                 specialArt,
-                 basketX - scalePx(12),
-                 basketY - scalePx(62) - (Math.sin(t*10)*scalePx(10)),
-                 scalePx(54),
-                 scalePx(54)
-               );
-               ctx.restore();
-             } else {
-               ctx.font = `${scalePx(50)}px Arial`;
-                ctx.fillText('BOX', basketX + scalePx(15), basketY - scalePx(30) - (Math.sin(t*10)*scalePx(10)));
-             }
-             // Sparkles
-             ctx.fillStyle = '#fdfd00';
-             for(let i=0; i<5; i++) {
-                 ctx.fillRect(
-                    basketX + Math.random()*scalePx(40),
-                    basketY - scalePx(40) + Math.random()*scalePx(40),
-                    scalePx(3), scalePx(3)
-                 );
-             }
-         } else {
-             const item = lastCaughtRef.current;
-             const artId = item.type === LootType.CHAR ? 'char_byte' : item.itemId;
-             const itemArt = artImagesRef.current[artId];
-             if (itemArt?.complete) {
-               ctx.save();
-               ctx.imageSmoothingEnabled = false;
-               ctx.drawImage(
-                 itemArt,
-                 basketX - scalePx(10),
-                 basketY - scalePx(58) - (Math.sin(t*10)*scalePx(10)),
-                 scalePx(50),
-                 scalePx(38)
-               );
-               ctx.restore();
-             } else {
-               ctx.font = `${scalePx(30)}px Arial`;
-                ctx.fillText('OK', basketX + scalePx(15), basketY - scalePx(20) - (Math.sin(t*10)*scalePx(10)));
-             }
-         }
-      }
-    };
-
     const render = (timestamp: number) => {
-      timeRef.current = timestamp / 1000;
-
-      // Update visual effects systems
-      particlesRef.current.update();
-      floatingTextRef.current.update();
-      const shake = screenShakeRef.current.update(1/60);
-
-      // Clear background - Dark Sky
-      ctx.fillStyle = '#050505';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Apply screen shake
-      ctx.save();
-      ctx.translate(shake.x, shake.y);
-
-      drawEnvironment(timeRef.current);
-      drawCharacter(timeRef.current);
-      drawFishingMechanics(timeRef.current);
-
-      // Draw particle effects
-      particlesRef.current.draw(ctx);
-      floatingTextRef.current.draw(ctx, scaleRef.current);
-
-      ctx.restore();
-
-      animationFrameRef.current = requestAnimationFrame(render);
+      const dt = previousTime ? Math.min((timestamp - previousTime) / 1000, 0.05) : 0;
+      previousTime = timestamp; elapsed += dt;
+      const { gameState, upgrades, lastCaught } = live.current;
+      if (previousState !== gameState) {
+        recovering = gameState === GameState.IDLE && [GameState.CASTING, GameState.WAITING, GameState.MINIGAME, GameState.CAUGHT].includes(previousState);
+        returnMotion = lastMotion; returnBobber = previousBobber;
+        stateTime = elapsed; previousState = gameState; catchNotified = false;
+      }
+      const age = elapsed - stateTime;
+      const { width: w, height: h, scale: s, waterY, dockY, pierEnd, character, feet, target } = layout;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.imageSmoothingEnabled = false;
+      rect(0, 0, w, h, '#081b23');
+      const harbor = images.harbor;
+      if (harbor?.complete && harbor.naturalWidth) {
+        const areaHeight = waterY + 50 * s, sourceHeight = harbor.naturalHeight * 0.86;
+        const fit = Math.max(w / harbor.naturalWidth, areaHeight / sourceHeight);
+        const dw = harbor.naturalWidth * fit, dh = sourceHeight * fit;
+        ctx.drawImage(harbor, 0, 0, harbor.naturalWidth, sourceHeight, (w - dw) / 2, areaHeight - dh, dw, dh);
+      }
+      const water = ctx.createLinearGradient(0, waterY, 0, h);
+      water.addColorStop(0, '#12484c'); water.addColorStop(0.35, '#0b353e'); water.addColorStop(1, '#071c28');
+      ctx.fillStyle = water; ctx.fillRect(0, waterY, w, h - waterY);
+      const underwater = images.underwater;
+      if (underwater?.complete && underwater.naturalWidth) {
+        const waterHeight = h - waterY;
+        // Fit the full water column vertically, cropping only the sides on narrow displays.
+        const dw = Math.max(w, waterHeight * underwater.naturalWidth / underwater.naturalHeight);
+        ctx.drawImage(underwater, (w - dw) / 2, waterY, dw, waterHeight);
+      }
+      for (let i = 0; i < 45; i++) {
+        const x = ((i * 173.7 + Math.sin(elapsed * 0.5 + i) * 10) % w + w) % w;
+        const y = waterY + ((i * 31.3) % Math.max(1, h - waterY));
+        ctx.globalAlpha = (1 - (y - waterY) / (h - waterY)) * 0.16;
+        rect(x, y, (7 + i % 22) * s, 2 * s, i % 7 === 0 ? '#ffb879' : '#72e2d0');
+      }
+      ctx.globalAlpha = 1; rect(0, waterY, w, 2 * s, '#51b8b2');
+      fish.forEach((f, i) => {
+        f.phase = ((f.phase + f.speed * dt / (w + 120)) % 1 + 1) % 1;
+        const x = f.phase * (w + 120) - 60;
+        const y = layout.fishTop + f.depth * Math.max(0, layout.fishBottom - layout.fishTop) + Math.sin(elapsed * 1.2 + i) * 4 * s;
+        ctx.globalAlpha = 0.65;
+        sprite(f.id, x, y, (i % 3 === 0 ? 57 : 43) * s, 30 * s, f.speed < 0);
+      });
+      ctx.globalAlpha = 1;
+      // Pier, feet and foreground props all share the same deck baseline.
+      for (let x = 30 * s; x < pierEnd - 10 * s; x += 114 * s) {
+        rect(x, dockY + 16 * s, 13 * s, 90 * s, '#0c202b');
+        rect(x + 2 * s, dockY + 18 * s, 3 * s, 60 * s, '#28434b');
+      }
+      rect(0, dockY, pierEnd, 27 * s, '#111e2a'); rect(0, dockY, pierEnd, 4 * s, '#779394');
+      rect(0, dockY + 5 * s, pierEnd, 8 * s, '#354a50'); rect(0, dockY + 20 * s, pierEnd, 2 * s, '#55c5b8');
+      for (let x = 12 * s; x < pierEnd; x += 27 * s) rect(x, dockY + s, 2 * s, 11 * s, '#1b333c');
+      for (let x = pierEnd - 27 * s; x < pierEnd - 6 * s; x += 7 * s) rect(x, dockY + 6 * s, 3 * s, 7 * s, '#f7be7b');
+      rect(character.x - 40 * s, dockY - 29 * s, 27 * s, 29 * s, '#213b45');
+      rect(character.x - 43 * s, dockY - 31 * s, 33 * s, 5 * s, '#8eaaa7');
+      rect(character.x - 30 * s, dockY - 23 * s, 6 * s, 13 * s, '#db9470');
+      const lampX = Math.max(18, character.x - 104 * s);
+      rect(lampX, dockY - 83 * s, 4 * s, 83 * s, '#20373f');
+      rect(lampX - 5 * s, dockY - 94 * s, 14 * s, 15 * s, '#263d44');
+      rect(lampX - 3 * s, dockY - 91 * s, 10 * s, 8 * s, '#ffcf8d');
+      const castP = clamp(age / CAST_ANIMATION_SECONDS, 0, 1);
+      const motion = sampleAnglerMotion(gameState, age, elapsed);
+      if (recovering && age < RECOVERY_SECONDS) {
+        motion.frame = age < 0.1 ? returnMotion.frame : age < 0.22 ? 6 : 0;
+        motion.angle = returnMotion.angle + (motion.angle - returnMotion.angle) * recoveryProgress(age);
+      }
+      lastMotion = motion;
+      const actor = getAnglerGeometry(motion, feet, s);
+      const actions = images.actions;
+      const actionsReady = actions?.complete && actions.naturalWidth > 0;
+      const hand = actionsReady ? actor.hand : layout.hand;
+      const freeHand = actionsReady ? actor.freeHand : { x: hand.x - 12 * s, y: hand.y + 6 * s };
+      const angle = motion.angle;
+      const tip = getRodPose(angle, hand, s);
+      if (canvas.dataset.actorPose !== actor.frame.name) canvas.dataset.actorPose = actor.frame.name;
+      if (canvas.dataset.sceneState !== gameState) canvas.dataset.sceneState = gameState;
+      const levelColor = ['#68d8c5', '#8bc6ea', '#efc981', '#f09aab', '#f0ece2'][clamp(Math.round(upgrades?.netStrength || 1), 1, 5) - 1];
+      ctx.strokeStyle = '#101b26'; ctx.lineWidth = 5 * s;
+      ctx.beginPath(); ctx.moveTo(hand.x - Math.cos(angle) * 10 * s, hand.y - Math.sin(angle) * 10 * s); ctx.lineTo(tip.x, tip.y); ctx.stroke();
+      ctx.strokeStyle = levelColor; ctx.lineWidth = 2 * s;
+      ctx.beginPath(); ctx.moveTo(hand.x, hand.y); ctx.lineTo(tip.x, tip.y); ctx.stroke();
+      const reel = { x: hand.x - Math.cos(angle) * 9 * s - Math.sin(angle) * 5 * s, y: hand.y - Math.sin(angle) * 9 * s + Math.cos(angle) * 5 * s };
+      rect(reel.x - 3 * s, reel.y - 3 * s, 7 * s, 7 * s, '#233f49');
+      rect(reel.x - s, reel.y - s, 3 * s, 3 * s, levelColor);
+      if (gameState === GameState.MINIGAME) {
+        ctx.strokeStyle = '#779394'; ctx.lineWidth = 1.5 * s;
+        ctx.beginPath(); ctx.moveTo(reel.x, reel.y); ctx.lineTo(freeHand.x, freeHand.y); ctx.stroke();
+      }
+      // Render the grip over the pole. All body parts, hands and boots belong to the same frame.
+      if (actionsReady) {
+        ctx.drawImage(actions, actor.frame.x, actor.frame.y, ANGLER_ATLAS.frameWidth, ANGLER_ATLAS.frameHeight, actor.x, actor.y, actor.width, actor.height);
+      } else sprite('angler', character.x, character.y, character.width, character.height);
+      let bobber = { x: tip.x + 5 * s, y: tip.y + 30 * s };
+      if (gameState === GameState.CASTING) {
+        const release = getAnglerGeometry(sampleAnglerMotion('CASTING', CAST_RELEASE_PROGRESS * CAST_ANIMATION_SECONDS, elapsed), feet, s);
+        bobber = getCastBobber(castP, hand, target, s, actionsReady ? release.hand : layout.hand);
+      } else if (gameState === GameState.CAUGHT) {
+        // Use the final presentation palm throughout flight so changing frames cannot redirect the catch.
+        const presentation = getAnglerGeometry(sampleAnglerMotion('CAUGHT', LANDING_ANIMATION_SECONDS, elapsed), feet, s);
+        bobber = getLandingPosition(age, target, actionsReady ? presentation.freeHand : freeHand, s);
+      } else if (gameState === GameState.WAITING || gameState === GameState.MINIGAME) {
+        bobber = { x: target.x, y: target.y + Math.sin(elapsed * 2.7) * 2 * s };
+      } else if (recovering && age < RECOVERY_SECONDS) {
+        bobber = mixPoint(returnBobber, bobber, recoveryProgress(age));
+      }
+      previousBobber = bobber;
+      ctx.strokeStyle = 'rgba(219,243,224,0.7)'; ctx.lineWidth = Math.max(0.8, s);
+      ctx.beginPath(); ctx.moveTo(tip.x, tip.y);
+      ctx.quadraticCurveTo((tip.x + bobber.x) / 2, (tip.y + bobber.y) / 2 + 10 * s, bobber.x, bobber.y); ctx.stroke();
+      if (gameState === GameState.WAITING || gameState === GameState.MINIGAME || (gameState === GameState.CASTING && castP > 0.95)) {
+        ctx.strokeStyle = '#7dc4bb'; ctx.globalAlpha = 0.45;
+        ctx.beginPath(); ctx.ellipse(bobber.x, bobber.y + 5 * s, (12 + Math.sin(elapsed * 3) * 3) * s, 3 * s, 0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
+      }
+      if (gameState !== GameState.CAUGHT) {
+        rect(bobber.x - 3 * s, bobber.y - 5 * s, 6 * s, 5 * s, '#efe9d6');
+        rect(bobber.x - 3 * s, bobber.y, 6 * s, 6 * s, '#ef8779');
+        rect(bobber.x - s, bobber.y - 10 * s, 2 * s, 6 * s, '#ef8779');
+      }
+      if (gameState === GameState.MINIGAME) {
+        const depth = 75 * s * (1 - (live.current.minigameProgressRef?.current || 0) / 100);
+        sprite('fish_neon_guppy', bobber.x - 22 * s, bobber.y + 16 * s + depth, 44 * s, 28 * s);
+      }
+      if (gameState === GameState.CAUGHT) {
+        const id = lastCaught?.type === LootType.CHAR ? 'char_byte' : lastCaught?.itemId || 'fish_neon_guppy';
+        sprite(images[id] ? id : 'fish_neon_guppy', bobber.x - 19 * s, bobber.y - 12 * s, 38 * s, 24 * s);
+        if (age >= LANDING_ANIMATION_SECONDS && !catchNotified) {
+          catchNotified = true;
+          live.current.onCatchLanded?.();
+        }
+      }
+      frame = requestAnimationFrame(render);
     };
-
-    render(0);
-
-    return () => {
-      window.removeEventListener('resize', resize);
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    };
+    frame = requestAnimationFrame(render);
+    return () => { cancelAnimationFrame(frame); observer.disconnect(); };
   }, []);
-
-  return (
-    <canvas 
-      ref={canvasRef} 
-      className="absolute top-0 left-0 w-full h-full z-0 pointer-events-none"
-    />
-  );
+  return <canvas ref={canvasRef} aria-label="Neon harbor fishing scene" className="absolute inset-0 h-full w-full" />;
 };
 
 export default VoidCanvas;

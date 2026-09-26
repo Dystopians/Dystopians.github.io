@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { X } from 'lucide-react';
 import { ALL_LOOT_DEFINITIONS } from '../constants';
 import { TEXT } from '../locales';
 import { LootType } from '../types';
@@ -29,23 +30,25 @@ const Encyclopedia: React.FC<EncyclopediaProps> = ({ unlockedItems, catchStats, 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#05070d]/82 backdrop-blur-md p-3 sm:p-6">
-      <div className="ui-panel w-full max-w-4xl p-4 sm:p-6 flex flex-col h-[85vh] sm:h-[80vh] crt">
+      <div role="dialog" aria-modal="true" aria-label={t.codex} className="ui-panel w-full max-w-4xl p-4 sm:p-6 flex flex-col h-[85dvh] sm:h-[80dvh]">
         
         {/* Header */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 border-b border-cyber-cyan/60 pb-3">
+        <div className="flex gap-3 justify-between items-center mb-4 sm:mb-6 border-b border-cyber-cyan/30 pb-3 shrink-0">
           <h2 className="ui-section-title text-2xl sm:text-3xl glitch-text">{t.codex}</h2>
-          <button onClick={onClose} className="ui-button self-start sm:self-auto px-3 py-1 text-sm">{t.close}</button>
+          <button onClick={onClose} aria-label={t.close} title={t.close} data-testid="close-dialog" className="icon-button"><X size={20}/></button>
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex flex-wrap gap-2 sm:gap-4 mb-4 sm:mb-6">
+        <div className="flex flex-wrap gap-2 mb-4 shrink-0" role="tablist" aria-label={t.codex}>
           {(['ALL', LootType.FISH, LootType.TRASH, LootType.SPECIAL] as const).map(f => (
             <button
               key={f}
+              role="tab"
+              aria-selected={filter === f}
               onClick={() => setFilter(f)}
               className={`ui-button px-3 py-1 text-sm sm:text-base ${filter === f ? 'ui-button-primary' : ''}`}
             >
-              {f === 'ALL' ? 'ALL' : f}
+              {lang === 'zh' ? ({ ALL: '全部', FISH: '鱼类', TRASH: '杂物', SPECIAL: '珍藏' } as Record<string, string>)[f] : f === 'ALL' ? 'All' : f.charAt(0) + f.slice(1).toLowerCase()}
             </button>
           ))}
         </div>

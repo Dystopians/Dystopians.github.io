@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import { Upgrades } from '../types';
-import { TEXT } from '../locales';
 import { UI_ART } from '../assets/generated/manifest';
 
 interface MinigameProps {
@@ -77,8 +76,9 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
   const inputImpulseRef = useRef(0);
   const finishedRef = useRef(false);
   const perfectRef = useRef(true);
+  const callbacks = useRef({ onSuccess, onFail, onProgress });
+  callbacks.current = { onSuccess, onFail, onProgress };
 
-  const t = TEXT[lang];
   const tune = DIFFICULTY_TUNING[difficulty];
 
   const barSizePercent = clamp((25 + upgrades.barSize * 5) * tune.barScale, 17, 54);
@@ -94,6 +94,7 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
 
   const handleInteractStart = useCallback((event?: Event) => {
     event?.preventDefault();
+    if (isPressingRef.current) return;
     isPressingRef.current = true;
     inputImpulseRef.current += tapImpulse;
   }, [tapImpulse]);
@@ -116,7 +117,7 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
 
     finishedRef.current = false;
     perfectRef.current = true;
-    onProgress?.(progress);
+    callbacks.current.onProgress?.(progress);
 
     const finish = (result: 'success' | 'fail') => {
       if (finishedRef.current) return;
@@ -127,9 +128,9 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
       }
       finishTimerRef.current = window.setTimeout(() => {
         if (result === 'success') {
-          onSuccess(perfectRef.current);
+          callbacks.current.onSuccess(perfectRef.current);
         } else {
-          onFail();
+          callbacks.current.onFail();
         }
       }, result === 'success' ? 420 : 180);
     };
@@ -143,12 +144,16 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
       const rawDt = (timestamp - lastTimestamp) / 1000;
       const dt = clamp(rawDt || 0.016, 0.001, 0.034);
       lastTimestamp = timestamp;
+      const fishMargin = Math.max(5, fishNode.offsetHeight / Math.max(1, fishNode.parentElement!.clientHeight) * 50 + 1);
+      const fishMin = fishMargin;
+      const fishMax = 100 - fishMargin;
 
       if (timestamp >= nextTargetAt) {
         fishTarget = pickFishTarget(fishPosition, tune);
         nextTargetAt = timestamp + randomBetween(tune.targetMinMs, tune.targetMaxMs);
       }
 
+      fishTarget = clamp(fishTarget, fishMin + 2, fishMax - 2);
       const desiredFishVelocity = clamp((fishTarget - fishPosition) * 2.2, -tune.fishSpeed, tune.fishSpeed);
       const velocityDelta = clamp(
         desiredFishVelocity - fishVelocity,
@@ -156,11 +161,11 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
         tune.fishAccel * dt
       );
       fishVelocity = (fishVelocity + velocityDelta) * Math.pow(0.985, dt * 60);
-      fishPosition = clamp(fishPosition + fishVelocity * dt, 5, 89);
+      fishPosition = clamp(fishPosition + fishVelocity * dt, fishMin, fishMax);
 
-      if (fishPosition <= 5 || fishPosition >= 89) {
+      if (fishPosition <= fishMin || fishPosition >= fishMax) {
         fishVelocity *= -0.35;
-        fishTarget = fishPosition <= 5
+        fishTarget = fishPosition <= fishMin
           ? randomBetween(34, 62)
           : randomBetween(28, 58);
         nextTargetAt = timestamp + randomBetween(tune.targetMinMs, tune.targetMaxMs);
@@ -187,7 +192,7 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
 
       const barBottom = barPosition;
       const barTop = barPosition + barSizePercent;
-      const fishCenter = fishPosition + 3.6;
+      const fishCenter = fishPosition;
       const isCatching = fishCenter >= barBottom && fishCenter <= barTop;
       trackedTime += dt;
       if (isCatching) inBarTime += dt;
@@ -199,16 +204,15 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
         progress = Math.max(0, progress - tune.decaySpeed * dt);
       }
 
-      const swimBob = Math.sin(timestamp / 155) * 0.55;
-      fishNode.style.bottom = `${clamp(fishPosition + swimBob, 5, 89)}%`;
-      fishNode.style.transform = `translateX(-50%) scaleX(${fishVelocity < -2 ? -1 : 1})`;
+      fishNode.style.bottom = `${fishPosition}%`;
+      fishNode.style.transform = `translate(-50%, 50%)`;
       barNode.style.height = `${barSizePercent}%`;
       barNode.style.bottom = `${barPosition}%`;
+      barNode.dataset.catching = String(isCatching);
       progressNode.style.height = `${progress}%`;
-      progressNode.classList.toggle('bg-cyber-yellow', progress > 80);
-      progressNode.classList.toggle('bg-cyber-green', progress <= 80);
+      progressNode.style.background = progress > 80 ? '#eac78e' : '#a6ddb0';
 
-      onProgress?.(progress);
+      callbacks.current.onProgress?.(progress);
 
       if (progress >= 100) {
         progressNode.style.height = '100%';
@@ -226,7 +230,16 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
 
     frameRef.current = requestAnimationFrame(paint);
 
-    window.addEventListener('pointerdown', handleInteractStart, { passive: false });
+    const keyDown = (event: KeyboardEvent) => {
+      if ((event.code === 'Space' || event.code === 'Enter') && !event.repeat) handleInteractStart(event);
+    };
+    const keyUp = (event: KeyboardEvent) => {
+      if (event.code === 'Space' || event.code === 'Enter') { event.preventDefault(); handleInteractEnd(); }
+    };
+    const hidden = () => { if (document.hidden) handleInteractEnd(); };
+    window.addEventListener('keydown', keyDown);
+    window.addEventListener('keyup', keyUp);
+    document.addEventListener('visibilitychange', hidden);
     window.addEventListener('pointerup', handleInteractEnd);
     window.addEventListener('pointercancel', handleInteractEnd);
     window.addEventListener('blur', handleInteractEnd);
@@ -237,7 +250,9 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
         window.clearTimeout(finishTimerRef.current);
         finishTimerRef.current = null;
       }
-      window.removeEventListener('pointerdown', handleInteractStart);
+      window.removeEventListener('keydown', keyDown);
+      window.removeEventListener('keyup', keyUp);
+      document.removeEventListener('visibilitychange', hidden);
       window.removeEventListener('pointerup', handleInteractEnd);
       window.removeEventListener('pointercancel', handleInteractEnd);
       window.removeEventListener('blur', handleInteractEnd);
@@ -250,9 +265,6 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
     handleInteractStart,
     liftPerSecond,
     maxBarVelocity,
-    onFail,
-    onProgress,
-    onSuccess,
     progressPerSecond,
     restitution,
     tapImpulse,
@@ -260,49 +272,20 @@ const Minigame: React.FC<MinigameProps> = ({ upgrades, onSuccess, onFail, lang, 
   ]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#05070d]/68 backdrop-blur-[3px] select-none touch-none p-4">
-      <div className="ui-panel relative flex h-[340px] w-[122px] flex-row gap-3 overflow-visible p-3 sm:h-[420px] sm:w-[150px]">
-        <div className="pointer-events-none absolute -inset-2 rounded-md border border-cyber-pink/50 shadow-[0_0_26px_rgba(255,0,255,0.22)]" />
-        <div className="pointer-events-none absolute -inset-4 rounded-md border border-cyber-cyan/20" />
-        <div className="ui-badge pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1 text-[0.65rem] uppercase">
-          Signal Lock
-        </div>
-        <div className="relative flex-1 overflow-hidden h-full rounded-md border-2 border-cyber-cyan bg-gradient-to-b from-[#061a2c] via-[#062036] to-[#02050b] shadow-[inset_0_0_26px_rgba(0,243,255,0.34)]">
-          <div className="pointer-events-none absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(0,243,255,0.16)_1px,transparent_1px),linear-gradient(90deg,rgba(0,243,255,0.12)_1px,transparent_1px)] [background-size:100%_28px,28px_100%]" />
-          <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px bg-cyber-pink/50 shadow-[0_0_10px_rgba(255,0,255,0.65)]" />
-          <div
-            ref={fishRef}
-            className="absolute left-1/2 bottom-[44%] w-9 h-7 sm:w-11 sm:h-8 will-change-[bottom,transform] flex items-center justify-center"
-          >
-            <img
-              src={UI_ART.minigameTarget}
-              alt=""
-              draggable={false}
-              className="h-full w-full object-contain [image-rendering:pixelated] drop-shadow-[0_5px_3px_rgba(16,37,43,0.45)]"
-            />
+    <div className="minigame-overlay" data-testid="minigame" onPointerDown={event => { event.currentTarget.setPointerCapture(event.pointerId); handleInteractStart(event.nativeEvent); }} onPointerUp={handleInteractEnd} onPointerCancel={handleInteractEnd}>
+      <section className="minigame-console" aria-label={lang === 'zh' ? '收线' : 'Reel in'}>
+        <h2 className="minigame-title">{lang === 'zh' ? '信号已锁定' : 'SIGNAL LOCKED'}</h2>
+        <div className="minigame-gauges">
+          <div className="fish-track" data-testid="fish-track">
+            <div ref={barRef} className="catch-zone" data-testid="catch-zone" style={{ height: `${barSizePercent}%`, bottom: '14%' }} />
+            <div ref={fishRef} className="minigame-fish" data-testid="minigame-fish" style={{ bottom: '44%', transform: 'translate(-50%, 50%)' }}>
+              <img src={UI_ART.minigameTarget} alt="" draggable={false} />
+            </div>
           </div>
-
-          <div
-            ref={barRef}
-            className="absolute left-0 bottom-[14%] w-full bg-cyber-green/28 border-t-2 border-b-2 border-cyber-green box-border will-change-[bottom,height] shadow-[0_0_14px_rgba(57,255,20,0.4)]"
-            style={{ height: `${barSizePercent}%` }}
-          >
-            <div className="absolute inset-0 bg-cyber-green opacity-20" />
-          </div>
+          <div className="progress-track"><div ref={progressRef} data-testid="catch-progress" className="progress-fill" style={{ height: '18%' }} /></div>
         </div>
-
-        <div className="w-5 bg-[#05070d] relative rounded-full overflow-hidden h-full border-2 border-cyber-yellow shadow-[0_0_12px_rgba(253,253,0,0.24)]">
-          <div
-            ref={progressRef}
-            className="absolute bottom-0 w-full bg-cyber-green will-change-[height]"
-            style={{ height: '18%' }}
-          />
-        </div>
-      </div>
-
-      <div className="ui-badge absolute bottom-10 sm:bottom-20 px-4 py-2 text-sm sm:text-base">
-        {t.holdToRaise}
-      </div>
+        <button type="button" className="minigame-hold">{lang === 'zh' ? '收线' : 'REEL'}</button>
+      </section>
     </div>
   );
 };

@@ -1,5 +1,7 @@
 import { ContractConfig, LootItem, LootType, UpgradeConfig } from './types';
 import { createId } from './utils/id';
+import { CAST_ANIMATION_MS } from './utils/anglerAnimation';
+export { CAST_ANIMATION_MS };
 
 export const COLORS = {
   black: '#05070d',
@@ -9,8 +11,7 @@ export const COLORS = {
   yellow: '#fdfd00',
 };
 
-export const APP_VERSION = 'beta0.10.7';
-export const CAST_ANIMATION_MS = 1100;
+export const APP_VERSION = 'beta0.11.1';
 export const CAST_ANIMATION_SECONDS = CAST_ANIMATION_MS / 1000;
 export const INITIAL_CREDITS = 0;
 export const SPACE_BYTE_COST = 150;
