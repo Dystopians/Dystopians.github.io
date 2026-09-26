@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <title>Peilin Cai</title>
+  <rect width="64" height="64" rx="16" fill="#B94032"/>
+  <g fill="#FFF8EB">
+    <path d="M12 24C20 24 25 27 29 31V50C24 46 18 44 12 44V24Z"/>
+    <path d="M35 31C40 27 45 26 52 26V44C45 44 40 46 35 50V31Z"/>
+    <path d="M43 6L46 11L52 14L46 17L43 22L40 17L34 14L40 11L43 6Z"/>
+  </g>
+</svg>
