@@ -1,12 +1,18 @@
 // 弁舌 · 数即断：上面是对方的牌，下面是自己的牌，限时判断哪边的和大（或一样大）。共 7 问
 import { el } from './lib.js';
-import { LEVELS, STAT, grade, intro, rint } from './kit.js';
+import { LEVELS, STAT, grade, intro, rint, rulesHTML } from './kit.js';
 
 // 原作：每排 3~7 张，数值范围随等级扩大，低级只有 1~4，最高 1~9
 const CFG = [
   { cards: 3, max: 4 }, { cards: 4, max: 5 }, { cards: 5, max: 6 }, { cards: 6, max: 8 }, { cards: 7, max: 9 },
 ];
 const QUESTIONS = 7;
+// 玩法要点：开场卡片和「玩法」弹窗共用
+const HOW = [
+  ['目标', '上排是<b>对方</b>的牌，下排是<b>自己</b>的牌，判断哪边的<b>总和</b>大。'],
+  ['操作', '珠子走完之前，选「相手が大」「同じ」或「自分が大」；键盘 ← ↓ →。'],
+  ['胜负', `共 ${QUESTIONS} 问，答对 5 问就辩赢，全对是「完全勝利」。`],
+];
 const BEADS = 12;
 
 // 造一排和为 target 的牌：先随机，再逐张微调到目标和
@@ -105,7 +111,7 @@ function mount(stage, ctx) {
 
   intro(stage, {
     big: '数即断', title: `每排 ${cards} 张 · 数字 1–${CFG[L].max} · 共 ${QUESTIONS} 问`,
-    lines: ['上排是<b>对方</b>的牌，下排是<b>自己</b>的牌。', '在珠子走完之前，判断哪一边的<b>总和</b>更大，或者一样大。', '键盘：← 对方大、↓ 一样大、→ 我方大。'],
+    lines: HOW,
     onStart() { stage.replaceChildren(panel); ask(); },
   });
   return { destroy() { phase = 'done'; cancelAnimationFrame(raf); timers.forEach(clearTimeout); removeEventListener('keydown', onKey); } };
@@ -114,10 +120,5 @@ function mount(stage, ctx) {
 export default {
   id: 'debate', kanji: '弁', name: '比大小', jp: '数即断', skill: '弁舌（辩才）', color: '#2c4a73',
   tagline: '两排数字牌，瞬间判断谁的总和大', levels: LEVELS, mount, _test: { makeQuestion },
-  rules: `<ul>
-    <li>上排是对方的牌，下排是自己的牌，两排张数相同。</li>
-    <li>中间的珠子是限时。在珠子走完之前，比较两排的<b>总和</b>，选「相手が大（对方大）」「同じ（一样大）」或「自分が大（我方大）」。</li>
-    <li>见習每排 3 张、数字 1–4；每升一级多一张、数字范围变大，極意每排 7 张、数字 1–9。</li>
-    <li>共 7 问。答对 5 问以上算辩赢，7 问全对是「完全勝利」。</li>
-  </ul><p class="tip">两边一样的牌可以直接抵消，只比剩下的——这是算得快的诀窍。</p>`,
+  rules: rulesHTML(HOW, '两边一样的牌互相抵消，只比剩下的。'),
 };

@@ -129,6 +129,15 @@ svg { display: block; }
 .intro-list { text-align: left; max-width: 26em; margin: 14px auto 4px; padding-left: 20px; color: var(--sub); font-size: 14px; }
 .intro-list li { margin: 5px 0; }
 .intro-list b { color: var(--ink); }
+/* 玩法要点：左边一个小标签，右边一句话，折行时对齐在标签右边 */
+.how { list-style: none; }
+.intro-list.how, .dlg ul.how { padding-left: 0; }
+.how li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline; margin: 8px 0; }
+.dlg .how li { margin: 10px 0; }
+.how b { color: var(--ink); }
+.rk { padding: 1px 7px; border-radius: 6px; font-size: 12px; font-weight: 700; letter-spacing: 1px; line-height: 1.6; white-space: nowrap;
+  color: var(--c, var(--shu)); background: var(--paper2); box-shadow: inset 0 0 0 1px var(--line2); }
+[data-theme="dark"] .rk { color: var(--kin); box-shadow: inset 0 0 0 1px var(--line); }
 .tbar { display: flex; align-items: center; gap: 10px; }
 .tbar .bar { flex: 1; }
 .tbar b { font-variant-numeric: tabular-nums; font-size: 15px; min-width: 2.6em; text-align: right; }
@@ -221,7 +230,7 @@ svg { display: block; }
 .md-pot svg { width: 36px; }
 .md-pot b { font-family: var(--serif); font-size: 13px; line-height: 1; color: var(--mc); font-weight: 800; }
 .md-ladle { display: grid; grid-template-columns: auto 1fr; align-items: end; gap: 2px 8px; padding: 7px 8px 8px; box-shadow: inset 0 0 0 1px var(--line); }
-.md-icon { grid-column: 1 / 3; width: 34px; }
+.md-icon { grid-column: 1 / 3; width: calc(14px + var(--cap, 6) * 3px); } /* 容量 3 → 23px，容量 9 → 41px */
 .md-gauge { display: flex; flex-direction: column-reverse; gap: 2px; padding: 3px; border-radius: 4px 4px 8px 8px; background: #c9a877; box-shadow: inset 0 0 0 2px #9c7a47; }
 .md-gauge i { width: 14px; height: 4px; border-radius: 1.5px; background: rgba(255, 255, 255, .45); }
 .md-gauge i.f { background: var(--mc); }
@@ -261,7 +270,7 @@ svg { display: block; }
   .md-table { grid-template-columns: 44px 80px minmax(0, 1fr); gap: 8px 18px; }
   .md-pot svg { width: 28px; }
   .md-ladle { padding: 6px; gap: 2px 6px; }
-  .md-icon { width: 28px; }
+  .md-icon { width: calc(10px + var(--cap, 6) * 2.4px); }
   .md-gauge i { width: 11px; }
   .md-amt b { font-size: 18px; }
   .md-cup { grid-template-columns: minmax(0, 1fr); gap: 4px; padding: 6px; }
@@ -348,19 +357,29 @@ svg { display: block; }
 .wd-ghost i { position: absolute; width: calc(100% / var(--g)); height: calc(100% / var(--g)); border-radius: 2px; }
 .wd-ghost.ok i { background: rgba(236, 150, 64, .82); box-shadow: inset 0 0 0 2px #9a5a1c; }
 .wd-ghost.no i { background: rgba(184, 50, 42, .5); box-shadow: inset 0 0 0 2px #8a2620; }
+.wd-ghost.idle i { background: rgba(236, 150, 64, .38); box-shadow: inset 0 0 0 2px rgba(154, 90, 28, .75); }
 .wd-work { min-width: 0; }
 .wd-work .msg { margin: 8px 0; }
 .wd-tools { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
 .wd-tools .btn { min-width: 52px; padding: 9px 14px; font-size: 14.5px; }
 .wd-tools .btn:nth-child(-n+2) { font-size: 18px; }
 .panel.wd, .panel.nj { scroll-margin-top: 64px; }
-@media (max-width: 520px) {
-  .wd { padding: 12px 10px; }
-  .wd-main { grid-template-columns: minmax(0, 1fr); margin-top: 10px; }
-  .wd-side { order: 2; }
-  .wd-tools .btn { min-width: 0; flex: 1; padding: 9px 8px; }
-  .wd-tray { grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); }
-  .wd-piece { min-height: 48px; }
+/* 手机：计时条 → 木板 → 建材 → 提示 → 按钮，一屏放下，不用来回滚动 */
+@media (max-width: 560px) {
+  .game:has(.wd) { padding-left: 6px; padding-right: 6px; }
+  .stage:has(.wd) { width: 100%; }
+  .wd { padding: 8px; }
+  .wd-main { display: flex; flex-direction: column; align-items: stretch; gap: 8px; margin-top: 8px; }
+  .wd-work { display: contents; }
+  .wd-board { order: 1; align-self: center; width: min(100%, max(260px, calc(100svh - 320px))); } /* 矮屏缩小木板：吸顶栏 + 面板其余部分约 320px */
+  .wd-side { order: 2; min-width: 0; padding: 6px; border-radius: 8px; }
+  .wd-lbl { display: none; }
+  .wd-tray { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; } /* 最多 12 块，两行全摆出来，不用滑动找料 */
+  .wd-piece { min-height: 46px; padding: 3px; }
+  .wd-piece svg { max-width: 100%; height: auto; }
+  .wd-work .msg { order: 3; margin: 0; min-height: 20px; font-size: 13px; line-height: 1.45; }
+  .wd-tools { order: 4; }
+  .wd-tools .btn { flex: 1; min-width: 0; padding: 11px 6px; }
 }
 
 /* ============ 忍術 · 人物捜索 ============ */

@@ -1,6 +1,6 @@
 // 建築 · 木材合わせ（城的「補修」就用这个）：从左边的「建材」里自己挑一块木料，旋转后嵌进木板上的凹槽。全部凹槽的拼法只有一种
 import { el } from './lib.js';
-import { LEVELS, STAT, grade, intro, countdown, timeBar, pick, shuffle } from './kit.js';
+import { LEVELS, STAT, grade, intro, countdown, timeBar, pick, shuffle, rulesHTML } from './kit.js';
 
 const G = 15; // 原作画面里数出来是 15×15
 // 原作出现过的木料（PS2 版实机画面 + 攻略图）：四格 I O T L J，五格 X U W，以及两种手性的 F 和 S/Z。
@@ -25,6 +25,13 @@ const EXTRA = ['Z', 'S', 'F', 'Fr', 'W'];
 // 等级越高，木料越常挨在一起，拼成大片的复合凹槽
 const ATTACH = [0.45, 0.6, 0.72, 0.8, 0.86];
 const PIECE = ['#e0853a', '#d9772e', '#e89346', '#d47f3a', '#e5893f', '#dc7b33'];
+const TOUCH = matchMedia('(pointer: coarse)').matches; // 手机、平板：点按操作，提示也不提右键和键盘
+// 玩法要点：开场卡片和「玩法」弹窗共用
+const HOW = [
+  ['目标', '把木料全部嵌进木板上浅色的<b>凹槽</b>，一格不剩。'],
+  ['操作', TOUCH ? '点一块建材，再点凹槽放下（会自动吸附）；再点一下这块建材就旋转。' : '挑一块建材，移到木板上点击嵌入；右键、滚轮或 Q / E 旋转。'],
+  ['注意', '木料<b>不能翻面</b>，放下就取不回；全盘拼法只有一种。'],
+];
 
 const norm = cells => {
   const mx = Math.min(...cells.map(c => c[0])), my = Math.min(...cells.map(c => c[1]));
@@ -106,11 +113,14 @@ function mount(stage, ctx) {
   const total = n * (2 + Math.floor((STAT + STAT) / 40)); // 原作：料数 × (2 + ⌊(政务+知谋)/40⌋) 秒
   let puzzle = null, hole, fill, tray = [], held = -1, turns = 0, ghost = null, phase = 'play', timer = null, placedN = 0;
 
+  const HINT = TOUCH
+    ? { start: '点一块建材，再点木板上的凹槽', held: '点凹槽放下（会自动吸附）；再点一下这块建材可以旋转', ready: '位置合适：再点一下影子或「決定」嵌进去' }
+    : { start: '先从「建材」里挑一块木料', held: '移到木板上点击嵌入；右键、滚轮或 Q / E 旋转', ready: '位置合适：点击嵌入' };
   const bar = timeBar();
   const board = el('div', { class: 'wd-board', style: { '--g': G } });
   const ghostLayer = el('div', { class: 'wd-ghost' });
   const trayEl = el('div', { class: 'wd-tray' });
-  const msg = el('div', { class: 'msg' }, '先从「建材」里挑一块木料');
+  const msg = el('div', { class: 'msg' }, HINT.start);
   const rl = el('button', { class: 'btn', title: '向左转（Q）', 'aria-label': '向左转' }, '↺');
   const rr = el('button', { class: 'btn', title: '向右转（E）', 'aria-label': '向右转' }, '↻');
   const drop = el('button', { class: 'btn', title: '放回建材栏（Esc）' }, '解除');
@@ -146,31 +156,39 @@ function mount(stage, ctx) {
     const has = held >= 0 && phase === 'play';
     rl.disabled = rr.disabled = drop.disabled = !has;
     ok.disabled = !(has && ghost && ghost.ok);
-    ghostLayer.className = 'wd-ghost' + (ghost ? (ghost.ok ? ' ok' : ' no') : '');
+    ghostLayer.className = 'wd-ghost' + (ghost ? (ghost.ok ? ' ok' : ghost.idle ? ' idle' : ' no') : '');
     ghostLayer.replaceChildren(...(has && ghost ? ghost.abs.filter(([x, y]) => x >= 0 && y >= 0 && x < G && y < G).map(([x, y]) =>
       el('i', { style: { left: `${(x / G) * 100}%`, top: `${(y / G) * 100}%` } })) : []));
   }
   const curCells = () => rotate(SHAPES[tray[held].type], turns);
   const fits = abs => abs.every(([x, y]) => x >= 0 && y >= 0 && x < G && y < G && hole[y * G + x] && fill[y * G + x] < 0);
-  // (gx, gy) 这一格对准木料中心那一格
-  function aim(gx, gy) {
+  // (gx, gy) 这一格对准木料中心那一格。触屏上 2 格以内有能整块放下的位置就吸过去（手指点不准也能放）；
+  // 鼠标一点就嵌入，不吸附，免得嵌到没瞄准的地方。idle：还没往木板上点过，影子只是给人看形状，放不下也不标红
+  function aim(gx, gy, snap = TOUCH ? 2 : 0, idle = false) {
     if (held < 0 || phase !== 'play') return;
     gx = Math.max(0, Math.min(G - 1, gx)); gy = Math.max(0, Math.min(G - 1, gy));
     const cells = curCells(), w = Math.max(...cells.map(c => c[0])) + 1, h = Math.max(...cells.map(c => c[1])) + 1;
-    const ox = gx - Math.floor((w - 1) / 2), oy = gy - Math.floor((h - 1) / 2);
-    const abs = cells.map(([x, y]) => [ox + x, oy + y]);
-    ghost = { gx, gy, abs, ok: fits(abs) };
+    const at = (cx, cy) => cells.map(([x, y]) => [cx - Math.floor((w - 1) / 2) + x, cy - Math.floor((h - 1) / 2) + y]);
+    let best = null;
+    for (let dy = -snap; dy <= snap; dy++) for (let dx = -snap; dx <= snap; dx++) {
+      const abs = at(gx + dx, gy + dy);
+      if (fits(abs) && (!best || dx * dx + dy * dy < best.d)) best = { d: dx * dx + dy * dy, abs, cx: gx + dx, cy: gy + dy };
+    }
+    ghost = best ? { gx: best.cx, gy: best.cy, abs: best.abs, ok: true } : { gx, gy, abs: at(gx, gy), ok: false, idle };
     render();
   }
+  const reaim = () => (ghost ? aim(ghost.gx, ghost.gy, ghost.idle ? 0 : undefined, ghost.idle) : render());
   function take(k) {
     if (phase !== 'play' || tray[k].used) return;
-    if (held === k) return putBack();
+    if (held === k) return turn(1); // 再点一下已选中的木料：顺时针转 90°
     held = k; turns = 0;
-    msg.textContent = '移到木板上，旋转（↺ ↻ / 右键 / Q E）后点一下嵌进去';
-    if (ghost) aim(ghost.gx, ghost.gy); else render();
+    msg.textContent = HINT.held;
+    if (ghost) reaim();
+    else if (TOUCH) aim(7, 7, 0, true); // 触屏上先把影子放在木板中间，看得见木料的形状和大小
+    else render();
   }
   function putBack() { if (held < 0) return; held = -1; ghost = null; msg.textContent = '放回建材栏了'; render(); }
-  function turn(d) { if (held < 0 || phase !== 'play') return; turns = (turns + d + 4) % 4; if (ghost) aim(ghost.gx, ghost.gy); else render(); }
+  function turn(d) { if (held < 0 || phase !== 'play') return; turns = (turns + d + 4) % 4; reaim(); }
   function commit() {
     if (held < 0 || !ghost || phase !== 'play') return;
     if (!ghost.ok) {
@@ -212,7 +230,7 @@ function mount(stage, ctx) {
     e.preventDefault();
     const [gx, gy] = cellAt(e);
     press = { x: e.clientX, y: e.clientY, touch: e.pointerType !== 'mouse', moved: false,
-      onGhost: !!ghost && ghost.abs.some(([x, y]) => x === gx && y === gy) };
+      onGhost: !!ghost && ghost.ok && ghost.abs.some(([x, y]) => x === gx && y === gy) }; // 只有点在放得下的影子上才算嵌入
     try { board.setPointerCapture(e.pointerId); } catch (_) { }
     if (!press.touch) aim(gx, gy);
   });
@@ -226,8 +244,9 @@ function mount(stage, ctx) {
     if (!press) return;
     const p = press; press = null;
     if (!p.touch) { aim(...cellAt(e)); commit(); return; }
-    if (!p.moved) { if (p.onGhost) commit(); else aim(...cellAt(e)); }
-    else msg.textContent = ghost && ghost.ok ? '位置合适：点木料影子或「決定」嵌进去' : '这里放不进去';
+    if (!p.moved && p.onGhost) { commit(); return; }
+    if (!p.moved) aim(...cellAt(e));
+    msg.textContent = ghost && ghost.ok ? HINT.ready : '这里放不进去，换个地方或旋转一下';
   });
   board.addEventListener('pointercancel', () => { press = null; });
   board.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse' && !press && ghost) { ghost = null; render(); } });
@@ -243,14 +262,14 @@ function mount(stage, ctx) {
     else if (/^Arrow/.test(e.key) && held >= 0) {
       e.preventDefault();
       const g = ghost || { gx: 7, gy: 7 }, d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key];
-      aim(g.gx + d[0], g.gy + d[1]);
+      aim(g.gx + d[0], g.gy + d[1], 0); // 方向键一格一格走，不吸附，否则会被吸回原处走不动
     } else if ((e.key === 'Enter' || e.key === ' ') && held >= 0) { e.preventDefault(); commit(); }
   };
   addEventListener('keydown', onKey);
 
   intro(stage, {
     big: '木材合わせ', title: `${n} 块木料 · 限时 ${total} 秒`,
-    lines: ['木板上浅色的格子是<b>凹槽</b>。从「建材」里<b>自己挑</b>一块木料，旋转后嵌进去。', '电脑：悬停预览、点击嵌入，右键或滚轮旋转。手机：在木板上拖动定位，再点木料影子或「決定」。', '有的凹槽由几块料拼成，全盘拼法<b>只有一种</b>；木料不能翻面，放下就不能取回。'],
+    lines: HOW,
     onStart() {
       try { puzzle = generate(L); } catch (err) { stage.replaceChildren(el('div', { class: 'panel intro' }, '出题失败，请重试')); return; }
       stage.replaceChildren(panel); build();
@@ -265,12 +284,7 @@ function mount(stage, ctx) {
 export default {
   id: 'repair', kanji: '建', name: '修补', jp: '木材合わせ', skill: '建築（補修）', color: '#8a5a2c',
   tagline: '自己挑木料，旋转后严丝合缝地嵌进木板', levels: LEVELS, mount,
-  rules: `<ul>
-    <li>原作里城防的「補修」、增筑和造船，都要玩建築技能的这个小游戏。</li>
-    <li>木板上浅色的格子是<b>凹槽</b>。从「建材」栏里<b>自己挑</b>一块木料，旋转后嵌进凹槽；「解除」把手里的木料放回去。</li>
-    <li>木料是原作里的那几种：四格的一字、田字、T、L、J，五格的十字、コ字、W、F、S/Z（F 和 S/Z 各有左右两种）。每局 8 + 等级 块，各不相同。</li>
-    <li>木料可以旋转，<b>不能翻面</b>。几块料挨在一起形成的复合凹槽，全盘拼法<b>只有一种</b>；放下的木料不能取回。</li>
-    <li>限时 = 木料数 × (2 + ⌊(政务+知谋)÷40⌋) 秒。全部嵌好 80 分起，剩余时间越多分越高；没嵌完按填满的格数给分。</li>
-  </ul><p class="tip">先放形状独一无二、只有一个位置放得下的；看不准的复合凹槽留到最后——别处用掉一块，剩下的拼法就定了。</p>`,
+  rules: rulesHTML([...HOW, ['计分', '全部嵌好 80 分起，剩的时间越多分越高；没嵌完按填了多少格算。']],
+    '先放只有一个地方放得下的木料；几块料连成的大凹槽留到最后，那时剩下的料已经不多了。'),
   _test: { generate, countFills, SHAPES, ORIENTS },
 };

@@ -210,12 +210,21 @@ function openGame(id) {
     S.hints++; S.started = true; resume(); persist(); updateInfo();
     toast('💡 ' + msg, 3000);
   };
-  els.fresh.onclick = () => {
-    if (!S || S.mode !== 'practice') return;
-    store.del(S.key);
-    openGame(id);
-  };
+  els.fresh.onclick = () => { if (S && S.mode === 'practice') freshPractice(game); };
   load();
+}
+
+// 练习模式开一道新题。必须先收尾当前局再删存档：closeGame() 会把当前局写回存档，
+// 顺序反过来的话，刚删掉的存档又被写回去，重开还是同一道题
+const practiceDiff = game => {
+  const d = store.get(`${V}:pdiff:${game.id}`, game.diffs[1] ? game.diffs[1].id : game.diffs[0].id);
+  return game.diffs.some(x => x.id === d) ? d : game.diffs[0].id;
+};
+function freshPractice(game) {
+  closeGame();
+  lastMode[game.id] = 'practice';
+  store.del(`${V}:save:${game.id}:p:${practiceDiff(game)}`);
+  openGame(game.id);
 }
 
 function load() {
@@ -226,8 +235,7 @@ function load() {
     seed = `daily:${game.id}:${today}`;
     key = `${V}:save:${game.id}:d:${today}`;
   } else {
-    diff = store.get(`${V}:pdiff:${game.id}`, game.diffs[1] ? game.diffs[1].id : game.diffs[0].id);
-    if (!game.diffs.some(d => d.id === diff)) diff = game.diffs[0].id;
+    diff = practiceDiff(game);
     key = `${V}:save:${game.id}:p:${diff}`;
     const sv = store.get(key, null);
     seed = sv && sv.seed ? sv.seed : `practice:${game.id}:${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
@@ -360,7 +368,7 @@ function showDone(fresh) {
     el('div', { class: 'acts' },
       el('button', { class: 'btn', onclick: share }, '分享成绩'),
       nx ? el('button', { class: 'btn pri', onclick: () => { closeModal(); location.hash = nx.id; } }, `下一个：${nx.name}`)
-        : el('button', { class: 'btn pri', onclick: () => { closeModal(); lastMode[game.id] = 'practice'; store.del(`${V}:save:${game.id}:p:${store.get(`${V}:pdiff:${game.id}`, 'medium')}`); openGame(game.id); } }, '再来一局'))));
+        : el('button', { class: 'btn pri', onclick: () => { closeModal(); freshPractice(game); } }, '再来一局'))));
 }
 
 function showRules(game) {

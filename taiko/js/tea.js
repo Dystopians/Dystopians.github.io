@@ -1,6 +1,6 @@
 // 茶道 · 茶器並べ：桐箱打开展示一串茶器，合上后按顺序摆出来。共 5 局
 import { el } from './lib.js';
-import { LEVELS, STAT, grade, intro, rint } from './kit.js';
+import { LEVELS, STAT, grade, intro, rint, rulesHTML } from './kit.js';
 
 // 原作的六种茶器颜色，游戏内提示的记法是取首音：あ・ちゃ・く・き・し・み
 // 每种颜色借一种名窑的釉色：青＝瑠璃釉、茶＝飴釉、黒＝黒楽、黄＝黄瀬戸、白＝志野、緑＝織部。主色要一眼认得出，装饰只点到为止
@@ -14,6 +14,12 @@ const WARES = [
 ];
 const PALETTE_ORDER = ['cha', 'shiro', 'ao', 'midori', 'kuro', 'ki']; // 原作红布上从左到右的顺序
 const BY = Object.fromEntries(WARES.map(w => [w.id, w]));
+// 玩法要点：开场卡片和「玩法」弹窗共用
+const HOW = [
+  ['目标', '桐箱打开片刻，记住里面茶器的<b>颜色和顺序</b>。'],
+  ['操作', '箱子合上后，从红布上依次点出同样的茶器，按「決定」。不限时，点错了按「訂正」。'],
+  ['计分', '每局全对 ◎ 20 分；错 1 件 ○ 12 分（上級起错 2 件也算）；对 1 件以上 △ 8 分。'],
+];
 const ROUNDS = 5;
 const RN = ['一', '二', '三', '四', '五'];
 const PRAISE = { '◎': 'お見事', '○': '惜しい', '△': '精進を', '×': '修行が足りぬ' };
@@ -170,7 +176,7 @@ function mount(stage, ctx) {
 
   intro(stage, {
     big: '茶器並べ', title: `${n} 件茶器 · 五局`,
-    lines: ['桐箱会打开片刻，记住里面茶器的<b>颜色和顺序</b>。', '箱子合上后，从下方红布上依次挑出同样的茶器。', '回答不限时，可以用「訂正」改；键盘 1–6 选茶器。'],
+    lines: HOW,
     onStart() { stage.replaceChildren(panel); startRound(); },
   });
   return { destroy() { timers.forEach(clearTimeout); removeEventListener('keydown', onKey); } };
@@ -179,10 +185,5 @@ function mount(stage, ctx) {
 export default {
   id: 'tea', kanji: '茶', name: '茶道', jp: '茶器並べ', skill: '茶道', color: '#3f6b4a',
   tagline: '记住桐箱里茶器的顺序，照样摆出来', levels: LEVELS, mount,
-  rules: `<ul>
-    <li>桐箱会打开片刻，展示一排茶器（见習 3 件，每升一级多 1 件，極意 7 件）。同一种颜色可能出现不止一次。</li>
-    <li>箱子合上后，从红布上按顺序挑出同样的茶器，按「決定」。回答不限时，可以「訂正」。</li>
-    <li>每局判定：<b>◎</b> 全对 20 分；<b>○</b> 错 1 件（上級起错 1–2 件且不超过三分之一）12 分；<b>△</b> 至少对 1 件 8 分；<b>×</b> 全错 0 分。</li>
-    <li>共五局，满分 100；<b>81 分以上为「上出来」</b>。</li>
-  </ul><p class="tip">原作里给的记法：六种颜色取首音「あ・ちゃ・く・き・し・み」——青、茶、黒、黄、白、緑。</p>`,
+  rules: rulesHTML(HOW, '按颜色的首音记成一串：あ（青）・ちゃ（茶）・く（黒）・き（黄）・し（白）・み（緑）。'),
 };

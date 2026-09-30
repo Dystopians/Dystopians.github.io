@@ -211,10 +211,10 @@ export default {
   dailyDiff: wd => ['hard', 'easy', 'easy', 'medium', 'medium', 'medium', 'hard'][wd],
   sizeLabel: () => '6×6',
   rules: `<ul>
-    <li>在每个空格里填 <b>1–6</b>。</li>
-    <li>每一<b>行</b>、每一<b>列</b>、每个粗线围出的 <b>2×3 宫</b>里，1–6 都各出现一次。</li>
-    <li>点格子选中，再点下面的数字。打开「笔记」可以记下候选数。</li>
-  </ul><p class="tip">每道题都只用「这格只剩一个数」和「这个数在这一行/列/宫只剩一个位置」两招就能解开。</p>`,
+    <li>每个空格填 <b>1–6</b>。</li>
+    <li>每一<b>行</b>、每一<b>列</b>、每个粗线围出的 <b>2×3 宫</b>里，1–6 各出现一次。</li>
+    <li>点格子选中，再点下面的数字；打开「笔记」可以记候选数。</li>
+  </ul><p class="tip">两招就能解开：这一格只剩一个数能填；这个数在这一行（列、宫）只剩一个位置。</p>`,
   settings: [],
   generate, mount,
   _test: { logicSolve },

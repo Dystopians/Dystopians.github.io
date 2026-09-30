@@ -257,11 +257,11 @@ export default {
   dailyDiff: wd => ['hard', 'easy', 'easy', 'medium', 'medium', 'medium', 'hard'][wd],
   sizeLabel: () => '6×6',
   rules: `<ul>
-    <li>每一行、每一列都要有 <b>3 个太阳</b>和 <b>3 个月亮</b>。</li>
+    <li>每一行、每一列都是 <b>3 个太阳 + 3 个月亮</b>。</li>
     <li>同一种符号<b>不能三个连在一起</b>（横竖都算）。</li>
     <li>格子之间的 <b>=</b> 表示两边相同，<b>×</b> 表示两边相反。</li>
-    <li>点一下放太阳，再点一下换成月亮，再点一下清空。</li>
-  </ul><p class="tip">每道题都能纯靠推理解开，不需要猜。卡住时点「提示」，会告诉你下一步能推出哪一格、为什么。</p>`,
+    <li>点一下放太阳，点两下换成月亮，点三下清空。</li>
+  </ul><p class="tip">不用猜，每一步都推得出来。卡住了点「提示」，会告诉你下一步推哪一格、为什么。</p>`,
   settings: [{ key: 'showErrors', label: '实时标出违反规则的格子', def: true }],
   generate, mount,
   _test: { logicSolve, PATTERNS },

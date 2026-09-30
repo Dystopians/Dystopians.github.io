@@ -1,9 +1,17 @@
 // 医術 · 薬調合：只操作三把杓子。先点一把杓子拿起来，再点目标——药壶（空杓舀满、有药倒回）、另一把杓子（倒到对方满或自己空）、茶碗（整杓倒进去）
 import { el, svg } from './lib.js';
-import { LEVELS, STAT, grade, intro, countdown, timeBar, pick, rint } from './kit.js';
+import { LEVELS, STAT, grade, intro, countdown, timeBar, pick, rint, rulesHTML } from './kit.js';
 
-// 原作画面里见过的杓子容量组合（都互质，任何 1~9 的量都能配出来）
-const CAP_SETS = [[9, 5, 4], [8, 5, 4], [8, 5, 3], [7, 6, 3], [9, 7, 4], [7, 5, 3]];
+// 杓子容量组合：3–9 里三个互不相同、最大的不小于 7、能配出 1–9 任意量（原作见过 9/5/4、8/5/4、8/5/3、7/6/3 都在其中）。
+// 按难度从易到难排好：难度 = 配出 1–9 各量的最少步数平均值 + 0.15 × 最多步数（按游戏规则穷举求出）
+const CAP_SETS = [
+  [9, 4, 3], [7, 5, 4], [9, 5, 3], [7, 6, 4], [8, 7, 3], [9, 6, 4], [9, 7, 4], [7, 5, 3],
+  [8, 4, 3], [8, 6, 5], [8, 7, 5], [9, 6, 5], [9, 7, 6], [9, 8, 3], [9, 8, 5], [9, 8, 6],
+  [7, 6, 3], [8, 5, 4], [7, 6, 5], [9, 7, 3], [8, 6, 3], [7, 4, 3], [8, 7, 4], [8, 7, 6],
+  [9, 7, 5], [9, 8, 4], [9, 8, 7], [8, 5, 3], [9, 5, 4],
+];
+// 每个等级从 CAP_SETS 的哪一段里随机抽：见習抽最容易的一段，越往上越难，相邻等级有重叠
+const CAP_WINDOW = [[0, 11], [5, 16], [10, 21], [15, 25], [18, 28]];
 // 原作：见習 2 种药 2 只碗，等级越高药和碗越多（最多 3 种 3 只）
 const CFG = [
   { meds: 2, cups: 2, lo: 1, hi: 9, zero: 0 },
@@ -15,6 +23,13 @@ const CFG = [
 // 原作三种药的配色：① 赭、② 绿、③ 蓝
 const MEDS = [{ n: '①', c: '#b0642a' }, { n: '②', c: '#4f7d3a' }, { n: '③', c: '#3d5f8f' }];
 const CUP_NAMES = ['い', 'ろ', 'は'];
+// 玩法要点：开场卡片和「玩法」弹窗共用
+const HOW = [
+  ['目标', '按配方给每只茶碗配药，每种药都要<b>正好</b>那么多。'],
+  ['操作', '只动<b>杓子</b>：先点一把拿起来，再点要倒去的地方（虚线会标出来）。'],
+  ['倒法', '点药壶：空杓舀满、有药倒回；点另一把杓子：倒到它满或自己空；点茶碗：整杓倒进去。'],
+  ['注意', '倒多了整碗作废，从头配。'],
+];
 
 // 三个药壶：吊锅、铁瓶、带盖的壶
 const POTS = [
@@ -29,7 +44,7 @@ const LADLE = '<svg class="md-icon" viewBox="0 0 40 16" aria-hidden="true"><path
 
 function mount(stage, ctx) {
   const L = +ctx.level, C = CFG[L];
-  const caps = (L === 0 ? [9, 5, 4] : pick(CAP_SETS).slice()).sort((a, b) => b - a); // 原作从上到下：大、中、小
+  const caps = CAP_SETS[rint(...CAP_WINDOW[L])].slice(); // 每局随机；原作从上到下排：大、中、小
   const total = 24 + L * 4 + (STAT + STAT) / 5; // 原作：24 + 等级×4 + (知谋+魅力)/5 秒
   const cups = Array.from({ length: C.cups }, () => {
     const target = Array.from({ length: C.meds }, () => (Math.random() < C.zero ? 0 : rint(C.lo, C.hi)));
@@ -94,6 +109,7 @@ function mount(stage, ctx) {
     ladlesEl.replaceChildren(...ladles.map((l, i) => {
       const b = hit('ladle', i, 'md-ladle' + (i === sel ? ' sel' : ''), `杓 ${l.amt}/${l.cap}`), col = l.med >= 0 ? MEDS[l.med].c : '';
       if (col) b.style.setProperty('--mc', col);
+      b.style.setProperty('--cap', l.cap); // 杓子的大小跟容量走
       b.innerHTML = `${LADLE}<span class="md-gauge">${Array.from({ length: l.cap }, (_, k) => `<i${k < l.amt ? ' class="f"' : ''}></i>`).join('')}</span>
         <span class="md-amt">${l.med >= 0 ? `<em>${MEDS[l.med].n}</em>` : ''}<b>${l.amt}</b>/${l.cap}</span>`;
       return b;
@@ -183,7 +199,7 @@ function mount(stage, ctx) {
 
   intro(stage, {
     big: '薬調合', title: `${C.meds} 种药 · ${C.cups} 只茶碗 · 杓子 ${caps.join(' / ')} · 限时 ${Math.round(total)} 秒`,
-    lines: ['只操作<b>杓子</b>：先点一把拿起来，点点虚线会指出它能倒去哪里。', '点药壶：空杓<b>舀满</b>，有药就倒回去。点另一把杓子：倒到对方满或自己空为止。', '点茶碗：整杓倒进去。每种药都要<b>正好</b>等于配方，倒多了整碗作废重配。'],
+    lines: HOW,
     onStart() {
       stage.replaceChildren(panel); render();
       timer = countdown(total, { onTick: (l, t) => bar.set(l, t), onEnd: () => finish(false) });
@@ -196,11 +212,8 @@ function mount(stage, ctx) {
 export default {
   id: 'medicine', kanji: '医', name: '药物调制', jp: '薬調合', skill: '医術', color: '#8a3b2a',
   tagline: '拿起杓子倒来倒去，按配方精确配药', levels: LEVELS, mount,
-  rules: `<ul>
-    <li>左边是药壶，中间是三把容量不同的杓子，右边是茶碗和配方。只能操作<b>杓子</b>：先点一把拿起来，点点虚线会指出它能倒去的地方。</li>
-    <li><b>杓子 → 药壶</b>：空杓舀满；有药就倒回原来的壶。<b>杓子 → 杓子</b>：倒到对方满、或自己倒空为止。<b>杓子 → 茶碗</b>：整杓倒进去。</li>
-    <li>拿着杓子时点别的杓子：能倒就倒过去，倒不了就改拿那一把。「杓解除」放下杓子，「杓を空に」把三把杓子全部倒空。</li>
-    <li>每只碗每种药都要<b>正好</b>等于配方才算「成功」；倒多了，整碗倒掉重配。</li>
-    <li>限时 = 24 + 等级×4 + (知谋+魅力)÷5 秒。全部配好 80 分起，剩余时间越多分越高，81 分以上为「上出来」。</li>
-  </ul><p class="tip">原作攻略的例子：杓子是 8/5/3 时想要 1——拿 3 舀满倒进 5，再舀满倒进 5，3 里就剩下 1。</p>`,
+  rules: rulesHTML([...HOW,
+    ['按钮', '「杓解除」放下手里的杓子，「杓を空に」把三把杓子都倒空。'],
+    ['计分', '全部配好 80 分起，剩的时间越多分越高。']],
+    '杓子装不出的量，用两把杓子的差：大杓舀满倒进小杓，大杓里剩下的就是差（9 倒进 5，剩 4）。'),
 };

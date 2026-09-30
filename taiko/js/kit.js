@@ -35,12 +35,17 @@ export function countdown(seconds, { onTick, onEnd } = {}) {
   return api;
 }
 
-// 开场画面：大字标题 + 规则要点 + 开始按钮
+// 玩法说明统一写成几行「标签 + 一句话」（目标 / 操作 / 注意…），开场卡片和「玩法」弹窗共用同一份
+const howRow = ([k, v]) => `<span class="rk">${k}</span><span>${v}</span>`;
+export const rulesHTML = (rows, tip) =>
+  `<ul class="how">${rows.map(r => `<li>${howRow(r)}</li>`).join('')}</ul>${tip ? `<p class="tip">${tip}</p>` : ''}`;
+
+// 开场画面：大字标题 + 玩法要点 + 开始按钮
 export function intro(stage, { big, title, lines = [], button = '開始', onStart, extra }) {
   const box = el('div', { class: 'panel intro' },
     el('div', { class: 'big' }, big),
     title ? el('div', { class: 'intro-title' }, title) : null,
-    el('ul', { class: 'intro-list' }, lines.map(l => el('li', { html: l }))),
+    el('ul', { class: 'intro-list how' }, lines.map(l => el('li', { html: Array.isArray(l) ? howRow(l) : l }))),
     extra || null,
     el('div', { class: 'btns' }, el('button', { class: 'btn pri intro-go', onclick: () => { box.remove(); onStart(); } }, button)));
   stage.replaceChildren(box);

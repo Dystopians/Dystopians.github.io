@@ -1,6 +1,6 @@
 // 軍学 · 四角陣崩し：带重力的四川省。颜色和数字都相同的两本兵书，能用拐弯不超过两次的线连起来就消掉
 import { el, svg } from './lib.js';
-import { LEVELS, STAT, grade, intro, countdown, timeBar, shuffle } from './kit.js';
+import { LEVELS, STAT, grade, intro, countdown, timeBar, shuffle, rulesHTML } from './kit.js';
 
 // 原作各级的书数：30 / 36 / 42 / 56 / 64；种类数随能力变化，这里按等级给
 const CFG = [
@@ -12,6 +12,12 @@ const UNITS = [
   { k: '鉄砲', c: '#ec7d85', d: '#bb414b' }, { k: '大筒', c: '#acdb8e', d: '#62a446' },
 ];
 const NUMS = ['一', '二', '三', '四'];
+// 玩法要点：开场卡片和「玩法」弹窗共用
+const HOW = [
+  ['目标', '把兵书两两配对消掉，全部消光。'],
+  ['配对', '<b>颜色和数字都相同</b>，而且能用<b>拐弯不超过两次</b>的线连起来（线只走空格，可以绕到外圈）。'],
+  ['注意', '消掉后上面的书会掉下来。按「この並びで始める」才计时，之前可以随便「並べ直す」。'],
+];
 const RING = 0.5; // 外圈（连线可以绕行的空位）画窄一点，把地方让给兵书
 const BOOK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.5h11.5a2 2 0 0 1 2 2V19H7a2 2 0 0 0-2 2z" fill="#c9b27a" stroke="#6b5530" stroke-width="1.3"/><path d="M5 21a2 2 0 0 1 2-2h11.5v2.5H7A2 2 0 0 1 5 21z" fill="#f6efdc" stroke="#6b5530" stroke-width="1.1"/><rect x="11" y="6" width="4" height="8" fill="#fbf7ee" stroke="#6b5530" stroke-width=".8"/></svg>';
 
@@ -164,7 +170,7 @@ function mount(stage, ctx) {
 
   intro(stage, {
     big: '四角陣崩し', title: `${tiles} 冊 · 限时 ${Math.round(total)} 秒`,
-    lines: ['兵书按兵种分四种颜色，各有数字。<b>颜色和数字都一样</b>的两本才能配对。', '两本之间要能用一条<b>拐弯不超过两次</b>的线连起来，线只能走空格（可以绕到外面）。', '消掉后上面的书会往下掉。开始前可以无限次「並べ直す」换一种排列。'],
+    lines: HOW,
     onStart() {
       stage.replaceChildren(panel); deal(); render(); bar.set(total, total);
       msg.textContent = '不满意可以一直「並べ直す」，开始后才计时';
@@ -176,11 +182,6 @@ function mount(stage, ctx) {
 export default {
   id: 'tactics', kanji: '軍', name: '军学', jp: '四角陣崩し', skill: '軍学', color: '#6b4a2a',
   tagline: '带重力的四川省：连线消掉成对的兵书', levels: LEVELS, mount,
-  rules: `<ul>
-    <li>兵书有四个兵种颜色：足轻（黄）、骑马（蓝）、铁炮（红）、大筒（绿），上面写着数字。<b>颜色和数字都相同</b>的两本才能配对。</li>
-    <li>两本书之间能用一条<b>拐弯不超过两次</b>的线连起来（线只能穿过空格，可以绕到兵书阵外面）就能消掉。</li>
-    <li>消掉之后，上面的书会直接往下掉；已经清空的列不会合并。</li>
-    <li>开始前可以无限次「並べ直す」重新排列，确认后才开始计时。限时 = 书数×2 − 等级×5 + (统率+知谋)÷8 秒。</li>
-    <li>全部消完 80 分起，剩余时间越多分越高；中途卡死或时间到，按消掉的比例给分。</li>
-  </ul><p class="tip">因为有重力，先消下面的书会让上面整列掉下来、打乱布局；通常从上层开始消更好控制。</p>`,
+  rules: rulesHTML([...HOW, ['计分', '全部消完 80 分起，剩的时间越多分越高；没消完按消掉的比例算。']],
+    '先从上层消：消掉下层的书，上面整列都会掉下来，布局就乱了。'),
 };

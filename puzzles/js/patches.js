@@ -309,11 +309,9 @@ export default {
   dailyDiff: wd => ['hard', 'easy', 'easy', 'medium', 'medium', 'medium', 'hard'][wd],
   sizeLabel: p => `${p.n}×${p.n}`,
   rules: `<ul>
-    <li>把整个棋盘切成若干<b>矩形补丁</b>，不重叠、不留空。</li>
-    <li>每块补丁<b>恰好盖住一个</b>彩色提示。</li>
-    <li>提示上的数字是这块补丁的<b>格子数</b>；图标是它的<b>形状</b>：<i class="p-g sq"></i> 正方形、<i class="p-g tall"></i> 竖长、<i class="p-g wide"></i> 横长。</li>
-    <li>没有数字表示面积不限，没有图标表示形状不限；显示 <b>?</b> 的两样都不限。每块补丁<b>至少 2 格</b>。</li>
-    <li>按住从一个角拖到对角放一块补丁；点一下补丁可以删掉它。</li>
+    <li>把棋盘切成若干<b>矩形</b>，不重叠、不留空，每块<b>恰好盖住一个</b>提示。</li>
+    <li>提示上的数字是这块的<b>格数</b>，图标是<b>形状</b>：<i class="p-g sq"></i> 正方形、<i class="p-g tall"></i> 竖长、<i class="p-g wide"></i> 横长。没标的不限，<b>?</b> 两样都不限。</li>
+    <li>每块至少 2 格。按住从一角拖到对角放一块，点一下删掉。</li>
   </ul><p class="tip">从数字大、又被边角挤着的提示下手，它能摆的位置最少。</p>`,
   settings: [],
   generate, mount,

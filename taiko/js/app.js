@@ -110,13 +110,12 @@ function openGame(id, level) {
       setTimeout(() => showResult(g, level, res, rec, better), res.delay ?? 500);
     },
   };
-  cur.ctl = g.mount(stage, ctx);
-  if (!store.get(`${V}:seen:${id}`, false)) { store.set(`${V}:seen:${id}`, true); setTimeout(() => showRules(g), 350); }
+  cur.ctl = g.mount(stage, ctx); // 开场卡片上已经写着玩法要点，首次进入不再另弹一遍规则
 }
 function closeGame() { if (cur) { cur.ctl?.destroy?.(); cur = null; } }
 
 function showRules(g) {
-  modal(el('div', null,
+  modal(el('div', { style: { '--c': g.color } },
     el('h3', null, el('span', { class: 'seal', style: { background: g.color } }, g.kanji), `${g.name}（${g.jp}）`),
     el('div', { html: g.rules }),
     el('div', { class: 'acts' }, el('button', { class: 'btn pri', style: { background: g.color }, onclick: closeModal }, '明白了'))));

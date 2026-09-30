@@ -1,7 +1,7 @@
 // 忍術 · 人物捜索：挂轴里的画像从下往上慢慢露出来（先看到衣服，最后才看到脸），在一群人里认出他。共 6 问
 // 头像默认是公有领域的战国人物历史画像；也可以载入自己的头像（比如原作立绘），只存在本机浏览器里
 import { el } from './lib.js';
-import { LEVELS, STAT, grade, intro, pick, shuffle } from './kit.js';
+import { LEVELS, STAT, grade, intro, pick, shuffle, rulesHTML } from './kit.js';
 
 // 原作：候选 3×3、4×3、4×4、5×4、5×5
 const GRID = [[3, 3], [4, 3], [4, 4], [5, 4], [5, 5]];
@@ -10,6 +10,12 @@ const SIMILAR = [0, 0.3, 0.5, 0.7, 0.85];
 const QUESTIONS = 6;
 const MAX_MISS = 3; // 原作：可以认错 3 次，第 4 次直接结束
 const MIN_FACES = 9;
+// 玩法要点：开场卡片和「玩法」弹窗共用
+const HOW = [
+  ['目标', '左边的画像会<b>从下往上</b>慢慢露出来，在右边人群里点出这个人。'],
+  ['计分', '越早认出越好，前 60% 时间内答对是 ◎。'],
+  ['注意', `认错最多 ${MAX_MISS} 次，再错就直接结束。`],
+];
 
 // ---------- 头像包 ----------
 const DB = 'tk1-faces', ST = 'faces';
@@ -196,7 +202,7 @@ function mount(stage, ctx) {
   const bDir = canDir ? el('button', { class: 'btn' }, '载入文件夹…') : null;
   const bReset = el('button', { class: 'btn hidden' }, '恢复默认');
   const packBox = el('div', { class: 'nj-pack' }, info, el('div', { class: 'btns' }, bFiles, bDir, bReset, pickFiles, pickDir),
-    el('p', { class: 'nj-pack-note' }, '想用原作立绘，可以载入你自己从游戏里导出的头像（至少 9 张）。图片只保存在这个浏览器里，不会上传；放在子文件夹里会按文件夹分组出题。'));
+    el('p', { class: 'nj-pack-note' }, `想用原作立绘？载入自己导出的头像（至少 ${MIN_FACES} 张），只存在这个浏览器里，不会上传。`));
   let go = null;
   function showPack() {
     if (!pack) return;
@@ -229,7 +235,7 @@ function mount(stage, ctx) {
   const [c, r] = GRID[L];
   const box = intro(stage, {
     big: '人物捜索', title: `${c}×${r} 人中找一个 · 共 ${QUESTIONS} 问`,
-    lines: ['左边挂轴里的画像会<b>从下往上</b>慢慢露出来：先看到衣服，最后才看到脸。', '在右边的人群里点出同一个人。越早认出越好——时限 60% 以内答对是 ◎。', `认错会让画像停一下，但最多只能错 ${MAX_MISS} 次。`],
+    lines: HOW,
     extra: packBox,
     onStart() { stage.replaceChildren(panel); drawGourds(); setTimeout(() => panel.scrollIntoView({ block: 'start', behavior: 'smooth' }), 0); ask(); },
   });
@@ -243,12 +249,7 @@ function mount(stage, ctx) {
 export default {
   id: 'ninja', kanji: '忍', name: '忍术', jp: '人物捜索', skill: '忍術', color: '#34364a',
   tagline: '画像从下往上慢慢露出，在人群里认出他', levels: LEVELS, mount,
-  rules: `<ul>
-    <li>左边挂轴里的画像会<b>从下往上</b>慢慢露出来：先是衣服，最后才是脸。在右边的人群里点出这个人。</li>
-    <li>候选人数随等级变多：3×3、4×3、4×4、5×4、5×5。等级越高，衣服颜色相近的人越多，得等脸露出来才分得清。</li>
-    <li>每问：时限 60% 以内答对 <b>◎</b>（50/3 分），之后答对 <b>○</b>（10 分），超时 <b>×</b>（10/3 分）。共 6 问，81 分以上为「上出来」。</li>
-    <li>可以认错 3 次，第 4 次直接结束。认错时画像会停一下。限时 = (12 + (武力+知谋)÷5) × ⅓ 秒。</li>
-    <li>默认头像是公有领域的战国人物历史画像（Wikimedia Commons）。原作用的是游戏里的人物立绘；想要原汁原味，可以在开始前载入你自己从游戏里导出的头像，只存在本机浏览器里。</li>
-  </ul><p class="tip">先扫一眼右边所有人的衣服颜色，画像露出衣服时缩小范围；高等级时同色的人多，等脸露出来再下手。</p>`,
+  rules: rulesHTML([...HOW, ['头像', `默认是公有领域的战国人物画像。开始前可以载入自己的头像（至少 ${MIN_FACES} 张，放在子文件夹里会按文件夹分组出题），只存在本机。`]],
+    '衣服最先露出来：先按衣服颜色缩小范围，同色的人多就等脸露出来再点。'),
   _test: { makeRound, gridFor },
 };
