@@ -53,6 +53,12 @@ main:
           - title: "日查表"
             note: "Record"
             url: /game-record/
+      - title: "课程"
+        column: 1
+        items:
+          - title: "现代诗歌的诗论"
+            note: "Poetics"
+            url: /poetics/
       - title: "每日智力题"
         column: 2
         compact: true

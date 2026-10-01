@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>现代诗歌的诗论 · 从细读到有根据的判断</title>
+<meta name="description" content="十个能力单元、八十道题的现代诗论自学课：先写下自己的判断，再看提示与参考。作答保存在本机，看过什么帮助如实留痕。">
+<meta name="theme-color" content="#f5f0e6">
+<meta property="og:title" content="现代诗歌的诗论">
+<meta property="og:description" content="从细读，到有根据的判断——十个能力单元、八十道题的现代诗论自学课。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%232f5d50'/><path d='M18 18h12M24 18v28M16 30h16M38 16v32M38 22h10M44 22v26' stroke='%23f5f0e6' stroke-width='4' stroke-linecap='round' fill='none'/></svg>">
+<link rel="preload" href="fonts/poem.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="fonts/poem.css">
+<link rel="stylesheet" href="style.css">
+<script>
+  // 先定主题和字号再绘制，避免深色模式下闪白
+  try {
+    var t = JSON.parse(localStorage.getItem('poetics:theme') || '"auto"');
+    var d = t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = d ? 'dark' : 'light';
+    var fs = +JSON.parse(localStorage.getItem('poetics:fs') || '1');
+    if (fs > 0.8 && fs < 1.4) document.documentElement.style.setProperty('--fs', fs);
+  } catch (e) {}
+</script>
+</head>
+<body>
+<div id="app"></div>
+<noscript><p style="padding:24px;text-align:center">这门课的作答和留痕需要启用 JavaScript。</p></noscript>
+<script type="module" src="app.js"></script>
+</body>
+</html>

@@ -33,3 +33,6 @@ byte-fisher/DESIGN.zh.md
 
 # Ignore local Byte-Fisher backups
 /.backup_Byte-Fisher/
+
+# 朱雀仿宋原字体（8.8 MB）只用来生成 poetics/fonts 的子集，不进仓库
+_fonts/ZhuqueFangsong-Regular.ttf
