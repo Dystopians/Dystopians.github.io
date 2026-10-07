@@ -178,7 +178,7 @@ const ICON = {
 
 // ---------- 外壳：顶栏、侧栏、诗卷 ----------
 const NAV = [
-  { group: '开始', items: [['home', '首页'], ['guide', '从这里开始'], ['diagnosis', '前置诊断与补课'], ['anchor', '贯穿诗 · 末班站']] },
+  { group: '开始', items: [['home', '首页'], ['guide', '从这里开始'], ['diagnosis', '前置诊断与补课'], ['anchor', '贯穿诗 · 断章']] },
   { group: '十个能力单元', items: C.units.map(u => [u.id, u.short, u.no]) },
   { group: '验收与复习', items: [['assessment', '综合验收'], ['review', '延迟复习'], ['record', '学习记录'], ['sources', '来源与版本']] },
 ];
@@ -250,7 +250,7 @@ function poems() {
     return out + (note && notesRe.test(note.textContent) ? `<p class="poem-note">${note.innerHTML}</p>` : '');
   };
   POEMS = [
-    { id: 'mbz', tab: '末班站', title: '《末班站》', by: '课程原创 · 贯穿诗', html: pick('anchor', 'figure.poem', /行号|未定/) },
+    { id: 'dz', tab: '断章', title: '《断章》', by: '卞之琳 · 贯穿诗', html: pick('anchor', 'figure.poem', /卞之琳|长诗/) },
     { id: 'kq', tab: '再别康桥', title: '《再别康桥》', by: '徐志摩', html: pick('u02', 'figure.poem.numbered', /词义/) },
     { id: 'metro', tab: '庞德短诗', title: 'In a Station of the Metro', latin: true, by: '庞德 · 附本课程教学译文', html: pick('u03', 'figure.poem', /词义/) },
     { id: 'ss', tab: '死水', title: '《死水》', by: '闻一多 · 综合验收材料', html: pick('assessment', 'figure.poem.numbered', /词义/) },
@@ -259,7 +259,7 @@ function poems() {
 }
 function openDrawer(which) {
   closeDrawer();
-  const list = poems(), sel = which || pref('poem', 'mbz');
+  const list = poems(), sel = which || pref('poem', 'dz');
   const body = el('div', { class: 'dr-body' });
   const tabs = el('div', { class: 'dr-tabs', role: 'tablist' });
   const show = id => {
@@ -368,8 +368,8 @@ function home() {
       el('h1', { class: 'hero-t' }, C.title),
       el('p', { class: 'hero-sub' }, C.subtitle),
       el('div', { class: 'hero-poem' },
-        el('div', null, '雨把站名擦去一半。'), el('div', null, '下夜班的人把手伸进口袋，'), el('div', null, '摸到一枚不再流通的硬币。'),
-        el('a', { class: 'hero-poem-more', href: '#/anchor' }, '——《末班站》，课程从这首原创短诗出发')),
+        el('div', null, '你站在桥上看风景，'), el('div', null, '看风景人在楼上看你。'), el('div', null, '明月装饰了你的窗子，'), el('div', null, '你装饰了别人的梦。'),
+        el('a', { class: 'hero-poem-more', href: '#/anchor' }, '——卞之琳《断章》，课程从这首诗出发')),
       el('div', { class: 'hero-acts' },
         nx ? el('a', { class: 'btn pri lg', href: taskHref(nx.id) }, started ? `${nx.why}：${nx.id}` : '从前置诊断开始') : el('a', { class: 'btn pri lg', href: '#/record' }, '看学习记录'),
         el('a', { class: 'btn lg', href: '#/guide' }, '怎么学这门课'))),
@@ -452,8 +452,8 @@ function guideExtras(root) {
   h2.before(el('section', { class: 'about-block' }, el('h2', null, '这门课是什么'), el('div', { html: C.about })));
   root.append(
     el('h3', null, '怎样使用提示与参考'), el('div', { html: C.feedbackNotes }),
-    el('h3', null, '网页版和原自学包的区别'),
-    el('p', null, '题目、讲解、示范、提示、参考和检查标准都保持原自学包的文字；网页版只改了呈现方式：每道题自带作答框和折叠的提示与参考，打开过什么都会如实记下；诗作随时可以从右上角的「诗卷」调出来对照；学习记录按你的自评和用过的帮助自动整理，可以导出成 Markdown 带到别处。'),
+    el('h3', null, '关于这个网页版'),
+    el('p', null, '这一版重写过原来的自学包：示范和练习里那些为教学临时编的短诗，全部换成了真实诗人的作品，每首都标明作者和诗题；讲解、提示和参考也重新写过，问什么答什么。网页自己的部分是呈现方式：每道题自带作答框和折叠的提示与参考，打开过什么都会如实记下；诗作随时可以从右上角的「诗卷」调出来对照；学习记录按你的自评和用过的帮助自动整理，可以导出成 Markdown 带到别处。'),
     el('p', null, '自评仍然是你自己对照检查标准作出的判断，网页不会替你判卷，也不会把读完、展开答案算作掌握。'));
 }
 
@@ -778,7 +778,7 @@ function allTasks() {
 }
 
 // 单次回顾：原文的填空句，改成可以直接写的输入框
-const REFLECT = [['relations', '我能独立解释的关系是'], ['needHelp', '我仍要借助提示的环节是'], ['evidence', '我的证据是这些题号的实际输出'], ['nextOpen', '下次先打开（而不是从第一段重新通读）']];
+const REFLECT = [['relations', '我能独立解释的关系是'], ['needHelp', '我仍要借助提示的环节是'], ['evidence', '我的证据是这几道题里我自己写下的答案'], ['nextOpen', '下次先打开（而不是从第一段重新通读）']];
 function reflection() {
   return el('section', { class: 'rec-sec' }, el('h3', null, '单次回顾'),
     el('p', { class: 'muted small' }, '只按真实情况写，网页不替你填写。'),
