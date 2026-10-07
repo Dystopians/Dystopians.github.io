@@ -158,6 +158,7 @@ section.step { scroll-margin-top: calc(var(--top) + 64px); }
 .tc.k-indep, .tc.k-vary, .tc.k-final, .tc.k-diag { --kc: var(--accent); --kb: var(--accent-bg); }
 .tc.k-unit-r, .tc.k-diag-r, .tc.k-final-r { --kc: var(--red); --kb: var(--red-bg); }
 .tc.k-delay { --kc: var(--blue); --kb: var(--blue-bg); }
+.tc.k-extra { --kc: var(--ink); --kb: var(--paper2); outline: 1.5px dashed var(--line3); outline-offset: -1.5px; }
 .tc.s-pass, .tc.s-done { box-shadow: inset 0 0 0 1px var(--line), inset 4px 0 0 var(--accent), var(--shadow); }
 .tc.s-assisted { box-shadow: inset 0 0 0 1px var(--line), inset 4px 0 0 var(--gold), var(--shadow); }
 .tc.s-redo { box-shadow: inset 0 0 0 1px var(--line), inset 4px 0 0 var(--red), var(--shadow); }
@@ -279,6 +280,9 @@ section.step { scroll-margin-top: calc(var(--top) + 64px); }
 .cmap-k { flex: none; font: 600 .74rem/1.4 var(--f-mono); color: var(--accent); }
 .cmap-t { flex: 1; min-width: 0; font: 400 1rem/1.5 var(--f-poem); letter-spacing: .03em; }
 .cmap-p { font: .72rem/1.4 var(--f-mono); color: var(--faint); }
+.cmap-row.extra { margin-top: 10px; }
+.cmap-row.extra::before { border-left-style: dashed; }
+.cmap-row.extra .cmap-n { outline: 1.5px dashed var(--line3); outline-offset: -1.5px; }
 .cmap-n.some { box-shadow: inset 0 0 0 1.5px var(--accent-soft); }
 .cmap-n.full { background: var(--accent-bg); box-shadow: inset 0 0 0 1.5px var(--accent); }
 .cmap-n.full .cmap-p { color: var(--accent); }

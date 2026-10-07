@@ -1,5 +1,5 @@
 // 现代诗歌的诗论 · 网页版
-// 正文、题目、提示、参考都来自 course.js（scripts/build-poetics.py 从原自学包生成，内容不改）。
+// 正文、题目、提示、参考都来自 course.js（scripts/build-poetics.py 从 _poetics/START_HERE.md 生成）。
 // 这里负责：按视图渲染；题目卡片（作答自动保存、提示与参考留痕、自评）；按课程规则推出目标状态；
 // 延迟复习日期；学习记录、导出与备份。所有数据只存在这台设备的浏览器里。
 import C from './course.js';
@@ -60,7 +60,7 @@ const addDays = (s, n) => { const d = new Date(s + 'T00:00:00'); d.setDate(d.get
 // ---------- 题目、状态与课程规则 ----------
 const KIND = {
   diag: '诊断', 'diag-r': '补课复查', predict: '预测', fill: '补全', indep: '独立', vary: '变式',
-  card: '重建卡', 'unit-r': '复查', final: '验收', 'final-r': '验收复查', delay: '延迟复习',
+  card: '重建卡', 'unit-r': '复查', final: '验收', 'final-r': '验收复查', delay: '延迟复习', extra: '附加题',
 };
 const OPTIONAL = new Set(['diag-r', 'unit-r', 'final-r']);          // 原文：仅需补救时启用
 const ST = { todo: '未开始', draft: '草稿', submitted: '待自评', pass: '独立达标', assisted: '借助帮助达标', redo: '需补救', done: '已完成' };
@@ -71,6 +71,7 @@ const DUE = { RV01: 1, RV02: 1, RV03: 7, RV04: 7, RV05: 30, RV06: 30 };
 const FINALS = ['F01', 'F02', 'F03'];
 const TASK_IDS = Object.keys(C.tasks);
 const UNIT = Object.fromEntries(C.units.map(u => [u.id, u]));
+const MAIN_UNITS = C.units.filter(u => !u.extra), EXTRA_UNITS = C.units.filter(u => u.extra);   // 附加单元不计入主线和目标
 
 const hasDraft = t => !!t && (Array.isArray(t.draft) ? t.draft.some(x => x && x.trim()) : !!(t.draft && t.draft.trim()));
 const draftText = t => !t ? '' : Array.isArray(t.draft) ? t.draft.join('') : (t.draft || '');
@@ -130,15 +131,15 @@ function autoDay0() {
 const dueOf = id => S.day0 ? addDays(S.day0, DUE[id]) : null;
 const dueNow = () => S.day0 ? Object.keys(DUE).filter(id => !finished(status(id)) && dueOf(id) <= ymd(Date.now())) : [];
 
-// 一个单元的主线题（补救复查不算进度）
-const unitMain = uid => UNIT[uid].tasks.filter(id => !OPTIONAL.has(C.tasks[id].kind));
+// 一个单元的主线题（补救复查和附加题不算进度）
+const unitMain = uid => UNIT[uid].tasks.filter(id => !OPTIONAL.has(C.tasks[id].kind) && C.tasks[id].kind !== 'extra');
 const SECTION_TASKS = {
   diagnosis: ['D01', 'D02', 'D03', 'D04'], assessment: FINALS, review: Object.keys(DUE),
   ...Object.fromEntries(C.units.map(u => [u.id, unitMain(u.id)])),
 };
 const progressOf = sec => { const ids = SECTION_TASKS[sec] || []; return [ids.filter(id => finished(status(id))).length, ids.length]; };
 const touched = sec => (SECTION_TASKS[sec] || []).some(id => status(id) !== 'todo');
-const PATH = ['D01', 'D02', 'D03', 'D04', ...C.units.flatMap(u => unitMain(u.id)), ...FINALS];
+const PATH = ['D01', 'D02', 'D03', 'D04', ...MAIN_UNITS.flatMap(u => unitMain(u.id)), ...FINALS];
 function nextStep() {
   const due = dueNow()[0];
   if (due) return { id: due, why: '复习到期' };
@@ -179,8 +180,9 @@ const ICON = {
 // ---------- 外壳：顶栏、侧栏、诗卷 ----------
 const NAV = [
   { group: '开始', items: [['home', '首页'], ['guide', '从这里开始'], ['diagnosis', '前置诊断与补课'], ['anchor', '贯穿诗 · 断章']] },
-  { group: '十个能力单元', items: C.units.map(u => [u.id, u.short, u.no]) },
+  { group: '十个能力单元', items: MAIN_UNITS.map(u => [u.id, u.short, u.no]) },
   { group: '验收与复习', items: [['assessment', '综合验收'], ['review', '延迟复习'], ['record', '学习记录'], ['sources', '来源与版本']] },
+  ...(EXTRA_UNITS.length ? [{ group: '附加单元（不计入主线）', items: EXTRA_UNITS.map(u => [u.id, u.short, u.no]) }] : []),
 ];
 const TITLES = { home: '首页', guide: '从这里开始', diagnosis: '前置诊断与补课', anchor: '贯穿诗', assessment: '综合验收', review: '延迟复习', record: '学习记录', sources: '来源与版本' };
 let app, main, side, drawer;
@@ -209,7 +211,7 @@ function renderNav() {
     el('div', { class: 'nav-h' }, g.group),
     ...g.items.map(([id, label, no]) => {
       const [d, n] = progressOf(id);
-      const unitGoal = UNIT[id] ? goalStatus(goalOfUnit(id)) : null;
+      const ug = UNIT[id] && goalOfUnit(id), unitGoal = ug ? goalStatus(ug) : null;
       return el('a', { class: 'nav-i', href: id === 'home' ? '#/' : '#/' + id, 'data-v': id },
         no ? el('span', { class: 'nav-no' }, no.slice(1)) : null,
         el('span', { class: 'nav-t' }, label),
@@ -393,9 +395,9 @@ function home() {
 }
 
 // 学习地图（依赖关系）
-const MAP_ROWS = [['diagnosis'], ['u01'], ['u02'], ['u03', 'u04', 'u05'], ['u06'], ['u07'], ['u08'], ['u09'], ['u10'], ['assessment'], ['review']];
+const MAP_ROWS = [['diagnosis'], ['u01'], ['u02'], ['u03', 'u04', 'u05'], ['u06'], ['u07'], ['u08'], ['u09'], ['u10'], ['assessment'], ['review'], ...EXTRA_UNITS.map(u => [u.id])];
 function courseMap() {
-  return el('div', { class: 'cmap' }, ...MAP_ROWS.map(row => el('div', { class: 'cmap-row n' + row.length }, ...row.map(id => {
+  return el('div', { class: 'cmap' }, ...MAP_ROWS.map(row => el('div', { class: 'cmap-row n' + row.length + (UNIT[row[0]] && UNIT[row[0]].extra ? ' extra' : '') }, ...row.map(id => {
     const [d, n] = progressOf(id), u = UNIT[id];
     const st = d === n ? 'full' : touched(id) ? 'some' : '';
     return el('a', { class: 'cmap-n ' + st, href: '#/' + id },
@@ -409,16 +411,16 @@ function courseMap() {
 function unitHead(h, uid) {
   const u = UNIT[uid];
   const draw = () => {
-    const [d, n] = progressOf(uid), g = goalOfUnit(uid), st = goalStatus(g);
+    const [d, n] = progressOf(uid), g = goalOfUnit(uid), st = g ? goalStatus(g) : null;
     const rv = status(uid.toUpperCase() + '-R01') === 'pass';
     h.replaceChildren(
       el('div', { class: 'uh-no' }, u.no),
       el('h1', { class: 'uh-t' }, u.title),
       el('p', { class: 'uh-sub' }, u.sub),
       el('div', { class: 'uh-meta' },
-        el('span', { class: `chip g${GOAL_ST.indexOf(st)}` }, `${g.id} ${g.name} · ${st}`),
+        g ? el('span', { class: `chip g${GOAL_ST.indexOf(st)}` }, `${g.id} ${g.name} · ${st}`) : el('span', { class: 'chip' }, '附加单元 · 不计入主线和目标状态'),
         rv ? el('span', { class: 'chip g2' }, '复查独立通过') : null,
-        el('span', { class: 'chip' }, `主线 ${d}/${n}`)));
+        el('span', { class: 'chip' }, `${g ? '主线' : '本单元'} ${d}/${n}`)));
   };
   draw(); unitHeadRender = draw;
 }
@@ -438,7 +440,7 @@ function stepBar(root) {
 }
 
 // 上一页 / 下一页
-const ORDER = ['guide', 'diagnosis', 'anchor', ...C.units.map(u => u.id), 'assessment', 'review', 'record', 'sources'];
+const ORDER = ['guide', 'diagnosis', 'anchor', ...MAIN_UNITS.map(u => u.id), 'assessment', 'review', ...EXTRA_UNITS.map(u => u.id), 'record', 'sources'];
 function pager(v) {
   const i = ORDER.indexOf(v), p = ORDER[i - 1], n = ORDER[i + 1];
   const name = id => UNIT[id] ? `${UNIT[id].no} ${UNIT[id].short}` : TITLES[id];
@@ -657,7 +659,7 @@ function outcome(id, task, t, draw) {
     else if (k === 'indep' || k === 'vary') go.push(['看本单元「补救与复查入口」', `#/${u}/${u}-repair`], [`做 ${u.toUpperCase()}-R01`, taskHref(u.toUpperCase() + '-R01')]);
     else if (k === 'final') go.push(['看「验收失败后的具体回退」', '#/assessment/exam-repair'], [`做 ${id}-R01`, taskHref(id + '-R01')]);
     else if (k === 'unit-r') go.push(['回到本单元「建」与完整示范', `#/${u}/${u}-build`]);
-    else if (k === 'fill' || k === 'card') go.push(['回看本单元讲解', `#/${u}/${u}-build`]);
+    else if (k === 'fill' || k === 'card' || k === 'extra') go.push(['回看本单元讲解', `#/${u}/${u}-build`]);
     box.append(el('p', null, k === 'unit-r' || k === 'diag-r' || k === 'final-r'
       ? '复查再次没过：回到讲解与示范，对照解析重建一次；不要当天反复刷同一题，改用延迟复习作后续证据。'
       : '按检查标准里的分流去补：'),
@@ -761,9 +763,9 @@ function journal() {
 }
 
 function allTasks() {
-  const groups = [['前置诊断与补课', 'diagnosis'], ...C.units.map(u => [`${u.no} ${u.short}`, u.id]), ['综合验收', 'assessment'], ['延迟复习', 'review']];
+  const groups = [['前置诊断与补课', 'diagnosis'], ...MAIN_UNITS.map(u => [`${u.no} ${u.short}`, u.id]), ['综合验收', 'assessment'], ['延迟复习', 'review'], ...EXTRA_UNITS.map(u => [`${u.no} ${u.short}（附加单元）`, u.id])];
   return el('section', { class: 'rec-sec' }, el('h3', null, '全题号留痕'),
-    el('p', { class: 'muted small' }, '复查题只在相应分流触发时启用；这张表用来避免把“读过”记成“会做”。'),
+    el('p', { class: 'muted small' }, '复查题只在相应分流触发时启用；附加题和附加单元不计入主线。这张表用来避免把“读过”记成“会做”。'),
     el('div', { class: 'tbl' }, el('table', { class: 'tasks-t' },
       el('thead', null, el('tr', null, ...['题号', '任务', '状态', '帮助', '版本'].map(h => el('th', null, h)))),
       el('tbody', null, ...groups.flatMap(([name, view]) => [

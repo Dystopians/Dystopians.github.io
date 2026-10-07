@@ -3,7 +3,7 @@
 
 源文件：_poetics/START_HERE.md（下划线目录，Jekyll 不发布）
 生成：
-  poetics/course.js               课程数据：各视图的 HTML、80 道题的题面 / 两级提示 / 参考 / 检查标准、来源
+  poetics/course.js               课程数据：各视图的 HTML、全部题目（80 道主线题、附加题和附加单元）的题面 / 提示 / 参考 / 检查标准、来源
   poetics/fonts/poem.woff2        朱雀仿宋子集：只收诗作、首页大字、单元标题用到的字
   poetics/fonts/poem.css          对应的 @font-face
 
@@ -32,15 +32,18 @@ OUT_FONT_CSS = os.path.join(ROOT, "poetics/fonts/poem.css")
 UNIT_SHORT = {
     "u01": "诗论在问什么", "u02": "细读与证据", "u03": "意象与语言变形", "u04": "分行与节奏", "u05": "说话的人与语气",
     "u06": "全诗的结构", "u07": "难懂与解释", "u08": "传统、论争与翻译", "u09": "诗与社会", "u10": "批评与修订",
+    "u11": "王炜的诗剧",
 }
+# 附加单元：不计入主线进度和十个目标
+EXTRA_UNITS = {11}
 # 顶层分区：遇到这些锚点就切到对应视图
 TOP = {"start": "guide", "diagnosis": "diagnosis", "basics": "diagnosis", "anchor-poem": "anchor",
        "assessment": "assessment", "f-poem": "assessment", "exam-repair": "assessment",
        "review": "review", "record": "record", "coverage": "coverage", "feedback": "feedback",
        "sources": "sources", "optional": "sources"}
-TOP.update({"u%02d" % k: "u%02d" % k for k in range(1, 11)})
-STEP = {"ask": "问", "build": "建", "use": "用", "vary": "变", "keep": "留", "repair": "补"}
-TASK_RE = re.compile(r"^((?:D|F|RV)\d{2}(?:-R\d{2})?|U\d{2}-[PQKR]\d{2})｜(.+)$")
+TOP.update({"u%02d" % k: "u%02d" % k for k in range(1, 12)})
+STEP = {"ask": "问", "build": "建", "use": "用", "vary": "变", "keep": "留", "repair": "补", "extra": "附"}
+TASK_RE = re.compile(r"^((?:D|F|RV)\d{2}(?:-R\d{2})?|U\d{2}-[PQKRX]\d{2})｜(.+)$")
 
 
 def kind_of(tid):
@@ -49,7 +52,7 @@ def kind_of(tid):
     if re.match(r"^F\d\d$", tid): return "final"
     if re.match(r"^F\d\d-R", tid): return "final-r"
     if tid.startswith("RV"): return "delay"
-    return {"P": "predict", "K": "card", "R": "unit-r"}.get(tid[4]) or {"01": "fill", "02": "indep", "03": "vary"}[tid[5:]]
+    return {"P": "predict", "K": "card", "R": "unit-r", "X": "extra"}.get(tid[4]) or {"01": "fill", "02": "indep", "03": "vary"}[tid[5:]]
 
 
 # ---------- 读入并切块 ----------
@@ -241,7 +244,7 @@ def render_view(vid, blocks, tasks):
         if b[0] == "anchor":
             close_demo()
             pending_id = b[1]
-            m = re.match(r"^u\d\d-(ask|build|use|vary|keep|repair)$", b[1])
+            m = re.match(r"^u\d\d-(ask|build|use|vary|keep|repair|extra)$", b[1])
             if m:
                 if step_open:
                     html_out.append("</section>")
@@ -288,7 +291,7 @@ def render_view(vid, blocks, tasks):
                 html_out.append('<h2 class="h2"%s><span class="h-main">%s</span><span class="h-sub">%s</span></h2>' % (idattr, inline(a), inline(c)))
                 pending_id = None
                 i += 1; continue
-            if level == 3 and step_open and re.match(r"^(问|建|用|变|留)｜", text):
+            if level == 3 and step_open and re.match(r"^(问|建|用|变|留|附)｜", text):
                 k, rest = text.split("｜", 1)
                 html_out.append('<h2 class="step-h"%s><span class="step-k">%s</span>%s</h2>' % (idattr, k, inline(rest)))
             elif level == 3 and step_open and text == "补救与复查入口":
@@ -440,7 +443,7 @@ def main():
             sys.exit("%s 没有参考答案" % tid)
         t.setdefault("hint1", None); t.setdefault("hint2", None)
 
-    units = [{"id": "u%02d" % k, "no": "U%02d" % k, "short": UNIT_SHORT["u%02d" % k]} for k in range(1, 11)]
+    units = [{"id": "u%02d" % k, "no": "U%02d" % k, "short": UNIT_SHORT["u%02d" % k], "extra": k in EXTRA_UNITS} for k in range(1, 12)]
     for u in units:
         h = next(b[2] for b in views[u["id"]] if b[0] == "h" and b[1] == 2)
         full = h.split("　", 1)[1]
