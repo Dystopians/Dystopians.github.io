@@ -385,9 +385,9 @@ function home() {
           return el('a', { class: `goal-i g${GOAL_ST.indexOf(st)}`, href: '#/' + g.unit, title: `${g.id} ${g.name}：${st}` },
             el('b', null, g.id.slice(1)), el('span', null, g.name), el('em', null, st));
         })),
-        el('p', { class: 'muted small' }, '目标状态按课程规则由你的自评和用过的帮助推出，不是外部认证。详细见', el('a', { href: '#/record' }, '学习记录'), '。')),
+        el('p', { class: 'muted small' }, '目标状态按课程规则，由你的自评和用过的帮助推出。详细见', el('a', { href: '#/record' }, '学习记录'), '。')),
       el('div', { class: 'panel' },
-        el('div', { class: 'panel-h' }, '学习地图', el('span', { class: 'panel-n' }, '依赖关系，不是流派史')),
+        el('div', { class: 'panel-h' }, '学习地图', el('span', { class: 'panel-n' }, '先学什么、后学什么')),
         courseMap())),
     el('details', { class: 'about' },
       el('summary', null, '关于这门课：假设、范围、不承诺什么、资料性质'),
@@ -780,7 +780,7 @@ function allTasks() {
 }
 
 // 单次回顾：原文的填空句，改成可以直接写的输入框
-const REFLECT = [['relations', '我能独立解释的关系是'], ['needHelp', '我仍要借助提示的环节是'], ['evidence', '我的证据是这几道题里我自己写下的答案'], ['nextOpen', '下次先打开（而不是从第一段重新通读）']];
+const REFLECT = [['relations', '我能独立解释的关系是'], ['needHelp', '我仍要借助提示的环节是'], ['evidence', '我的证据是这几道题里我自己写下的答案'], ['nextOpen', '下次先打开哪里']];
 function reflection() {
   return el('section', { class: 'rec-sec' }, el('h3', null, '单次回顾'),
     el('p', { class: 'muted small' }, '只按真实情况写，网页不替你填写。'),
